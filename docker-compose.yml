@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  # 1. Backend Service එක
+  backend:
+    build:
+      context: ./backend  # Backend folder එකේ පාර (Path)
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"       # ඔයා පාවිච්චි කරන port එක
+    env_file:
+      - ./backend/.env    # .env ෆයිල් එකේ තියෙන රහස් දත්ත ලබා දෙනවා
+    volumes:
+      - ./backend:/app    # Code එක වෙනස් කරද්දී Docker එක ඇතුළෙත් ඒක පේන්න (Development සඳහා)
+      - /app/node_modules # node_modules අලුතින් හදන්න එපා කියලා කියනවා
+    environment:
+      - NODE_ENV=development
+
+  # 2. Frontend Service එක
+  frontend:
+    build:
+      context: ./frontend # Frontend folder එකේ පාර (Path එක 'client' නම් එය දාන්න)
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"       # React සාමාන්‍යයෙන් දුවන port එක
+    stdin_open: true      # React වලට අවශ්‍ය සමහර settings
+    tty: true
+    depends_on:
+      - backend           # Backend එක පණගැන්වුණාට පස්සේ විතරක් Frontend එක පටන් ගන්නවා
