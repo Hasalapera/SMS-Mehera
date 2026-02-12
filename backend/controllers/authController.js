@@ -48,8 +48,8 @@ const loginUser = async (req, res) => {
         let redirectPath = '/dashboard';
         if (user.role === 'admin') redirectPath = '/admin-dashboard';
         else if (user.role === 'manager') redirectPath = '/manager-dashboard';
-        else if (user.role === 'sales_rep') redirectPath = '/sales-rep-home';
-        else if (user.role === 'online_store_keeper') redirectPath = '/store-home';
+        else if (user.role === 'sales_rep') redirectPath = '/sales-rep-dashboard';
+        else if (user.role === 'online_store_keeper') redirectPath = '/store-keeper-dashboard';
 
         res.status(200).json({
             message: "Logged In successfully",
