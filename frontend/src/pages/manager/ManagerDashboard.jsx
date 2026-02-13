@@ -12,7 +12,7 @@ import {
 
 const ManagerDashboard = () => {
   const navigate = useNavigate();
-  // LocalStorage එකෙන් Manager ගේ විස්තර ගමු
+  
   const user = JSON.parse(localStorage.getItem('user')) || { full_name: 'Regional Manager' };
 
   const handleLogout = () => {

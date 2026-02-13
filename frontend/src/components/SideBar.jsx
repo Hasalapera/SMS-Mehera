@@ -10,9 +10,9 @@ import {
 const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
   const [openSubMenu, setOpenSubMenu] = useState('user');
   
-  // LocalStorage එකෙන් user ගේ විස්තර සහ Role එක ලබා ගැනීම
+  
   const user = JSON.parse(localStorage.getItem('user')) || {};
-  const userRole = user.role; // 'admin' හෝ 'manager'
+  
 
   return (
     <aside className={`bg-[#141414] text-white flex flex-col p-5 transition-all duration-300 fixed h-full z-50 ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
@@ -43,7 +43,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
       {/* Navigation Menu */}
       <nav className="flex-1 space-y-6 overflow-y-auto custom-scrollbar pr-1">
         
-        {/* 1. Menu Category (දෙන්නාටම පොදුයි) */}
+        
         <div className="space-y-1">
           {!isSidebarCollapsed && <p className="text-[10px] uppercase text-gray-500 font-bold mb-2 ml-2">Menu</p>}
           <button className="flex items-center gap-3 w-full p-2.5 rounded-lg bg-[#b4a460] text-black font-semibold shadow-lg">
@@ -55,7 +55,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
           </button>
         </div>
 
-        {/* 2. Customers Category */}
+        
         <div className="space-y-1">
           {!isSidebarCollapsed && <p className="text-[10px] uppercase text-gray-500 font-bold mb-2 ml-2">Customers</p>}
           <button className="flex items-center gap-3 w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5"><ShoppingCart size={18} /> {!isSidebarCollapsed && "Orders"}</button>
@@ -63,7 +63,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
           <button className="flex items-center gap-3 w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5"><UserCheck size={18} /> {!isSidebarCollapsed && "Sales Representatives"}</button>
           <button className="flex items-center gap-3 w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5"><BarChart2 size={18} /> {!isSidebarCollapsed && "Reports"}</button>
           
-          {/* User Management (Admin ට පමණක් සම්පූර්ණ පාලනය පෙන්වයි) */}
+          
           <div className="space-y-1">
             <button 
               onClick={() => setOpenSubMenu(openSubMenu === 'user' ? '' : 'user')}
@@ -75,7 +75,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
             
             {!isSidebarCollapsed && openSubMenu === 'user' && (
               <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
-                {/* ඇඩ්මින්ට පමණක් පෙනෙන කොටස් */}
+                
                 {userRole === 'admin' && (
                   <>
                     <button className="flex items-center gap-2 w-full p-2 text-[11px] text-gray-500 hover:text-[#b4a460]"><UserPlus size={14} /> Add User</button>
@@ -83,20 +83,20 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                     <button className="flex items-center gap-2 w-full p-2 text-[11px] text-gray-500 hover:text-red-400"><UserMinus size={14} /> Delete User</button>
                   </>
                 )}
-                {/* මැනේජර්ට සහ ඇඩ්මින් දෙන්නාටම පෙනෙන කොටස */}
+                
                 <button className="flex items-center gap-2 w-full p-2 text-[11px] text-gray-500 hover:text-white"><List size={14} /> Show All Users</button>
               </div>
             )}
           </div>
         </div>
 
-        {/* 3. Products Category (දෙන්නාටම පොදුයි) */}
+        
         <div className="space-y-1">
           {!isSidebarCollapsed && <p className="text-[10px] uppercase text-gray-500 font-bold mb-2 ml-2">Products</p>}
           <button className="flex items-center gap-3 w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5 transition-colors">
             <Package size={18} /> {!isSidebarCollapsed && "Inventory"}
           </button>
-          {/* අලුත් භාණ්ඩ එකතු කිරීම ඇඩ්මින්ට පමණක් ලබාදිය හැකිය */}
+          
           {userRole === 'admin' && (
             <button className="flex items-center gap-3 w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5">
               <PlusCircle size={18} /> {!isSidebarCollapsed && "Add Product"}

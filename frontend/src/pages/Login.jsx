@@ -32,7 +32,7 @@ const Login = () => {
     setError('');
 
     try {
-      // Backend එකේ login endpoint එකට data යැවීම
+    
       const response = await axios.post('http://localhost:5001/api/users/login', {
         email,
         password
@@ -40,21 +40,21 @@ const Login = () => {
 
       const data = response.data;
       
-      // JWT Token එක localStorage එකේ සේව් කරගමු
+      
       localStorage.setItem('token', data.token);
 
-      // 1. තාවකාලික මුරපදයක් නම් Password Change පේජ් එකට යවමු
+      
       if (data.mustChangePassword) {
         navigate('/change-password', { state: { userId: data.user_id } });
       } 
-      // 2. සාමාන්‍ය මුරපදයක් නම් අදාළ Dashboard එකට යවමු
+      
       else {
         localStorage.setItem('user', JSON.stringify(data.user));
         navigate(data.user.redirectPath);
       }
 
     } catch (err) {
-      // වැරදි වුණොත් backend එකෙන් එන message එක පෙන්වමු
+      
       setError(err.response?.data?.message || "Incorrect Username or Password");
     }
   };

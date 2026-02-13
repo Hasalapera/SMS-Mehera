@@ -26,16 +26,16 @@ const AdminDashboard = () => {
   return (
     <div className="flex min-h-screen bg-[#F9F9F9] font-sans overflow-x-hidden text-black">
       
-      {/* Sidebar Component එක සම්බන්ධ කිරීම */}
+      
       <SideBar 
         isSidebarCollapsed={isSidebarCollapsed} 
         setIsSidebarCollapsed={setIsSidebarCollapsed} 
       />
 
-      {/* Main Content Area */}
+      
       <main className={`flex-1 transition-all duration-300 p-4 md:p-8 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
         
-        {/* Header Section */}
+        
         <header className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2 text-gray-500 text-sm font-medium">
             <LayoutDashboard size={18} className="text-[#b4a460]" /> <span>Dashboard</span>

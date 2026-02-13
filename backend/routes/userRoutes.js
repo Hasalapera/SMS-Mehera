@@ -4,7 +4,7 @@ const { addUserByAdmin,resetToDefaultPassword, updatePassword } = require('../co
 const { isAdmin } = require('../middlewares/authMiddleware');
 const { loginUser } = require('../controllers/authController');
 
-// Admin ට පමණක් ඉඩ දෙන Protected Route එක
+
 router.post('/add-user', isAdmin, addUserByAdmin);
 
 router.post('/login', loginUser);

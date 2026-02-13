@@ -9,7 +9,7 @@ const ChangePassword = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  const userId = location.state?.userId; // Login එකෙන් එවන User ID එක
+  const userId = location.state?.userId; 
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
@@ -34,7 +34,7 @@ const ChangePassword = () => {
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white">
       <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800 w-full max-w-md">
         <h2 className="text-2xl font-bold mb-4 text-[#b4a460]">Change Temporary Password</h2>
-        <p className="text-gray-400 text-sm mb-6">පළමු වරට ලොග් වීමේදී ඔබගේ මුරපදය අනිවාර්යයෙන්ම මාරු කළ යුතුය.</p>
+        <p className="text-gray-400 text-sm mb-6">You must change your password the first time you log in.</p>
         
         <form onSubmit={handleChangePassword} className="space-y-4">
           <input 
