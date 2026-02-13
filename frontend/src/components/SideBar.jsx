@@ -9,9 +9,12 @@ import {
 
 const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
   const [openSubMenu, setOpenSubMenu] = useState('user');
+
+  const storedUser = localStorage.getItem('user');
+  const user = storedUser ? JSON.parse(storedUser) : {};
+  const userRole = user?.role || '';
   
-  
-  const user = JSON.parse(localStorage.getItem('user')) || {};
+  // const user = JSON.parse(localStorage.getItem('user')) || {};
   
 
   return (

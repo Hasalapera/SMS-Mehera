@@ -1,12 +1,11 @@
 const supabase = require('../config/supabaseClient');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs'); // 1. Bcrypt මැෂින් එක ගෙන්නගන්න
+const bcrypt = require('bcryptjs'); 
 
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // 1. Email එකෙන් පරිශීලකයාව හොයමු
         const { data: user, error } = await supabase
             .from('users')
             .select('*')
@@ -14,14 +13,14 @@ const loginUser = async (req, res) => {
             .single();
 
         if (error || !user) {
-            return res.status(401).json({ message: "Email එක හෝ යතුර වැරදියි!" });
+            return res.status(401).json({ message: "The email or key is incorrect!" });
         }
 
 
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
-            return res.status(401).json({ message: "Email එක හෝ යතුර වැරදියි!" });
+            return res.status(401).json({ message: "The email or key is incorrect!" });
         }
 
         
