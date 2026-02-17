@@ -1,21 +1,71 @@
 import React, { useState } from 'react';
 import { 
   LayoutDashboard, Users, ShoppingCart, Package, 
-  BarChart2, UserCheck, Settings, HelpCircle, 
-  Search, LogOut, ChevronDown, ChevronRight, 
-  Menu, Inbox, SlidersHorizontal, PlusCircle, 
+  BarChart2, Settings, HelpCircle, LogOut, ChevronDown, 
+  ChevronRight, Menu, Inbox, SlidersHorizontal, PlusCircle, 
   ChevronLeft, UserPlus, UserMinus, UserCog, List 
 } from 'lucide-react';
+import { useNavigate, NavLink } from 'react-router-dom';
+
+// 1. Menu Configuration
+const menuConfig = {
+  admin: { canManageUsers: true, canAddProducts: true, canViewReports: true, canEditInventory: true },
+  manager: { canManageUsers: false, canAddProducts: true, canViewReports: true, canEditInventory: true },
+  sales_rep: { canManageUsers: false, canAddProducts: false, canViewReports: false, canEditInventory: false }
+};
+
+// 2. Reusable NavItem Component (Hover සහ Active highlights මෙතැන පාලනය වේ)
+const NavItem = ({ to, icon: Icon, label, isCollapsed, badge, onClick }) => {
+  // Sub-menu එකක් නැති සාමාන්‍ය Link එකක් නම්
+  if (to) {
+    return (
+      <NavLink
+        to={to}
+        className={({ isActive }) => `
+          flex items-center justify-between w-full p-2.5 rounded-lg transition-all duration-200 group
+          ${isActive 
+            ? 'bg-[#b4a460] text-black font-semibold shadow-lg' 
+            : 'text-gray-400 hover:bg-white/10 hover:text-[#b4a460]'
+          }
+        `}
+      >
+        <div className="flex items-center gap-3">
+          <Icon size={18} className="shrink-0" />
+          {!isCollapsed && <span className="text-sm">{label}</span>}
+        </div>
+        {badge && !isCollapsed && (
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#b4a460]/20">
+            {badge}
+          </span>
+        )}
+      </NavLink>
+    );
+  }
+
+  // Sub-menu එකක් open කරන button එකක් නම්
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center justify-between w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/10 hover:text-[#b4a460] transition-all duration-200"
+    >
+      <div className="flex items-center gap-3">
+        <Icon size={18} className="shrink-0" />
+        {!isCollapsed && <span className="text-sm">{label}</span>}
+      </div>
+      {/* ඊතලය පෙන්වන්නේ collapsed නැතිනම් පමණි */}
+      {!isCollapsed && onClick && label === "Users" && (onClick.isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
+    </button>
+  );
+};
 
 const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
   const [openSubMenu, setOpenSubMenu] = useState('user');
+  const navigate = useNavigate();
 
   const storedUser = localStorage.getItem('user');
   const user = storedUser ? JSON.parse(storedUser) : {};
-  const userRole = user?.role || '';
-  
-  // const user = JSON.parse(localStorage.getItem('user')) || {};
-  
+  const userRole = user?.role || 'sales_rep';
+  const permissions = menuConfig[userRole] || menuConfig.sales_rep;
 
   return (
     <aside className={`bg-[#141414] text-white flex flex-col p-5 transition-all duration-300 fixed h-full z-50 ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
@@ -33,88 +83,59 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
         </button>
       </div>
 
-      {/* Search Bar Section */}
-      <div className="relative mb-8 flex justify-center px-2">
-        <div className={`relative flex items-center justify-center transition-all duration-300 ${isSidebarCollapsed ? 'w-10 h-10 bg-[#242424] rounded-xl' : 'w-full'}`}>
-          <Search className={`text-gray-500 transition-all ${isSidebarCollapsed ? 'w-5 h-5' : 'absolute left-3 w-4 h-4'}`} />
-          {!isSidebarCollapsed && (
-            <input type="text" placeholder="Search" className="w-full bg-[#242424] rounded-lg py-2 pl-10 pr-4 text-xs focus:outline-none" />
-          )}
-        </div>
-      </div>
-
       {/* Navigation Menu */}
       <nav className="flex-1 space-y-6 overflow-y-auto custom-scrollbar pr-1">
         
-        
         <div className="space-y-1">
           {!isSidebarCollapsed && <p className="text-[10px] uppercase text-gray-500 font-bold mb-2 ml-2">Menu</p>}
-          <button className="flex items-center gap-3 w-full p-2.5 rounded-lg bg-[#b4a460] text-black font-semibold shadow-lg">
-            <LayoutDashboard size={18} /> {!isSidebarCollapsed && "Dashboard"}
-          </button>
-          <button className="flex items-center justify-between w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5 transition-colors">
-            <div className="flex items-center gap-3"><Inbox size={18} /> {!isSidebarCollapsed && "Inbox"}</div>
-            {!isSidebarCollapsed && <span className="text-[#b4a460] text-[10px] font-bold">10</span>}
-          </button>
+          <NavItem to={user.redirectPath || '/admin-dashboard'} icon={LayoutDashboard} label="Dashboard" isCollapsed={isSidebarCollapsed} />
+          <NavItem to="/inbox" icon={Inbox} label="Inbox" badge="10" isCollapsed={isSidebarCollapsed} />
         </div>
 
-        
         <div className="space-y-1">
-          {!isSidebarCollapsed && <p className="text-[10px] uppercase text-gray-500 font-bold mb-2 ml-2">Customers</p>}
-          <button className="flex items-center gap-3 w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5"><ShoppingCart size={18} /> {!isSidebarCollapsed && "Orders"}</button>
-          <button className="flex items-center gap-3 w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5"><Users size={18} /> {!isSidebarCollapsed && "Customer"}</button>
-          <button className="flex items-center gap-3 w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5"><UserCheck size={18} /> {!isSidebarCollapsed && "Sales Representatives"}</button>
-          <button className="flex items-center gap-3 w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5"><BarChart2 size={18} /> {!isSidebarCollapsed && "Reports"}</button>
+          {!isSidebarCollapsed && <p className="text-[10px] uppercase text-gray-500 font-bold mb-2 ml-2">Management</p>}
+          <NavItem to="/orders" icon={ShoppingCart} label="Orders" isCollapsed={isSidebarCollapsed} />
+          <NavItem to="/customers" icon={Users} label="Customers" isCollapsed={isSidebarCollapsed} />
           
+          {permissions.canViewReports && (
+            <NavItem to="/reports" icon={BarChart2} label="Reports" isCollapsed={isSidebarCollapsed} />
+          )}
           
-          <div className="space-y-1">
-            <button 
-              onClick={() => setOpenSubMenu(openSubMenu === 'user' ? '' : 'user')}
-              className="flex items-center justify-between w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5"
-            >
-              <div className="flex items-center gap-3"><Users size={18} /> {!isSidebarCollapsed && "User Management"}</div>
-              {!isSidebarCollapsed && (openSubMenu === 'user' ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
-            </button>
-            
-            {!isSidebarCollapsed && openSubMenu === 'user' && (
-              <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
-                
-                {userRole === 'admin' && (
-                  <>
-                    <button className="flex items-center gap-2 w-full p-2 text-[11px] text-gray-500 hover:text-[#b4a460]"><UserPlus size={14} /> Add User</button>
-                    <button className="flex items-center gap-2 w-full p-2 text-[11px] text-gray-500 hover:text-[#b4a460]"><UserCog size={14} /> Update User</button>
-                    <button className="flex items-center gap-2 w-full p-2 text-[11px] text-gray-500 hover:text-red-400"><UserMinus size={14} /> Delete User</button>
-                  </>
-                )}
-                
-                <button className="flex items-center gap-2 w-full p-2 text-[11px] text-gray-500 hover:text-white"><List size={14} /> Show All Users</button>
-              </div>
-            )}
-          </div>
+          {permissions.canManageUsers && (
+            <div className="space-y-1">
+              {/* User Management dropdown button */}
+              <NavItem 
+                icon={UserCog} 
+                label="Users" 
+                isCollapsed={isSidebarCollapsed} 
+                onClick={() => setOpenSubMenu(openSubMenu === 'user' ? '' : 'user')}
+              />
+              
+              {!isSidebarCollapsed && openSubMenu === 'user' && (
+                <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
+                  <NavLink to="/addUser" className={({isActive}) => `flex items-center gap-2 w-full p-2 text-[11px] hover:text-[#b4a460] ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500'}`}><UserPlus size={14} /> Add User</NavLink>
+                  <NavLink to="/updateUser" className={({isActive}) => `flex items-center gap-2 w-full p-2 text-[11px] hover:text-[#b4a460] ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500'}`}><UserCog size={14} /> Update User</NavLink>
+                  <NavLink to="/delete-user" className={({isActive}) => `flex items-center gap-2 w-full p-2 text-[11px] hover:text-red-400 ${isActive ? 'text-red-400 font-bold' : 'text-gray-500'}`}><UserMinus size={14} /> Delete User</NavLink>
+                  <NavLink to="/all-users" className={({isActive}) => `flex items-center gap-2 w-full p-2 text-[11px] hover:text-white ${isActive ? 'text-white font-bold' : 'text-gray-500'}`}><List size={14} /> Show All Users</NavLink>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        
         <div className="space-y-1">
           {!isSidebarCollapsed && <p className="text-[10px] uppercase text-gray-500 font-bold mb-2 ml-2">Products</p>}
-          <button className="flex items-center gap-3 w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5 transition-colors">
-            <Package size={18} /> {!isSidebarCollapsed && "Inventory"}
-          </button>
-          
-          {userRole === 'admin' && (
-            <button className="flex items-center gap-3 w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5">
-              <PlusCircle size={18} /> {!isSidebarCollapsed && "Add Product"}
-            </button>
+          <NavItem to="/inventory" icon={Package} label="Inventory" isCollapsed={isSidebarCollapsed} />
+          {permissions.canAddProducts && (
+            <NavItem to="/addProduct" icon={PlusCircle} label="Add Product" isCollapsed={isSidebarCollapsed} />
           )}
-          <button className="flex items-center gap-3 w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5 text-left">
-            <SlidersHorizontal size={18} /> {!isSidebarCollapsed && "Categories Management"}
-          </button>
+          <NavItem to="/categories" icon={SlidersHorizontal} label="Categories" isCollapsed={isSidebarCollapsed} />
         </div>
 
-        {/* 4. Help Category */}
         <div className="space-y-1">
           {!isSidebarCollapsed && <p className="text-[10px] uppercase text-gray-500 font-bold mt-4 mb-2 ml-2">Help</p>}
-          <button className="flex items-center gap-3 w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5"><Settings size={18} /> {!isSidebarCollapsed && "Settings"}</button>
-          <button className="flex items-center gap-3 w-full p-2.5 rounded-lg text-gray-400 hover:bg-white/5"><HelpCircle size={18} /> {!isSidebarCollapsed && "Support & feedback"}</button>
+          <NavItem to="/settings" icon={Settings} label="Settings" isCollapsed={isSidebarCollapsed} />
+          <NavItem to="/support" icon={HelpCircle} label="Support" isCollapsed={isSidebarCollapsed} />
         </div>
       </nav>
 

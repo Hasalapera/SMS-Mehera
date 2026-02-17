@@ -1,12 +1,18 @@
 import { useState } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Login from './pages/Login'
-import UserList from './pages/admin/UserList'
+// import UserList from './pages/admin/UserList'
 import ChangePassword from './pages/ChangePassword'
 import AdminDashboard from './pages/admin/AdminDashboard'
-import SalesRepDashboard from './pages/sales-rep/SalesRepDashboard'
+// import SalesRepDashboard from './pages/sales-rep/SalesRepDashboard'
 import ManagerDashboard from './pages/manager/ManagerDashboard'
-import StoreKeeper from './pages/store-keeper/StoreKeeper'
+// import StoreKeeper from './pages/store-keeper/StoreKeeper'
+import Inbox from './pages/admin/Inbox'
+import AddUser from './pages/admin/user-management/AddUser'
+import DashboardLayout from './components/DashboardLayout'
+import ViewUsers from './pages/admin/user-management/ViewUser'
+import UpdateUser from './pages/admin/user-management/UpdateUser'
+import DeleteUser from './pages/admin/user-management/DeleteUser'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -14,13 +20,21 @@ function App() {
   return (
     <>
       <Routes>
-        <Route path='/' element= {<UserList/>}/>
+        {/* <Route path='/' element= {<UserList/>}/> */}
+        <Route path='/' element= {<Login/>}/>
         <Route path='/login' element= {<Login/>}/>
         <Route path='change-password' element={<ChangePassword/>}/>
-        <Route path='admin-dashboard' element={<AdminDashboard/>}/>
-        <Route path='sales-rep-dashboard' element={<SalesRepDashboard/>}/>
-        <Route path='manager-dashboard' element={<ManagerDashboard/>}/>
-        <Route path='store-keeper-dashboard' element={<StoreKeeper/>}/>
+        
+        <Route element={<DashboardLayout />}>
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/manager-dashboard" element={<ManagerDashboard />} />
+          <Route path="/inbox" element={<Inbox />} />
+          <Route path='/addUser' element={<AddUser/>}/>
+          <Route path='/all-users' element={<ViewUsers/>}/>
+          <Route path='/updateUser' element={<UpdateUser/>}/>
+          <Route path='/delete-user' element={<DeleteUser/>}/>
+          
+        </Route>
       </Routes>
     </>
   )

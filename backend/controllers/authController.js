@@ -1,64 +1,64 @@
-const supabase = require('../config/supabaseClient');
+const pool = require('../db/db');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs'); 
+const bcrypt = require('bcryptjs');
 
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single();
+        // PostgreSQL query එක (Soft delete එකත් පරීක්ෂා කරනවා)
+        const result = await pool.query(
+            'SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL', 
+            [email]
+        );
+        const user = result.rows[0];
 
-        if (error || !user) {
+        if (!user) {
             return res.status(401).json({ message: "The email or key is incorrect!" });
         }
 
-
         const isMatch = await bcrypt.compare(password, user.password);
-
         if (!isMatch) {
             return res.status(401).json({ message: "The email or key is incorrect!" });
         }
 
-        
         const token = jwt.sign(
             { user_id: user.user_id, role: user.role },
-            process.env.JWT_SECRET || 'mehera_secret_key', 
+            process.env.JWT_SECRET || 'mehera_secret_key',
             { expiresIn: '1d' }
         );
 
-        
+        // පරණ logic එක: Default password ද බලනවා
         if (user.is_default_password === true) {
             return res.status(200).json({
                 message: "The temporary key must be changed!",
                 mustChangePassword: true,
                 redirectPath: "/change-password",
                 token: token,
-                user_id: user.user_id 
+                user_id: user.user_id
             });
         }
 
-        
+        // Role-based redirection logic එක
         let redirectPath = '/dashboard';
-        if (user.role === 'admin') redirectPath = '/admin-dashboard';
-        else if (user.role === 'manager') redirectPath = '/manager-dashboard';
-        else if (user.role === 'sales_rep') redirectPath = '/sales-rep-dashboard';
-        else if (user.role === 'online_store_keeper') redirectPath = '/store-keeper-dashboard';
+        const roleMap = {
+            'admin': '/admin-dashboard',
+            'manager': '/manager-dashboard',
+            'sales_rep': '/sales-rep-dashboard',
+            'online_store_keeper': '/store-keeper-dashboard'
+        };
+        redirectPath = roleMap[user.role] || '/dashboard';
 
         res.status(200).json({
             message: "Logged In successfully",
             token,
             user: {
                 user_id: user.user_id,
-                full_name: user.full_name,
+                full_name: user.name, // SQL එකේ name ලෙස ඇත්තේ
                 role: user.role,
                 redirectPath
             }
         });
-
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

@@ -41,16 +41,7 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#F9F9F9] font-sans overflow-x-hidden text-black">
-      
-      
-      <SideBar 
-        isSidebarCollapsed={isSidebarCollapsed} 
-        setIsSidebarCollapsed={setIsSidebarCollapsed} 
-      />
-
-      
-      <main className={`flex-1 transition-all duration-300 p-4 md:p-8 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
+      <main className={`w-full`}>
         
         {/* Header Section */}
         <header className="flex justify-between items-center mb-6">
@@ -185,7 +176,6 @@ const AdminDashboard = () => {
         </div>
 
       </main>
-    </div>
   );
 };
 
