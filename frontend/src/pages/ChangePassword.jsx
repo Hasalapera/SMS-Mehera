@@ -14,7 +14,7 @@ const ChangePassword = () => {
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      return setMessage("මුරපද දෙක ගැලපෙන්නේ නැත!");
+      return setMessage("The two passwords do not match!");
     }
 
     try {
@@ -23,10 +23,10 @@ const ChangePassword = () => {
         new_password: newPassword
       });
       
-      alert("මුරපදය සාර්ථකව වෙනස් කළා! කරුණාකර නැවත ලොග් වන්න.");
+      alert("Password changed successfully! Please log in again.");
       navigate('/login');
     } catch (err) {
-      setMessage("යාවත්කාලීන කිරීම අසාර්ථකයි.");
+      setMessage("Update failed.");
     }
   };
 

@@ -1,14 +1,31 @@
 import React, { useState } from 'react';
-import SideBar from '../../components/SideBar'; 
+import SideBar from '../../components/SideBar';
+import { useNavigate } from 'react-router-dom'; 
 import { 
   LayoutDashboard, Bell, ArrowUpRight, MoreVertical, 
   PlusCircle, SlidersHorizontal, Download, RefreshCw 
 } from 'lucide-react';
+import { useEffect } from 'react';
 
 const AdminDashboard = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
   
-  const user = JSON.parse(localStorage.getItem('user')) || { full_name: 'Admin User' };
+  // const user = JSON.parse(localStorage.getItem('user')) || { full_name: 'Admin User' };
+
+  useEffect(() => {
+    const storeUser = localStorage.getItem('user');
+    if(!storeUser || storeUser === "undefined"){
+      navigate('/login');
+    }else{
+      setUser(JSON.parse(storeUser));
+    }
+  }, [navigate]);
+
+  if(!user){
+    return <div className="min-h-screen bg-[#F9F9F9] flex items-center justify-center text-black font-bold"> Loading </div>
+  }
 
   const stats = [
     { title: "Total Sales", value: "536,254 LKR", change: "+ 238.28 LKR", color: "text-green-500" },
@@ -24,18 +41,9 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#F9F9F9] font-sans overflow-x-hidden text-black">
-      
-      
-      <SideBar 
-        isSidebarCollapsed={isSidebarCollapsed} 
-        setIsSidebarCollapsed={setIsSidebarCollapsed} 
-      />
-
-      
-      <main className={`flex-1 transition-all duration-300 p-4 md:p-8 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
+      <main className={`w-full`}>
         
-        
+        {/* Header Section */}
         <header className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2 text-gray-500 text-sm font-medium">
             <LayoutDashboard size={18} className="text-[#b4a460]" /> <span>Dashboard</span>
@@ -168,7 +176,6 @@ const AdminDashboard = () => {
         </div>
 
       </main>
-    </div>
   );
 };
 

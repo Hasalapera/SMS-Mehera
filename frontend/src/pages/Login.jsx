@@ -41,7 +41,9 @@ const Login = () => {
       const data = response.data;
       
       
-      localStorage.setItem('token', data.token);
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
 
       
       if (data.mustChangePassword) {
