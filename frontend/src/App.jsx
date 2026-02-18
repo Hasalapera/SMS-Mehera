@@ -13,6 +13,8 @@ import DashboardLayout from './components/DashboardLayout'
 import ViewUsers from './pages/admin/user-management/ViewUser'
 import UpdateUser from './pages/admin/user-management/UpdateUser'
 import DeleteUser from './pages/admin/user-management/DeleteUser'
+import LandingPage from './pages/LandingPage'
+import UserProfile from './components/UserProfile'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -21,9 +23,10 @@ function App() {
     <>
       <Routes>
         {/* <Route path='/' element= {<UserList/>}/> */}
-        <Route path='/' element= {<Login/>}/>
+        <Route path='/' element= {<LandingPage/>}/>
         <Route path='/login' element= {<Login/>}/>
         <Route path='change-password' element={<ChangePassword/>}/>
+        
         
         <Route element={<DashboardLayout />}>
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
@@ -33,6 +36,7 @@ function App() {
           <Route path='/all-users' element={<ViewUsers/>}/>
           <Route path='/updateUser' element={<UpdateUser/>}/>
           <Route path='/delete-user' element={<DeleteUser/>}/>
+          <Route path='/profile' element={<UserProfile/>}/>
           
         </Route>
       </Routes>

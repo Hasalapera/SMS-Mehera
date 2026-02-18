@@ -54,8 +54,15 @@ const loginUser = async (req, res) => {
             token,
             user: {
                 user_id: user.user_id,
-                full_name: user.name, // SQL එකේ name ලෙස ඇත්තේ
+                full_name: user.name, 
+                email: user.email,
                 role: user.role,
+                contact_no: user.contact_no, 
+                nic_no: user.nic_no,        
+                dob: user.dob,              
+                picture_url: user.picture_url,
+                is_active: user.is_active,
+                created_at: user.created_at,
                 redirectPath
             }
         });

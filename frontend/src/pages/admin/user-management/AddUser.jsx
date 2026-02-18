@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserPlus, Mail, Phone, Calendar, ShieldCheck, Camera, Loader2 } from 'lucide-react';
+import { UserPlus, Mail, Phone, Calendar, ShieldCheck, IdCard, MapPin, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import { toast, Toaster } from 'react-hot-toast'; 
 
@@ -11,48 +11,74 @@ const AddUser = () => {
     role: 'sales_rep',
     contact_no: '',
     dob: '',
-    picture_url: ''
+    nic_no: '', 
+    selectedDistricts: [] 
   });
+
+  const districts = [
+    "Colombo", "Gampaha", "Kalutara", "Kandy", "Matale", "Nuwara Eliya", 
+    "Galle", "Matara", "Hambantota", "Jaffna", "Kilinochchi", "Mannar", 
+    "Vavuniya", "Mullaitivu", "Batticaloa", "Ampara", "Trincomalee", 
+    "Kurunegala", "Puttalam", "Anuradhapura", "Polonnaruwa", "Badulla", 
+    "Moneragala", "Ratnapura", "Kegalle"
+  ];
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleDistrictChange = (district) => {
+    const updated = formData.selectedDistricts.includes(district)
+      ? formData.selectedDistricts.filter(d => d !== district)
+      : [...formData.selectedDistricts, district];
+    setFormData({ ...formData, selectedDistricts: updated });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // NIC validation
+    const nicRegex = /^([0-9]{9}[xXvV]|[0-9]{12})$/;
+
+    if (!nicRegex.test(formData.nic_no)) {
+      toast.error("Invalid NIC format! Use 12 digits or 9 digits with 'V'.");
+      return; 
+    }
+
+    if (formData.role === 'sales_rep' && formData.selectedDistricts.length === 0) {
+      toast.error("Please select at least one district for Sales Rep.");
+      return;
+    }
+    
     setLoading(true);
 
-    // 1. localStorage එකෙන් token එක ලබා ගැනීම
     const token = localStorage.getItem('token'); 
-    console.log("Current Token in Frontend:", token); 
 
     try {
-      // 2. Request එකට Headers ඇතුළත් කිරීම
       const response = await axios.post(
         'http://localhost:5001/api/users/add-user', 
         formData, 
         {
-          headers: {
-            // 'Bearer ' සහ token එක අතර හිස්තැනක් (space) තිබීම අනිවාර්යයි
-            'Authorization': `Bearer ${token}` 
-          }
+          headers: { 'Authorization': `Bearer ${token}` }
         }
       );
       
       if (response.status === 201) {
-        toast.success(`User ${formData.name} added successfully! Email sent.`);
-        setFormData({ name: '', email: '', role: 'sales_rep', contact_no: '', dob: '', picture_url: '' });
+        toast.success(`User ${formData.name} added successfully!`);
+        setFormData({ 
+          name: '', email: '', role: 'sales_rep', contact_no: '', 
+          dob: '', nic_no: '', selectedDistricts: [] 
+        });
       }
     } catch (err) {
-      // 3. Error message එක වඩාත් පැහැදිලිව පෙන්වීම
-      toast.error(err.response?.data?.message || err.response?.data?.error || "Failed to add user");
+      toast.error(err.response?.data?.message || "Failed to add user");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto animate-in fade-in duration-500">
+    <div className="w-full max-w-4xl mx-auto animate-in fade-in duration-500 pb-10">
       <Toaster position="top-right" />
       
       {/* Header */}
@@ -77,11 +103,41 @@ const AddUser = () => {
             <div className="relative group">
               <input 
                 type="text" name="name" required value={formData.name} onChange={handleChange}
-                placeholder="John Doe"
                 className="w-full bg-gray-50 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] transition-all"
               />
               <UserPlus className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-[#b4a460]" size={18} />
             </div>
+          </div>
+
+          {/* NIC Number */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-400 uppercase ml-1">NIC Number</label>
+            <div className="relative group">
+              <input 
+                type="text" 
+                name="nic_no" 
+                required 
+                value={formData.nic_no} 
+                onChange={handleChange}
+                maxLength={12} 
+                title="Enter 12 digits for new NIC or 9 digits followed by 'V' for old NIC" 
+                placeholder="e.g. 199912345678 or 991234567V"
+                className={`w-full bg-gray-50 border rounded-xl py-3 pl-11 pr-4 text-sm transition-all focus:ring-2 
+                  ${formData.nic_no && !/^([0-9]{9}[xXvV]|[0-9]{12})$/.test(formData.nic_no) 
+                    ? 'border-red-500 focus:ring-red-200' 
+                    : 'border-transparent focus:ring-[#b4a460]'}`}
+              />
+              <IdCard className={`absolute left-4 top-3.5 transition-colors 
+                ${formData.nic_no && !/^([0-9]{9}[xXvV]|[0-9]{12})$/.test(formData.nic_no) 
+                  ? 'text-red-500' 
+                  : 'text-gray-400 group-focus-within:text-[#b4a460]'}`} size={18} />
+            </div>
+            
+            {formData.nic_no && !/^([0-9]{9}[xXvV]|[0-9]{12})$/.test(formData.nic_no) && (
+              <p className="text-[10px] text-red-500 ml-1 font-medium italic">
+                Please follow the NIC format (12 digits or 9 digits with V)
+              </p>
+            )}
           </div>
 
           {/* Email Address */}
@@ -90,7 +146,6 @@ const AddUser = () => {
             <div className="relative group">
               <input 
                 type="email" name="email" required value={formData.email} onChange={handleChange}
-                placeholder="john@mehera.com"
                 className="w-full bg-gray-50 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] transition-all"
               />
               <Mail className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-[#b4a460]" size={18} />
@@ -120,7 +175,6 @@ const AddUser = () => {
             <div className="relative group">
               <input 
                 type="text" name="contact_no" required value={formData.contact_no} onChange={handleChange}
-                placeholder="077 123 4567"
                 className="w-full bg-gray-50 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] transition-all"
               />
               <Phone className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-[#b4a460]" size={18} />
@@ -139,13 +193,28 @@ const AddUser = () => {
             </div>
           </div>
 
-          {/* Profile Picture Placeholder (Cloudinary integration later) */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-400 uppercase ml-1">Profile Image</label>
-            <button type="button" className="w-full bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl py-2 flex items-center justify-center gap-2 text-gray-400 hover:border-[#b4a460] hover:text-[#b4a460] transition-all">
-              <Camera size={18} /> <span className="text-xs font-bold">Upload Photo</span>
-            </button>
-          </div>
+          {/* District Selection (Only for Sales Rep) */}
+          {formData.role === 'sales_rep' && (
+            <div className="col-span-1 md:col-span-2 space-y-4 bg-gray-50 p-6 rounded-2xl border border-gray-100">
+              <div className="flex items-center gap-2">
+                <MapPin className="text-[#b4a460]" size={18} />
+                <label className="text-xs font-bold text-gray-500 uppercase">Assign Working Districts</label>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                {districts.map(dist => (
+                  <label key={dist} className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer hover:text-black">
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-gray-300 text-[#b4a460] focus:ring-[#b4a460]"
+                      checked={formData.selectedDistricts.includes(dist)}
+                      onChange={() => handleDistrictChange(dist)}
+                    />
+                    {dist}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Submit Button */}
@@ -160,14 +229,6 @@ const AddUser = () => {
           </button>
         </div>
       </form>
-
-      {/* Info Card */}
-      <div className="mt-6 p-4 bg-[#b4a460]/10 border border-[#b4a460]/20 rounded-2xl flex items-start gap-3">
-        <ShieldCheck className="text-[#b4a460] mt-0.5" size={18} />
-        <p className="text-[11px] text-[#8a7b42] font-medium leading-relaxed">
-          Security Note: Upon clicking registration, the system will generate a secure default password based on the user's role and email it immediately. The user will be required to change it on their first login.
-        </p>
-      </div>
     </div>
   );
 };
