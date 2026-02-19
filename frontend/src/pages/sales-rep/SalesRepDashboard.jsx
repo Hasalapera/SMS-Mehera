@@ -12,7 +12,7 @@ import {
 
 const SalesRepDashboard = () => {
   const navigate = useNavigate();
-  // LocalStorage එකෙන් Sales Rep ගේ නම ගමු
+  
   const user = JSON.parse(localStorage.getItem('user')) || { full_name: 'Sales Rep' };
 
   const handleLogout = () => {

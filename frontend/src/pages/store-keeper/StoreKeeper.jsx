@@ -12,7 +12,7 @@ import {
 
 const StoreKeeper = () => {
   const navigate = useNavigate();
-  // LocalStorage එකෙන් User විස්තර ලබා ගැනීම
+  
   const user = JSON.parse(localStorage.getItem('user')) || { full_name: 'Store Keeper' };
 
   const handleLogout = () => {

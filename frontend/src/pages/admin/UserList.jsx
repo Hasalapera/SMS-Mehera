@@ -2,15 +2,14 @@ import React from 'react';
 import axios from 'axios';
 
 const UserList = () => {
-    // ලොග් වී සිටින ඇඩ්මින්ගේ ID එක (සාමාන්‍යයෙන් මෙය localStorage හෝ Context එකක ඇත)
-    const loggedInAdminId = localStorage.getItem('user_id'); 
+    
 
-    // මෙන්න මෙතැනට ඔයාගේ කේතය ඇතුළත් කරන්න
+    
     const handleResetPassword = async (user) => {
-        const confirmReset = window.confirm(`${user.full_name} ගේ මුරපදය Reset කිරීමට අවශ්‍යද?`);
+        const confirmReset = window.confirm(`${user.full_name} Do you need to reset your password?`);
         
         if (confirmReset) {
-            const adminPass = prompt("තහවුරු කිරීමට ඔබේ (Admin) මුරපදය ඇතුළත් කරන්න:");
+            const adminPass = prompt("Enter your (Admin) password to confirm:");
             
             if (adminPass) {
                 try {
@@ -24,7 +23,7 @@ const UserList = () => {
                     });
                     alert(response.data.message);
                 } catch (error) {
-                    alert(error.response.data.message || "ප්‍රශ්නයක් ඇති වුණා!");
+                    alert(error.response.data.message || "There was a problem!");
                 }
             }
         }
@@ -32,7 +31,7 @@ const UserList = () => {
 
     return (
         <div>
-            {/* පරිශීලක ලැයිස්තුව පෙන්වන තැන බටන් එකක් මෙන්න මේ වගේ දාන්න */}
+            
             <button onClick={() => handleResetPassword(user)}>Reset Password</button>
         </div>
     );
