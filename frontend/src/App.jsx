@@ -6,6 +6,7 @@ import ChangePassword from './pages/ChangePassword'
 import AdminDashboard from './pages/admin/AdminDashboard'
 // import SalesRepDashboard from './pages/sales-rep/SalesRepDashboard'
 import ManagerDashboard from './pages/manager/ManagerDashboard'
+
 // import StoreKeeper from './pages/store-keeper/StoreKeeper'
 import Inbox from './pages/admin/Inbox'
 import AddUser from './pages/admin/user-management/AddUser'
@@ -15,6 +16,7 @@ import UpdateUser from './pages/admin/user-management/UpdateUser'
 import DeleteUser from './pages/admin/user-management/DeleteUser'
 import LandingPage from './pages/LandingPage'
 import UserProfile from './components/UserProfile'
+
 
 function App() {
   const [count, setCount] = useState(0)
@@ -26,6 +28,7 @@ function App() {
         <Route path='/' element= {<LandingPage/>}/>
         <Route path='/login' element= {<Login/>}/>
         <Route path='change-password' element={<ChangePassword/>}/>
+
         
         
         <Route element={<DashboardLayout />}>
