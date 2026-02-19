@@ -1,47 +1,87 @@
-import { useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
-import Login from './pages/Login'
-// import UserList from './pages/admin/UserList'
-import ChangePassword from './pages/ChangePassword'
-import AdminDashboard from './pages/admin/AdminDashboard'
-// import SalesRepDashboard from './pages/sales-rep/SalesRepDashboard'
-import ManagerDashboard from './pages/manager/ManagerDashboard'
-// import StoreKeeper from './pages/store-keeper/StoreKeeper'
-import Inbox from './pages/admin/Inbox'
-import AddUser from './pages/admin/user-management/AddUser'
-import DashboardLayout from './components/DashboardLayout'
-import ViewUsers from './pages/admin/user-management/ViewUser'
-import UpdateUser from './pages/admin/user-management/UpdateUser'
-import DeleteUser from './pages/admin/user-management/DeleteUser'
-import LandingPage from './pages/LandingPage'
-import UserProfile from './components/UserProfile'
+import { Routes, Route, Navigate } from 'react-router-dom';
+import DashboardLayout from './components/DashboardLayout';
+
+// Public Pages
+import LandingPage from './pages/LandingPage';
+import Login from './pages/Login';
+import ChangePassword from './pages/ChangePassword';
+
+// Shared Pages (Now in shared folder)
+import Inbox from './pages/shared/Inbox';
+import UserProfile from './pages/shared/UserProfile';
+
+// Role Dashboards (Now in roles folder)
+import Dashboard from './pages/roles/Dashboard';
+import SalesRepDashboard from './pages/roles/SalesRepDashboard';
+import StoreKeeper from './pages/roles/StoreKeeper';
+
+// User Management (Now in management/user folder)
+import AddUser from './pages/management/user/AddUser';
+import ViewUsers from './pages/management/user/ViewUser';
+import UpdateUser from './pages/management/user/UpdateUser';
+import DeleteUser from './pages/management/user/DeleteUser';
 
 function App() {
-  const [count, setCount] = useState(0)
+  // LocalStorage එකෙන් user දත්ත ලබා ගැනීම
+  const storedUser = localStorage.getItem('user');
+  const user = storedUser ? JSON.parse(storedUser) : null;
+  const userRole = user?.role;
 
   return (
-    <>
-      <Routes>
-        {/* <Route path='/' element= {<UserList/>}/> */}
-        <Route path='/' element= {<LandingPage/>}/>
-        <Route path='/login' element= {<Login/>}/>
-        <Route path='change-password' element={<ChangePassword/>}/>
+    <Routes>
+      {/* --- Public Routes --- */}
+      <Route path='/' element={<LandingPage />} />
+      <Route path='/login' element={<Login />} />
+      <Route path='/change-password' element={<ChangePassword />} />
+      
+      {/* --- Protected Routes (Login වූ අයට පමණි) --- */}
+      <Route element={<DashboardLayout />}>
         
-        
-        <Route element={<DashboardLayout />}>
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
-          <Route path="/manager-dashboard" element={<ManagerDashboard />} />
-          <Route path="/inbox" element={<Inbox />} />
-          <Route path='/addUser' element={<AddUser/>}/>
-          <Route path='/all-users' element={<ViewUsers/>}/>
-          <Route path='/updateUser' element={<UpdateUser/>}/>
-          <Route path='/delete-user' element={<DeleteUser/>}/>
-          <Route path='/profile' element={<UserProfile/>}/>
-          
-        </Route>
-      </Routes>
-    </>
-  )
+        {/* 1. Shared Pages - හැමෝටම පොදුයි */}
+        <Route path="/inbox" element={<Inbox />} />
+        <Route path="/profile" element={<UserProfile />} />
+
+        {/* 2. Role Based Dashboards - අදාළ කෙනාට පමණි */}
+        <Route 
+          path="/dashboard" 
+          element={['admin', 'manager'].includes(userRole) ? <Dashboard /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/sales-rep-dashboard" 
+          element={userRole === 'sales_rep' ? <SalesRepDashboard /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/store-keeper-dashboard" 
+          element={userRole === 'store_keeper' ? <StoreKeeper /> : <Navigate to="/login" />} 
+        />
+
+        {/* 3. User Management - Admin ට පමණක් සීමා වේ */}
+        <Route 
+          path='/addUser' 
+          element={userRole === 'admin' ? <AddUser /> : <Navigate to={`/dashboard`} />} 
+        />
+        <Route 
+          path='/all-users' 
+          element={['admin', 'manager'].includes(userRole) ? <ViewUsers /> : <Navigate to="/dashboard" />} 
+        />
+        <Route 
+          path='/updateUser' 
+          element={userRole === 'admin' ? <UpdateUser /> : <Navigate to={`/dashboard`} />} 
+        />
+        <Route 
+          path='/delete-user' 
+          element={userRole === 'admin' ? <DeleteUser /> : <Navigate to={`/dashboard`} />} 
+        />
+
+        {/* 4. Customer Management (අපි ඊළඟට හදන්න ඉන්න ඒවා) */}
+        {/* මෙතනට ඔයාගේ AddCustomer, CustomerList routes දාන්න පුළුවන් */}
+
+      </Route>
+
+      {/* වැරදි URL එකක් ගැහුවොත් Login එකට යැවීම */}
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
+  );
 }
 
-export default App
+export default App;

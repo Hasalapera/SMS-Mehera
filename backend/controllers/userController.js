@@ -188,6 +188,25 @@ const changePassword = async (req, res) => {
   }
 };
 
+const getUserProfile = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Database එකේ column names ඔයාගේ auth logic එකට ගැලපෙන්න මෙතන දීලා තියෙනවා
+        const result = await pool.query(
+            'SELECT user_id, name as full_name, email, role, contact_no, nic_no, dob, picture_url, is_active, created_at FROM users WHERE user_id = $1', 
+            [id]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "User registry not found!" });
+        }
+        
+        res.status(200).json({ user: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 module.exports = { 
     addUserByAdmin, 
     updatePassword, 
@@ -196,5 +215,6 @@ module.exports = {
     softDeleteUser,
     restoreUser,
     updateProfile,
-    changePassword 
+    changePassword,
+    getUserProfile 
 };

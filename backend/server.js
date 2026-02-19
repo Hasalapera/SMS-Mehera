@@ -24,7 +24,7 @@ app.get('/', (req, res) => {
 });
 
 // 4. Routes 
-app.use('/api/customers', customerRoutes);
+// app.use('/api/customers', customerRoutes);
 app.use('/api/users', userRoutes)
 
 // 5. Error Handling 

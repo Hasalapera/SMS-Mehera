@@ -56,7 +56,7 @@ const AddUser = () => {
 
     try {
       const response = await axios.post(
-        'http://localhost:5001/api/users/add-user', 
+        'http://localhost:5001/api/users/addUser', 
         formData, 
         {
           headers: { 'Authorization': `Bearer ${token}` }

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useEffect } from 'react';
 
-const AdminDashboard = () => {
+const Dashboard = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
@@ -57,7 +57,9 @@ const AdminDashboard = () => {
               <img src="https://i.pravatar.cc/150?u=hasala" className="w-10 h-10 rounded-lg object-cover" alt="user" />
               <div className="hidden md:block text-left">
                 <p className="text-xs font-bold text-black leading-tight">{user.full_name}</p>
-                <p className="text-[10px] text-gray-500 uppercase tracking-tighter">Administrator</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-tighter">
+                  {user.role === 'admin' ? 'Administrator' : 'Manager'}
+                </p>
               </div>
             </div>
           </div>
@@ -179,4 +181,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default Dashboard;

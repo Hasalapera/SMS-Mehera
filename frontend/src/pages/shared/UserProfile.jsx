@@ -33,19 +33,38 @@ const UserProfile = () => {
   });
 
   useEffect(() => {
+  const fetchLatestData = async () => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      setFormData({
-        full_name: parsedUser.full_name || '',
-        contact_no: parsedUser.contact_no || '',
-        dob: formatDateForInput(parsedUser.dob), 
-        nic_no: parsedUser.nic_no || '',
-        picture_url: parsedUser.picture_url || fallbackAvatar
-      });
+      
+      try {
+        // Backend එකෙන් අලුත්ම දත්ත ලබාගැනීම (Port 5001 පාවිච්චි කරන බව මතක තබාගන්න)
+        const response = await axios.get(`http://localhost:5001/api/users/profile/${parsedUser.user_id}`);
+        const latestUser = response.data.user;
+
+        // Local Storage එකේ තියෙන පරණ දත්ත අලුත් දත්ත වලින් යාවත්කාලීන කිරීම
+        localStorage.setItem('user', JSON.stringify(latestUser));
+        
+        // State එක Update කිරීම
+        setUser(latestUser);
+        setFormData({
+          full_name: latestUser.full_name || '',
+          contact_no: latestUser.contact_no || '',
+          dob: formatDateForInput(latestUser.dob), 
+          nic_no: latestUser.nic_no || '',
+          picture_url: latestUser.picture_url || fallbackAvatar
+        });
+      } catch (err) {
+        console.error("Failed to sync profile data:", err);
+        // Backend එක සම්බන්ධ කරගත නොහැකි නම් පමණක් පරණ දත්ත පෙන්වන්න
+        setUser(parsedUser);
+      }
     }
-  }, []);
+  };
+
+  fetchLatestData();
+}, []);
 
   // --- Password Update Logic (Moved inside the component) ---
   const handlePasswordUpdate = async () => {
@@ -103,8 +122,16 @@ const UserProfile = () => {
 
       if (response.status === 200) {
         const updatedUser = response.data.user;
+        
+        // 1. LocalStorage එකේ අලුත් දත්ත සේව් කිරීම
         localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        // 2. දැනට ඉන්න පේජ් එකේ (UserProfile) State එක update කිරීම
         setUser(updatedUser);
+        
+        // 3. මෙන්න මේ පේළිය අනිවාර්යයෙන්ම දාන්න - SideBar එකට පණිවිඩය යවන්නේ මේකෙන්
+        window.dispatchEvent(new Event('storage')); 
+        
         setIsEditing(false);
         alert("Profile successfully synchronized with registry.");
       }
@@ -212,10 +239,10 @@ const UserProfile = () => {
           <section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-100">
             <h2 className="text-xl font-serif mb-8 flex items-center gap-3 text-black"><div className="p-2 bg-[#b4a460]/10 rounded-lg text-[#b4a460]"><User size={22} /></div>Identity Registry</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-8">
-              <InfoItem icon={Mail} label="Corporate Email" value={user.email} />
-              <InfoItem name="contact_no" icon={Phone} label="Contact Terminal" value={formData.contact_no} isEditable={isEditing} onChange={handleInputChange} />
-              <InfoItem name="nic_no" icon={CreditCard} label="Legal Identifier (NIC)" value={formData.nic_no} isEditable={isEditing} onChange={handleInputChange} />
-              <InfoItem name="dob" icon={Calendar} label="Date of Genesis" value={isEditing ? formData.dob : formatDateDisplay(formData.dob)} isEditable={isEditing} onChange={handleInputChange} type="date" />
+              <InfoItem icon={Mail} label="Email Address" value={user.email} />
+              <InfoItem name="contact_no" icon={Phone} label="Contact No" value={formData.contact_no} isEditable={isEditing} onChange={handleInputChange} />
+              <InfoItem name="nic_no" icon={CreditCard} label="NIC" value={formData.nic_no} isEditable={isEditing} onChange={handleInputChange} />
+              <InfoItem name="dob" icon={Calendar} label="Date of Birth" value={isEditing ? formData.dob : formatDateDisplay(formData.dob)} isEditable={isEditing} onChange={handleInputChange} type="date" />
             </div>
           </section>
 
