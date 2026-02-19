@@ -118,11 +118,83 @@ const updatePassword = async (req, res) => {
     }
 };
 
+const updateProfile = async (req, res) => {
+    try {
+        const { user_id, full_name, contact_no, dob, nic_no } = req.body;
+        
+        let imageUrl = req.body.picture_url; 
+        if (req.file) {
+            imageUrl = req.file.path; 
+        }
+
+        const result = await pool.query(
+            `UPDATE users 
+             SET name = $1, contact_no = $2, dob = $3, nic_no = $4, picture_url = $5 
+             WHERE user_id = $6 RETURNING *`,
+            [full_name, contact_no, dob, nic_no, imageUrl, user_id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "User not found in registry!" });
+        }
+
+        const updatedUser = result.rows[0];
+
+        res.status(200).json({
+            message: "Profile synchronized successfully",
+            user: {
+                user_id: updatedUser.user_id,
+                full_name: updatedUser.name, 
+                email: updatedUser.email,
+                role: updatedUser.role,
+                contact_no: updatedUser.contact_no,
+                nic_no: updatedUser.nic_no,
+                dob: updatedUser.dob,
+                picture_url: updatedUser.picture_url,
+                is_active: updatedUser.is_active,
+                created_at: updatedUser.created_at
+            }
+        });
+
+    } catch (err) {
+        console.error("Update Error:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const changePassword = async (req, res) => {
+  const { user_id, currentPassword, newPassword } = req.body;
+  
+  try {
+    // 1. පවතින hash එක ලබාගැනීම
+    const result = await pool.query('SELECT password FROM users WHERE user_id = $1', [user_id]);
+    const user = result.rows[0];
+
+    // 2. දැනට තියෙන password එක පරීක්ෂා කිරීම
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Access Denied: Current security key is incorrect." });
+    }
+
+    // 3. නව password එක hash කර Update කිරීම
+    const salt = await bcrypt.genSalt(10);
+    const hashedPass = await bcrypt.hash(newPassword, salt);
+
+    await pool.query('UPDATE users SET password = $1 WHERE user_id = $2', [hashedPass, user_id]);
+
+    res.status(200).json({ message: "Success" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = { 
     addUserByAdmin, 
     updatePassword, 
     resetToDefaultPassword, 
     getAllUsers, 
     softDeleteUser,
-    restoreUser 
+    restoreUser,
+    updateProfile,
+    changePassword 
 };
