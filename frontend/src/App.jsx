@@ -21,6 +21,7 @@ import ViewUsers from './pages/management/user/ViewUser';
 import UpdateUser from './pages/management/user/UpdateUser';
 import DeleteUser from './pages/management/user/DeleteUser';
 
+
 function App() {
   // LocalStorage එකෙන් user දත්ත ලබා ගැනීම
   const storedUser = localStorage.getItem('user');
