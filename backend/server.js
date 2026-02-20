@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const pool = require('./db/db')
 const customerRoutes = require('./routes/customerRoutes');
 const userRoutes = require('./routes/userRoutes');
 const errorHandler = require('./middlewares/errorMiddleware');
@@ -8,7 +9,11 @@ const errorHandler = require('./middlewares/errorMiddleware');
 const app = express();
 
 
-app.use(cors()); 
+app.use(cors({
+  origin: 'http://localhost:5173', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], 
+  credentials: true
+}));
 
 // 2. Body Parser
 app.use(express.json()); 
@@ -19,7 +24,7 @@ app.get('/', (req, res) => {
 });
 
 // 4. Routes 
-app.use('/api/customers', customerRoutes);
+// app.use('/api/customers', customerRoutes);
 app.use('/api/users', userRoutes)
 
 // 5. Error Handling 
