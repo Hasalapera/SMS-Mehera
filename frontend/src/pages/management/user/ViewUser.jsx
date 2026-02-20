@@ -13,6 +13,8 @@ const ViewUser = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  const user = JSON.parse(localStorage.getItem('user')); 
+
   const roles = [
     { id: 'all', name: 'All Roles' },
     { id: 'admin', name: 'Admin' },
@@ -40,11 +42,17 @@ const ViewUser = () => {
 
   // Filter Logic: Search term සහ Selected Role දෙකම අනුව
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = selectedRole === "all" || user.role === selectedRole;
-    return matchesSearch && matchesRole;
-  });
+  // මෙතනදී (user.name || "") වගේ දෙයක් දැම්මම, නම නැති වුණත් error එකක් එන්නේ නැහැ
+  const name = user.full_name || user.name || ""; 
+  const email = user.email || "";
+  
+  const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                       email.toLowerCase().includes(searchTerm.toLowerCase());
+                       
+  const matchesRole = selectedRole === "all" || user.role === selectedRole;
+  
+  return matchesSearch && matchesRole;
+});
 
   return (
     <div className="w-full min-h-screen animate-in fade-in duration-500 p-6">
@@ -59,12 +67,14 @@ const ViewUser = () => {
         </div>
 
         {/* Add User Button - Redirects to /add-user */}
-        <button 
-          onClick={() => navigate('/addUser')}
-          className="flex items-center gap-2 bg-[#b4a460] hover:bg-[#9a8b50] text-black px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-[#b4a460]/20 transition-all active:scale-95"
-        >
-          <UserPlus size={18} /> Add New Employee
-        </button>
+        {user?.role === 'admin' && (
+          <button 
+            onClick={() => navigate('/addUser')}
+            className="flex items-center gap-2 bg-[#b4a460] hover:bg-[#9a8b50] text-black px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-[#b4a460]/20 transition-all active:scale-95"
+          >
+            <UserPlus size={18} /> Add New Employee
+          </button>
+        )}
       </div>
 
       {/* Filters & Search Section */}
