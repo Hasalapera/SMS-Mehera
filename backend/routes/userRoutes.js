@@ -4,6 +4,7 @@ const router = express.Router();
 const { addUserByAdmin,resetToDefaultPassword, updatePassword, getAllUsers, softDeleteUser } = require('../controllers/userController');
 const { isAdmin, isAdminOrManager } = require('../middlewares/authMiddleware');
 const { loginUser } = require('../controllers/authController');
+const authMiddleware = require('../middlewares/authMiddleware');
 
 const multer = require('multer');
 const { storage } = require('../config/cloudinary'); 
@@ -19,6 +20,7 @@ router.put('/update-profile', upload.single('image'), userController.updateProfi
 router.get('/profile/:id', userController.getUserProfile);
 
 router.post('/addUser', isAdmin, addUserByAdmin);
+router.put('/activate-user/:id', authMiddleware, userController.activateUser);
 router.get('/all-users', isAdminOrManager, userController.getAllUsers);
 router.put('/delete-user/:id', isAdmin, softDeleteUser);
 

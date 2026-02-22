@@ -54,11 +54,14 @@ const Dashboard = () => {
               <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-[#b4a460] rounded-full"></span>
             </button>
             <div className="flex items-center gap-3 bg-white p-1 pr-4 border border-gray-200 rounded-xl shadow-sm">
-              <img src="https://i.pravatar.cc/150?u=hasala" className="w-10 h-10 rounded-lg object-cover" alt="user" />
+              <img src={user?.picture_url || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=b4a460&color=fff`} className="w-10 h-10 rounded-lg object-cover" alt="user" />
               <div className="hidden md:block text-left">
                 <p className="text-xs font-bold text-black leading-tight">{user.full_name}</p>
                 <p className="text-[10px] text-gray-500 uppercase tracking-tighter">
-                  {user.role === 'admin' ? 'Administrator' : 'Manager'}
+                  {user.role === 'admin' && 'System Administrator'}
+                  {user.role === 'manager' && 'Manager'}
+                  {user.role === 'sales_rep' && 'Sales Representative'}
+                  {user.role === 'store_keeper' && 'Inventory Controller'}
                 </p>
               </div>
             </div>
