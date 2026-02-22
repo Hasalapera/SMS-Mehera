@@ -29,7 +29,8 @@ const menuConfig = {
     canViewUsers: false, 
     canAddProducts: false, 
     canViewReports: false, 
-    canEditInventory: false 
+    canEditInventory: false,
+    canAddCustomers: true,  
   }
 };
 
@@ -83,6 +84,15 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
     } else {
       setOpenSubMenu(openSubMenu === menu ? '' : menu);
     }
+  };
+
+  const handleLogout = () => {
+      localStorage.clear();
+      sessionStorage.clear();
+
+      navigate('/login', { replace: true });
+      
+      window.location.reload();
   };
 
   return (
@@ -183,6 +193,19 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
               )}
             </>
           )}
+
+          {/* customers section */}
+          {permissions.canAddCustomers && (
+            <>
+              <NavItem icon={ShoppingBag} label="Customers" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('customers')} isOpen={openSubMenu === 'customers'} />
+              {!isSidebarCollapsed && openSubMenu === 'customers' && (
+                <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
+                  <NavLink to="/add-customer" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><UserPlus size={14} /> Add Customer</NavLink>
+                  <NavLink to="/customers" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><List size={14} /> Customer List</NavLink>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         <div className="space-y-1">
@@ -199,14 +222,20 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
             <img src={loggedUser.picture_url || "https://i.pravatar.cc/150?u=hasala"} className="w-8 h-8 rounded-lg object-cover" alt="profile" />
             <div className="overflow-hidden">
               <p className="text-[11px] font-bold truncate text-white">{loggedUser.full_name || 'User'}</p>
-              <p className="text-[9px] text-[#b4a460] uppercase truncate font-semibold tracking-wider">{userRole}</p>
+              <p className="text-[9px] text-[#b4a460] uppercase truncate font-semibold tracking-wider">
+                {loggedUser?.role === 'admin' && 'System Administrator'}
+                {loggedUser?.role === 'manager' && 'Manager'}
+                </p>
             </div>
           </div>
         ) : (
           <img src={loggedUser.picture_url || "https://i.pravatar.cc/150?u=hasala"} className="w-8 h-8 rounded-lg object-cover mb-4 border border-gray-800" alt="profile" />
         )}
         <button 
-          onClick={(e) => { e.stopPropagation(); localStorage.clear(); window.location.href = '/login'; }} 
+          onClick={(e) => { 
+            e.stopPropagation(); 
+            handleLogout(); 
+          }} 
           className={`flex items-center gap-3 w-full p-2 text-[11px] text-gray-500 hover:text-red-400 transition-colors ${isSidebarCollapsed ? 'justify-center' : ''}`}
         >
           <LogOut size={16} /> {!isSidebarCollapsed && "Logout"}

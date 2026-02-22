@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../pages/context/AuthContext'; // 🔴 නිවැරදි Path එක පරීක්ෂා කරන්න
 
 const Login = () => {
+  const { login } = useAuth(); // 🔴 Context එකෙන් login function එක ගත්තා
   const [showPassword, setShowPassword] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [email, setEmail] = useState('');
@@ -19,7 +21,6 @@ const Login = () => {
     "https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=800"
   ];
 
-  // Image slider logic
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex === images.length - 1 ? 0 : prevIndex + 1));
@@ -32,39 +33,50 @@ const Login = () => {
     setError('');
 
     try {
-    
       const response = await axios.post('http://localhost:5001/api/users/login', {
-        email,
-        password
+          email, 
+          password
       });
 
       const data = response.data;
-      
-      
+        
       if (data.token) {
-        localStorage.setItem('token', data.token);
+          localStorage.setItem('token', data.token);
       }
 
-      
+      // 🔴 Case 01: Password වෙනස් කළ යුතු නව පරිශීලකයෙකු නම්
       if (data.mustChangePassword) {
-        navigate('/change-password', { state: { userId: data.user_id } });
+          const tempUser = { 
+              user_id: data.user_id, 
+              is_first_login: 1, 
+              role: data.role || 'user' 
+          };
+          
+          login(tempUser); // 🔴 Context එක හරහා මුළු App එකටම දැනුම් දීම
+          
+          // මෙතැනදී navigate පාවිච්චි කළ හැකියි Context එක නිසා
+          navigate('/change-password');
+          return;
       } 
       
+      // 🔴 Case 02: සාමාන්‍ය Login වීම
       else {
-        localStorage.setItem('user', JSON.stringify(data.user));
-        navigate(data.user.redirectPath);
+          login(data.user); // 🔴 Context එක හරහා user දත්ත update කිරීම
+          
+          // Role එක අනුව navigate කිරීම
+          navigate(data.user.redirectPath || '/dashboard');
+          return;
       }
 
     } catch (err) {
-      
-      setError(err.response?.data?.message || "Incorrect Username or Password");
+        setError(err.response?.data?.message || "Incorrect Username or Password");
     }
   };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6 font-sans text-white">
+      {/* ... ඉතිරි UI කොටස වෙනසක් නැත ... */}
       <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        
         <div className="w-full max-w-md mx-auto lg:mx-0">
           <div className="mb-12">
             <div className="flex flex-col">
@@ -72,85 +84,32 @@ const Login = () => {
               <span className="text-[10px] tracking-[0.3em] text-[#b4a460] uppercase mt-1">International (Pvt) Ltd</span>
             </div>
           </div>
-
-          <h1 className="text-4xl font-medium mb-6 leading-tight">
-            Welcome back to <span className="text-[#b4a460]">Mehera International</span><span>!</span>
-          </h1>
-          
-          <p className="text-gray-300 text-sm mb-10 font-light leading-relaxed">
-            Welcome. Please sign in using your corporate credentials.
-          </p>
-
-          {/* Error Message Display */}
+          <h1 className="text-4xl font-medium mb-6 leading-tight">Welcome back to <span className="text-[#b4a460]">Mehera International</span>!</h1>
           {error && <div className="bg-red-900/20 border border-red-500/50 text-red-500 text-xs p-3 rounded-lg mb-6">{error}</div>}
-
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-200">Email address</label>
-              <input 
-                type="email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
-                className="w-full bg-[#1a1a1a] border border-gray-800 rounded-lg p-3.5 focus:outline-none focus:border-[#b4a460] transition-all text-sm"
-                required
-              />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#1a1a1a] border border-gray-800 rounded-lg p-3.5 focus:outline-none focus:border-[#b4a460] text-sm" required />
             </div>
-
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-200">Password</label>
               <div className="relative">
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="w-full bg-[#1a1a1a] border border-gray-800 rounded-lg p-3.5 focus:outline-none focus:border-[#b4a460] transition-all text-sm"
-                  required
-                />
-                <button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#b4a460]"
-                >
+                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#1a1a1a] border border-gray-800 rounded-lg p-3.5 focus:outline-none focus:border-[#b4a460] text-sm" required />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#b4a460]">
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
-
-            <button type="submit" className="w-full bg-[#b4a460] hover:bg-[#9a8b50] text-black font-bold py-3.5 rounded-lg transition-all shadow-lg active:scale-[0.98]">
-              Sign in
-            </button>
+            <button type="submit" className="w-full bg-[#b4a460] hover:bg-[#9a8b50] text-black font-bold py-3.5 rounded-lg transition-all shadow-lg active:scale-[0.98]">Sign in</button>
           </form>
         </div>
-
-        {/* Right Side Slider */}
         <div className="hidden lg:block">
-          <div 
-            className="rounded-[2rem] p-4 pb-20 aspect-[4/5] relative overflow-hidden"
-            style={{ background: 'linear-gradient(to bottom, #EFE185, #9C9355)' }}
-          >
+          <div className="rounded-[2rem] p-4 pb-20 aspect-[4/5] relative overflow-hidden" style={{ background: 'linear-gradient(to bottom, #EFE185, #9C9355)' }}>
             <div className="w-full h-full bg-[#1a1a1a] rounded-[1.5rem] overflow-hidden shadow-2xl relative">
-              <img 
-                src={images[currentIndex]} 
-                alt="Mehera Staff" 
-                className="w-full h-full object-cover grayscale-[10%] transition-opacity duration-700 ease-in-out"
-              />
-            </div>
-
-            <div className="absolute bottom-10 left-10 right-10 flex gap-2">
-              {images.map((_, index) => (
-                <div 
-                  key={index}
-                  className={`h-1 flex-1 rounded-full transition-all duration-500 ${
-                    index === currentIndex ? 'bg-white opacity-100' : 'bg-white/30'
-                  }`}
-                ></div>
-              ))}
+              <img src={images[currentIndex]} alt="Mehera Staff" className="w-full h-full object-cover grayscale-[10%] transition-opacity duration-700 ease-in-out" />
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );
