@@ -1,6 +1,7 @@
 const pool = require('../db/db');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const { sendWelcomeEmail } = require('../utils/emailSender');
+
 
 const addUserByAdmin = async (req, res) => {
     const client = await pool.connect();
@@ -206,6 +207,8 @@ const getUserProfile = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// router.put('/activate-user/:id', authMiddleware, userController.activateUser);
 
 module.exports = { 
     addUserByAdmin, 

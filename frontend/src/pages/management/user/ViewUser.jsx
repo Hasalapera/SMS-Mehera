@@ -156,7 +156,7 @@ const ViewUser = () => {
                     </td>
                     <td className="px-6 py-4 text-center">
                       {isDeleted ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-500 uppercase"><UserX size={12} /> Archived</span>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-500 uppercase"><UserX size={12} /> Deactivated</span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-600 uppercase"><Shield size={12} /> Active</span>
                       )}

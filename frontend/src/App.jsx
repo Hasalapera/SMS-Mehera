@@ -57,6 +57,7 @@ function App() {
         {/* 3. User Management - Admin ට පමණි */}
         <Route path='/addUser' element={userRole === 'admin' ? <AddUser /> : <Navigate to="/dashboard" />} />
         <Route path='/all-users' element={['admin', 'manager'].includes(userRole) ? <ViewUsers /> : <Navigate to="/dashboard" />} />
+        <Route path='/delete-user' element={userRole === 'admin' ? <DeleteUser /> : <Navigate to="/dashboard" />} />
 
       </Route>
 
