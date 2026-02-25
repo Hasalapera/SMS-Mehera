@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, NavLink } from 'react-router-dom';
 import { LogOut, Menu, X, ChevronRight } from 'lucide-react';
 import { useAuth } from '../pages/context/AuthContext';
@@ -7,26 +7,10 @@ const Navbar = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false); // Mobile menu state
-//   const [currentUser, setCurrentUser] = useState(null);
-    const [currentUser, setCurrentUser] = useState(() => {
-    const savedUser = localStorage.getItem('user');
-    return (savedUser && savedUser !== "undefined") ? JSON.parse(savedUser) : null;
-    });
-
-  const storedUser = localStorage.getItem('user');
-//   const user = (storedUser && storedUser !== "undefined") ? JSON.parse(storedUser) : null;
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser && storedUser !== "undefined") {
-      setCurrentUser(JSON.parse(storedUser));
-    }
-  }, []); 
 
   const handleLogout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = '/login';
+    logout();
+    navigate('/login');
   };
 
   const navLinks = [
@@ -37,10 +21,12 @@ const Navbar = () => {
     { name: 'Stock', path: '/inventory' },
   ];
 
+  const currentUser = user; // useAuth() hook එකෙන් user data එක ගන්නවා
+
   return (
     <nav className="bg-[#141414] text-white shadow-2xl relative z-[100] border-b border-gray-900">
       {/* --- Main Navigation Bar --- */}
-      <div className="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
+      <div className="max-w-full mx-auto px-10 py-4 flex justify-between items-center">
         
         {/* Brand Logo Section */}
         <div className="flex flex-col cursor-pointer group" onClick={() => navigate('/home')}>
@@ -94,7 +80,7 @@ const Navbar = () => {
 
       {/* --- Mobile Dropdown Menu (Expanding downwards) --- */}
       <div className={`lg:hidden overflow-hidden transition-all duration-500 ease-in-out bg-[#1A1A1A] border-t border-gray-800 ${isOpen ? 'max-h-[100vh] opacity-100' : 'max-h-0 opacity-0'}`}>
-        <div className="flex flex-col p-6 gap-6">
+        <div className="max-w-full flex flex-col p-6 gap-6">
           
           {/* Mobile Navigation Links */}
           <div className="flex flex-col gap-2">

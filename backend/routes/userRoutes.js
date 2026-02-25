@@ -2,9 +2,8 @@ const userController = require('../controllers/userController');
 const express = require('express');
 const router = express.Router();
 const { addUserByAdmin,resetToDefaultPassword, updatePassword, getAllUsers, softDeleteUser } = require('../controllers/userController');
-const { isAdmin, isAdminOrManager } = require('../middlewares/authMiddleware');
+const { isAdmin, isAdminOrManager, verifyToken } = require('../middlewares/authMiddleware');
 const { loginUser } = require('../controllers/authController');
-const authMiddleware = require('../middlewares/authMiddleware');
 
 const multer = require('multer');
 const { storage } = require('../config/cloudinary'); 
@@ -16,13 +15,14 @@ router.put('/reset-password', resetToDefaultPassword);
 
 router.put('/change-password', userController.changePassword); 
 
-router.put('/update-profile', upload.single('image'), userController.updateProfile);
+router.put('/update-profile', verifyToken, upload.single('image'), userController.updateProfile);
 router.get('/profile/:id', userController.getUserProfile);
 
 router.post('/addUser', isAdmin, addUserByAdmin);
 // router.put('/activate-user/:id', authMiddleware, userController.activateUser);
 router.get('/all-users', isAdminOrManager, userController.getAllUsers);
 router.put('/delete-user/:id', isAdmin, softDeleteUser);
+router.put('/restore-user/:id', isAdmin, userController.restoreUser);
 
 
 

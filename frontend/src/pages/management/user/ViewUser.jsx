@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Search, UserCog, Shield, 
   Mail, Phone, ArrowRight, UserX, UserPlus, Filter, Check
@@ -23,20 +23,22 @@ const ViewUser = () => {
     { id: 'online_store_keeper', name: 'Store Keeper' }
   ];
 
+  const fetchUsers = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5001/api/users/all-users', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUsers(response.data);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5001/api/users/all-users', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUsers(response.data);
-      } catch (err) {
-        console.error("Error fetching users:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchUsers();
   }, []);
 
@@ -53,6 +55,34 @@ const ViewUser = () => {
   
   return matchesSearch && matchesRole;
 });
+
+const handleRestore = async (userId) => {
+  if(window.confirm("Are you sure you want to restore this user?")) {
+    const adminPassword = prompt("Please enter your admin password to confirm:");
+
+    if(adminPassword){
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.put(`http://localhost:5001/api/users/restore-user/${userId}`, 
+          {adminPassword: adminPassword}, 
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        if(response.status === 200) {
+          alert("User restored successfully!");
+          fetchUsers(); // Updating the list after recovery
+        } 
+      }catch (err) {
+        console.error("Error restoring user:", err.response?.data || err.message);
+        const errorMsg = err.response?.data?.message || "Failed to restore user. Please check your password and try again.";
+        alert(errorMsg);
+      }
+    } else {
+      alert("Restoration cancelled. Admin password is required.");
+    }
+  }
+};
 
   return (
     <div className="w-full min-h-screen animate-in fade-in duration-500 p-6">
@@ -123,6 +153,7 @@ const ViewUser = () => {
                 <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase">System Role</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase text-center">Status</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase text-right">Actions</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase text-right">Restore</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -168,6 +199,16 @@ const ViewUser = () => {
                       >
                         View Profile
                       </button>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {user.is_active === false && (
+                        <button 
+                          onClick={() => handleRestore(user.user_id)}
+                          className='bg-red-500/20 text-white-500 border border-red-500/50 px-3 py-1 rounded-lg hover:bg-amber-200 hover:text-red-600 transition-all text-xs font-bold'
+                          >
+                          Restore User
+                      </button>
+                      )}
                     </td>
                   </tr>
                 );

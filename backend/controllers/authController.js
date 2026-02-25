@@ -39,7 +39,7 @@ const loginUser = async (req, res) => {
                 role: user.role, 
                 token: token,
                 user_id: user.user_id,
-                full_name: user.full_name // මුලින්ම නම පෙන්වීමට
+                full_name: user.name // මුලින්ම නම පෙන්වීමට
             });
         }
 
@@ -60,6 +60,7 @@ const loginUser = async (req, res) => {
             token,
             user: {
                 ...safeUserData,
+                full_name: user.name,
                 redirectPath 
             }
         });

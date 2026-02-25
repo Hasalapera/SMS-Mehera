@@ -81,15 +81,45 @@ const softDeleteUser = async (req, res) => {
 };
 
 const restoreUser = async (req, res) => {
+    const { id } = req.params;
+    const {adminPassword} = req.body;
+    const adminId = req.user.user_id;
+
+    const client = await pool.connect();
+
     try {
-        const { id } = req.params;
-        await pool.query(
+        const adminResult = await pool.query('SELECT password FROM users WHERE user_id = $1', [adminId]);
+        const hashedAdminPassword = adminResult.rows[0].password;
+
+        const isMatch = await bcrypt.compare(adminPassword, hashedAdminPassword);
+        if (!isMatch) {
+            return res.status(401).json({ message: "Access Denied: Incorrect security key." });
+        }
+
+        await client.query('BEGIN');
+
+        console.log("Now this work is done with this ID:", req.user.user_id);
+        await client.query("SELECT set_config('myapp.current_user_id', $1, true)", [adminId]);
+
+        const result =await client.query(
             'UPDATE users SET deleted_at = NULL, is_active = true WHERE user_id = $1',
             [id]
         );
+
+        if(result.rowCount === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ message: "User not found!" });
+        }
+
+
+        await client.query('COMMIT');
         res.status(200).json({ message: "User account restored successfully!" });
     } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("Restore User Error:", err.message);
         res.status(500).json({ error: err.message });
+    }finally{
+        client.release();
     }
 };
 
@@ -110,11 +140,30 @@ const resetToDefaultPassword = async (req, res) => {
 const updatePassword = async (req, res) => {
     try {
         const { user_id, new_password } = req.body;
+        
+        console.log("Backend received ID:", user_id);
+
+        if (!user_id) {
+            return res.status(400).json({ message: "User ID is required" });
+        }
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(new_password, salt);
-        await pool.query('UPDATE users SET password = $1, is_default_password = false WHERE user_id = $2', [hashedPassword, user_id]);
+
+        // ✅ 'const result =' කියලා මෙතන අනිවාර්යයෙන්ම තියෙන්න ඕනේ
+        const result = await pool.query(
+            'UPDATE users SET password = $1, is_default_password = false WHERE user_id = $2 RETURNING *', 
+            [hashedPassword, user_id]
+        );
+
+        // දැන් 'result' කියන එක හඳුනන නිසා මේක වැඩ කරනවා
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: "User not found!" });
+        }
+
         res.status(200).json({ message: "Password updated successfully!" });
     } catch (err) {
+        console.error("DATABASE ERROR:", err.message); 
         res.status(500).json({ error: err.message });
     }
 };
@@ -207,6 +256,8 @@ const getUserProfile = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+
 
 // router.put('/activate-user/:id', authMiddleware, userController.activateUser);
 
