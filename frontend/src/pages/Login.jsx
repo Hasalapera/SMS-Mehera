@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../pages/context/AuthContext'; // 🔴 නිවැරදි Path එක පරීක්ෂා කරන්න
+import { useAuth } from '../pages/context/AuthContext'; 
 
 const Login = () => {
-  const { login } = useAuth(); // 🔴 Context එකෙන් login function එක ගත්තා
+  const { login } = useAuth(); 
   const [showPassword, setShowPassword] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [email, setEmail] = useState('');

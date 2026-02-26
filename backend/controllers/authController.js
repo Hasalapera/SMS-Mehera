@@ -6,7 +6,7 @@ const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // 1. User පරීක්ෂාව
+        // 1. checking if email exists in the database
         const result = await pool.query(
             'SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL', 
             [email]
@@ -14,24 +14,24 @@ const loginUser = async (req, res) => {
         const user = result.rows[0];
 
         if (!user) {
-            return res.status(401).json({ message: "එම ඊමේල් ලිපිනය පද්ධතියේ ලියාපදිංචි කර නැත!" });
+            return res.status(401).json({ message: "That email address is not registered in the system!" });
         }
 
-        // 2. Password එක පරීක්ෂා කිරීම
+        // 2. checking if password is correct
         const isMatch = await bcrypt.compare(password, user.password.trim());
         
         if (!isMatch) {
-            return res.status(401).json({ message: "ඔබ ඇතුළත් කළ මුරපදය වැරදියි!" });
+            return res.status(401).json({ message: "The password you entered is incorrect!" });
         }
 
-        // Token එක නිර්මාණය කිරීම
+        // create JWT token
         const token = jwt.sign(
             { user_id: user.user_id, role: user.role },
             process.env.JWT_SECRET || 'mehera_secret_key',
             { expiresIn: '1d' }
         );
 
-        // 3. තාවකාලික මුරපදය පරීක්ෂාව
+        // 3. check if user is using default password
         if (user.is_default_password === true) {
             return res.status(200).json({
                 message: "තාවකාලික මුරපදය වෙනස් කළ යුතුයි!",
@@ -39,7 +39,7 @@ const loginUser = async (req, res) => {
                 role: user.role, 
                 token: token,
                 user_id: user.user_id,
-                full_name: user.name // මුලින්ම නම පෙන්වීමට
+                full_name: user.name 
             });
         }
 
@@ -52,7 +52,6 @@ const loginUser = async (req, res) => {
         };
         const redirectPath = roleMap[user.role] || '/dashboard';
 
-        // 🔴 SECURITY TIP: Password Hash එක අයින් කර ආරක්ෂිත දත්ත පමණක් යැවීම
         const { password: _, ...safeUserData } = user;
 
         res.status(200).json({

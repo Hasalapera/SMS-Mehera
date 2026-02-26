@@ -150,13 +150,11 @@ const updatePassword = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(new_password, salt);
 
-        // ✅ 'const result =' කියලා මෙතන අනිවාර්යයෙන්ම තියෙන්න ඕනේ
         const result = await pool.query(
             'UPDATE users SET password = $1, is_default_password = false WHERE user_id = $2 RETURNING *', 
             [hashedPassword, user_id]
         );
 
-        // දැන් 'result' කියන එක හඳුනන නිසා මේක වැඩ කරනවා
         if (result.rowCount === 0) {
             return res.status(404).json({ message: "User not found!" });
         }
@@ -216,17 +214,17 @@ const changePassword = async (req, res) => {
   const { user_id, currentPassword, newPassword } = req.body;
   
   try {
-    // 1. පවතින hash එක ලබාගැනීම
+    // 1. getting existing password hash from database
     const result = await pool.query('SELECT password FROM users WHERE user_id = $1', [user_id]);
     const user = result.rows[0];
 
-    // 2. දැනට තියෙන password එක පරීක්ෂා කිරීම
+    // 2. checking if current password is correct
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Access Denied: Current security key is incorrect." });
     }
 
-    // 3. නව password එක hash කර Update කිරීම
+    // 3. hashing new password and updating in database
     const salt = await bcrypt.genSalt(10);
     const hashedPass = await bcrypt.hash(newPassword, salt);
 
@@ -241,7 +239,7 @@ const changePassword = async (req, res) => {
 const getUserProfile = async (req, res) => {
     try {
         const { id } = req.params;
-        // Database එකේ column names ඔයාගේ auth logic එකට ගැලපෙන්න මෙතන දීලා තියෙනවා
+        // Selecting only necessary fields to avoid sending sensitive data like password
         const result = await pool.query(
             'SELECT user_id, name as full_name, email, role, contact_no, nic_no, dob, picture_url, is_active, created_at FROM users WHERE user_id = $1', 
             [id]

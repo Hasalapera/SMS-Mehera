@@ -52,7 +52,6 @@ const verifyToken = (req, res, next) => {
 //     try {
 //         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         
-//         // පරීක්ෂා කරනවා role එක admin ද නැත්නම් manager ද කියලා
 //         if(decoded.role === 'admin' || decoded.role === 'manager'){
 //             req.user = decoded;
 //             next();
@@ -65,17 +64,17 @@ const verifyToken = (req, res, next) => {
 // };
 
 const isAdmin = (req, res, next) => {
-    // මුලින්ම token එක බලනවා
+    // check the token first, then check if the user is admin
     verifyToken(req, res, () => {
         if (req.user.role === 'admin') {
-            next(); // ඇඩ්මින් නම් විතරක් ඉදිරියට යවනවා
+            next(); // if user is admin, proceed to the next middleware or route handler
         } else {
             return res.status(403).json({ message: "Access denied, Admins only!" });
         }
     });
 };
 
-// 3. Admin හෝ Manager කෙනෙක්දැයි පරීක්ෂා කිරීමට
+// 3. check if user is admin or manager
 const isAdminOrManager = (req, res, next) => {
     verifyToken(req, res, () => {
         if (req.user.role === 'admin' || req.user.role === 'manager') {

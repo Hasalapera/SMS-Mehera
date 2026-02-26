@@ -4,6 +4,7 @@ const cors = require('cors');
 const pool = require('./db/db')
 const customerRoutes = require('./routes/customerRoutes');
 const userRoutes = require('./routes/userRoutes');
+const supportRoutes = require('./routes/supportRoutes');
 const errorHandler = require('./middlewares/errorMiddleware');
 
 const app = express();
@@ -26,6 +27,7 @@ app.get('/', (req, res) => {
 // 4. Routes 
 // app.use('/api/customers', customerRoutes);
 app.use('/api/users', userRoutes)
+app.use('/api/support', supportRoutes);
 
 // 5. Error Handling 
 app.use(errorHandler);

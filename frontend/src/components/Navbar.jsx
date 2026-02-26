@@ -19,6 +19,7 @@ const Navbar = () => {
     { name: 'Add Customer', path: '/add-customer' },
     { name: 'History', path: '/history' },
     { name: 'Stock', path: '/inventory' },
+    { name: 'Support', path: '/support' }
   ];
 
   const currentUser = user; // useAuth() hook එකෙන් user data එක ගන්නවා

@@ -9,6 +9,7 @@ import ChangePassword from './pages/ChangePassword';
 // Shared Pages (Now in shared folder)
 import Inbox from './pages/shared/Inbox';
 import UserProfile from './pages/shared/UserProfile';
+import Support from './pages/shared/Support';
 
 // Role Dashboards (Now in roles folder)
 import Dashboard from './pages/roles/Dashboard';
@@ -17,7 +18,7 @@ import Home from './pages/roles/Home';
 // User Management (Now in management/user folder)
 import AddUser from './pages/management/user/AddUser';
 import ViewUsers from './pages/management/user/ViewUser';
-import UpdateUser from './pages/management/user/UpdateUser';
+// import UpdateUser from './pages/management/user/UpdateUser';
 import DeleteUser from './pages/management/user/DeleteUser';
 
 
@@ -36,6 +37,7 @@ function App() {
       <Route element={<DashboardLayout />}>
         <Route path="/inbox" element={<Inbox />} />
         <Route path="/profile" element={<UserProfile />} />
+        <Route path="/support" element={<Support />} />
 
         {/* 1. Dashboard එකට යන්න පුළුවන් Admin සහ Manager ට විතරයි */}
         <Route 
