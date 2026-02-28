@@ -1,18 +1,31 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, use } from 'react';
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser && storedUser !== "undefined") {
-            setUser(JSON.parse(storedUser));
+        const checkUser = () => {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser && storedUser !== "undefined") {
+                setUser(JSON.parse(storedUser));
+            } else {
+                setUser(null);
+            }
+            setLoading(false);
         }
-        setLoading(false);
+        checkUser();
     }, []);
+
+    // useEffect(() => {
+    //     const storedUser = localStorage.getItem('user');
+    //     if (storedUser && storedUser !== "undefined") {
+    //         setUser(JSON.parse(storedUser));
+    //     }
+    //     setLoading(false);
+    // }, []);
 
     // ලොගින් වන විට යූසර්ව අප්ඩේට් කරන ෆන්ක්ෂන් එක
     const login = (userData) => {

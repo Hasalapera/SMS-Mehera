@@ -3,7 +3,7 @@ import { ShoppingCart, Heart, Eye } from 'lucide-react';
 
 const ProductCard = ({ product }) => {
   return (
-    <div className="bg-white rounded-sm overflow-hidden shadow-sm hover:shadow-lg transition-all group border border-gray-100">
+    <div className="bg-white rounded-sm overflow-hidden shadow-sm hover:shadow-lg transition-all group border border-gray-100 ">
       {/* Image Container */}
       <div className="relative bg-[#C0B26D] aspect-square flex items-center justify-center overflow-hidden p-8">
         <img 

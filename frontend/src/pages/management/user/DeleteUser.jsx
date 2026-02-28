@@ -27,17 +27,28 @@ const DeleteUser = () => {
 
   const handleSoftDelete = async (userId, userName) => {
     if (window.confirm(`Are you sure you want to archive ${userName}? This will disable their system access.`)) {
-      try {
-        const token = localStorage.getItem('token');
-        await axios.put(`http://localhost:5001/api/users/delete-user/${userId}`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        toast.success(`${userName} archived successfully!`);
-        fetchUsers(); // ලැයිස්තුව Refresh කිරීම
-      } catch (err) {
-        toast.error("Error archiving user");
-      }
-    }
+      const adminPassword = prompt("Please enter your admin password to confirm:");
+
+      if (adminPassword) {
+        try {
+          const token = localStorage.getItem('token');
+          await axios.put(`http://localhost:5001/api/users/delete-user/${userId}`, 
+            { adminPassword: adminPassword },
+            {
+              headers: { Authorization: `Bearer ${token}` }
+            }
+          );
+          toast.success(`${userName} archived successfully!`);
+          fetchUsers(); // Refresh the list after deletion
+        } catch (err) {
+          console.error("Error archiving user:", err.response?.data || err.message);
+          const errorMsg = err.response?.data?.message || "Failed to archive user. Please check your password and try again.";
+          toast.error(errorMsg);
+        }
+    }else {
+      toast.error("Archiving cancelled. Admin password is required.");
+     }
+   }
   };
 
   const filteredUsers = users.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()));

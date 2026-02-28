@@ -169,12 +169,11 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                   {permissions.canFullManageUsers && (
                     <>
                       <NavLink to="/addUser" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><UserPlus size={14} /> Add User</NavLink>
-                      <NavLink to="/updateUser" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><UserCheck size={14} /> Update User</NavLink>
                       <NavLink to="/delete-user" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-red-400 transition-colors"><UserMinus size={14} /> Delete User</NavLink>
                     </>
                   )}
                   {/* Admin සහ Manager දෙදෙනාටම පේන View Action */}
-                  <NavLink to="/all-users" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-white transition-colors"><List size={14} /> User List (View Only)</NavLink>
+                  <NavLink to="/all-users" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-white transition-colors"><List size={14} /> User List </NavLink>
                 </div>
               )}
             </>

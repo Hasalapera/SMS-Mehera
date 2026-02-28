@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../pages/context/AuthContext'; // 🔴 නිවැරදි Path එක පරීක්ෂා කරන්න
+import { useAuth } from '../pages/context/AuthContext'; 
 
 const Login = () => {
-  const { login } = useAuth(); // 🔴 Context එකෙන් login function එක ගත්තා
+  const { login } = useAuth(); 
   const [showPassword, setShowPassword] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [email, setEmail] = useState('');
@@ -31,6 +31,7 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    console.log("Login form submitted..."); // 🔴 test 1
 
     try {
       const response = await axios.post('http://localhost:5001/api/users/login', {
@@ -39,25 +40,26 @@ const Login = () => {
       });
 
       const data = response.data;
+      console.log("Backend response received:", data); //test 2
         
       if (data.token) {
           localStorage.setItem('token', data.token);
       }
 
       // 🔴 Case 01: Password වෙනස් කළ යුතු නව පරිශීලකයෙකු නම්
-      if (data.mustChangePassword) {
+      if (data.mustChangePassword === true) {
+        console.log("Going to change password page...");
           const tempUser = { 
               user_id: data.user_id, 
               is_first_login: 1, 
               role: data.role || 'user' 
           };
+          login(tempUser);
           
-          login(tempUser); // 🔴 Context එක හරහා මුළු App එකටම දැනුම් දීම
-          
-          // මෙතැනදී navigate පාවිච්චි කළ හැකියි Context එක නිසා
-          navigate('/change-password');
+          // 'userId' ලෙස යවන්න (ChangePassword එකේ අල්ලන නම)
+          navigate('/change-password', { state: { userId: data.user_id } });
           return;
-      } 
+      }
       
       // 🔴 Case 02: සාමාන්‍ය Login වීම
       else {

@@ -20,9 +20,9 @@ const Home = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="w-full min-h-screen bg-white text-white overflow-x-hidden">
       {/* 1. Ranking Section - Sales Rep & Store Keeper Ranking */}
-      <div className="max-w-7xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="w-full max-w-full px-4 p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         {rankings.map((person) => (
           <div key={person.rank} className="bg-[#1A1A1A] border border-[#C0B26D]/30 p-4 rounded-xl flex items-center justify-between shadow-lg">
             <div className="flex items-center gap-4">
@@ -43,7 +43,7 @@ const Home = () => {
       </div>
 
       {/* 2. Search & Filter Bar - image එකේ තියෙන විදිහට */}
-      <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col md:flex-row gap-4 items-center">
+      <div className="max-w-full px-10 px-6 py-4 flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 group">
           <input 
             type="text" 
@@ -51,7 +51,7 @@ const Home = () => {
             className="w-full bg-gradient-to-r from-[#EFE185] to-[#C0B26D] text-black px-12 py-3 rounded-full outline-none font-bold placeholder-black/50"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-black" size={20} />
+          <Search className="absolute left-4 top-1/3 -translate-y-1/2 text-black" size={20} />
         </div>
         <button className="bg-gradient-to-r from-[#EFE185] to-[#C0B26D] text-black px-8 py-3 rounded-full font-bold flex items-center gap-2 min-w-[200px] justify-between shadow-xl">
           All Categories <ChevronDown size={18} />
@@ -59,7 +59,7 @@ const Home = () => {
       </div>
 
       {/* 3. Product Catalog */}
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-full px-10 p-6">
         <div className="mb-10">
           <h2 className="bg-white text-black text-xs font-black px-4 py-2 inline-block mb-6 uppercase tracking-widest">
             Product Category 01

@@ -1,7 +1,7 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-const sendWelcomeEmail = async (userEmail, fullName, tempPassword, role) => { // මෙතැනට role එකත් ගමු
+const sendWelcomeEmail = async (userEmail, fullName, tempPassword, role) => { // added role parameter
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -10,7 +10,6 @@ const sendWelcomeEmail = async (userEmail, fullName, tempPassword, role) => { //
         }
     });
 
-    // 1. මෙතැනදී අපි භාෂා පරිවර්තනයක් වගේ වැඩක් කරනවා
     let officialRoleName = "";
 
     if (role === 'admin') {
@@ -22,7 +21,7 @@ const sendWelcomeEmail = async (userEmail, fullName, tempPassword, role) => { //
     } else if (role === 'online_store_keeper') {
         officialRoleName = "Online Store Keeper";
     } else {
-        officialRoleName = role; // වෙනත් එකක් ආවොත් තිබුණු නමම ගන්නවා
+        officialRoleName = role; // if role is something unexpected, just use it as is
     }
 
     const mailOptions = {
