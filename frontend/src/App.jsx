@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './pages/context/AuthContext';
 import DashboardLayout from './components/DashboardLayout';
 
 // Public Pages
@@ -23,10 +24,13 @@ import DeleteUser from './pages/management/user/DeleteUser';
 
 
 function App() {
-  const storedUser = localStorage.getItem('user');
-  const user = (storedUser && storedUser !== "undefined") ? JSON.parse(storedUser) : null;
+  const { user, loading } = useAuth();
+
+  if (loading) return <div>Loading Registry...</div>; 
+  // const storedUser = localStorage.getItem('user');
+  // const user = (storedUser && storedUser !== "undefined") ? JSON.parse(storedUser) : null;
   const userRole = user?.role;
-  const isFirstLogin = user?.is_first_login === 1;
+  const isFirstLogin = user?.is_first_login === 1 || user?.mustChangePassword === true;
 
   return (
     <Routes>
@@ -34,9 +38,9 @@ function App() {
       <Route path='/login' element={<Login />} />
       <Route path='/change-password' element={user ? <ChangePassword /> : <Navigate to="/login" />} />
       
-      <Route element={<DashboardLayout />}>
+      <Route element={user ? <DashboardLayout /> : <Navigate to="/" />}>
         <Route path="/inbox" element={<Inbox />} />
-        <Route path="/profile" element={<UserProfile />} />
+        <Route path="/profile/:id" element={<UserProfile />} />
         <Route path="/support" element={<Support />} />
 
         {/* 1. Dashboard එකට යන්න පුළුවන් Admin සහ Manager ට විතරයි */}

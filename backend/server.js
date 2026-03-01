@@ -1,14 +1,12 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const pool = require('./db/db')
-const customerRoutes = require('./routes/customerRoutes');
+const { sequelize } = require('./models');
 const userRoutes = require('./routes/userRoutes');
 const supportRoutes = require('./routes/supportRoutes');
 const errorHandler = require('./middlewares/errorMiddleware');
 
 const app = express();
-
 
 app.use(cors({
   origin: 'http://localhost:5173', 
@@ -16,29 +14,35 @@ app.use(cors({
   credentials: true
 }));
 
-// 2. Body Parser
-app.use(express.json()); 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-
-app.get('/', (req, res) => {
-    res.send("Server is working perfectly!");
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path} - Body:`, req.body);
+    next();
 });
 
-// 4. Routes 
-// app.use('/api/customers', customerRoutes);
-app.use('/api/users', userRoutes)
+app.get('/', (req, res) => {
+    res.send("Server is working perfectly with Sequelize!");
+});
+
+// Routes
+app.use('/api/users', userRoutes);
 app.use('/api/support', supportRoutes);
 
-// 5. Error Handling 
+// Error Handling
 app.use(errorHandler);
-
-// const PORT = process.env.PORT || 5001;
-// app.listen(PORT, () => {
-//     console.log(`Server is running on port ${PORT}`);
-// });
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+// Sync database and start server
+sequelize.sync({ alter: false })
+  .then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`✓ Server running on port ${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('✗ Failed to sync database:', err);
+    process.exit(1);
+  });

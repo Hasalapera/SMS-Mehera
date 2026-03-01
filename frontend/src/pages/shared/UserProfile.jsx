@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 import { 
   User, Mail, Phone, CreditCard, MapPin, 
   Shield, Calendar, Camera, Edit2, Save, X, Lock, KeyRound, RefreshCw, Loader2
 } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 
 const UserProfile = () => {
+  const { id } = useParams();
+  const {login} = useAuth(); 
   const [isEditing, setIsEditing] = useState(false);
   const [showPassModal, setShowPassModal] = useState(false);
   const [user, setUser] = useState(null);
@@ -34,37 +38,36 @@ const UserProfile = () => {
 
   useEffect(() => {
   const fetchLatestData = async () => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      
-      try {
-        // Backend එකෙන් අලුත්ම දත්ත ලබාගැනීම (Port 5001 පාවිච්චි කරන බව මතක තබාගන්න)
-        const response = await axios.get(`http://localhost:5001/api/users/profile/${parsedUser.user_id}`);
-        const latestUser = response.data.user;
+    try {
+      // 1. URL එකේ ID එකක් තියෙනවා නම් ඒක ගන්න, නැත්නම් LocalStorage එකේ ඉන්න කෙනාව ගන්න
+      const storedUser = JSON.parse(localStorage.getItem('user'));
+      const targetId = id || storedUser?.user_id;
 
-        // Local Storage එකේ තියෙන පරණ දත්ත අලුත් දත්ත වලින් යාවත්කාලීන කිරීම
-        localStorage.setItem('user', JSON.stringify(latestUser));
-        
-        // State එක Update කිරීම
-        setUser(latestUser);
-        setFormData({
-          full_name: latestUser.full_name || '',
-          contact_no: latestUser.contact_no || '',
-          dob: formatDateForInput(latestUser.dob), 
-          nic_no: latestUser.nic_no || '',
-          picture_url: latestUser.picture_url || fallbackAvatar
-        });
-      } catch (err) {
-        console.error("Failed to sync profile data:", err);
-        // Backend එක සම්බන්ධ කරගත නොහැකි නම් පමණක් පරණ දත්ත පෙන්වන්න
-        setUser(parsedUser);
+      if (!targetId) return;
+
+      const response = await axios.get(`http://localhost:5001/api/users/profile/${targetId}`);
+      const fetchedUser = response.data.user;
+
+      // 2. වැදගත්: අපි බලන්නේ අපේම ප්‍රොෆයිල් එක නම් විතරක් LocalStorage එක Update කරන්න
+      if (!id || id === storedUser?.user_id) {
+        localStorage.setItem('user', JSON.stringify(fetchedUser));
       }
+      
+      setUser(fetchedUser);
+      setFormData({
+        full_name: fetchedUser.name || fetchedUser.full_name || '',
+        contact_no: fetchedUser.contact_no || '',
+        dob: formatDateForInput(fetchedUser.dob), 
+        nic_no: fetchedUser.nic_no || '',
+        picture_url: fetchedUser.profile_image || fetchedUser.picture_url || fallbackAvatar
+      });
+    } catch (err) {
+      console.error("Failed to sync profile data:", err);
     }
   };
 
   fetchLatestData();
-}, []);
+}, [id]);
 
   // --- Password Update Logic (Moved inside the component) ---
   const handlePasswordUpdate = async () => {
@@ -79,11 +82,14 @@ const UserProfile = () => {
     }
 
     setIsUpdating(true);
+    const token = localStorage.getItem('token');
     try {
       const response = await axios.put('http://localhost:5001/api/users/change-password', {
-        user_id: user.user_id,
-        currentPassword: passData.currentPassword,
+        userId: user.user_id,
+        oldPassword: passData.currentPassword,
         newPassword: passData.newPassword
+      }, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
 
       if (response.status === 200) {
@@ -99,11 +105,12 @@ const UserProfile = () => {
     }
   };
 
-  const handleUpdateProfile = async () => {
+    const handleUpdateProfile = async () => {
     setIsUpdating(true);
+    const token = localStorage.getItem('token');
     const uploadData = new FormData();
     uploadData.append("user_id", user.user_id);
-    uploadData.append("full_name", formData.full_name);
+    if(formData.full_name) uploadData.append("name", formData.full_name);
     uploadData.append("contact_no", formData.contact_no);
     uploadData.append("dob", formData.dob);
     uploadData.append("nic_no", formData.nic_no);
@@ -112,12 +119,15 @@ const UserProfile = () => {
     if (file) {
       uploadData.append("image", file);
     } else {
-      uploadData.append("picture_url", formData.picture_url);
+      uploadData.append("profile_image", formData.picture_url);
     }
 
     try {
       const response = await axios.put('http://localhost:5001/api/users/update-profile', uploadData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        }
       });
 
       if (response.status === 200) {
@@ -127,6 +137,7 @@ const UserProfile = () => {
         localStorage.setItem('user', JSON.stringify(updatedUser));
         
         // 2. දැනට ඉන්න පේජ් එකේ (UserProfile) State එක update කිරීම
+        login(updatedUser); // <-- මේකෙන් Context එකේ දත්තත් update වෙනවා
         setUser(updatedUser);
         
         // 3. මෙන්න මේ පේළිය අනිවාර්යයෙන්ම දාන්න - SideBar එකට පණිවිඩය යවන්නේ මේකෙන්
@@ -137,6 +148,7 @@ const UserProfile = () => {
       }
     } catch (err) {
       console.error("Update failed:", err);
+      console.log("Backend Message:", err.response?.data);
       alert("System synchronization failed. Please verify connection.");
     } finally {
       setIsUpdating(false);
@@ -200,6 +212,7 @@ const UserProfile = () => {
 
   const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
   const handlePasswordChange = (e) => setPassData({ ...passData, [e.target.name]: e.target.value });
+  const loggedInUserId = JSON.parse(localStorage.getItem('user'))?.user_id;
 
   if (!user) return <div className="p-10 text-center font-bold italic text-gray-500 tracking-widest">Initialising Profile Registry...</div>;
 
@@ -227,10 +240,14 @@ const UserProfile = () => {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row md:flex-col gap-2">
-          <button onClick={() => setIsEditing(!isEditing)} className="flex items-center justify-center gap-2 px-6 py-3 bg-black text-white rounded-2xl font-bold text-sm hover:scale-105 transition-all shadow-lg min-w-[160px]">{isEditing ? <><X size={16} /> Cancel Edit</> : <><Edit2 size={16} /> Edit Profile</>}</button>
-          {!isEditing && <button onClick={() => setShowPassModal(true)} className="flex items-center justify-center gap-2 px-6 py-3 bg-[#b4a460] text-black rounded-2xl font-bold text-sm hover:scale-105 transition-all shadow-lg min-w-[160px]"><KeyRound size={16} /> Security</button>}
-        </div>
+        {(!id || id === loggedInUserId) && (
+          <div className="flex flex-col sm:flex-row md:flex-col gap-2">
+            <button onClick={() => setIsEditing(!isEditing)} className="flex items-center justify-center gap-2 px-6 py-3 bg-[#b4a460] text-black rounded-2xl font-bold text-sm hover:scale-105 transition-all shadow-lg min-w-[160px]">
+              {isEditing ? <><X size={16} /> Cancel Edit</> : <><Edit2 size={16} /> Edit Profile</>}
+            </button>
+            {!isEditing && <button onClick={() => setShowPassModal(true)} className="flex items-center justify-center gap-2 px-6 py-3 bg-[#b4a460] text-black rounded-2xl font-bold text-sm hover:scale-105 transition-all shadow-lg min-w-[160px]"><KeyRound size={16} /> Security</button>}
+          </div>              
+        )}
       </div>
 
       {/* --- Main Content Sections --- */}

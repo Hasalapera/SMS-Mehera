@@ -14,8 +14,15 @@ const DeleteUser = () => {
       const response = await axios.get('http://localhost:5001/api/users/all-users', {
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      if (response.data && Array.isArray(response.data.users)) {
+        const activeUsers = response.data.users.filter(u => u.deleted_at === null);
+        setUsers(activeUsers);
+      } else {
+        setUsers([]);
+      }
       // දැනටමත් delete නොවූ අය පමණක් මුලින් පෙන්වීමට
-      setUsers(response.data.filter(u => u.deleted_at === null));
+      // setUsers(response.data.filter(u => u.deleted_at === null));
     } catch (err) {
       toast.error("Failed to load users");
     } finally {

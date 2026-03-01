@@ -54,6 +54,9 @@ const Login = () => {
               is_first_login: 1, 
               role: data.role || 'user' 
           };
+
+          localStorage.setItem('user', JSON.stringify(tempUser)); 
+          
           login(tempUser);
           
           // 'userId' ලෙස යවන්න (ChangePassword එකේ අල්ලන නම)

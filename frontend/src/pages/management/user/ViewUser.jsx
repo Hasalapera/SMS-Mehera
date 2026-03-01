@@ -29,7 +29,13 @@ const ViewUser = () => {
       const response = await axios.get('http://localhost:5001/api/users/all-users', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUsers(response.data);
+
+      if (response.data && Array.isArray(response.data.users)) {
+        setUsers(response.data.users);
+      } else {
+        setUsers([]); // දත්ත නැත්නම් හිස් array එකක්
+      }
+      // setUsers(response.data);
     } catch (err) {
       console.error("Error fetching users:", err);
     } finally {
@@ -201,7 +207,7 @@ const handleRestore = async (userId) => {
                       </button>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {user.is_active === false && (
+                      {isDeleted && (
                         <button 
                           onClick={() => handleRestore(user.user_id)}
                           className='bg-red-500/20 text-white-500 border border-red-500/50 px-3 py-1 rounded-lg hover:bg-amber-200 hover:text-red-600 transition-all text-xs font-bold'
