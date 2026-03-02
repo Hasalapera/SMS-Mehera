@@ -2,24 +2,29 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './pages/context/AuthContext';
 import DashboardLayout from './components/DashboardLayout';
 
+//sales management
+import AddCustomer from "./pages/management/customer/Addcustomer";
+import AddOrder from "./pages/management/order/AddOrder";
+
 // Public Pages
-import LandingPage from './pages/LandingPage';
-import Login from './pages/Login';
-import ChangePassword from './pages/ChangePassword';
+import LandingPage from "./pages/LandingPage";
+import Login from "./pages/Login";
+import ChangePassword from "./pages/ChangePassword";
 
 // Shared Pages (Now in shared folder)
-import Inbox from './pages/shared/Inbox';
-import UserProfile from './pages/shared/UserProfile';
-import Support from './pages/shared/Support';
+import Inbox from "./pages/shared/Inbox";
+import UserProfile from "./pages/shared/UserProfile";
+import Support from "./pages/shared/Support";
 
 // Role Dashboards (Now in roles folder)
-import Dashboard from './pages/roles/Dashboard';
-import Home from './pages/roles/Home';
+import Dashboard from "./pages/roles/Dashboard";
+import Home from "./pages/roles/Home";
 
 // User Management (Now in management/user folder)
-import AddUser from './pages/management/user/AddUser';
-import ViewUsers from './pages/management/user/ViewUser';
+import AddUser from "./pages/management/user/AddUser";
+import ViewUsers from "./pages/management/user/ViewUser";
 // import UpdateUser from './pages/management/user/UpdateUser';
+
 import DeleteUser from './pages/management/user/DeleteUser';
 
 // Brand Management (Now in management/brand folder)
@@ -55,23 +60,56 @@ function App() {
         <Route path="/profile/:id" element={<UserProfile />} />
         <Route path="/support" element={<Support />} />
 
+        {/*DashboardLayout එක ඇතුළත : redirect to add customer*/}
+
+        <Route
+          path="/add-customer"
+          element={
+            ["admin", "sales_rep"].includes(userRole) ? (
+              <AddCustomer />
+            ) : (
+              <Navigate to="/home" />
+            )
+          }
+        />
+
+        {/* Add Order Route : redireact to add oder */}
+        <Route
+          path="/add-order"
+          element={
+            ["admin", "sales_rep"].includes(userRole) ? (
+              <AddOrder />
+            ) : (
+              <Navigate to="/home" />
+            )
+          }
+        />
+
         {/* 1. Dashboard එකට යන්න පුළුවන් Admin සහ Manager ට විතරයි */}
-        <Route 
-          path="/dashboard" 
+        <Route
+          path="/dashboard"
           element={
-            isFirstLogin ? <Navigate to="/change-password" /> : 
-            (['admin', 'manager'].includes(userRole) ? <Dashboard /> : <Navigate to="/home" />) 
-          } 
+            isFirstLogin ? (
+              <Navigate to="/change-password" />
+            ) : ["admin", "manager"].includes(userRole) ? (
+              <Dashboard />
+            ) : (
+              <Navigate to="/home" />
+            )
+          }
         />
-
-        <Route 
-          path="/home" 
+        <Route
+          path="/home"
           element={
-            isFirstLogin ? <Navigate to="/change-password" /> : 
-            (['sales_rep', 'online_store_keeper'].includes(userRole) ? <Home /> : <Navigate to="/dashboard" />)
-          } 
+            isFirstLogin ? (
+              <Navigate to="/change-password" />
+            ) : ["sales_rep", "online_store_keeper"].includes(userRole) ? (
+              <Home />
+            ) : (
+              <Navigate to="/dashboard" />
+            )
+          }
         />
-
         {/* 3. User Management - Admin ට පමණි */}
         <Route path='/addUser' element={userRole === 'admin' ? <AddUser /> : <Navigate to="/dashboard" />} />
         <Route path='/all-users' element={['admin', 'manager'].includes(userRole) ? <ViewUsers /> : <Navigate to="/dashboard" />} />
@@ -84,7 +122,6 @@ function App() {
 
         {/* product management - only for admin */}
         <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
-
       </Route>
 
       <Route path="*" element={<Navigate to="/" />} />
