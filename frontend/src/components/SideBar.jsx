@@ -5,7 +5,7 @@ import {
   BarChart2, Settings, HelpCircle, LogOut, ChevronDown, 
   ChevronRight, Menu, Inbox, SlidersHorizontal, PlusCircle, 
   ChevronLeft, UserPlus, UserMinus, UserCog, List, FileText, 
-  Download, UserCheck, ClipboardList, ShoppingBag
+  Download, UserCheck, ClipboardList, ShoppingBag, Tag
 } from 'lucide-react';
 import { useNavigate, NavLink } from 'react-router-dom';
 
@@ -15,8 +15,9 @@ const menuConfig = {
   admin: { 
     canFullManageUsers: true, // CRUD (Add, Edit, Delete)
     canViewUsers: true, 
-    canAddProducts: true, 
-    canViewReports: true, 
+    canManageBrands: true, 
+    canViewReports: true,
+    canManageProducts: true, 
     canEditInventory: true 
   },
   manager: { 
@@ -24,6 +25,8 @@ const menuConfig = {
     canViewUsers: true,       
     canAddProducts: false, 
     canViewReports: true, 
+    canManageBrands: false,
+    canManageProducts: false,
     canEditInventory: false 
   },
   sales_rep: { 
@@ -31,6 +34,8 @@ const menuConfig = {
     canViewUsers: false, 
     canAddProducts: false, 
     canViewReports: false, 
+    canManageBrands: false,
+    canManageProducts: false,
     canEditInventory: false,
     canAddCustomers: true,  
   }
@@ -192,8 +197,21 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
             </>
           )}
 
+          {/* Brand section */}
+          {permissions.canManageBrands && (
+            <>
+              <NavItem icon={Tag} label="Brands" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('brand')} isOpen={openSubMenu === 'brand'} />
+              {!isSidebarCollapsed && openSubMenu === 'brand' && (
+                <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
+                  <NavLink to="/getBrands" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><SlidersHorizontal size={14} /> Brands</NavLink>
+                  <NavLink to="/addBrand" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><PlusCircle size={14} /> Add Brand</NavLink>
+                </div>
+              )}
+            </>
+          )}
+
           {/* Products Section */}
-          {permissions.canAddProducts && (
+          {permissions.canManageProducts && (
             <>
               <NavItem icon={Package} label="Products" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('product')} isOpen={openSubMenu === 'product'} />
               {!isSidebarCollapsed && openSubMenu === 'product' && (

@@ -4,6 +4,9 @@ const cors = require('cors');
 const { sequelize } = require('./models');
 const userRoutes = require('./routes/userRoutes');
 const supportRoutes = require('./routes/supportRoutes');
+const brandRoutes = require('./routes/brandRoutes');
+const productRoutes = require('./routes/productRoutes');
+const customerRoutes = require('./routes/customerRoutes');
 const errorHandler = require('./middlewares/errorMiddleware');
 
 const app = express();
@@ -29,6 +32,9 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/brands', brandRoutes);
+// app.use('/api/products', productRoutes);
+// app.use('/api/customers', customerRoutes);
 
 // Error Handling
 app.use(errorHandler);

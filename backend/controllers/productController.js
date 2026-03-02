@@ -1,4 +1,4 @@
-const { Product } = require('../models');
+const { Product, Brand, ProductVariant , sequelize} = require('../models');
 
 const addProduct = async (req, res) => {
     try {

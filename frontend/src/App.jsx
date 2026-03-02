@@ -22,6 +22,18 @@ import ViewUsers from './pages/management/user/ViewUser';
 // import UpdateUser from './pages/management/user/UpdateUser';
 import DeleteUser from './pages/management/user/DeleteUser';
 
+// Brand Management (Now in management/brand folder)
+import AddBrand from './pages/management/brand/AddBrand';
+import ViewBrand from './pages/management/brand/ViewBrand';
+// import UpdateBrand from './pages/management/brand/UpdateBrand';
+// import DeleteBrand from './pages/management/brand/DeleteBrand';
+
+// Product Management (Now in management/product folder)
+import AddProduct from './pages/management/product/AddProduct';
+// import ViewProducts from './pages/management/product/ViewProducts';
+// import UpdateProduct from './pages/management/product/UpdateProduct';
+// import DeleteProduct from './pages/management/product/DeleteProduct';
+
 
 function App() {
   const { user, loading } = useAuth();
@@ -64,6 +76,14 @@ function App() {
         <Route path='/addUser' element={userRole === 'admin' ? <AddUser /> : <Navigate to="/dashboard" />} />
         <Route path='/all-users' element={['admin', 'manager'].includes(userRole) ? <ViewUsers /> : <Navigate to="/dashboard" />} />
         <Route path='/delete-user' element={userRole === 'admin' ? <DeleteUser /> : <Navigate to="/dashboard" />} />
+
+        {/* Brand management - only for admin */}
+        <Route path='/addBrand' element={userRole === 'admin' ? <AddBrand /> : <Navigate to="/dashboard" />} />
+        <Route path='/getBrands' element={userRole === 'admin' ? <ViewBrand /> : <Navigate to="/dashboard" />} />
+
+
+        {/* product management - only for admin */}
+        <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
 
       </Route>
 
