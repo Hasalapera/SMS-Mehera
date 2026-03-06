@@ -18,7 +18,9 @@ router.put('/change-password', userController.changePassword);
 router.put('/update-profile', verifyToken, upload.single('image'), userController.updateProfile);
 router.get('/profile/:id', userController.getUserProfile);
 
+
 router.post('/addUser', isAdmin, addUserByAdmin);
+
 // router.put('/activate-user/:id', authMiddleware, userController.activateUser);
 router.get('/all-users', isAdminOrManager, userController.getAllUsers);
 router.put('/delete-user/:id', isAdmin, softDeleteUser);

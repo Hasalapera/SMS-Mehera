@@ -35,9 +35,10 @@ export const AuthProvider = ({ children }) => {
 
     // ලොගවුට් වන විට යූසර්ව අයින් කරන ෆන්ක්ෂන් එක
     const logout = () => {
-        localStorage.clear();
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
         setUser(null);
-        window.location.href = '/login';
+        window.location.href = '/'; 
     };
 
     return (

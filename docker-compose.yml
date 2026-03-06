@@ -26,4 +26,13 @@ services:
     stdin_open: true      
     tty: true
     depends_on:
-      - backend           
+      - backend
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=mehera_international
+      - POSTGRES_USER=mehera_international_user
+      - POSTGRES_PASSWORD=sffTqSd8uRlA93CdLgyyDWnunmuUAbcr
+    ports:
+      - "5432:5432"

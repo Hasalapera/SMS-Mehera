@@ -7,6 +7,7 @@ cloudinary.config({
     api_secret: process.env.API_SECRET
 });
 
+//profile pictures සඳහා storage එක
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -16,4 +17,24 @@ const storage = new CloudinaryStorage({
   },
 });
 
-module.exports = {cloudinary, storage};
+// Brands සඳහා වෙනම storage එකක්
+const brandStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'mehera-international/brands',
+    allowed_formats: ['jpg', 'png', 'jpeg'],
+    transformation: [{ width: 500, height: 500, crop: 'limit' }]
+  },
+});
+
+// Products සහ Variants සඳහා වෙනම storage එකක්
+const productStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'mehera-international/products',
+    allowed_formats: ['jpg', 'png', 'jpeg'],
+    transformation: [{ width: 800, height: 800, crop: 'limit' }]
+  },
+});
+
+module.exports = {cloudinary, storage, brandStorage, productStorage};
