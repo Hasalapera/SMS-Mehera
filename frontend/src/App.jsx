@@ -1,10 +1,16 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './pages/context/AuthContext';
-import DashboardLayout from './components/DashboardLayout';
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./pages/context/AuthContext";
+import DashboardLayout from "./components/DashboardLayout";
 
 //sales management
 import AddCustomer from "./pages/management/customer/Addcustomer";
 import AddOrder from "./pages/management/order/AddOrder";
+
+//support management
+//import Support from './pages/shared/Support';
+
+//stock management
+import Stock from "./pages/management/stock/stock";
 
 // Public Pages
 import LandingPage from "./pages/LandingPage";
@@ -25,40 +31,57 @@ import AddUser from "./pages/management/user/AddUser";
 import ViewUsers from "./pages/management/user/ViewUser";
 // import UpdateUser from './pages/management/user/UpdateUser';
 
-import DeleteUser from './pages/management/user/DeleteUser';
+import DeleteUser from "./pages/management/user/DeleteUser";
 
 // Brand Management (Now in management/brand folder)
-import AddBrand from './pages/management/brand/AddBrand';
-import ViewBrand from './pages/management/brand/ViewBrand';
+import AddBrand from "./pages/management/brand/AddBrand";
+import ViewBrand from "./pages/management/brand/ViewBrand";
 // import UpdateBrand from './pages/management/brand/UpdateBrand';
 // import DeleteBrand from './pages/management/brand/DeleteBrand';
 
 // Product Management (Now in management/product folder)
-import AddProduct from './pages/management/product/AddProduct';
+import AddProduct from "./pages/management/product/AddProduct";
 // import ViewProducts from './pages/management/product/ViewProducts';
 // import UpdateProduct from './pages/management/product/UpdateProduct';
 // import DeleteProduct from './pages/management/product/DeleteProduct';
 
-
 function App() {
   const { user, loading } = useAuth();
 
-  if (loading) return <div>Loading Registry...</div>; 
+  if (loading) return <div>Loading Registry...</div>;
   // const storedUser = localStorage.getItem('user');
   // const user = (storedUser && storedUser !== "undefined") ? JSON.parse(storedUser) : null;
   const userRole = user?.role;
-  const isFirstLogin = user?.is_first_login === 1 || user?.mustChangePassword === true;
+  const isFirstLogin =
+    user?.is_first_login === 1 || user?.mustChangePassword === true;
 
   return (
     <Routes>
-      <Route path='/' element={<LandingPage />} />
-      <Route path='/login' element={<Login />} />
-      <Route path='/change-password' element={user ? <ChangePassword /> : <Navigate to="/login" />} />
-      
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/change-password"
+        element={user ? <ChangePassword /> : <Navigate to="/login" />}
+      />
+
       <Route element={user ? <DashboardLayout /> : <Navigate to="/" />}>
         <Route path="/inbox" element={<Inbox />} />
         <Route path="/profile/:id" element={<UserProfile />} />
         <Route path="/support" element={<Support />} />
+
+        {/* --- අලුතින් එකතු කළ STOCK ROUTE --- */}
+        <Route
+          path="/stock"
+          element={
+            ["admin", "sales_rep", "online_store_keeper", "manager"].includes(
+              userRole,
+            ) ? (
+              <Stock />
+            ) : (
+              <Navigate to="/home" />
+            )
+          }
+        />
 
         {/*DashboardLayout එක ඇතුළත : redirect to add customer*/}
 
@@ -111,17 +134,50 @@ function App() {
           }
         />
         {/* 3. User Management - Admin ට පමණි */}
-        <Route path='/addUser' element={userRole === 'admin' ? <AddUser /> : <Navigate to="/dashboard" />} />
-        <Route path='/all-users' element={['admin', 'manager'].includes(userRole) ? <ViewUsers /> : <Navigate to="/dashboard" />} />
-        <Route path='/delete-user' element={userRole === 'admin' ? <DeleteUser /> : <Navigate to="/dashboard" />} />
+        <Route
+          path="/addUser"
+          element={
+            userRole === "admin" ? <AddUser /> : <Navigate to="/dashboard" />
+          }
+        />
+        <Route
+          path="/all-users"
+          element={
+            ["admin", "manager"].includes(userRole) ? (
+              <ViewUsers />
+            ) : (
+              <Navigate to="/dashboard" />
+            )
+          }
+        />
+        <Route
+          path="/delete-user"
+          element={
+            userRole === "admin" ? <DeleteUser /> : <Navigate to="/dashboard" />
+          }
+        />
 
         {/* Brand management - only for admin */}
-        <Route path='/addBrand' element={userRole === 'admin' ? <AddBrand /> : <Navigate to="/dashboard" />} />
-        <Route path='/getBrands' element={userRole === 'admin' ? <ViewBrand /> : <Navigate to="/dashboard" />} />
-
+        <Route
+          path="/addBrand"
+          element={
+            userRole === "admin" ? <AddBrand /> : <Navigate to="/dashboard" />
+          }
+        />
+        <Route
+          path="/getBrands"
+          element={
+            userRole === "admin" ? <ViewBrand /> : <Navigate to="/dashboard" />
+          }
+        />
 
         {/* product management - only for admin */}
-        <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
+        <Route
+          path="/addProduct"
+          element={
+            userRole === "admin" ? <AddProduct /> : <Navigate to="/dashboard" />
+          }
+        />
       </Route>
 
       <Route path="*" element={<Navigate to="/" />} />

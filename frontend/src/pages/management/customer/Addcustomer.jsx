@@ -11,7 +11,7 @@ const AddCustomer = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [customerCount, setCustomerCount] = useState(0);
-  const [errors, setErrors] = useState({}); // වැරදි හඳුනාගැනීමට state එකක්
+  const [errors, setErrors] = useState({});
 
   const initialFormState = {
     type: 'Saloon',
@@ -42,7 +42,6 @@ const AddCustomer = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    // අකුරක් ටයිප් කරන විට රතු පාට ඉවත් කිරීමට:
     if (errors[e.target.name]) {
       setErrors({ ...errors, [e.target.name]: false });
     }
@@ -58,8 +57,6 @@ const AddCustomer = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validation Part
     const newErrors = {};
     if (!formData.saloon_name.trim()) newErrors.saloon_name = true;
     if (!formData.owner_name.trim()) newErrors.owner_name = true;
@@ -89,50 +86,62 @@ const AddCustomer = () => {
       <Toaster position="top-right" />
       
       <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.03)] border border-gray-100 overflow-hidden">
           
-          {/* Header */}
-          <div className="bg-black p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 border-b-4 border-[#b4a460]">
+          {/* 🔴 HEADER - UPDATED TEXT STYLE */}
+          <div className="bg-white p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-5">
-              <div className="p-4 bg-[#b4a460] rounded-2xl text-black">
+              {/* Icon Box with Gold Color */}
+              <div className="p-3.5 bg-[#b4a460] rounded-2xl text-black shadow-lg shadow-[#b4a460]/20 flex items-center justify-center">
                 <UserPlus size={28} strokeWidth={2.5} />
               </div>
+              
               <div>
-                <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase">Register New Customer</h1>
-                <p className="text-[#b4a460] text-xs font-bold uppercase tracking-[0.2em] mt-1 opacity-80">Mehera International</p>
+                {/* Heading Styled exactly like image */}
+                <h1 className="text-3xl font-black text-black tracking-tight leading-none">
+                  Register <span className="text-black">New Customer</span>
+                </h1>
+                <p className="text-gray-400 text-[11px] font-medium mt-2">
+                  Add a new business partner to Mehera International database.
+                </p>
               </div>
             </div>
             
             <div className="flex items-center gap-4">
-               <div className="bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/10 flex items-center gap-3">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ID Reference</span>
+               {/* Reference Badge */}
+               <div className="bg-gray-50 px-5 py-3 rounded-2xl border border-gray-100 flex items-center gap-3">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Next ID</span>
                   <span className="text-lg font-black text-[#b4a460]">{nextCustomerId}</span>
                </div>
-               <button onClick={() => navigate('/home')} className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all border border-white/5">
-                <ArrowLeft size={20} />
+               <button 
+                 onClick={() => navigate('/home')} 
+                 className="p-3 bg-white hover:bg-gray-50 text-gray-400 hover:text-black rounded-xl transition-all border border-gray-100 shadow-sm active:scale-95"
+               >
+                <ArrowLeft size={22} />
               </button>
             </div>
           </div>
 
+          <div className="px-10">
+            <div className="w-full h-[1px] bg-gray-100"></div>
+          </div>
+
           <form onSubmit={handleSubmit} noValidate>
             <div className="grid grid-cols-1 lg:grid-cols-2">
-              
-              {/* Left Side */}
               <div className="p-8 md:p-12 pb-6 lg:pb-12">
                 <div className="mb-10">
                   <h2 className="text-sm font-black text-[#b4a460] uppercase tracking-[0.2em]">Basic Profile</h2>
                 </div>
-
+                {/* ... (rest of the form fields same as before) */}
                 <div className="space-y-7">
                   <div>
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5 block ml-1">Customer Type</label>
-                    <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 focus:border-[#b4a460] focus:bg-white rounded-2xl py-4 px-5 text-sm transition-all outline-none">
+                    <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 focus:border-[#b4a460] focus:bg-white rounded-2xl py-4 px-5 text-sm transition-all outline-none cursor-pointer">
                       <option value="Saloon">Saloon</option>
                       <option value="Wholesale">Wholesale</option>
                       <option value="Retail">Retail</option>
                     </select>
                   </div>
-
                   <div>
                     <label className={`text-[10px] font-black uppercase tracking-widest mb-2.5 block ml-1 ${errors.saloon_name ? 'text-red-500' : 'text-gray-400'}`}>Business Name *</label>
                     <div className="relative group">
@@ -141,7 +150,6 @@ const AddCustomer = () => {
                         className={`w-full bg-gray-50/50 border rounded-2xl py-4 pl-13 pr-5 text-sm transition-all outline-none ${errors.saloon_name ? 'border-red-500 focus:border-red-600 bg-red-50/30' : 'border-gray-100 focus:border-[#b4a460] focus:bg-white'}`} />
                     </div>
                   </div>
-
                   <div>
                     <label className={`text-[10px] font-black uppercase tracking-widest mb-2.5 block ml-1 ${errors.owner_name ? 'text-red-500' : 'text-gray-400'}`}>Owner Full Name *</label>
                     <div className="relative group">
@@ -150,7 +158,6 @@ const AddCustomer = () => {
                         className={`w-full bg-gray-50/50 border rounded-2xl py-4 pl-13 pr-5 text-sm transition-all outline-none ${errors.owner_name ? 'border-red-500 focus:border-red-600 bg-red-50/30' : 'border-gray-100 focus:border-[#b4a460] focus:bg-white'}`} />
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-5">
                     <div>
                       <label className={`text-[10px] font-black uppercase tracking-widest mb-2.5 block ml-1 ${errors.phone1 ? 'text-red-500' : 'text-gray-400'}`}>Primary Phone *</label>
@@ -168,12 +175,10 @@ const AddCustomer = () => {
                 </div>
               </div>
 
-              {/* Right Side */}
               <div className="p-8 md:p-12">
                 <div className="mb-10">
                   <h2 className="text-sm font-black text-[#b4a460] uppercase tracking-[0.2em]">Location & Area</h2>
                 </div>
-
                 <div className="space-y-7">
                   <div className="grid grid-cols-2 gap-5">
                     <div>
@@ -186,7 +191,6 @@ const AddCustomer = () => {
                       <input type="text" name="lane2" value={formData.lane2} onChange={handleChange} placeholder="City / Area" className="w-full bg-gray-50/50 border border-gray-100 focus:border-[#b4a460] focus:bg-white rounded-2xl py-4 px-5 text-sm transition-all outline-none" />
                     </div>
                   </div>
-
                   <div>
                     <label className={`text-[10px] font-black uppercase tracking-widest mb-2.5 block ml-1 ${errors.district ? 'text-red-500' : 'text-gray-400'}`}>Operational District *</label>
                     <div className="relative group">
@@ -198,7 +202,6 @@ const AddCustomer = () => {
                       </select>
                     </div>
                   </div>
-
                   <div>
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5 block ml-1 flex items-center gap-2">
                       <Info size={14} className="text-[#b4a460]" /> Additional Notes
@@ -209,14 +212,12 @@ const AddCustomer = () => {
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="p-8 md:px-12 md:pb-12 flex flex-col sm:flex-row items-center justify-between gap-6 border-t border-gray-50 mt-4">
-              <button type="button" onClick={handleClear} className="group flex items-center gap-3 bg-gray-100/80 hover:bg-red-50 text-gray-500 hover:text-red-600 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all">
+            <div className="p-8 md:px-12 md:pb-12 flex flex-col sm:flex-row items-center justify-between gap-6 border-t border-gray-50 mt-4 bg-gray-50/30">
+              <button type="button" onClick={handleClear} className="group flex items-center gap-3 bg-white border border-gray-200 hover:border-red-100 hover:bg-red-50 text-gray-400 hover:text-red-600 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all">
                 <RefreshCcw size={16} className="group-hover:rotate-180 transition-all duration-500" />
                 Reset Form
               </button>
-
-              <button type="submit" disabled={loading} className="w-full sm:w-auto bg-black text-white hover:bg-[#b4a460] hover:text-black px-12 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-3 disabled:opacity-50">
+              <button type="submit" disabled={loading} className="w-full sm:w-auto bg-black text-white hover:bg-[#b4a460] hover:text-black px-12 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-gray-200 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
                 {loading ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
                 {loading ? 'Processing...' : 'Complete Registration'}
               </button>
