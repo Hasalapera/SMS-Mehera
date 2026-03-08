@@ -10,12 +10,12 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/', { replace: true });
   };
 
   const navLinks = [
     { name: 'Home', path: '/home' },
-    { name: 'Create Order', path: '/dashboard' },
+    { name: 'Create Order', path: '/add-order' },
     { name: 'Add Customer', path: '/add-customer' },
     { name: 'History', path: '/history' },
     { name: 'Stock', path: '/inventory' },

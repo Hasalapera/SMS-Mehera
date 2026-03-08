@@ -29,7 +29,7 @@ const ChangePassword = () => {
       
       if(response.status === 200) {
         alert("Password changed successfully! Please log in again.");
-        localStorage.removeItem('token');
+        localStorage.clear();
         navigate('/login');
       }
     

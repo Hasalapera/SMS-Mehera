@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../pages/context/AuthContext';
 import { 
   LayoutDashboard, Users, ShoppingCart, Package, 
   BarChart2, Settings, HelpCircle, LogOut, ChevronDown, 
   ChevronRight, Menu, Inbox, SlidersHorizontal, PlusCircle, 
   ChevronLeft, UserPlus, UserMinus, UserCog, List, FileText, 
-  Download, UserCheck, ClipboardList, ShoppingBag
+  Download, UserCheck, ClipboardList, ShoppingBag, Tag
 } from 'lucide-react';
 import { useNavigate, NavLink } from 'react-router-dom';
+
 
 // යාවත්කාලීන කරන ලද Permissions පද්ධතිය
 const menuConfig = {
   admin: { 
     canFullManageUsers: true, // CRUD (Add, Edit, Delete)
     canViewUsers: true, 
-    canAddProducts: true, 
-    canViewReports: true, 
+    canManageBrands: true, 
+    canViewReports: true,
+    canManageProducts: true, 
     canEditInventory: true 
   },
   manager: { 
@@ -22,6 +25,8 @@ const menuConfig = {
     canViewUsers: true,       
     canAddProducts: false, 
     canViewReports: true, 
+    canManageBrands: false,
+    canManageProducts: false,
     canEditInventory: false 
   },
   sales_rep: { 
@@ -29,6 +34,8 @@ const menuConfig = {
     canViewUsers: false, 
     canAddProducts: false, 
     canViewReports: false, 
+    canManageBrands: false,
+    canManageProducts: false,
     canEditInventory: false,
     canAddCustomers: true,  
   }
@@ -59,6 +66,7 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed, badge, onClick, isOpen })
 const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
   const [openSubMenu, setOpenSubMenu] = useState(''); 
   const navigate = useNavigate();
+  const {logout} = useAuth(); // useAuth() hook එකෙන් logOut function එක ගන්නවා
   
   const [loggedUser, setLoggedUser] = useState(() => {
     const stored = localStorage.getItem('user');
@@ -67,6 +75,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
 
   const userRole = loggedUser?.role || 'sales_rep';
   const permissions = menuConfig[userRole] || menuConfig.sales_rep;
+  const profileImg = loggedUser?.profile_image || loggedUser?.picture_url;
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -87,12 +96,21 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
   };
 
   const handleLogout = () => {
-      localStorage.clear();
-      sessionStorage.clear();
-
-      navigate('/login', { replace: true });
+      // localStorage.clear();
+      // sessionStorage.clear();
+      logout();
+      // navigate('/', { replace: true });
       
-      window.location.reload();
+      // window.location.reload();
+  };
+
+  const getInitials = (name) => {
+    if (!name) return "??";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
   };
 
   return (
@@ -179,8 +197,21 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
             </>
           )}
 
+          {/* Brand section */}
+          {permissions.canManageBrands && (
+            <>
+              <NavItem icon={Tag} label="Brands" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('brand')} isOpen={openSubMenu === 'brand'} />
+              {!isSidebarCollapsed && openSubMenu === 'brand' && (
+                <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
+                  <NavLink to="/getBrands" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><SlidersHorizontal size={14} /> Brands</NavLink>
+                  <NavLink to="/addBrand" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><PlusCircle size={14} /> Add Brand</NavLink>
+                </div>
+              )}
+            </>
+          )}
+
           {/* Products Section */}
-          {permissions.canAddProducts && (
+          {permissions.canManageProducts && (
             <>
               <NavItem icon={Package} label="Products" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('product')} isOpen={openSubMenu === 'product'} />
               {!isSidebarCollapsed && openSubMenu === 'product' && (
@@ -215,31 +246,62 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
       </nav>
 
       {/* Profile Section */}
-      <div onClick={() => navigate('profile')} className={`mt-auto pt-6 border-t border-gray-800 cursor-pointer ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
+      <div 
+        onClick={() => navigate(`/profile/${loggedUser.user_id}`)} 
+        className={`mt-auto pt-6 border-t border-gray-800 cursor-pointer ${isSidebarCollapsed ? 'flex flex-col items-center' : ''}`}
+      >
         {!isSidebarCollapsed ? (
           <div className="flex items-center gap-3 p-2 bg-[#1A1A1A] rounded-xl border border-gray-800 mb-4 text-left hover:bg-white/5 transition-all">
-            <img src={loggedUser.picture_url || "https://i.pravatar.cc/150?u=hasala"} className="w-8 h-8 rounded-lg object-cover" alt="profile" />
+            
+            {profileImg ? (
+              <img 
+                src={profileImg} 
+                className="w-8 h-8 rounded-lg object-cover shadow-sm" 
+                alt="profile" 
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-[#b4a460] flex items-center justify-center text-black font-bold text-[10px] shrink-0 uppercase">
+                {getInitials(loggedUser?.name || loggedUser?.full_name)}
+              </div>
+            )}
+
             <div className="overflow-hidden">
-              <p className="text-[11px] font-bold truncate text-white">{loggedUser.full_name || 'User'}</p>
-              <p className="text-[9px] text-[#b4a460] uppercase truncate font-semibold tracking-wider">
-                {loggedUser?.role === 'admin' && 'System Administrator'}
-                {loggedUser?.role === 'manager' && 'Manager'}
-                </p>
+              <p className="text-[11px] font-bold truncate text-white">
+                {loggedUser?.name || 'User'}
+              </p>
+              <p className="text-[9px] text-[#b4a460] uppercase tracking-[0.1em]">
+                {loggedUser?.role?.replace('_', ' ') || 'Sales Rep'}
+              </p>
             </div>
+
           </div>
         ) : (
-          <img src={loggedUser.picture_url || "https://i.pravatar.cc/150?u=hasala"} className="w-8 h-8 rounded-lg object-cover mb-4 border border-gray-800" alt="profile" />
+          <div className="mb-4">
+            {profileImg ? (
+              <img 
+                src={profileImg} 
+                className="w-8 h-8 rounded-lg object-cover border border-gray-800" 
+                alt="profile" 
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-[#b4a460] flex items-center justify-center text-black font-bold text-[10px] border border-gray-800 uppercase">
+                {getInitials(loggedUser?.name || loggedUser?.full_name)}
+              </div>
+            )}
+          </div>
         )}
-        <button 
-          onClick={(e) => { 
-            e.stopPropagation(); 
-            handleLogout(); 
-          }} 
-          className={`flex items-center gap-3 w-full p-2 text-[11px] text-gray-500 hover:text-red-400 transition-colors ${isSidebarCollapsed ? 'justify-center' : ''}`}
-        >
-          <LogOut size={16} /> {!isSidebarCollapsed && "Logout"}
-        </button>
       </div>
+
+      <button 
+        onClick={(e) => { 
+          e.stopPropagation(); 
+          handleLogout(); 
+        }} 
+        className={`flex items-center gap-3 w-full p-2 text-[11px] text-gray-500 hover:text-red-400 transition-colors ${isSidebarCollapsed ? 'justify-center' : ''}`}
+      >
+        <LogOut size={16} /> 
+        {!isSidebarCollapsed && "Logout"}
+      </button>
     </aside>
   );
 };
