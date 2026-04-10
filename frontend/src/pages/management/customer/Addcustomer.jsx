@@ -30,7 +30,7 @@ const AddCustomer = () => {
   useEffect(() => {
     const fetchCustomerCount = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/customers/count');
+        const res = await axios.get('http://localhost:5001/api/customers/count');
         setCustomerCount(res.data.count || 0);
       } catch (err) { console.error(err); }
     };
@@ -76,7 +76,7 @@ const AddCustomer = () => {
     setLoading(true);
     try {
       const submissionData = { ...formData, customer_display_id: nextCustomerId, address: `${formData.lane1}, ${formData.lane2}` };
-      await axios.post('http://localhost:5000/api/customers', submissionData);
+      await axios.post('http://localhost:5001/api/customers/add', submissionData);
       toast.success("Customer Registered Successfully!");
       setTimeout(() => navigate('/home'), 1500);
     } catch (err) {

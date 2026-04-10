@@ -17,12 +17,17 @@ const Product = sequelize.define('Product', {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    category: {
-      type: DataTypes.STRING,
+    category_id: {
+      type: DataTypes.UUID,
       allowNull: false,
+      field: 'category_id',
     },
     description: {
       type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    image_url: {
+      type: DataTypes.STRING,
       allowNull: true,
     },
     status: {
