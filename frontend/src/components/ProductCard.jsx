@@ -5,14 +5,18 @@ import { useNavigate } from 'react-router-dom';
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
 
-  // Backend alias එක 'variants' නිසා ඒ නමින්ම දත්ත ගන්නවා
-  const variantsPreview = product.variants?.slice(0, 4) || [];
+  const variants = product.variants || [];
+  const variantsPreview = product.variants?.slice(0, 4);
+
+  const firstVariant = variants.length > 0 ? variants[0] : null;
+  const displayPrice = firstVariant ? firstVariant.price : null;
+  const displayStock = firstVariant ? firstVariant.stock_count : 0;
   console.log("Card Data:", product); 
 
   return (
     <div className="group bg-white rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-[#b4a460]/15 transition-all duration-500 border border-gray-100 flex flex-col h-full">
       
-      {/* --- Image Container (Luxury Background) --- */}
+      {/* --- Image Container --- */}
       <div className="relative bg-[#F9F4DA]/50 aspect-square flex items-center justify-center overflow-hidden p-10">
         <img 
           src={product.image_url || "https://placehold.co/400x400/F9F4DA/9A8B50?text=No+Image"} 
@@ -24,6 +28,13 @@ const ProductCard = ({ product }) => {
         <div className="absolute top-6 left-6">
           <span className="bg-black/90 backdrop-blur-sm text-[#b4a460] text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-[#b4a460]/20 shadow-lg">
             {product.brand?.brand_name || 'Mehera'}
+          </span>
+        </div>
+
+        {/* --- Stock Level Badge (අලුතින් එකතු කළා) --- */}
+        <div className="absolute top-6 right-6">
+          <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter shadow-sm ${displayStock > 0 ? 'bg-white text-green-600' : 'bg-red-50 text-red-600'}`}>
+            {displayStock > 0 ? `${displayStock} IN STOCK` : 'OUT OF STOCK'}
           </span>
         </div>
 
@@ -58,7 +69,8 @@ const ProductCard = ({ product }) => {
           </div>
           <div className="text-right shrink-0">
             <p className="text-sm font-black text-black tabular-nums tracking-tighter">
-              {product.base_price ? `${Number(product.base_price).toLocaleString()} LKR` : 'Price on Req'}
+              {/* 🛡️ මෙතන displayPrice එක පාවිච්චි කරන්න */}
+              {displayPrice ? `${Number(displayPrice).toLocaleString()} LKR` : 'Price on Req'}
             </p>
             <div className="flex mt-1 justify-end gap-0.5">
               {[...Array(5)].map((_, i) => (
@@ -78,7 +90,8 @@ const ProductCard = ({ product }) => {
                   className="w-9 h-9 rounded-full border-[3px] border-white overflow-hidden bg-white shadow-md ring-1 ring-gray-100 transition-transform hover:-translate-y-1"
                 >
                   <img 
-                    src={variant.variant_image_url || product.image_url} 
+                    /* 🛡️ මෙතන 'variant_image_url' වෙනුවට ඔයාගේ Schema එකේ තියෙන 'image_url' පාවිච්චි කළා */
+                    src={variant.image_url || product.image_url} 
                     className="w-full h-full object-cover"
                     alt="v"
                   />
@@ -90,9 +103,9 @@ const ProductCard = ({ product }) => {
               </div>
             )}
             
-            {product.variants?.length > 4 && (
+            {variants.length > 4 && (
               <div className="w-9 h-9 rounded-full bg-black flex items-center justify-center border-[3px] border-white text-[9px] font-black text-[#b4a460] shadow-md ring-1 ring-gray-100">
-                +{product.variants.length - 4}
+                +{variants.length - 4}
               </div>
             )}
           </div>
