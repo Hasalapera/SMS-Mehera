@@ -1,101 +1,205 @@
-import { useState } from "react";
-import ProductCard from "../../../components/ProductCard";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { 
+  Search, Package, Tag, Layers, RefreshCw, 
+  ArrowLeft, Loader2 
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Toaster, toast } from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
+import ProductCard from '../../../components/ProductCard'; 
 
-//-- Dummy product data (replace with API call later) --
-const dummyProducts = [
-  { id: 1, name: "Lip Stick",      price: 6000,  stock: 120, status: "Active",       image: null },
-  { id: 2, name: "Foundation",     price: 6000,  stock: 85,  status: "Active",       image: null },
-  { id: 3, name: "Maskara",        price: 6000,  stock: 200, status: "Active",       image: null },
-  { id: 4, name: "Soap Brow",      price: 6000,  stock: 60,  status: "Active",       image: null },
-  { id: 5, name: "Blush Palette",  price: 8500,  stock: 0,   status: "Out of Stock", image: null },
-  { id: 6, name: "Highlighter",    price: 7200,  stock: 45,  status: "Active",       image: null },
-  { id: 7, name: "Eye Shadow Kit", price: 12000, stock: 30,  status: "Active",       image: null },
-  { id: 8, name: "Contour Stick",  price: 5500,  stock: 0,   status: "Out of Stock", image: null },
-];
+const ViewProduct = () => {
+    const { token, logout } = useAuth();
+    const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [brands, setBrands] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
-export default function ViewProduct() {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('');
+    const [selectedBrand, setSelectedBrand] = useState('');
 
-    const [search, setSearch] = useState("");
-    const [filterStatus, setFilterStatus] = useState("All");
+  useEffect(() => {
+    if(!token) {
+        navigate('/');
+        return;
+    }
 
-    // -- Filter logic --
-    const filtered = dummyProducts.filter((p) => {
-        const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
-        const matchStatus = filterStatus === "All" || p.status === filterStatus;
-        return matchSearch && matchStatus;
-    });
+    const initializeData = async () => {
+        setLoading(true);
+        await Promise.all([fetchInitialData(), fetchProducts()]);
+        setLoading(false);
+    }
+    initializeData();
+  }, [token]);
 
-     return (
-    <div className="p-8 bg-[#f5f5f0] min-h-screen">
+  const fetchInitialData = async () => {
+    try {
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const [catRes, brandRes] = await Promise.all([
+            axios.get('http://localhost:5001/api/category/getCategories', config),
+            axios.get('http://localhost:5001/api/brands/getBrands', config)
+        ]);
+        setCategories(catRes.data.categories || catRes.data);
+        setBrands(brandRes.data.brands || brandRes.data);
+    } catch (err){
+        if (err.response?.status === 401) {
+            toast.error("Session expired. Please login again.");
+            logout();
+        }
+    }
+  };
 
-      {/* -- Page Header -- */}
-      <div className="flex justify-between items-start mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Products</h1>
-          <p className="text-sm text-gray-400 mt-1">Viewing all products in the inventory</p>
-        </div>
-
-        {/* Total count badge */}
-        <div className="bg-[#1e1e1e] rounded-xl px-6 py-3 text-center">
-          <span className="block text-2xl font-bold text-[#c9a84c]">{dummyProducts.length}</span>
-          <span className="text-[11px] text-gray-400 uppercase tracking-widest">Total Products</span>
-        </div>
-      </div>
+  const fetchProducts = async () => {
+    try {
+      const res = await axios.get('http://localhost:5001/api/products/getProducts', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       
-      {/* -- Controls Bar -- */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
+      setProducts(res.data.products || res.data);
+    } catch (err){
+        console.error("Error fetching products:", err);
+        toast.error("Failed to load products");
+    }
+  };
 
-        {/* Search input */}
-        <div className="flex items-center bg-white border border-gray-200 rounded-lg px-4 py-2 flex-1 min-w-[200px] shadow-sm gap-2">
-          <span className="text-gray-400 text-sm">🔍</span>
-          <input
-            type="text"
-            placeholder="Search products..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border-none outline-none text-sm w-full text-gray-700 bg-transparent"
-          />
+  const filteredProducts = Array.isArray(products) ? products.filter(product => {
+    const pName = product.product_name?.toLowerCase() || '';
+    return pName.includes(searchTerm.toLowerCase()) &&
+        (selectedCategory === '' || product.category_id === selectedCategory) &&
+        (selectedBrand === '' || product.brand_id === selectedBrand);
+  }) : [];
+
+  return (
+    <div className="w-full max-w-7xl mx-auto p-6 animate-in fade-in duration-500">
+      <Toaster position="top-right" />
+      
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4 text-left">
+        <div>
+          <h2 className="text-3xl font-extrabold text-black flex items-center gap-3 tracking-tight">
+            <div className="p-3 bg-black rounded-2xl text-[#b4a460] shadow-xl">
+              <Package size={24} />
+            </div>
+            Product Inventory
+          </h2>
+          <p className="text-gray-400 text-sm mt-2 ml-14 font-medium">Explore and manage Mehera International's curated collection.</p>
         </div>
-
-        {/* Filter buttons */}
-        <div className="flex gap-2">
-          {["All", "Active", "Out of Stock"].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilterStatus(f)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all
-                ${filterStatus === f
-                  ? "bg-[#c9a84c] text-[#1a1a1a] border-[#c9a84c]"
-                  : "bg-transparent text-gray-500 border-gray-300 hover:border-[#c9a84c] hover:text-[#c9a84c]"
-                }`}
-            >
-              {f}
-            </button>
-          ))}
+        <div className="flex gap-3 ml-14 md:ml-0">
+          <button 
+            onClick={() => { setLoading(true); fetchProducts().then(() => setLoading(false)); }}
+            className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-black hover:shadow-md transition-all active:scale-90"
+          >
+            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+          </button>
+          <button 
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-gray-400 hover:text-black transition-colors font-bold text-sm px-2"
+          >
+            <ArrowLeft size={18} /> Back
+          </button>
         </div>
       </div>
 
-      {/* -- Results count -- */}
-      <p className="text-sm text-gray-400 mb-6">
-        Showing{" "}
-        <span className="text-[#c9a84c] font-semibold">{filtered.length}</span>{" "}
-        product{filtered.length !== 1 ? "s" : ""}
-      </p>
+      {/* --- Filters Section --- */}
+      <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-sm p-8 mb-12 relative overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
+          
+          {/* Search */}
+          <div className="space-y-3 text-left">
+            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+              <Search size={14} className="text-[#b4a460]" /> Product Name
+            </label>
+            <input 
+              type="text"
+              placeholder="Search items..."
+              className="w-full px-6 py-4 rounded-2xl border border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#b4a460] focus:ring-4 focus:ring-[#b4a460]/10 transition-all outline-none text-black font-semibold text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
 
-      {/* -- Product Grid - uses ProductCard component -- */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-24 text-gray-400">
-          <p className="text-5xl mb-4">📦</p>
-          <p className="text-sm">No products found</p>
+          {/* Category Dropdown */}
+          <div className="space-y-3 text-left">
+            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+              <Layers size={14} className="text-[#b4a460]" /> Category
+            </label>
+            <select 
+              className="w-full px-6 py-4 rounded-2xl border border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#b4a460] focus:ring-4 focus:ring-[#b4a460]/10 transition-all outline-none text-black font-semibold text-sm cursor-pointer appearance-none"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              <option value="">All Categories</option>
+              {categories.map(cat => (
+                <option key={cat.category_id} value={cat.category_id}>{cat.category_name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Brand Dropdown */}
+          <div className="space-y-3 text-left">
+            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+              <Tag size={14} className="text-[#b4a460]" /> Brand
+            </label>
+            <select 
+              className="w-full px-6 py-4 rounded-2xl border border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#b4a460] focus:ring-4 focus:ring-[#b4a460]/10 transition-all outline-none text-black font-semibold text-sm cursor-pointer appearance-none"
+              value={selectedBrand}
+              onChange={(e) => setSelectedBrand(e.target.value)}
+            >
+              <option value="">All Brands</option>
+              {brands.map(brand => (
+                <option key={brand.brand_id} value={brand.brand_id}>{brand.brand_name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Reset Filter Button */}
+        <div className="mt-6 flex justify-end">
+            <button 
+                onClick={() => {setSearchTerm(''); setSelectedCategory(''); setSelectedBrand('');}}
+                className="text-[10px] font-black uppercase tracking-widest text-gray-300 hover:text-[#b4a460] transition-colors"
+            >
+                Reset Filters
+            </button>
+        </div>
+      </div>
+
+      {/* --- 📦 Product Grid --- */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-4">
+          <Loader2 className="animate-spin text-[#b4a460]" size={48} />
+          <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Updating Catalog</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-          {filtered.map((product) => (
-            // Existing ProductCard handles all the card UI
-            <ProductCard key={product.id} product={product} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+          {filteredProducts.map(product => (
+           
+            <ProductCard key={product.product_id} product={product} />
           ))}
         </div>
       )}
+
+      {/* Empty State */}
+      {!loading && filteredProducts.length === 0 && (
+        <div className="bg-white border border-dashed border-gray-200 rounded-[3rem] py-24 text-center mt-6">
+          <div className="bg-gray-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Package className="text-gray-200" size={48} />
+          </div>
+          <h3 className="text-2xl font-black text-black">Catalog Empty</h3>
+          <p className="text-gray-400 text-sm mt-2 font-medium">Try refining your filters or search terms.</p>
+          <button 
+            onClick={() => {setSearchTerm(''); setSelectedCategory(''); setSelectedBrand('');}}
+            className="mt-8 bg-black text-[#b4a460] px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:shadow-2xl hover:shadow-[#b4a460]/30 transition-all"
+          >
+            Show All Products
+          </button>
+        </div>
+      )}
     </div>
-    );
-}
+  );
+};
+
+export default ViewProduct;
