@@ -9,12 +9,13 @@ import { toast, Toaster } from 'react-hot-toast';
 const AddProduct = () => {
   const [loading, setLoading] = useState(false);
   const [brands, setBrands] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [mainImagePreview, setMainImagePreview] = useState(null);
 
   const [formData, setFormData] = useState({
     product_name: '',
     brand_id: '',
-    category: '',
+    category_id: '',
     description: '',
     main_image: null,
     variants: [
@@ -26,10 +27,17 @@ const AddProduct = () => {
   useEffect(() => {
     const fetchBrands = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/brands');
-        setBrands(response.data);
+        const token = localStorage.getItem('token');
+        const headers = { Authorization: `Bearer ${token}` };
+
+        const brandsResponse = await axios.get('http://localhost:5001/api/brands/getBrands', { headers });
+        setBrands(brandsResponse.data.brands || brandsResponse.data);
+      
+        const categoriesResponse = await axios.get('http://localhost:5001/api/category/getCategories', { headers });
+        setCategories(categoriesResponse.data.categories || categoriesResponse.data);
       } catch (err) {
-        console.error("Brands load error");
+        console.error("Data load error", err);
+        toast.error("Failed to load brands or categories");
       }
     };
     fetchBrands();
@@ -86,12 +94,12 @@ const AddProduct = () => {
     const data = new FormData();
     data.append('product_name', formData.product_name);
     data.append('brand_id', formData.brand_id);
-    data.append('category', formData.category);
+    data.append('category_id', formData.category_id);
     data.append('description', formData.description);
     if (formData.main_image) data.append('main_image', formData.main_image);
 
     data.append('variants', JSON.stringify(formData.variants.map(v => ({
-        sku: v.sku, variant_name: v.variant_name, price: v.price, stock_count: v.stock_count, critical_stock_level: v.critical_stock_level
+        sku: v.sku, variant_name: v.variant_name, price: v.price, stock_count: v.stock_count, critical_stock_level: v.critical_stock_level, hasImage: v.variant_image ? true : false
     }))));
 
     formData.variants.forEach((v) => {
@@ -149,17 +157,27 @@ const AddProduct = () => {
                 <label className="text-xs font-bold text-gray-400 uppercase ml-1">Product Name</label>
                 <input type="text" name="product_name" required value={formData.product_name} onChange={handleChange} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460]" />
             </div>
+
             <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase ml-1">Brand</label>
                 <select name="brand_id" required value={formData.brand_id} onChange={handleChange} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460]">
                   <option value="">Select Brand</option>
-                  {brands.map(b => <option key={b.brand_id} value={b.brand_id}>{b.brand_name}</option>)}
+                  {Array.isArray(brands) && brands.length > 0 ? brands.map(b => (
+                    <option key={b.brand_id} value={b.brand_id}>{b.brand_name}</option>
+                  )) : <option disabled>No brands available</option>}
                 </select>
             </div>
+
             <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase ml-1">Category</label>
-                <input type="text" name="category" required value={formData.category} onChange={handleChange} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460]" />
+                <select name="category_id" required value={formData.category_id} onChange={handleChange} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460]">
+                <option value="">Select Category</option>
+                {Array.isArray(categories) && categories.length > 0 ? categories.map(c => (
+                  <option key={c.category_id} value={c.category_id}>{c.category_name}</option>
+                )) : <option disabled>No categories available</option>}
+                </select>
             </div>
+
             <div className="md:col-span-2 space-y-2">
                 <label className="text-xs font-bold text-gray-400 uppercase ml-1">Description</label>
                 <textarea name="description" rows="3" value={formData.description} onChange={handleChange} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460] resize-none" />

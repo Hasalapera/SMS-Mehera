@@ -19,7 +19,7 @@ router.put('/update-profile', verifyToken, upload.single('image'), userControlle
 router.get('/profile/:id', userController.getUserProfile);
 
 
-router.post('/addUser', isAdmin, addUserByAdmin);
+router.post('/addUser', addUserByAdmin);
 
 // router.put('/activate-user/:id', authMiddleware, userController.activateUser);
 router.get('/all-users', isAdminOrManager, userController.getAllUsers);

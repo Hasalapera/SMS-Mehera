@@ -33,8 +33,15 @@ import ViewBrand from './pages/management/brand/ViewBrand';
 // import UpdateBrand from './pages/management/brand/UpdateBrand';
 // import DeleteBrand from './pages/management/brand/DeleteBrand';
 
+// Category management (Now in management/category folder)
+import AddCategory from './pages/management/category/AddCategory';
+import ViewCategories from './pages/management/category/ViewCategories';
+// import UpdateCategory from './pages/management/category/UpdateCategory';
+// import DeleteCategory from './pages/management/category/DeleteCategory';
+
 // Product Management (Now in management/product folder)
 import AddProduct from './pages/management/product/AddProduct';
+import ViewProduct from './pages/management/product/ViewProduct';
 // import ViewProducts from './pages/management/product/ViewProducts';
 // import UpdateProduct from './pages/management/product/UpdateProduct';
 // import DeleteProduct from './pages/management/product/DeleteProduct';
@@ -119,9 +126,13 @@ function App() {
         <Route path='/addBrand' element={userRole === 'admin' ? <AddBrand /> : <Navigate to="/dashboard" />} />
         <Route path='/getBrands' element={userRole === 'admin' ? <ViewBrand /> : <Navigate to="/dashboard" />} />
 
+        {/* Category management - only for admin */}
+        <Route path='/addCategory' element={userRole === 'admin' ? <AddCategory /> : <Navigate to="/dashboard" />} /> 
+        <Route path='/getCategories' element={userRole === 'admin' ? <ViewCategories /> : <Navigate to="/dashboard" />} /> 
 
         {/* product management - only for admin */}
         <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
+        <Route path='/inventory' element={userRole === 'admin' ? <ViewProduct /> : <Navigate to="/dashboard" />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" />} />
