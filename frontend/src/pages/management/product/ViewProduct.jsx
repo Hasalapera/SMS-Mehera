@@ -9,6 +9,8 @@ import { Toaster, toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import ProductCard from '../../../components/ProductCard'; 
 
+
+
 const ViewProduct = () => {
     const { token, logout } = useAuth();
     const [products, setProducts] = useState([]);
