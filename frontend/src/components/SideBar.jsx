@@ -294,19 +294,6 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
               )}
             </>
           )}
-
-          {/* customers section */}
-          {permissions.canAddCustomers && (
-            <>
-              <NavItem icon={ShoppingBag} label="Customers" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('customers')} isOpen={openSubMenu === 'customers'} />
-              {!isSidebarCollapsed && openSubMenu === 'customers' && (
-                <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
-                  <NavLink to="/add-customer" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><UserPlus size={14} /> Add Customer</NavLink>
-                  <NavLink to="/customers" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><List size={14} /> Customer List</NavLink>
-                </div>
-              )}
-            </>
-          )}
         </div>
 
         <div className="space-y-1">

@@ -7,8 +7,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import ProductCard from '../../../components/ProductCard'; 
 
-import ProductCard from '../../../components/ProductCard'; // 👈 ProductCard එක Import කරගන්න
 
 
 const ViewProduct = () => {
@@ -59,7 +59,6 @@ const ViewProduct = () => {
       const res = await axios.get('http://localhost:5001/api/products/getProducts', {
         headers: { Authorization: `Bearer ${token}` }
       });
-
       
       setProducts(res.data.products || res.data);
     } catch (err){
@@ -179,7 +178,6 @@ const ViewProduct = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
           {filteredProducts.map(product => (
-
            
             <ProductCard key={product.product_id} product={product} />
           ))}
