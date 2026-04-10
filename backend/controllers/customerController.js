@@ -1,46 +1,52 @@
-const supabase = require('../config/supabaseClient');
+const Customer = require('../models/Customer'); // 👈 Sequelize Model එක ගත්තා
 
 const createCustomer = async (req, res) => {
     try {
-        const { type, saloon_name, owner_name, phone_number } = req.body;
+        const { type, saloon_name, owner_name, phone1, phone2, lane1, lane2, district, additional_note, customer_display_id } = req.body;
 
-        
-        if (!type || !owner_name || !phone_number) {
-            return res.status(400).json({ error: "Type, Owner Name, and Phone Number are required." });
+        if (!saloon_name || !owner_name || !phone1 || !lane1 || !district) {
+            return res.status(400).json({ error: "Required fields are missing." });
         }
 
-        const { data, error } = await supabase
-            .from('customers')
-            .insert([{ type, saloon_name, owner_name, phone_number }])
-            .select();
+        const newCustomer = await Customer.create({
+            type,
+            saloon_name,
+            owner_name,
+            phone1,
+            phone2,
+            lane1,
+            lane2,
+            district,
+            additional_note,
+            customer_display_id
+        });
 
-        if (error) {
-            
-            console.error("Supabase Error:", error);
-            return res.status(400).json({ error: error.message });
-        }
-
-        res.status(201).json({ message: "Customer added!", data });
-
+        res.status(201).json({ message: "Customer added successfully!", data: newCustomer });
     } catch (err) {
-        
-        console.error("Server Crash:", err.message);
+        console.error("Controller Error:", err.message);
         res.status(500).json({ error: "Internal Server Error", details: err.message });
     }
 };
 
 const getAllCustomers = async (req, res) => {
     try {
-        const { data, error } = await supabase
-            .from('customers')
-            .select('*');
-
-        if (error) throw error;
-
-        res.status(200).json(data);
+        const customers = await Customer.findAll();
+        res.status(200).json(customers);
     } catch (err) {
+        console.error("Controller Error:", err.message);
         res.status(500).json({ error: err.message });
     }
 };
 
-module.exports = { createCustomer, getAllCustomers };
+// Customer Count එක ගන්න (Frontend එකේ ID Reference එකට ඕනේ නිසා)
+const getCustomerCount = async (req, res) => {
+    try {
+        const count = await Customer.count();
+        res.status(200).json({ count });
+    } catch (err) {
+        console.error("Count Error:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+module.exports = { createCustomer, getAllCustomers, getCustomerCount };

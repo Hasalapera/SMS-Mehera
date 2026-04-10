@@ -9,23 +9,32 @@ const ChangePassword = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  const userId = location.state?.userId; 
+  const userId = location.state?.userId || location.state?.user_id;
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
+    setMessage('');
+
     if (newPassword !== confirmPassword) {
       return setMessage("The two passwords do not match!");
     }
 
     try {
-      await axios.put('http://localhost:5001/api/users/update-password', {
+      console.log("Updating for user:", userId); //test 1
+
+      const response = await axios.put('http://localhost:5001/api/users/update-password', {
         user_id: userId,
         new_password: newPassword
       });
       
-      alert("Password changed successfully! Please log in again.");
-      navigate('/login');
+      if(response.status === 200) {
+        alert("Password changed successfully! Please log in again.");
+        localStorage.clear();
+        navigate('/login');
+      }
+    
     } catch (err) {
+      console.error("Update error:", err.response?.data || err.message);
       setMessage("Update failed.");
     }
   };

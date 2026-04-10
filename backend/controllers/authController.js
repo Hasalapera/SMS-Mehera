@@ -1,72 +1,60 @@
-const pool = require('../db/db');
+const { User } = require('../models');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // PostgreSQL query එක (Soft delete එකත් පරීක්ෂා කරනවා)
-        const result = await pool.query(
-            'SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL', 
-            [email]
-        );
-        const user = result.rows[0];
+        // Find user with paranoid: false to include soft-deleted users for checking
+        const user = await User.findOne({ where: { email }, paranoid: false });
 
         if (!user) {
-            return res.status(401).json({ message: "The email or key is incorrect!" });
+            return res.status(401).json({ message: "That email address is not registered!" });
         }
 
-        const isMatch = await bcrypt.compare(password, user.password);
+        if (user.deleted_at) {
+            return res.status(401).json({ message: "This account has been deleted!" });
+        }
+
+        // Check password
+        const isMatch = await bcrypt.compare(password, user.password.trim());
+        
         if (!isMatch) {
-            return res.status(401).json({ message: "The email or key is incorrect!" });
+            return res.status(401).json({ message: "The password you entered is incorrect!" });
         }
 
+        // Create JWT token
         const token = jwt.sign(
             { user_id: user.user_id, role: user.role },
             process.env.JWT_SECRET || 'mehera_secret_key',
             { expiresIn: '1d' }
         );
 
-        // පරණ logic එක: Default password ද බලනවා
+        // Check if default password needs changing
         if (user.is_default_password === true) {
             return res.status(200).json({
-                message: "The temporary key must be changed!",
+                message: "තාවකාලික මුරපදය වෙනස් කළ යුතුයි!",
                 mustChangePassword: true,
-                redirectPath: "/change-password",
-                token: token,
-                user_id: user.user_id
+                role: user.role, 
+                token,
+                user_id: user.user_id,
+                full_name: user.name 
             });
         }
 
-        // Role-based redirection logic එක
-        let redirectPath = '/dashboard';
-        const roleMap = {
-            'admin': '/admin-dashboard',
-            'manager': '/manager-dashboard',
-            'sales_rep': '/sales-rep-dashboard',
-            'online_store_keeper': '/store-keeper-dashboard'
-        };
-        redirectPath = roleMap[user.role] || '/dashboard';
+        // Remove password before sending
+        const safeUser = user.toJSON();
+        delete safeUser.password;
 
         res.status(200).json({
-            message: "Logged In successfully",
+            message: "සාර්ථකව ලොග් විය",
             token,
-            user: {
-                user_id: user.user_id,
-                full_name: user.name, 
-                email: user.email,
-                role: user.role,
-                contact_no: user.contact_no, 
-                nic_no: user.nic_no,        
-                dob: user.dob,              
-                picture_url: user.picture_url,
-                is_active: user.is_active,
-                created_at: user.created_at,
-                redirectPath
-            }
+            user: safeUser,
         });
+
     } catch (err) {
+        console.error("Login Error:", err.message);
         res.status(500).json({ error: err.message });
     }
 };
