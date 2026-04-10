@@ -15,3 +15,31 @@ const dummyCustomers = [
   { customer_id: 5, customer_display_id: "CUS-0005", type: "Wholesale", saloon_name: "LuxeBeauty Wholesale",  owner_name: "Saman Bandara",  phone1: "0751234567", district: "Kurunegala",   additional_note: "VIP customer" },
   { customer_id: 6, customer_display_id: "CUS-0006", type: "Retail",    saloon_name: "Pink Petal Beauty",     owner_name: "Dilani Wickrama",phone1: "0781234567", district: "Matara",       additional_note: "" },
 ];
+
+// Type badge colors
+const typeBadge = {
+  Saloon:    { bg: "bg-[#b4a460]/10", text: "text-[#8a7b42]", border: "border-[#b4a460]/20" },
+  Wholesale: { bg: "bg-black/5",      text: "text-black",      border: "border-black/10" },
+  Retail:    { bg: "bg-gray-100",     text: "text-gray-500",   border: "border-gray-200" },
+};
+
+export default function ViewCustomer() {
+  const navigate    = useNavigate();
+  const [search,    setSearch]    = useState("");
+  const [typeFilter, setTypeFilter] = useState("All");
+ 
+  // Get logged in user role (for Add button visibility)
+  const loggedInUser = JSON.parse(localStorage.getItem('user'));
+ 
+  // Filter logic
+  const filtered = dummyCustomers.filter((c) => {
+    const matchSearch =
+      c.saloon_name.toLowerCase().includes(search.toLowerCase()) ||
+      c.owner_name.toLowerCase().includes(search.toLowerCase())  ||
+      c.district.toLowerCase().includes(search.toLowerCase());
+    const matchType = typeFilter === "All" || c.type === typeFilter;
+    return matchSearch && matchType;
+  });
+
+  
+}
