@@ -18,7 +18,9 @@ const menuConfig = {
     canViewReports: true,
     canManageProducts: true,
     canManageCategories: true, 
-    canEditInventory: true 
+    canEditInventory: true,
+    canViewCustomers: true,
+    canAddCustomers: true 
   },
   manager: { 
     canFullManageUsers: false, 
@@ -28,19 +30,21 @@ const menuConfig = {
     canManageBrands: false,
     canManageProducts: false,
     canManageCategories: false, 
-    canEditInventory: false 
+    canEditInventory: false, 
+    canViewCustomers: true,
+    canAddCustomers: false
   },
-  sales_rep: { 
-    canFullManageUsers: false, 
-    canViewUsers: false, 
-    canAddProducts: false, 
-    canViewReports: false, 
-    canManageBrands: false,
-    canManageProducts: false,
-    canManageCategories: false,
-    canEditInventory: false,
-    canAddCustomers: true,  
-  }
+  // sales_rep: { 
+  //   canFullManageUsers: false, 
+  //   canViewUsers: false, 
+  //   canAddProducts: false, 
+  //   canViewReports: false, 
+  //   canManageBrands: false,
+  //   canManageProducts: false,
+  //   canManageCategories: false,
+  //   canEditInventory: false,
+  //   canViewCustomers: true,  
+  // }
 };
 
 const NavItem = ({ to, icon: Icon, label, isCollapsed, badge, onClick, isOpen }) => {
@@ -178,11 +182,44 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
           )}
 
           {/* Customers Section */}
-          <NavItem icon={Users} label="Customers" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('customers')} isOpen={openSubMenu === 'customers'} />
-          {!isSidebarCollapsed && openSubMenu === 'customers' && (
-            <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
-              <NavLink to="/add-customer" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><UserPlus size={14} /> Add Customer</NavLink>
-              <NavLink to="/customers" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><List size={14} /> Customer List</NavLink>
+          {permissions.canViewCustomers && (
+            <div className="space-y-1">
+              <NavItem 
+                icon={Users} 
+                label="Customers" 
+                isCollapsed={isSidebarCollapsed} 
+                onClick={() => handleToggleSubMenu('customers')} 
+                isOpen={openSubMenu === 'customers'} 
+              />
+              {!isSidebarCollapsed && openSubMenu === 'customers' && (
+                <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
+                  
+                  {/* 🛡️ Manager ට පේන්නේ නැති වෙන්න මෙතනට permission check එකක් දැම්මා */}
+                  {permissions.canAddCustomers && (
+                    <NavLink 
+                      to="/add-customer" 
+                      className={({ isActive }) => 
+                        `flex items-center gap-2 p-2 text-[11px] transition-colors ${
+                          isActive ? 'text-[#b4a460]' : 'text-gray-500 hover:text-[#b4a460]'
+                        }`
+                      }
+                    >
+                      <UserPlus size={14} /> Add Customer
+                    </NavLink>
+                  )}
+
+                  <NavLink 
+                    to="/customers" 
+                    className={({ isActive }) => 
+                      `flex items-center gap-2 p-2 text-[11px] transition-colors ${
+                        isActive ? 'text-[#b4a460]' : 'text-gray-500 hover:text-[#b4a460]'
+                      }`
+                    }
+                  >
+                    <List size={14} /> Customer List
+                  </NavLink>
+                </div>
+              )}
             </div>
           )}
 
