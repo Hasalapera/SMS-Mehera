@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  
+  backend:
+    build:
+      context: ./backend  
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"      
+    env_file:
+      - ./backend/.env   
+    volumes:
+      - ./backend:/app    
+      - /app/node_modules 
+    environment:
+      - NODE_ENV=development
+
+  # 2. Frontend Service 
+  frontend:
+    build:
+      context: ./frontend 
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"      
+    stdin_open: true      
+    tty: true
+    depends_on:
+      - backend
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=mehera_international
+      - POSTGRES_USER=mehera_international_user
+      - POSTGRES_PASSWORD=sffTqSd8uRlA93CdLgyyDWnunmuUAbcr
+    ports:
+      - "5432:5432"
