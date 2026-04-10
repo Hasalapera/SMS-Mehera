@@ -46,3 +46,79 @@ const normalizeStats = (responseData, customer) => {
     lastOrderDate: source.lastOrderDate ?? source.last_order_date ?? null,
   };
 };
+
+export default function CustomerDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { token, logout } = useAuth();
+
+  const [customer, setCustomer] = useState(null);
+  const [notes, setNotes] = useState([]);
+  const [stats, setStats] = useState({ totalOrders: 0, totalSpent: 0, lastOrderDate: null });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [noteText, setNoteText] = useState('');
+  const [selectedTag, setSelectedTag] = useState('general');
+  const [savingNote, setSavingNote] = useState(false);
+
+  const canAddNote = ['admin', 'manager', 'sales_rep'].includes(JSON.parse(localStorage.getItem('user') || 'null')?.role);
+
+  useEffect(() => {
+    const fetchCustomer = async () => {
+      if (!token) {
+        navigate('/');
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await axios.get(`http://localhost:5001/api/customers/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const normalizedCustomer = normalizeCustomer(response.data);
+        setCustomer(normalizedCustomer);
+        setNotes(normalizeNotes(response.data, normalizedCustomer));
+        setStats(normalizeStats(response.data, normalizedCustomer));
+        setError(null);
+      } catch (err) {
+        if (err.response?.status === 401) {
+          logout();
+          return;
+        }
+        setError(err.response?.status === 404 ? 'Customer not found' : 'Failed to load customer');
+        setCustomer(null);
+        setNotes([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomer();
+  }, [id, token, logout, navigate]);
+
+  const handleAddNote = async () => {
+    if (!noteText.trim()) return;
+
+    const newNote = {
+      note_id: Date.now(),
+      note_text: noteText.trim(),
+      tag: selectedTag,
+      added_by: 'You',
+      role: 'sales_rep',
+      created_at: new Date().toISOString(),
+    };
+
+    setSavingNote(true);
+        try {
+        // Ready for backend
+        // The UI already expects a POST endpoint like /api/customers/:id/notes.
+        setNotes((current) => [newNote, ...current]);
+        setNoteText('');
+        setSelectedTag('general');
+        } finally {
+        setSavingNote(false);
+        }
+    };
+
+}
