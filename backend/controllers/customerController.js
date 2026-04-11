@@ -1,4 +1,4 @@
-const Customer = require('../models/Customer'); // 👈 Sequelize Model එක ගත්තා
+const { Customer, CustomerNote } = require('../models'); // 👈 Sequelize Models එක ගත්තා
 
 const createCustomer = async (req, res) => {
     try {
@@ -38,6 +38,80 @@ const getAllCustomers = async (req, res) => {
     }
 };
 
+// Get single customer with notes
+const getCustomer = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const customer = await Customer.findByPk(id, {
+            include: [{ model: CustomerNote, as: 'notes', separate: true, order: [['created_at', 'DESC']] }]
+        });
+
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+
+        res.status(200).json({
+            message: 'Customer retrieved successfully',
+            customer
+        });
+    } catch (err) {
+        console.error('Get Customer Error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Add note to customer
+const addNote = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { note_text, tag } = req.body;
+        const user = req.user; // From auth middleware
+
+        if (!note_text || !note_text.trim()) {
+            return res.status(400).json({ error: 'Note text is required' });
+        }
+
+        const customer = await Customer.findByPk(id);
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+
+        const note = await CustomerNote.create({
+            customer_id: id,
+            note_text: note_text.trim(),
+            tag: tag || 'general',
+            added_by: user?.full_name || 'System',
+            role: user?.role || 'system'
+        });
+
+        res.status(201).json({
+            message: 'Note added successfully',
+            note
+        });
+    } catch (err) {
+        console.error('Add Note Error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Delete note from customer
+const deleteNote = async (req, res) => {
+    try {
+        const { id, noteId } = req.params;
+
+        const note = await CustomerNote.findByPk(noteId);
+        if (!note || note.customer_id !== id) {
+            return res.status(404).json({ error: 'Note not found' });
+        }
+
+        await note.destroy();
+        res.status(200).json({ message: 'Note deleted successfully' });
+    } catch (err) {
+        console.error('Delete Note Error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
 // Customer Count එක ගන්න (Frontend එකේ ID Reference එකට ඕනේ නිසා)
 const getCustomerCount = async (req, res) => {
     try {
@@ -49,4 +123,4 @@ const getCustomerCount = async (req, res) => {
     }
 };
 
-module.exports = { createCustomer, getAllCustomers, getCustomerCount };
+module.exports = { createCustomer, getAllCustomers, getCustomer, addNote, deleteNote, getCustomerCount };

@@ -100,30 +100,56 @@ export default function CustomerDetail() {
   const handleAddNote = async () => {
     if (!noteText.trim()) return;
 
-    const newNote = {
-      note_id: Date.now(),
-      note_text: noteText.trim(),
-      tag: selectedTag,
-      added_by: 'You',
-      role: 'sales_rep',
-      created_at: new Date().toISOString(),
-    };
-
     setSavingNote(true);
-        try {
-        // Ready for backend
-        // The UI already expects a POST endpoint like /api/customers/:id/notes.
-        setNotes((current) => [newNote, ...current]);
+    try {
+      const response = await axios.post(
+        `http://localhost:5001/api/customers/${id}/notes`,
+        {
+          note_text: noteText.trim(),
+          tag: selectedTag,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const addedNote = response.data?.note;
+      if (addedNote) {
+        setNotes((current) => [addedNote, ...current]);
         setNoteText('');
         setSelectedTag('general');
-        } finally {
-        setSavingNote(false);
-        }
-    };
+      }
+    } catch (err) {
+      console.error('Failed to add note:', err);
+      if (err.response?.status === 401) {
+        logout();
+        return;
+      }
+      alert(err.response?.data?.error || 'Failed to save note. Please try again.');
+    } finally {
+      setSavingNote(false);
+    }
+  };
 
-     const handleDeleteNote = (noteId) => {
+  const handleDeleteNote = async (noteId) => {
     if (!window.confirm('Delete this note?')) return;
-    setNotes((current) => current.filter((note) => note.note_id !== noteId));
+
+    try {
+      await axios.delete(
+        `http://localhost:5001/api/customers/${id}/notes/${noteId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setNotes((current) => current.filter((note) => note.note_id !== noteId));
+    } catch (err) {
+      console.error('Failed to delete note:', err);
+      if (err.response?.status === 401) {
+        logout();
+        return;
+      }
+      alert(err.response?.data?.error || 'Failed to delete note. Please try again.');
+    }
   };
 
   if (loading) {
