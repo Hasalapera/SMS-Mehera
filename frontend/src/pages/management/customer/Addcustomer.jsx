@@ -92,23 +92,23 @@ const AddCustomer = () => {
         <div className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-100 overflow-hidden">
           
           {/* Header */}
-          <div className="bg-black p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 border-b-4 border-[#b4a460]">
+          <div className="bg-[#f8f8f8] p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 border-b border-gray-100">
             <div className="flex items-center gap-5">
               <div className="p-4 bg-[#b4a460] rounded-2xl text-black">
                 <UserPlus size={28} strokeWidth={2.5} />
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase">Register New Customer</h1>
-                <p className="text-[#b4a460] text-xs font-bold uppercase tracking-[0.2em] mt-1 opacity-80">Mehera International</p>
+                <h1 className="text-2xl md:text-3xl font-black text-black tracking-tight uppercase">Register New Customer</h1>
+                <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] mt-1">Mehera International</p>
               </div>
             </div>
             
             <div className="flex items-center gap-4">
-               <div className="bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/10 flex items-center gap-3">
+               <div className="bg-white px-5 py-2.5 rounded-2xl border border-gray-100 flex items-center gap-3">
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ID Reference</span>
                   <span className="text-lg font-black text-[#b4a460]">{nextCustomerId}</span>
                </div>
-               <button onClick={() => navigate('/home')} className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all border border-white/5">
+               <button onClick={() => navigate('/home')} className="p-3 bg-white hover:bg-gray-50 text-gray-500 hover:text-black rounded-xl transition-all border border-gray-100">
                 <ArrowLeft size={20} />
               </button>
             </div>
