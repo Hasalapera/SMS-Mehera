@@ -44,6 +44,7 @@ import ViewCategories from './pages/management/category/ViewCategories';
 // Product Management (Now in management/product folder)
 import AddProduct from './pages/management/product/AddProduct';
 import ViewProduct from './pages/management/product/ViewProduct';
+import ProductDetail from './pages/management/product/ProductDetail';
 // import ViewProducts from './pages/management/product/ViewProducts';
 // import UpdateProduct from './pages/management/product/UpdateProduct';
 // import DeleteProduct from './pages/management/product/DeleteProduct';
@@ -157,6 +158,7 @@ function App() {
         {/* product management - only for admin */}
         <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
         <Route path='/inventory' element={userRole === 'admin' ? <ViewProduct /> : <Navigate to="/dashboard" />} />
+        <Route path='/product/:id' element={userRole === 'admin' ? <ProductDetail /> : <Navigate to="/dashboard" />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" />} />
