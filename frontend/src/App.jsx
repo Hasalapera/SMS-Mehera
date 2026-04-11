@@ -4,6 +4,8 @@ import DashboardLayout from './components/DashboardLayout';
 
 //sales management
 import AddCustomer from "./pages/management/customer/Addcustomer";
+import ViewCustomer from './pages/management/customer/ViewCustomer';
+import CustomerDetail from './pages/management/customer/CustomerDetail';
 import AddOrder from "./pages/management/order/AddOrder";
 
 // Public Pages
@@ -74,6 +76,28 @@ function App() {
           element={
             ["admin", "sales_rep"].includes(userRole) ? (
               <AddCustomer />
+            ) : (
+              <Navigate to="/home" />
+            )
+          }
+        />
+
+        <Route
+          path="/customers"
+          element={
+            ["admin", "manager", "sales_rep"].includes(userRole) ? (
+              <ViewCustomer />
+            ) : (
+              <Navigate to="/home" />
+            )
+          }
+        />
+
+        <Route
+          path="/customer/:id"
+          element={
+            ["admin", "manager", "sales_rep"].includes(userRole) ? (
+              <CustomerDetail />
             ) : (
               <Navigate to="/home" />
             )
