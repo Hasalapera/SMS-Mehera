@@ -49,6 +49,9 @@ import ProductDetail from './pages/management/product/ProductDetail';
 // import UpdateProduct from './pages/management/product/UpdateProduct';
 // import DeleteProduct from './pages/management/product/DeleteProduct';
 
+//Settings
+// import SettingsPage from './pages/SettingsPage';
+
 
 function App() {
   const { user, loading } = useAuth();
@@ -161,6 +164,7 @@ function App() {
         <Route path='/product/:id' element={['admin', 'manager'].includes(userRole) ? <ProductDetail /> : <Navigate to="/dashboard" />} />
       </Route>
 
+      {/* <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/" />} /> */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );

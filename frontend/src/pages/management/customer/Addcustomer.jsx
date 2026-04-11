@@ -108,9 +108,9 @@ const AddCustomer = () => {
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ID Reference</span>
                   <span className="text-lg font-black text-[#b4a460]">{nextCustomerId}</span>
                </div>
-               <button onClick={() => navigate('/home')} className="p-3 bg-white hover:bg-gray-50 text-gray-500 hover:text-black rounded-xl transition-all border border-gray-100">
+               {/* <button onClick={() => navigate('/home')} className="p-3 bg-white hover:bg-gray-50 text-gray-500 hover:text-black rounded-xl transition-all border border-gray-100">
                 <ArrowLeft size={20} />
-              </button>
+              </button> */}
             </div>
           </div>
 
