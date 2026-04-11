@@ -72,16 +72,16 @@ export default function ViewCustomer() {
             <Toaster position="top-right" />
  
       {/* Top Header Bar */}
-        <div className="bg-black px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b-4 border-[#b4a460]">
+        <div className="bg-[#f8f8f8] px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b border-gray-100">
             <div className="flex items-center gap-5">
                 <div className="p-3 bg-[#b4a460] rounded-2xl text-black">
                     <Users size={26} strokeWidth={2.5} />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-black text-white uppercase tracking-tight">
+                    <h1 className="text-2xl font-black text-black uppercase tracking-tight">
                     Customer Directory
                     </h1>
-                    <p className="text-[#b4a460] text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5 opacity-80">
+                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5">
                     Mehera International
                     </p>
                 </div>
@@ -90,7 +90,7 @@ export default function ViewCustomer() {
             {/* Stats + Add button */}
             <div className="flex items-center gap-4">
                 {/* Total count badge */}
-                <div className="bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/10 flex items-center gap-3">
+                <div className="bg-white px-5 py-2.5 rounded-2xl border border-gray-100 flex items-center gap-3">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                     Total
                     </span>
@@ -101,7 +101,7 @@ export default function ViewCustomer() {
 
                 <button
                     onClick={fetchCustomers}
-                    className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all border border-white/5"
+                    className="p-3 bg-white hover:bg-gray-50 text-gray-500 hover:text-black rounded-xl transition-all border border-gray-100"
                     title="Refresh customers"
                 >
                     <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
