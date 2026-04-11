@@ -155,10 +155,10 @@ function App() {
         <Route path='/addCategory' element={userRole === 'admin' ? <AddCategory /> : <Navigate to="/dashboard" />} /> 
         <Route path='/getCategories' element={userRole === 'admin' ? <ViewCategories /> : <Navigate to="/dashboard" />} /> 
 
-        {/* product management - only for admin */}
+        {/* product management - admin and manager can view; only admin can add */}
         <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
-        <Route path='/inventory' element={userRole === 'admin' ? <ViewProduct /> : <Navigate to="/dashboard" />} />
-        <Route path='/product/:id' element={userRole === 'admin' ? <ProductDetail /> : <Navigate to="/dashboard" />} />
+        <Route path='/inventory' element={['admin', 'manager'].includes(userRole) ? <ViewProduct /> : <Navigate to="/dashboard" />} />
+        <Route path='/product/:id' element={['admin', 'manager'].includes(userRole) ? <ProductDetail /> : <Navigate to="/dashboard" />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" />} />
