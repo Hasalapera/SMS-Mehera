@@ -241,8 +241,8 @@ export default function CustomerDetail() {
         </div>
 
         <div className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm overflow-hidden">
-          <div className="bg-black px-8 py-5 flex items-center justify-between border-b-2 border-[#b4a460]">
-            <h2 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+          <div className="bg-[#f8f8f8] px-8 py-5 flex items-center justify-between border-b border-gray-100">
+            <h2 className="text-sm font-black text-black uppercase tracking-widest flex items-center gap-2">
               <StickyNote size={16} className="text-[#b4a460]" /> Behavior Notes
             </h2>
             <span className="text-[10px] text-gray-400 font-bold">
