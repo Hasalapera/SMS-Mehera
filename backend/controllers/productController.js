@@ -52,11 +52,9 @@ const getProducts = async (req, res) => {
     try {
         const products = await Product.findAll({
             include: [
-                {
-                    model: Category, as: 'category',
-                    model: Brand, as: 'brand',
-                    model: ProductVariant, as: 'variants'
-                }
+                { model: Category, as: 'category' },
+                { model: Brand, as: 'brand' },
+                { model: ProductVariant, as: 'variants' }
             ]
         });
 
@@ -67,6 +65,32 @@ const getProducts = async (req, res) => {
 
     } catch (err) {
         console.error("Get Products Error:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const getProductById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const product = await Product.findByPk(id, {
+            include: [
+                { model: Category, as: 'category' },
+                { model: Brand, as: 'brand' },
+                { model: ProductVariant, as: 'variants' }
+            ]
+        });
+
+        if (!product) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+
+        res.status(200).json({
+            message: 'Product retrieved successfully',
+            product
+        });
+    } catch (err) {
+        console.error('Get Product By ID Error:', err.message);
         res.status(500).json({ error: err.message });
     }
 };
@@ -118,6 +142,7 @@ const deleteProduct = async (req, res) => {
 module.exports = {
     addProduct,
     getProducts,
+    getProductById,
     updateProduct,
     deleteProduct
 };

@@ -13,6 +13,7 @@ const productUploads = upload.fields([
 
 router.post('/addProduct', verifyToken, isAdmin, productUploads, productController.addProduct);
 router.get('/getProducts', productController.getProducts);
+router.get('/:id', productController.getProductById);
 
 
 

@@ -28,7 +28,7 @@ const menuConfig = {
     canAddProducts: false, 
     canViewReports: true, 
     canManageBrands: false,
-    canManageProducts: false,
+    canManageProducts: true,
     canManageCategories: false, 
     canEditInventory: false, 
     canViewCustomers: true,
@@ -289,7 +289,9 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
               {!isSidebarCollapsed && openSubMenu === 'product' && (
                 <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
                   <NavLink to="/inventory" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><SlidersHorizontal size={14} /> Inventory</NavLink>
-                  <NavLink to="/addProduct" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><PlusCircle size={14} /> Add Product</NavLink>
+                  {userRole === 'admin' && (
+                    <NavLink to="/addProduct" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><PlusCircle size={14} /> Add Product</NavLink>
+                  )}
                 </div>
               )}
             </>
