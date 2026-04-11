@@ -184,7 +184,7 @@ export default function CustomerDetail() {
 
    return (
     <div className="w-full min-h-screen bg-[#fcfcfc] animate-in fade-in duration-500">
-      <div className="bg-black px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b-4 border-[#b4a460]">
+      <div className="bg-[#f8f8f8] px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b border-gray-100">
         <div className="flex items-center gap-5">
           <div className="p-3 bg-[#b4a460] rounded-2xl text-black">
             <Building2 size={26} strokeWidth={2.5} />
@@ -193,18 +193,18 @@ export default function CustomerDetail() {
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">
               Customers <span className="text-[#b4a460]">/ {customerName}</span>
             </p>
-            <h1 className="text-2xl font-black text-white uppercase tracking-tight">Customer Detail</h1>
+            <h1 className="text-2xl font-black text-black uppercase tracking-tight">Customer Detail</h1>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/10 flex items-center gap-3">
+          <div className="bg-white px-5 py-2.5 rounded-2xl border border-gray-100 flex items-center gap-3">
             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ID</span>
             <span className="text-lg font-black text-[#b4a460]">{customerId}</span>
           </div>
           <button
             onClick={() => navigate('/customers')}
-            className="p-3 bg-white/5 hover:bg-white/10 text-white rounded-xl transition-all border border-white/10"
+            className="p-3 bg-white hover:bg-gray-50 text-gray-500 hover:text-black rounded-xl transition-all border border-gray-100"
           >
             <ArrowLeft size={20} />
           </button>
