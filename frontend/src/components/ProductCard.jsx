@@ -5,11 +5,11 @@ import { useNavigate } from 'react-router-dom';
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
 
-  const variants = product.variants || [];
-  const variantsPreview = product.variants?.slice(0, 4);
+  const variants = product?.variants || [];
+  const variantsPreview = variants.slice(0, 4);
 
   const firstVariant = variants.length > 0 ? variants[0] : null;
-  const displayPrice = firstVariant ? firstVariant.price : null;
+  const displayPrice = firstVariant ? firstVariant.price : product?.price;
   const displayStock = firstVariant ? firstVariant.stock_count : 0;
   console.log("Card Data:", product); 
 
@@ -83,7 +83,7 @@ const ProductCard = ({ product }) => {
         {/* --- Variants Avatar Stack --- */}
         <div className="mt-auto pt-5 border-t border-gray-50 flex items-center justify-between">
           <div className="flex -space-x-3 hover:space-x-1 transition-all duration-300 cursor-pointer">
-            {variantsPreview.length > 0 ? (
+            {variantsPreview?.length > 0 ? (
               variantsPreview.map((variant) => (
                 <div 
                   key={variant.variant_id} 
@@ -103,7 +103,7 @@ const ProductCard = ({ product }) => {
               </div>
             )}
             
-            {variants.length > 4 && (
+            {variants?.length > 4 && (
               <div className="w-9 h-9 rounded-full bg-black flex items-center justify-center border-[3px] border-white text-[9px] font-black text-[#b4a460] shadow-md ring-1 ring-gray-100">
                 +{variants.length - 4}
               </div>
