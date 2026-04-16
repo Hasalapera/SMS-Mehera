@@ -1,17 +1,28 @@
 import React from 'react';
+import { useAuth } from '../pages/context/AuthContext';
 import { ShoppingCart, Heart, Eye, LayoutGrid, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const variants = product.variants || [];
-  const variantsPreview = product.variants?.slice(0, 4);
+  const variants = product?.variants || [];
+  const variantsPreview = variants.slice(0, 4);
 
   const firstVariant = variants.length > 0 ? variants[0] : null;
-  const displayPrice = firstVariant ? firstVariant.price : null;
+  const displayPrice = firstVariant ? firstVariant.price : product?.price;
   const displayStock = firstVariant ? firstVariant.stock_count : 0;
-  console.log("Card Data:", product); 
+
+  // 🛡️ හැම තැනම පාවිච්චි කරන්න පුළුවන් පොදු function එකක්
+  const handleNavigation = () => {
+    if (user) {
+      navigate(`/product/${product.product_id}`);
+    } else {
+      // ලොග් වුණාම ආපහු මේ product එකටම එන්න ඕන නම් state එකත් එක්ක යවන්න
+      navigate('/login', { state: { from: `/product/${product.product_id}` } });
+    }
+  };
 
   return (
     <div className="group bg-white rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-[#b4a460]/15 transition-all duration-500 border border-gray-100 flex flex-col h-full">
@@ -31,7 +42,7 @@ const ProductCard = ({ product }) => {
           </span>
         </div>
 
-        {/* --- Stock Level Badge (අලුතින් එකතු කළා) --- */}
+        {/* Stock Level Badge */}
         <div className="absolute top-6 right-6">
           <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter shadow-sm ${displayStock > 0 ? 'bg-white text-green-600' : 'bg-red-50 text-red-600'}`}>
             {displayStock > 0 ? `${displayStock} IN STOCK` : 'OUT OF STOCK'}
@@ -40,22 +51,22 @@ const ProductCard = ({ product }) => {
 
         {/* --- Side Hover Actions --- */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-          <button className="p-3 bg-white text-[#9A8B50] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110 active:scale-95">
+          <button className="p-3 bg-white text-[#9A8B50] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110">
             <ShoppingCart size={18} />
           </button>
-          <button className="p-3 bg-white text-[#9A8B50] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110 active:scale-95">
+          <button className="p-3 bg-white text-[#9A8B50] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110">
             <Heart size={18} />
           </button>
           <button 
-            onClick={() => navigate(`/product/${product.product_id}`)}
-            className="p-3 bg-white text-[#9A8B50] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110 active:scale-95"
+            onClick={handleNavigation} // 🛡️ මෙතනත් ආරක්ෂාව දැම්මා
+            className="p-3 bg-white text-[#9A8B50] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110"
           >
             <Eye size={18} />
           </button>
         </div>
       </div>
 
-      {/* --- Product Details Area --- */}
+      {/* --- Product Details --- */}
       <div className="p-6 bg-white flex-1 flex flex-col text-left">
         <div className="flex justify-between items-start mb-3">
           <div className="flex-1 overflow-hidden pr-2">
@@ -69,32 +80,18 @@ const ProductCard = ({ product }) => {
           </div>
           <div className="text-right shrink-0">
             <p className="text-sm font-black text-black tabular-nums tracking-tighter">
-              {/* 🛡️ මෙතන displayPrice එක පාවිච්චි කරන්න */}
               {displayPrice ? `${Number(displayPrice).toLocaleString()} LKR` : 'Price on Req'}
             </p>
-            <div className="flex mt-1 justify-end gap-0.5">
-              {[...Array(5)].map((_, i) => (
-                <span key={i} className="text-[#C0B26D] text-[9px]">★</span>
-              ))}
-            </div>
           </div>
         </div>
 
-        {/* --- Variants Avatar Stack --- */}
+        {/* --- Variants & Main Button --- */}
         <div className="mt-auto pt-5 border-t border-gray-50 flex items-center justify-between">
-          <div className="flex -space-x-3 hover:space-x-1 transition-all duration-300 cursor-pointer">
-            {variantsPreview.length > 0 ? (
+          <div className="flex -space-x-3 hover:space-x-1 transition-all duration-300">
+            {variantsPreview?.length > 0 ? (
               variantsPreview.map((variant) => (
-                <div 
-                  key={variant.variant_id} 
-                  className="w-9 h-9 rounded-full border-[3px] border-white overflow-hidden bg-white shadow-md ring-1 ring-gray-100 transition-transform hover:-translate-y-1"
-                >
-                  <img 
-                    /* 🛡️ මෙතන 'variant_image_url' වෙනුවට ඔයාගේ Schema එකේ තියෙන 'image_url' පාවිච්චි කළා */
-                    src={variant.image_url || product.image_url} 
-                    className="w-full h-full object-cover"
-                    alt="v"
-                  />
+                <div key={variant.variant_id} className="w-9 h-9 rounded-full border-[3px] border-white overflow-hidden bg-white shadow-md ring-1 ring-gray-100 transition-transform hover:-translate-y-1">
+                  <img src={variant.image_url || product.image_url} className="w-full h-full object-cover" alt="v" />
                 </div>
               ))
             ) : (
@@ -102,16 +99,10 @@ const ProductCard = ({ product }) => {
                 <LayoutGrid size={14} />
               </div>
             )}
-            
-            {variants.length > 4 && (
-              <div className="w-9 h-9 rounded-full bg-black flex items-center justify-center border-[3px] border-white text-[9px] font-black text-[#b4a460] shadow-md ring-1 ring-gray-100">
-                +{variants.length - 4}
-              </div>
-            )}
           </div>
           
           <button 
-            onClick={() => navigate(`/product/${product.product_id}`)}
+            onClick={handleNavigation} // 🛡️ මෙතනත් ආරක්ෂිතයි
             className="flex items-center justify-center w-10 h-10 bg-black text-[#b4a460] rounded-2xl hover:bg-[#1a1a1a] hover:scale-110 active:scale-95 transition-all shadow-lg shadow-[#b4a460]/20"
           >
             <ChevronRight size={20} strokeWidth={3} />

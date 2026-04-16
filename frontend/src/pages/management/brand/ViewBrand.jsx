@@ -66,8 +66,8 @@ const ViewBrands = () => {
             onClick={() => setActiveTab(brand.brand_id)}
             className={`px-8 py-3 rounded-2xl font-bold text-sm transition-all duration-300 ${
               activeTab === brand.brand_id
-                ? 'bg-black text-[#b4a460] shadow-xl scale-105'
-                : 'bg-white text-gray-400 hover:text-black hover:bg-gray-50'
+                ? 'bg-[#b4a460] text-white shadow-xl scale-105'
+                : 'bg-white text-gray-400 hover:bg-black hover:text-[#b4a460] hover:shadow-lg'
             }`}
           >
             {brand.brand_name}

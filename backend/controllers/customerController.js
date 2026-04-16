@@ -1,3 +1,4 @@
+
 const { Customer, CustomerNote } = require('../models'); // 👈 Sequelize Models එක ගත්තා
 
 const createCustomer = async (req, res) => {
@@ -124,3 +125,4 @@ const getCustomerCount = async (req, res) => {
 };
 
 module.exports = { createCustomer, getAllCustomers, getCustomer, addNote, deleteNote, getCustomerCount };
+
