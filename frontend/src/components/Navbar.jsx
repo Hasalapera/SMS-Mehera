@@ -18,7 +18,7 @@ const Navbar = () => {
     { name: 'Create Order', path: '/add-order' },
     { name: 'Add Customer', path: '/add-customer' },
     { name: 'History', path: '/history' },
-    { name: 'Stock', path: '/inventory' },
+    { name: 'Stock', path: '/stock' },
     { name: 'Support', path: '/support' }
   ];
 

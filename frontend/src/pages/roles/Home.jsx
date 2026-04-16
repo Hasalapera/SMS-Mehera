@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Search, ChevronDown, Loader2, PackageSearch } from 'lucide-react';
 import axios from 'axios';
@@ -34,7 +35,40 @@ const Home = () => {
     p.product_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const categories = ["Cosmetics", "Skin Care", "Hair Care", "Cleaning"];
+
+  const handleAddToCart = (product) => {
+    console.log("Add to cart button clicked for:", product.name); // බටන් එක වැඩද බලන්න මේක දැම්මා
+    
+    const saved = localStorage.getItem("active_order_cart");
+    const existingCart = saved ? JSON.parse(saved) : [];
+    
+    const exists = existingCart.find(item => item.product_id === product.id);
+
+    let updatedCart;
+    if (exists) {
+      updatedCart = existingCart.map(item => 
+        item.product_id === product.id ? { ...item, qty: item.qty + 1 } : item
+      );
+    } else {
+      updatedCart = [...existingCart, { 
+        product_id: product.id, 
+        name: product.name, 
+        price: product.price, 
+        qty: 1 
+      }];
+    }
+    
+    localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
+    console.log("LocalStorage Updated:", updatedCart);
+
+    setAddedProductId(product.id);
+    toast.success(`${product.name} added to cart!`);
+    setTimeout(() => setAddedProductId(null), 1500);
+  };
+
   return (
+
     <div className="w-full min-h-screen bg-[#f8f9fa] text-black overflow-x-hidden">
       
       {/* --- Performance Rankings (Sales Rep ට පේන කෑල්ල) --- */}

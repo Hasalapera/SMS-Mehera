@@ -1,3 +1,4 @@
+
 const express = require('express');
 const router = express.Router();
 const { createCustomer, getAllCustomers, getCustomer, addNote, deleteNote, getCustomerCount } = require('../controllers/customerController');
@@ -15,3 +16,4 @@ router.post('/:id/notes', verifyToken, addNote);
 router.delete('/:id/notes/:noteId', verifyToken, deleteNote);
 
 module.exports = router;
+
