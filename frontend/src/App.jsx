@@ -67,6 +67,20 @@ function App() {
       <Route path='/' element={<LandingPage />} />
       <Route path='/login' element={<Login />} />
       <Route path='/change-password' element={user ? <ChangePassword /> : <Navigate to="/login" />} />
+      <Route 
+        path='/product/:id' 
+        element={
+          user ? (
+            ["admin", "manager", "sales_rep"].includes(userRole) ? (
+              <ProductDetail />
+            ) : (
+              <Navigate to="/home" />
+            )
+          ) : (
+            <Navigate to="/login" />
+          )
+        } 
+      />
       
       <Route element={user ? <DashboardLayout /> : <Navigate to="/" />}>
         <Route path="/inbox" element={<Inbox />} />
@@ -161,7 +175,7 @@ function App() {
         {/* product management - admin and manager can view; only admin can add */}
         <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
         <Route path='/inventory' element={['admin', 'manager'].includes(userRole) ? <ViewProduct /> : <Navigate to="/dashboard" />} />
-        <Route path='/product/:id' element={['admin', 'manager'].includes(userRole) ? <ProductDetail /> : <Navigate to="/dashboard" />} />
+        {/* <Route path='/product/:id' element={['admin', 'manager'].includes(userRole) ? <ProductDetail /> : <Navigate to="/dashboard" />} /> */}
       </Route>
 
       {/* <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/" />} /> */}
