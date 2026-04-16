@@ -3,10 +3,12 @@ import { useAuth } from "./pages/context/AuthContext";
 import DashboardLayout from "./components/DashboardLayout";
 
 //sales management
-import AddCustomer from "./pages/management/customer/Addcustomer";
+import Customer from "./pages/management/customer/Customer";
+// import AddCustomer from "./pages/management/customer/Addcustomer";
 import ViewCustomer from './pages/management/customer/ViewCustomer';
 import CustomerDetail from './pages/management/customer/CustomerDetail';
-import AddOrder from "./pages/management/order/AddOrder";
+import Orders from "./pages/management/order/Orders";
+// import AddOrder from "./pages/management/order/AddOrder";
 
 //support management
 //import Support from './pages/shared/Support';
@@ -112,10 +114,10 @@ function App() {
         {/*DashboardLayout එක ඇතුළත : redirect to add customer*/}
 
         <Route
-          path="/add-customer"
+          path="/customer"
           element={
             ["admin", "sales_rep"].includes(userRole) ? (
-              <AddCustomer />
+              <Customer />
             ) : (
               <Navigate to="/home" />
             )
@@ -146,10 +148,10 @@ function App() {
 
         {/* Add Order Route : redireact to add oder */}
         <Route
-          path="/add-order"
+          path="/orders"
           element={
             ["admin", "sales_rep"].includes(userRole) ? (
-              <AddOrder />
+              <Orders />
             ) : (
               <Navigate to="/home" />
             )

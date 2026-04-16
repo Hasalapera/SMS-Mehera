@@ -2,10 +2,13 @@ import React from 'react';
 import { useAuth } from '../pages/context/AuthContext';
 import { ShoppingCart, Heart, Eye, LayoutGrid, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const canAddOrders = user && ["admin", "sales_rep"].includes(user.role);
 
   const variants = product?.variants || [];
   const variantsPreview = variants.slice(0, 4);
@@ -13,6 +16,32 @@ const ProductCard = ({ product }) => {
   const firstVariant = variants.length > 0 ? variants[0] : null;
   const displayPrice = firstVariant ? firstVariant.price : product?.price;
   const displayStock = firstVariant ? firstVariant.stock_count : 0;
+
+  const handleAddToCart = (e) => {
+    e.stopPropagation();
+    
+    // දැනට තියෙන Cart එක ගන්නවා
+    const existingCart = JSON.parse(localStorage.getItem("active_order_cart")) || [];
+    const isExisting = existingCart.find(item => item.product_id === product.product_id);
+    
+    let updatedCart;
+    if (isExisting) {
+      updatedCart = existingCart.map(item => 
+        item.product_id === product.product_id ? { ...item, qty: item.qty + 1 } : item
+      );
+    } else {
+      updatedCart = [...existingCart, {
+        product_id: product.product_id,
+        name: product.product_name,
+        price: Number(displayPrice),
+        qty: 1,
+        image: product.image_url
+      }];
+    }
+
+    localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
+    toast.success(`${product.product_name} added to cart!`);
+  };
 
   // 🛡️ හැම තැනම පාවිච්චි කරන්න පුළුවන් පොදු function එකක්
   const handleNavigation = () => {
@@ -51,9 +80,15 @@ const ProductCard = ({ product }) => {
 
         {/* --- Side Hover Actions --- */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-          <button className="p-3 bg-white text-[#9A8B50] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110">
-            <ShoppingCart size={18} />
-          </button>
+          {canAddOrders && (
+            <button 
+              onClick={handleAddToCart}
+              className="p-3 bg-white text-[#b4a460] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110 active:scale-95"
+              title="Add to Order"
+            >
+              <ShoppingCart size={18} />
+            </button>
+          )}
           <button className="p-3 bg-white text-[#9A8B50] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110">
             <Heart size={18} />
           </button>
