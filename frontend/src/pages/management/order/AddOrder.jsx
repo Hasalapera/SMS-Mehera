@@ -1,30 +1,66 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { 
-  Search, ShoppingCart, User, Package, Plus, Trash2, 
-  CheckCircle2, UserPlus
+  ShoppingCart, User, Package, Plus, Minus, Trash2, 
+  CheckCircle2 
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 
 const AddOrder = () => {
   const [cusSearch, setCusSearch] = useState('');
   const [cart, setCart] = useState([]);
-  const [prodSearch, setProdSearch] = useState('');
 
-  const dummyProducts = [
-    { product_id: 1, category: 'SHAMPOO 250ML', price: 1200 },
-    { product_id: 2, category: 'CONDITIONER 200ML', price: 1500 },
-    { product_id: 3, category: 'HAIR COLOR - BLACK', price: 850 },
-    { product_id: 4, category: 'FACE WASH 100ML', price: 600 },
-  ];
+  // --- දත්ත කියවීමේ ප්‍රධාන FUNCTION එක ---
+  const loadCartData = () => {
+    try {
+      const savedData = localStorage.getItem("active_order_cart");
+      console.log("AddOrder පේජ් එක දත්ත කියවනවා...", savedData);
+      
+      if (savedData) {
+        setCart(JSON.parse(savedData));
+      } else {
+        setCart([]);
+      }
+    } catch (error) {
+      console.error("දත්ත කියවීමේදී දෝෂයක්:", error);
+    }
+  };
 
-  const addToCart = (product) => {
-    setCart(prev => {
-      const exists = prev.find(item => item.product_id === product.product_id);
-      if (exists) return prev.map(item => item.product_id === product.product_id ? { ...item, qty: item.qty + 1 } : item);
-      return [...prev, { ...product, qty: 1 }];
-    });
-    toast.success(`${product.category} Added`);
+  // 1. පේජ් එක මුලින්ම පෙන්වන විට
+  useEffect(() => {
+    loadCartData();
+  }, []);
+
+  // 2. Navigation එක හරහා (Refresh නොවී) එන විට දත්ත අලුත් කිරීම
+  // පේජ් එකට focus එක එන හැම වෙලාවෙම මේක වැඩ කරයි
+  useEffect(() => {
+    window.addEventListener('focus', loadCartData);
+    return () => window.removeEventListener('focus', loadCartData);
+  }, []);
+
+  // 3. Cart එක ඇතුළේ වෙනස්කම් කළොත් සේව් කිරීම
+  useEffect(() => {
+    if (cart.length > 0) {
+      localStorage.setItem("active_order_cart", JSON.stringify(cart));
+    }
+  }, [cart]);
+
+  const increaseQty = (productId) => {
+    setCart(prev => prev.map(item => 
+      item.product_id === productId ? { ...item, qty: item.qty + 1 } : item
+    ));
+  };
+
+  const decreaseQty = (productId) => {
+    setCart(prev => prev.map(item => 
+      item.product_id === productId ? { ...item, qty: Math.max(1, item.qty - 1) } : item
+    ));
+  };
+
+  const removeItemCompletely = (productId) => {
+    const updatedCart = cart.filter(item => item.product_id !== productId);
+    setCart(updatedCart);
+    localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
+    toast.error("Product removed");
   };
 
   const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
@@ -34,116 +70,103 @@ const AddOrder = () => {
       <Toaster position="top-right" />
       
       {/* HEADER */}
-      <div className="max-w-7xl mx-auto mb-4">
-        <div className="bg-black text-white p-5 rounded-[1.8rem] flex justify-between items-center shadow-xl border-b-4 border-[#b4a460]">
-          <div className="flex items-center gap-4">
-            <div className="bg-[#b4a460] p-3 rounded-xl">
-              <ShoppingCart size={28} className="text-black" />
-            </div>
-            <div>
-              <h1 className="text-xl font-black tracking-tight uppercase leading-none">
-                Create <span className="text-[#b4a460]">New Order</span>
-              </h1>
-              <p className="text-[9px] text-gray-500 font-bold tracking-[0.3em] uppercase mt-1">Mehera International</p>
-            </div>
+      <div className="max-w-7xl mx-auto mb-8">
+        <div className="flex items-center gap-5">
+          <div className="bg-[#b4a460] p-3.5 rounded-2xl shadow-lg flex items-center justify-center text-black">
+            <ShoppingCart size={28} strokeWidth={2.5} />
           </div>
-          <Link to="/add-customer" className="bg-[#b4a460] text-black px-6 py-2.5 rounded-xl font-black uppercase text-[10px] hover:bg-white transition-all active:scale-95 shadow-lg">
-            <UserPlus size={18} className="inline mr-2"/> Add New Customer
-          </Link>
+          <h1 className="text-3xl font-black text-black tracking-tight uppercase">
+            Create <span className="text-[#b4a460]">New Order</span>
+          </h1>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT SECTIONS - Takes 8 columns */}
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 space-y-4"> 
           
-          {/* STEP 1: SEARCH */}
+          {/* STEP 1: PARTNER DETAILS */}
           <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
             <h2 className="text-[11px] font-black uppercase text-gray-400 tracking-widest mb-4 flex items-center gap-2">
               <User size={18}/> Step 1: Partner Details
             </h2>
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#b4a460]" size={20}/>
-              <input 
-                type="text" 
-                placeholder="Search Saloon or Owner..."
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl focus:border-[#b4a460] outline-none font-bold text-sm"
-                value={cusSearch} 
-                onChange={(e) => setCusSearch(e.target.value)}
-              />
-            </div>
+            <input 
+              type="text" placeholder="Search Saloon or Owner..."
+              className="w-full px-6 py-3 bg-gray-50 border-none rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all"
+              value={cusSearch} onChange={(e) => setCusSearch(e.target.value)}
+            />
           </div>
 
-          {/* STEP 2: PRODUCTS */}
-          <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
-             <div className="flex justify-between items-center mb-5">
-                <h2 className="text-[11px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-2">
-                  <Package size={20}/> Step 2: Select Products
-                </h2>
-                <input type="text" placeholder="Filter..." className="bg-gray-50 px-4 py-1.5 rounded-lg text-[10px] font-bold outline-none border focus:border-[#b4a460]" onChange={(e) => setProdSearch(e.target.value)} />
-             </div>
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-                {dummyProducts.filter(p => p.category.toLowerCase().includes(prodSearch.toLowerCase())).map(p => (
-                  <div key={p.product_id} onClick={() => addToCart(p)} className="p-4 bg-white rounded-xl border-2 border-gray-100 flex justify-between items-center hover:border-[#b4a460] hover:shadow-md cursor-pointer transition-all">
-                    <div>
-                      <p className="font-black text-[12px] uppercase text-gray-800">{p.category}</p>
-                      <p className="text-[11px] font-black text-[#b4a460] mt-1">Rs. {p.price.toLocaleString()}</p>
+          {/* STEP 2: SELECTED PRODUCTS */}
+          <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 min-h-[300px]">
+             <h2 className="text-[11px] font-black uppercase text-gray-400 tracking-widest mb-6 flex items-center gap-2">
+               <Package size={20}/> Step 2: Selected Products
+             </h2>
+             
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {cart && cart.length > 0 ? (
+                  cart.map((item) => (
+                    <div key={item.product_id} className="p-5 bg-white rounded-[1.5rem] border-2 border-[#b4a460]/10 flex justify-between items-center shadow-sm hover:shadow-md transition-all">
+                      <div className="flex-1">
+                        <p className="font-black text-[13px] uppercase text-gray-800 leading-tight">
+                          {item.name}
+                        </p>
+                        <p className="text-[11px] font-black text-[#b4a460] mt-1.5">Rs. {item.price.toLocaleString()}</p>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 bg-gray-50 rounded-xl p-1.5 border border-gray-100">
+                        <button onClick={() => removeItemCompletely(item.product_id)} className="p-1.5 hover:bg-red-50 text-red-400 transition-all rounded-lg">
+                          <Trash2 size={16} strokeWidth={2.5}/>
+                        </button>
+                        <div className="w-[1px] h-4 bg-gray-200 mx-0.5"></div>
+                        <button onClick={() => decreaseQty(item.product_id)} className="p-1.5 hover:bg-white text-gray-400 transition-all rounded-lg">
+                          <Minus size={16} strokeWidth={3}/>
+                        </button>
+                        <span className="px-2 text-[14px] font-black text-black min-w-[24px] text-center">{item.qty}</span>
+                        <button onClick={() => increaseQty(item.product_id)} className="p-1.5 hover:bg-white text-[#b4a460] transition-all rounded-lg">
+                          <Plus size={16} strokeWidth={3}/>
+                        </button>
+                      </div>
                     </div>
-                    <div className="p-2 bg-gray-50 rounded-lg text-gray-400 group-hover:text-[#b4a460]"><Plus size={18}/></div>
+                  ))
+                ) : (
+                  <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-100 rounded-[2rem] flex flex-col items-center justify-center">
+                    <Package size={40} className="text-gray-200 mb-3"/>
+                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">No products added from home</p>
                   </div>
-                ))}
+                )}
              </div>
           </div>
         </div>
 
-        {/* ORDER SUMMARY - Takes 4 columns (Width reduced) */}
+        {/* ORDER SUMMARY */}
         <div className="lg:col-span-4">
-          <div className="bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden sticky top-6">
+          <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 sticky top-6 overflow-hidden">
             <div className="p-5 bg-gray-50/50 border-b flex justify-between items-center">
-                <h3 className="font-black text-[12px] uppercase tracking-[0.2em] text-[#b4a460]">Order Summary</h3>
-                <ShoppingCart size={22} className="text-[#b4a460]"/>
+                <h3 className="font-black text-[10px] uppercase tracking-[0.2em] text-[#b4a460]">Summary</h3>
+                <ShoppingCart size={20} className="text-[#b4a460]"/>
             </div>
             
-            {/* Cart Item Area - Height/Padding increased for better visibility */}
-            <div className="p-6 space-y-5 max-h-[220px] overflow-y-auto custom-scrollbar">
-              {cart.length === 0 ? (
-                <div className="flex flex-col items-center py-10 opacity-10">
-                  <ShoppingCart size={45}/>
-                  <p className="text-[12px] font-black uppercase mt-2">Empty Cart</p>
-                </div>
-              ) : (
-                cart.map(item => (
-                  <div key={item.product_id} className="flex justify-between items-center pb-4 border-b border-gray-50 last:border-0">
-                    <div className="flex-1">
-                      {/* Product Name - Size increased */}
-                      <p className="font-black text-[13px] text-black uppercase tracking-tight">{item.category}</p>
-                      {/* Price & Qty - Size increased */}
-                      <p className="text-[12px] text-[#b4a460] font-black mt-1">
-                        Rs. {item.price.toLocaleString()} <span className="text-gray-400 mx-1">x</span> {item.qty}
-                      </p>
-                    </div>
-                    <button onClick={() => setCart(c => c.filter(i => i.product_id !== item.product_id))} className="text-gray-300 hover:text-red-500 p-1">
-                      <Trash2 size={18}/>
-                    </button>
+            <div className="p-6 space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+              {cart.map(item => (
+                <div key={item.product_id} className="flex justify-between items-center pb-3 border-b border-gray-50 last:border-0">
+                  <div className="flex-1 truncate mr-2">
+                    <p className="font-black text-[11px] text-black uppercase truncate">{item.name}</p>
+                    <p className="text-[10px] text-gray-400 font-bold">Qty: {item.qty} x {item.price.toLocaleString()}</p>
                   </div>
-                ))
-              )}
+                  <div className="font-black text-[12px] text-black">
+                    {(item.price * item.qty).toLocaleString()}
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {/* TOTAL SECTION */}
-            <div className="p-4 bg-black text-white rounded-t-[2.5rem]">
-               <div className="flex justify-between items-center mb-3 px-2">
-                  <div>
-                    <span className="text-[10px] font-black text-[#b4a460] uppercase tracking-[0.2em] block">Total Amount</span>
-                    <span className="text-[8px] text-gray-500 font-bold uppercase">Net Payable</span>
-                  </div>
-                  <span className="text-2xl font-black">Rs. {totalAmount.toLocaleString()}</span>
+            <div className="p-5 bg-black text-white rounded-t-[2.5rem]">
+               <div className="flex justify-between items-center mb-4 px-2">
+                 <span className="text-[10px] font-black text-[#b4a460] uppercase tracking-widest">Total Amount</span>
+                 <span className="text-2xl font-black">Rs. {totalAmount.toLocaleString()}</span>
                </div>
-               
-               <button 
-                  className="w-full py-4 bg-[#b4a460] text-black rounded-xl font-black uppercase text-[12px] tracking-[0.2em] transition-all shadow-lg hover:bg-white flex items-center justify-center gap-3"
-                >
-                  <CheckCircle2 size={22} strokeWidth={3}/> Complete Order
+               <button className="w-full py-4 bg-[#b4a460] text-black rounded-xl font-black uppercase text-[11px] tracking-widest hover:bg-white transition-all flex items-center justify-center gap-3">
+                 <CheckCircle2 size={20} strokeWidth={3}/> Place Order
                </button>
             </div>
           </div>
