@@ -4,6 +4,9 @@ const UserArea = require('./UserArea');
 const Product = require('./Product');
 const ProductVariant = require('./ProductVariant');
 const Brand = require('./Brand');
+const Category = require('./Category');
+const Customer = require('./Customer');
+const CustomerNote = require('./CustomerNote');
 
 // 1. User Associations
 // User ටේබල් එක කලින් හැදෙන්න ඕන නිසා මේ පිළිවෙළ වැදගත්
@@ -14,22 +17,17 @@ UserArea.belongsTo(User, { foreignKey: 'user_id' });
 Brand.hasMany(Product, { foreignKey: 'brand_id', as: 'products', onDelete: 'SET NULL' });
 Product.belongsTo(Brand, { foreignKey: 'brand_id', as: 'brand' });
 
+// 3. Category & Product Associations (අලුතින් එකතු කළා)
+Category.hasMany(Product, { foreignKey: 'category_id', as: 'products', onDelete: 'SET NULL' });
+Product.belongsTo(Category, { foreignKey: 'category_id', as: 'category' });
+
 // 3. Product and Variant Associations
 Product.hasMany(ProductVariant, { foreignKey: 'product_id', as: 'variants', onDelete: 'CASCADE' });
 ProductVariant.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
 
-// 🛡️ Sync Logic
-// මුලින්ම 'force: true' දාලා error එක නැති කරගමු. එක සැරයක් run වුණාම මේක 'alter: true' කරන්න.
-const syncDb = async () => {
-  try {
-    await sequelize.sync({ alter: true }); 
-    console.log('✓ All models synchronized (Tables recreated)');
-  } catch (err) {
-    console.error('✗ Failed to sync database:', err);
-  }
-};
-
-syncDb();
+// 4. Customer and CustomerNote Associations
+Customer.hasMany(CustomerNote, { foreignKey: 'customer_id', as: 'notes', onDelete: 'CASCADE' });
+CustomerNote.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' });
 
 module.exports = {
   sequelize,
@@ -37,5 +35,8 @@ module.exports = {
   UserArea,
   Product,
   Brand,
-  ProductVariant
+  Category,
+  ProductVariant,
+  Customer,
+  CustomerNote
 };

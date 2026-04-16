@@ -73,7 +73,8 @@ const AddCustomer = () => {
     setLoading(true);
     try {
       const submissionData = { ...formData, customer_display_id: nextCustomerId, address: `${formData.lane1}, ${formData.lane2}` };
-      await axios.post('http://localhost:5001/api/customers', submissionData);
+
+      await axios.post('http://localhost:5001/api/customers/add', submissionData);
       toast.success("Customer Registered Successfully!");
       setTimeout(() => navigate('/home'), 1500);
     } catch (err) {
@@ -88,8 +89,9 @@ const AddCustomer = () => {
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.03)] border border-gray-100 overflow-hidden">
           
-          {/* 🔴 HEADER - UPDATED TEXT STYLE */}
-          <div className="bg-white p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6">
+
+          {/* Header */}
+          <div className="bg-[#f8f8f8] p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 border-b border-gray-100">
             <div className="flex items-center gap-5">
               {/* Icon Box with Gold Color */}
               <div className="p-3.5 bg-[#b4a460] rounded-2xl text-black shadow-lg shadow-[#b4a460]/20 flex items-center justify-center">
@@ -97,28 +99,23 @@ const AddCustomer = () => {
               </div>
               
               <div>
-                {/* Heading Styled exactly like image */}
-                <h1 className="text-3xl font-black text-black tracking-tight leading-none">
-                  Register <span className="text-black">New Customer</span>
-                </h1>
-                <p className="text-gray-400 text-[11px] font-medium mt-2">
-                  Add a new business partner to Mehera International database.
-                </p>
+
+                <h1 className="text-2xl md:text-3xl font-black text-black tracking-tight uppercase">Register New Customer</h1>
+                <p className="text-gray-500 text-xs font-bold uppercase tracking-[0.2em] mt-1">Mehera International</p>
+
               </div>
             </div>
             
             <div className="flex items-center gap-4">
-               {/* Reference Badge */}
-               <div className="bg-gray-50 px-5 py-3 rounded-2xl border border-gray-100 flex items-center gap-3">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Next ID</span>
+
+               <div className="bg-white px-5 py-2.5 rounded-2xl border border-gray-100 flex items-center gap-3">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ID Reference</span>
                   <span className="text-lg font-black text-[#b4a460]">{nextCustomerId}</span>
                </div>
-               <button 
-                 onClick={() => navigate('/home')} 
-                 className="p-3 bg-white hover:bg-gray-50 text-gray-400 hover:text-black rounded-xl transition-all border border-gray-100 shadow-sm active:scale-95"
-               >
-                <ArrowLeft size={22} />
-              </button>
+               {/* <button onClick={() => navigate('/home')} className="p-3 bg-white hover:bg-gray-50 text-gray-500 hover:text-black rounded-xl transition-all border border-gray-100">
+                <ArrowLeft size={20} />
+              </button> */}
+
             </div>
           </div>
 

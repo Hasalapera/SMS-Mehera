@@ -4,6 +4,8 @@ import DashboardLayout from "./components/DashboardLayout";
 
 //sales management
 import AddCustomer from "./pages/management/customer/Addcustomer";
+import ViewCustomer from './pages/management/customer/ViewCustomer';
+import CustomerDetail from './pages/management/customer/CustomerDetail';
 import AddOrder from "./pages/management/order/AddOrder";
 
 //support management
@@ -39,11 +41,25 @@ import ViewBrand from "./pages/management/brand/ViewBrand";
 // import UpdateBrand from './pages/management/brand/UpdateBrand';
 // import DeleteBrand from './pages/management/brand/DeleteBrand';
 
+// Category management (Now in management/category folder)
+import AddCategory from './pages/management/category/AddCategory';
+import ViewCategories from './pages/management/category/ViewCategories';
+// import UpdateCategory from './pages/management/category/UpdateCategory';
+// import DeleteCategory from './pages/management/category/DeleteCategory';
+
 // Product Management (Now in management/product folder)
-import AddProduct from "./pages/management/product/AddProduct";
+
+import AddProduct from './pages/management/product/AddProduct';
+import ViewProduct from './pages/management/product/ViewProduct';
+import ProductDetail from './pages/management/product/ProductDetail';
+
 // import ViewProducts from './pages/management/product/ViewProducts';
 // import UpdateProduct from './pages/management/product/UpdateProduct';
 // import DeleteProduct from './pages/management/product/DeleteProduct';
+
+
+//Settings
+// import SettingsPage from './pages/SettingsPage';
 
 function App() {
   const { user, loading } = useAuth();
@@ -90,6 +106,28 @@ function App() {
           element={
             ["admin", "sales_rep"].includes(userRole) ? (
               <AddCustomer />
+            ) : (
+              <Navigate to="/home" />
+            )
+          }
+        />
+
+        <Route
+          path="/customers"
+          element={
+            ["admin", "manager", "sales_rep"].includes(userRole) ? (
+              <ViewCustomer />
+            ) : (
+              <Navigate to="/home" />
+            )
+          }
+        />
+
+        <Route
+          path="/customer/:id"
+          element={
+            ["admin", "manager", "sales_rep"].includes(userRole) ? (
+              <CustomerDetail />
             ) : (
               <Navigate to="/home" />
             )
@@ -158,28 +196,20 @@ function App() {
         />
 
         {/* Brand management - only for admin */}
-        <Route
-          path="/addBrand"
-          element={
-            userRole === "admin" ? <AddBrand /> : <Navigate to="/dashboard" />
-          }
-        />
-        <Route
-          path="/getBrands"
-          element={
-            userRole === "admin" ? <ViewBrand /> : <Navigate to="/dashboard" />
-          }
-        />
+        <Route path='/addBrand' element={userRole === 'admin' ? <AddBrand /> : <Navigate to="/dashboard" />} />
+        <Route path='/getBrands' element={userRole === 'admin' ? <ViewBrand /> : <Navigate to="/dashboard" />} />
 
-        {/* product management - only for admin */}
-        <Route
-          path="/addProduct"
-          element={
-            userRole === "admin" ? <AddProduct /> : <Navigate to="/dashboard" />
-          }
-        />
+        {/* Category management - only for admin */}
+        <Route path='/addCategory' element={userRole === 'admin' ? <AddCategory /> : <Navigate to="/dashboard" />} /> 
+        <Route path='/getCategories' element={userRole === 'admin' ? <ViewCategories /> : <Navigate to="/dashboard" />} /> 
+
+        {/* product management - admin and manager can view; only admin can add */}
+        <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
+        <Route path='/inventory' element={['admin', 'manager'].includes(userRole) ? <ViewProduct /> : <Navigate to="/dashboard" />} />
+        <Route path='/product/:id' element={['admin', 'manager'].includes(userRole) ? <ProductDetail /> : <Navigate to="/dashboard" />} />
       </Route>
 
+      {/* <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/" />} /> */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );

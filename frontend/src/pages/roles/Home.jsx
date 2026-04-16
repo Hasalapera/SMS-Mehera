@@ -1,64 +1,39 @@
-import React, { useState } from 'react';
-import { Search, ChevronDown, ShoppingCart, Star, CheckCircle } from 'lucide-react';
-import { toast, Toaster } from 'react-hot-toast';
 
-const ProductCard = ({ product, onAddToCart, isAdded }) => {
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group transition-all relative">
-      <div className="relative aspect-square bg-[#C0B26D]/20 flex items-center justify-center overflow-hidden">
-        <span className="text-gray-400 font-bold text-[10px] uppercase tracking-widest">No Image</span>
-        
-        {/* බටන් එක අනිවාර්යයෙන්ම ක්ලික් වෙන්න z-50 සහ cursor-pointer දැම්මා */}
-        <button 
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onAddToCart(product);
-          }}
-          className="absolute top-4 right-4 p-3 bg-white/90 text-black hover:bg-[#b4a460] hover:text-white rounded-xl transition-all shadow-md active:scale-90 z-50 cursor-pointer"
-        >
-          <ShoppingCart size={18} strokeWidth={2.5} />
-        </button>
-
-        {isAdded && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[2px] transition-all z-40">
-            <div className="bg-[#b4a460] text-black text-[10px] font-black px-4 py-2 rounded-full flex items-center gap-2 animate-bounce">
-              <CheckCircle size={14} strokeWidth={3} /> ADDED
-            </div>
-          </div>
-        )}
-      </div>
-      <div className="p-4 flex flex-col gap-1">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="font-bold text-sm text-gray-800 leading-tight">{product.name}</h3>
-            <p className="text-[10px] text-gray-400 uppercase font-black mt-1">Popular</p>
-          </div>
-          <p className="font-black text-[#b4a460] text-sm whitespace-nowrap">
-            {product.price.toLocaleString()} LKR
-          </p>
-        </div>
-        <div className="flex gap-0.5 mt-1">
-          {[...Array(5)].map((_, i) => (
-            <Star key={i} size={10} fill="#b4a460" className="text-[#b4a460]" />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
+import React, { useState, useEffect } from 'react';
+import { Search, ChevronDown, Loader2, PackageSearch } from 'lucide-react';
+import axios from 'axios';
+import ProductCard from '../../components/ProductCard';
+import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [addedProductId, setAddedProductId] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { token } = useAuth();
 
-  const products = [
-    { id: 1, name: "OPI Nail Polish", price: 6999, category: "Cosmetics" },
-    { id: 2, name: "Sunscreen Lotion", price: 6999, category: "Skin Care" },
-    { id: 3, name: "Wholesale Liquid", price: 6999, category: "Cleaning" },
-    { id: 4, name: "Matte Lipstick", price: 4500, category: "Cosmetics" },
-    { id: 5, name: "Hair Serum", price: 3200, category: "Hair Care" },
-  ];
+  // 1. Backend එකෙන් Inventory (Products) දත්ත ටික ගන්නවා
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const response = await axios.get('http://localhost:5001/api/products/getProducts', config);
+        
+        // Backend structure එක අනුව මෙතන දත්ත ටික ගන්න
+        const data = response.data?.products || response.data;
+        setProducts(data);
+      } catch (err) {
+        console.error("Failed to fetch products", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [token]);
+
+  // 2. Search Filter එක (හොයන නම අනුව products ටික filter කරනවා)
+  const filteredProducts = products.filter(p => 
+    p.product_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const categories = ["Cosmetics", "Skin Care", "Hair Care", "Cleaning"];
 
@@ -93,49 +68,55 @@ const Home = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-white text-black overflow-x-hidden p-6">
-      <Toaster position="top-right" />
+
+    <div className="w-full min-h-screen bg-[#f8f9fa] text-black overflow-x-hidden">
       
-      <div className="max-w-full mb-10 flex flex-col md:flex-row gap-5 items-center">
-        <div className="relative flex-1 w-full">
-          <div className="absolute left-6 top-1/2 -translate-y-1/2">
-            <Search size={20} className="text-[#b4a460]" strokeWidth={2.5} />
-          </div>
-          <input
-            type="text"
-            placeholder="Search Products..."
-            className="w-full bg-[#F3F3F3] text-black pl-16 pr-6 py-4 rounded-[2.5rem] outline-none font-semibold text-sm"
+      {/* --- Performance Rankings (Sales Rep ට පේන කෑල්ල) --- */}
+      <div className="w-full px-6 pt-10 pb-4 text-left">
+          <h1 className="text-4xl font-black text-black uppercase tracking-tight">
+              Inventory Catalog
+          </h1>
+          <p className="text-gray-400 text-xs font-bold uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
+              <span className="w-8 h-[2px] bg-[#b4a460]"></span>
+              Browse products and check real-time stock
+          </p>
+      </div>
+
+      {/* --- Search & Filter Bar --- */}
+      <div className="max-w-full px-6 py-4 flex flex-col md:flex-row gap-4 items-center">
+        <div className="relative flex-1 group w-full">
+          <input 
+            type="text" 
+            placeholder="Search by Product Name..." 
+            className="w-full bg-white border border-gray-200 text-black px-12 py-4 rounded-3xl outline-none font-bold placeholder-gray-400 focus:ring-2 focus:ring-[#b4a460] transition-all shadow-sm"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
         </div>
-        <button className="w-full md:w-auto bg-[#F3F3F3] text-black px-10 py-4 rounded-[2.5rem] font-black flex items-center gap-6 justify-between text-[11px] uppercase">
-          All Categories <ChevronDown size={20} strokeWidth={2.5} />
+        <button className="bg-black text-[#b4a460] px-8 py-4 rounded-3xl font-bold flex items-center gap-2 min-w-[200px] justify-between shadow-xl">
+          All Categories <ChevronDown size={18} />
         </button>
       </div>
 
-      <div className="max-w-full pb-20">
-        {categories.map(cat => {
-          const catProducts = products.filter(p => p.category === cat && p.name.toLowerCase().includes(searchTerm.toLowerCase()));
-          if (catProducts.length === 0) return null;
-
-          return (
-            <div key={cat} className="mb-12">
-              <h2 className="text-black text-[10px] font-black px-1 py-2 inline-block mb-8 uppercase tracking-[0.3em] border-b-2 border-[#b4a460]">
-                {cat} Section
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {catProducts.map(product => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
-                    onAddToCart={handleAddToCart}
-                    isAdded={addedProductId === product.id}
-                  />
-                ))}
-              </div>
-            </div>
-          );
-        })}
+      {/* --- Product Catalog Section --- */}
+      <div className="max-w-full px-6 p-6">
+        {loading ? (
+          <div className="h-64 flex flex-col items-center justify-center gap-3">
+            <Loader2 className="animate-spin text-[#b4a460]" size={42} />
+            <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Updating Catalog...</p>
+          </div>
+        ) : filteredProducts.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {filteredProducts.map(product => (
+              <ProductCard key={product.product_id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className="h-64 flex flex-col items-center justify-center text-gray-300">
+             <PackageSearch size={64} strokeWidth={1} />
+             <p className="mt-4 font-bold uppercase text-xs tracking-widest">No Products Found</p>
+          </div>
+        )}
       </div>
     </div>
   );

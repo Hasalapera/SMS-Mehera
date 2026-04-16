@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../pages/context/AuthContext';
+import { getAssetUrl } from '../pages/utils/cloudinaryHelper';
 import { 
   LayoutDashboard, Users, ShoppingCart, Package, 
   BarChart2, Settings, HelpCircle, LogOut, ChevronDown, 
@@ -9,16 +10,17 @@ import {
 } from 'lucide-react';
 import { useNavigate, NavLink } from 'react-router-dom';
 
-
-// යාවත්කාලීන කරන ලද Permissions පද්ධතිය
 const menuConfig = {
   admin: { 
     canFullManageUsers: true, // CRUD (Add, Edit, Delete)
     canViewUsers: true, 
     canManageBrands: true, 
     canViewReports: true,
-    canManageProducts: true, 
-    canEditInventory: true 
+    canManageProducts: true,
+    canManageCategories: true, 
+    canEditInventory: true,
+    canViewCustomers: true,
+    canAddCustomers: true 
   },
   manager: { 
     canFullManageUsers: false, 
@@ -26,19 +28,23 @@ const menuConfig = {
     canAddProducts: false, 
     canViewReports: true, 
     canManageBrands: false,
-    canManageProducts: false,
-    canEditInventory: false 
+    canManageProducts: true,
+    canManageCategories: false, 
+    canEditInventory: false, 
+    canViewCustomers: true,
+    canAddCustomers: false
   },
-  sales_rep: { 
-    canFullManageUsers: false, 
-    canViewUsers: false, 
-    canAddProducts: false, 
-    canViewReports: false, 
-    canManageBrands: false,
-    canManageProducts: false,
-    canEditInventory: false,
-    canAddCustomers: true,  
-  }
+  // sales_rep: { 
+  //   canFullManageUsers: false, 
+  //   canViewUsers: false, 
+  //   canAddProducts: false, 
+  //   canViewReports: false, 
+  //   canManageBrands: false,
+  //   canManageProducts: false,
+  //   canManageCategories: false,
+  //   canEditInventory: false,
+  //   canViewCustomers: true,  
+  // }
 };
 
 const NavItem = ({ to, icon: Icon, label, isCollapsed, badge, onClick, isOpen }) => {
@@ -117,14 +123,34 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
     <aside className={`bg-[#141414] text-white flex flex-col p-5 transition-all duration-300 fixed h-full z-50 ${isSidebarCollapsed ? 'w-20' : 'w-64'} overflow-visible`}>
       
       {/* Brand Logo Section */}
-      <div className={`mb-8 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} px-1`}>
-        {!isSidebarCollapsed && (
-          <div className="flex flex-col text-left">
-            <span className="text-xl font-serif tracking-widest leading-none">Mehera</span>
-            <span className="text-[8px] tracking-[0.2em] text-[#b4a460] uppercase mt-1">International (Pvt) Ltd</span>
-          </div>
-        )}
-        <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="text-gray-400 hover:text-[#b4a460] p-2.5 rounded-lg hover:bg-white/10 transition-all">
+      <div className={`mb-8 flex items-center ${isSidebarCollapsed ? 'flex-col gap-4' : 'justify-between'} px-1`}>
+        
+        <div className="flex items-center gap-3">
+          {/* Logo Image */}
+          <img 
+            src={isSidebarCollapsed ? getAssetUrl('logo-icon') : getAssetUrl('main-logo')} 
+            alt="Mehera Logo" 
+            className={`${isSidebarCollapsed ? 'w-8 h-8' : 'w-10 h-10'} object-contain transition-all duration-300`}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'https://ui-avatars.com/api/?name=Mehera&background=b4a460&color=000'} 
+            }
+          />
+
+          {!isSidebarCollapsed && (
+            <div className="flex flex-col text-left animate-in fade-in slide-in-from-left-2 duration-500">
+              <span className="text-xl font-serif tracking-widest leading-none">Mehera</span>
+              <span className="text-[8px] tracking-[0.2em] text-[#b4a460] uppercase mt-1">
+                International (Pvt) Ltd
+              </span>
+            </div>
+          )}
+        </div>
+
+        <button 
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+          className="text-gray-400 hover:text-[#b4a460] p-2.5 rounded-lg hover:bg-white/10 transition-all"
+        >
           {isSidebarCollapsed ? <Menu size={18} /> : <ChevronLeft size={18} />}
         </button>
       </div>
@@ -156,11 +182,44 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
           )}
 
           {/* Customers Section */}
-          <NavItem icon={Users} label="Customers" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('customers')} isOpen={openSubMenu === 'customers'} />
-          {!isSidebarCollapsed && openSubMenu === 'customers' && (
-            <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
-              <NavLink to="/add-customer" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><UserPlus size={14} /> Add Customer</NavLink>
-              <NavLink to="/customers" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><List size={14} /> Customer List</NavLink>
+          {permissions.canViewCustomers && (
+            <div className="space-y-1">
+              <NavItem 
+                icon={Users} 
+                label="Customers" 
+                isCollapsed={isSidebarCollapsed} 
+                onClick={() => handleToggleSubMenu('customers')} 
+                isOpen={openSubMenu === 'customers'} 
+              />
+              {!isSidebarCollapsed && openSubMenu === 'customers' && (
+                <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
+                  
+                  {/* 🛡️ Manager ට පේන්නේ නැති වෙන්න මෙතනට permission check එකක් දැම්මා */}
+                  {permissions.canAddCustomers && (
+                    <NavLink 
+                      to="/add-customer" 
+                      className={({ isActive }) => 
+                        `flex items-center gap-2 p-2 text-[11px] transition-colors ${
+                          isActive ? 'text-[#b4a460]' : 'text-gray-500 hover:text-[#b4a460]'
+                        }`
+                      }
+                    >
+                      <UserPlus size={14} /> Add Customer
+                    </NavLink>
+                  )}
+
+                  <NavLink 
+                    to="/customers" 
+                    className={({ isActive }) => 
+                      `flex items-center gap-2 p-2 text-[11px] transition-colors ${
+                        isActive ? 'text-[#b4a460]' : 'text-gray-500 hover:text-[#b4a460]'
+                      }`
+                    }
+                  >
+                    <List size={14} /> Customer List
+                  </NavLink>
+                </div>
+              )}
             </div>
           )}
 
@@ -210,6 +269,19 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
             </>
           )}
 
+          {/* Categories Section */}
+          {permissions.canManageCategories && (
+            <>
+              <NavItem icon={List} label="Categories" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('category')} isOpen={openSubMenu === 'category'} />
+              {!isSidebarCollapsed && openSubMenu === 'category' && (
+                <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
+                  <NavLink to="/getCategories" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><List size={14} /> Categories</NavLink>
+                  <NavLink to="/addCategory" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><PlusCircle size={14} /> Add Category</NavLink>
+                </div>
+              )}
+            </>
+          )}
+
           {/* Products Section */}
           {permissions.canManageProducts && (
             <>
@@ -217,21 +289,9 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
               {!isSidebarCollapsed && openSubMenu === 'product' && (
                 <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
                   <NavLink to="/inventory" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><SlidersHorizontal size={14} /> Inventory</NavLink>
-                  <NavLink to="/addProduct" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><PlusCircle size={14} /> Add Product</NavLink>
-                  <NavLink to="/categories" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><List size={14} /> Categories</NavLink>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* customers section */}
-          {permissions.canAddCustomers && (
-            <>
-              <NavItem icon={ShoppingBag} label="Customers" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('customers')} isOpen={openSubMenu === 'customers'} />
-              {!isSidebarCollapsed && openSubMenu === 'customers' && (
-                <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
-                  <NavLink to="/add-customer" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><UserPlus size={14} /> Add Customer</NavLink>
-                  <NavLink to="/customers" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><List size={14} /> Customer List</NavLink>
+                  {userRole === 'admin' && (
+                    <NavLink to="/addProduct" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><PlusCircle size={14} /> Add Product</NavLink>
+                  )}
                 </div>
               )}
             </>

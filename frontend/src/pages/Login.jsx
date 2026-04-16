@@ -57,7 +57,7 @@ const Login = () => {
 
           localStorage.setItem('user', JSON.stringify(tempUser)); 
           
-          login(tempUser);
+          login(tempUser, data.token);
           
           // 'userId' ලෙස යවන්න (ChangePassword එකේ අල්ලන නම)
           navigate('/change-password', { state: { userId: data.user_id } });
@@ -66,7 +66,7 @@ const Login = () => {
       
       // 🔴 Case 02: සාමාන්‍ය Login වීම
       else {
-          login(data.user); // 🔴 Context එක හරහා user දත්ත update කිරීම
+          login(data.user, data.token); // 🔴 Context එක හරහා user දත්ත update කිරීම
           
           // Role එක අනුව navigate කිරීම
           navigate(data.user.redirectPath || '/dashboard');
