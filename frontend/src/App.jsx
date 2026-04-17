@@ -63,6 +63,10 @@ import ProductDetail from './pages/management/product/ProductDetail';
 //Settings
 // import SettingsPage from './pages/SettingsPage';
 
+import AddOnlineOrder from "./pages/management/order/AddOnlineOrder";
+
+
+
 function App() {
   const { user, loading } = useAuth();
 
@@ -78,6 +82,9 @@ function App() {
       <Route path='/' element={<LandingPage />} />
       <Route path='/login' element={<Login />} />
       <Route path='/change-password' element={user ? <ChangePassword /> : <Navigate to="/login" />} />
+
+      {/* Gihan Testing */}
+      <Route path='/addOnlineOrder' element={<AddOnlineOrder />} />
       <Route 
         path='/product/:id' 
         element={
