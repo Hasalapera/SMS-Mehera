@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-// Import කරගන්න ඔයා කලින් හදපු පේජ් ටික
 import AddCustomer from './Addcustomer';
 import ViewCustomer from './ViewCustomer';
 
