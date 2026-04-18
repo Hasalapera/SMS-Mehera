@@ -65,6 +65,8 @@ import ProductDetail from './pages/management/product/ProductDetail';
 
 import AddOnlineOrder from "./pages/management/order/AddOnlineOrder";
 
+//gihaaaaan testing
+
 
 
 function App() {
@@ -82,6 +84,8 @@ function App() {
       <Route path='/' element={<LandingPage />} />
       <Route path='/login' element={<Login />} />
       <Route path='/change-password' element={user ? <ChangePassword /> : <Navigate to="/login" />} />
+
+      {/* Gihaaaaan Testing */}
 
       {/* Gihan Testing */}
       <Route path='/addOnlineOrder' element={<AddOnlineOrder />} />
