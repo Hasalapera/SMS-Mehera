@@ -101,6 +101,40 @@ const AddOrder = () => {
     }
   };
 
+  //place oder button function
+  const handlePlaceOrder = async () => {
+  if (!selectedCustomer) return toast.error("Please select a customer!");
+  if (cart.length === 0) return toast.error("Your cart is empty!");
+
+  try {
+    const orderData = {
+      customer_id: selectedCustomer.customer_id, // uuid එක
+      customer_name: selectedCustomer.saloon_name, // 👈 name pass here 
+      // shipping_address: `${selectedCustomer.address}, ${selectedCustomer.city}`, // 👈 adress pass here 
+      shipping_address: `${selectedCustomer.lane1 || ''}, ${selectedCustomer.district || ''}`,
+      phone: selectedCustomer.phone1,
+      total_amount: totalAmount,
+      items: cart.map(item => ({
+      product_id: item.product_id,
+      qty: item.qty,
+      price: item.price
+      })) 
+    };
+
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const res = await axios.post('http://localhost:5001/api/orders/place', orderData, config);
+
+    if (res.data.success) {
+      toast.success("Order Placed Successfully!");
+      localStorage.removeItem("active_order_cart"); // Cart එක clear කිරීම
+      setCart([]);
+      // මෙතනදී Order History එකට navigate කරන්න පුළුවන්
+    }
+  } catch (err) {
+    toast.error("Something went wrong!");
+  }
+};
+
   return (
     <div className="min-h-screen bg-[#f8f9fa] p-4 md:p-6 font-sans">
       <Toaster position="top-right" />
@@ -255,9 +289,13 @@ const AddOrder = () => {
                  <span className="text-[10px] font-black text-[#b4a460] uppercase tracking-widest">Total Amount</span>
                  <span className="text-2xl font-black">Rs. {totalAmount.toLocaleString()}</span>
                </div>
-               <button className="w-full py-4 bg-[#b4a460] text-black rounded-xl font-black uppercase text-[11px] tracking-widest hover:bg-white transition-all flex items-center justify-center gap-3">
-                 <CheckCircle2 size={20} strokeWidth={3}/> Place Order
-               </button>
+              
+              <button 
+               onClick={handlePlaceOrder} 
+              className="w-full py-4 bg-[#b4a460] text-black rounded-xl font-black uppercase text-[11px] tracking-widest hover:bg-white transition-all flex items-center justify-center gap-3"
+               >
+              <CheckCircle2 size={20} strokeWidth={3}/> Place Order
+              </button>
             </div>
           </div>
         </div>
