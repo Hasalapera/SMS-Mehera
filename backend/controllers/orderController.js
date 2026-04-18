@@ -46,12 +46,18 @@ const placeOrder = async (req, res) => {
   }
 };
 
-// සියලුම Orders ලබාගැනීම
+// get all orders with their items
 const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.findAll({
-      order: [['created_at', 'DESC']] // අලුත්ම ඒවා උඩට එන්න
+      // 🛡️ මේ කෑල්ල තමයි වැදගත්ම! Items ටික Join කරලා ගන්නවා.
+      include: [{
+        model: OrderItem,
+        // as: 'OrderItems' // ඔයා association එකේ alias එකක් දුන්නා නම් විතරක් මේක ඕනේ
+      }],
+      order: [['created_at', 'DESC']]
     });
+    
     res.status(200).json(orders);
   } catch (error) {
     console.error("Fetch Orders Error:", error);
