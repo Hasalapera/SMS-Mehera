@@ -38,6 +38,11 @@ const LandingPage = () => {
             <span className="text-2xl font-serif tracking-widest leading-none text-black">Mehera</span>
             <span className="text-[10px] tracking-[0.2em] text-[#b4a460] uppercase mt-1">International (Pvt) Ltd</span>
           </div>
+          <div className=''> 
+            <button onClick={() => navigate('/#')}>Home</button>
+            <button onClick={() => navigate('/#')}>Home</button>
+            <button onClick={() => navigate('/#')}>Home</button>
+          </div>
 
           <div className="hidden md:flex items-center gap-8">
              <button onClick={() => navigate('/login')} className="bg-black text-white px-8 py-2.5 rounded-full font-bold text-sm hover:bg-[#b4a460] hover:text-black transition-all duration-300">Login</button>
