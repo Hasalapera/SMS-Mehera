@@ -59,6 +59,10 @@ import ProductDetail from './pages/management/product/ProductDetail';
 // import UpdateProduct from './pages/management/product/UpdateProduct';
 // import DeleteProduct from './pages/management/product/DeleteProduct';
 
+//Order Management (Now in management/order folder)
+import ViewOrders from "./pages/management/order/ViewOrders";
+import AddOrder from "./pages/management/order/AddOrder";
+
 
 //Settings
 // import SettingsPage from './pages/SettingsPage';
@@ -226,6 +230,10 @@ function App() {
         <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
         <Route path='/inventory' element={['admin', 'manager'].includes(userRole) ? <ViewProduct /> : <Navigate to="/dashboard" />} />
         {/* <Route path='/product/:id' element={['admin', 'manager'].includes(userRole) ? <ProductDetail /> : <Navigate to="/dashboard" />} /> */}
+
+        {/* orders management - admin, sales rep, online_store_keeper can create; admin, manager, sales_rep, online_store_keeper can view */}
+        <Route path='/view-orders' element={userRole === 'admin' || userRole === 'manager' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <ViewOrders /> : <Navigate to="/" />} />
+        <Route path="/add-order" element={userRole === 'admin' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <AddOrder /> : <Navigate to="/" />} />
       </Route>
 
       {/* <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/" />} /> */}
