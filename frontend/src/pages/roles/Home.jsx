@@ -4,6 +4,7 @@ import { Search, ChevronDown, Loader2, PackageSearch } from 'lucide-react';
 import axios from 'axios';
 import ProductCard from '../../components/ProductCard';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 
 const Home = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,35 +38,48 @@ const Home = () => {
 
   const categories = ["Cosmetics", "Skin Care", "Hair Care", "Cleaning"];
 
+  // const handleAddToCart = (product) => {
+  // console.log("Add to cart button clicked for:", product.name); // බටන් එක වැඩද බලන්න මේක දැම්මා
+
+    // නිවැරදි කළ handleAddToCart Function එක
+  // --- පිරිසිදු කළ සහ නිවැරදි කරන ලද handleAddToCart Function එක ---
   const handleAddToCart = (product) => {
-    console.log("Add to cart button clicked for:", product.name); // බටන් එක වැඩද බලන්න මේක දැම්මා
-    
     const saved = localStorage.getItem("active_order_cart");
     const existingCart = saved ? JSON.parse(saved) : [];
     
-    const exists = existingCart.find(item => item.product_id === product.id);
+    // දැනටමත් cart එකේ මේ product එක තියෙනවද බලන්න
+    const exists = existingCart.find(item => item.product_id === product.product_id);
 
     let updatedCart;
     if (exists) {
+      // තිබේ නම් quantity එක වැඩි කරන්න
       updatedCart = existingCart.map(item => 
-        item.product_id === product.id ? { ...item, qty: item.qty + 1 } : item
+        item.product_id === product.product_id ? { ...item, qty: item.qty + 1 } : item
       );
     } else {
+      // අලුතින් එකතු කරන්නේ නම් නිවැරදි මිල ලබාගන්න
+      // 1. selling_price හෝ 2. price හෝ 3. පළමු variant එකේ මිල බලන්න
+      const unitPrice = product.selling_price || 
+                        product.price || 
+                        (product.variants && product.variants.length > 0 ? product.variants[0].price : 0);
+
       updatedCart = [...existingCart, { 
-        product_id: product.id, 
-        name: product.name, 
-        price: product.price, 
-        qty: 1 
+        product_id: product.product_id, 
+        name: product.product_name, 
+        price: Number(unitPrice), 
+        qty: 1,
+        image: product.image_url
       }];
     }
     
+    // LocalStorage එකට සේව් කරන්න
     localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
-    console.log("LocalStorage Updated:", updatedCart);
-
-    setAddedProductId(product.id);
-    toast.success(`${product.name} added to cart!`);
-    setTimeout(() => setAddedProductId(null), 1500);
+    
+    // සාර්ථක පණිවිඩයක් පෙන්වන්න
+    toast.success(`${product.product_name} added to cart!`);
   };
+    
+  
 
   return (
 
@@ -108,7 +122,11 @@ const Home = () => {
         ) : filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {filteredProducts.map(product => (
-              <ProductCard key={product.product_id} product={product} />
+              <ProductCard 
+                key={product.product_id} 
+                product={product} 
+                onAddToCart={() => handleAddToCart(product)} 
+              />
             ))}
           </div>
         ) : (

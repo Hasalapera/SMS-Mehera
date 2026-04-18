@@ -1,5 +1,7 @@
 
 const { Customer, CustomerNote } = require('../models'); // 👈 Sequelize Models එක ගත්තා
+const { Op } = require('sequelize'); // 👈 Sequelize Operators
+
 
 const createCustomer = async (req, res) => {
     try {
@@ -124,5 +126,32 @@ const getCustomerCount = async (req, res) => {
     }
 };
 
-module.exports = { createCustomer, getAllCustomers, getCustomer, addNote, deleteNote, getCustomerCount };
+// Customer Search Function
+const searchCustomers = async (req, res) => {
+    try {
+        const { q } = req.query; // Frontend එකෙන් එන සර්ච් පදය
+
+        if (!q) {
+            return res.status(200).json([]);
+        }
+
+        const customers = await Customer.findAll({
+            where: {
+                [Op.or]: [
+                    { saloon_name: { [Op.iLike]: `%${q}%` } }, // Saloon නම අනුව
+                    { owner_name: { [Op.iLike]: `%${q}%` } },  // අයිතිකරුගේ නම අනුව
+                    { phone1: { [Op.iLike]: `%${q}%` } }       // ෆෝන් නම්බර් එක අනුව
+                ]
+            },
+            limit: 10 // රිසල්ට් 10කට සීමා කිරීම (Performance සඳහා)
+        });
+
+        res.status(200).json(customers);
+    } catch (err) {
+        console.error("Search Error:", err.message);
+        res.status(500).json({ error: "සෙවීමේදී දෝෂයක් ඇති විය" });
+    }
+};
+
+module.exports = { createCustomer, getAllCustomers, getCustomer, addNote, deleteNote, getCustomerCount, searchCustomers };
 

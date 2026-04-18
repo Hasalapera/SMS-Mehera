@@ -4,10 +4,19 @@ import {
   CheckCircle2 
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
+import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
+
 
 const AddOrder = () => {
   const [cusSearch, setCusSearch] = useState('');
   const [cart, setCart] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const { token } = useAuth(); 
+
+
 
   // --- දත්ත කියවීමේ ප්‍රධාන FUNCTION එක ---
   const loadCartData = () => {
@@ -27,7 +36,11 @@ const AddOrder = () => {
 
   // 1. පේජ් එක මුලින්ම පෙන්වන විට
   useEffect(() => {
-    loadCartData();
+    // LocalStorage එකේ අපි Home එකේදී save කරපු නමම පාවිච්චි කරන්න
+  const savedCart = localStorage.getItem("active_order_cart");
+  if (savedCart) {
+    setCart(JSON.parse(savedCart));
+  }
   }, []);
 
   // 2. Navigation එක හරහා (Refresh නොවී) එන විට දත්ත අලුත් කිරීම
@@ -63,7 +76,64 @@ const AddOrder = () => {
     toast.error("Product removed");
   };
 
-  const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  //const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  const totalAmount = cart.reduce((sum, item) => sum + (Number(item.price || 0) * (item.qty || 0)), 0);
+
+
+  //search customers
+  const handleCustomerSearch = async (query) => {
+    setCusSearch(query);
+    setSelectedCustomer(null); // අලුතින් ටයිප් කරනකොට පරණ කෙනා අයින් කරන්න
+
+    if (query.length > 1) { 
+      setIsSearching(true);
+      try {
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        const res = await axios.get(`http://localhost:5001/api/customers/search?q=${query}`, config);
+        setSuggestions(res.data);
+      } catch (err) {
+        console.error("Search failed", err);
+      } finally {
+        setIsSearching(false);
+      }
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  //place oder button function
+  const handlePlaceOrder = async () => {
+  if (!selectedCustomer) return toast.error("Please select a customer!");
+  if (cart.length === 0) return toast.error("Your cart is empty!");
+
+  try {
+    const orderData = {
+      customer_id: selectedCustomer.customer_id, // uuid එක
+      customer_name: selectedCustomer.saloon_name, // 👈 name pass here 
+      // shipping_address: `${selectedCustomer.address}, ${selectedCustomer.city}`, // 👈 adress pass here 
+      shipping_address: `${selectedCustomer.lane1 || ''}, ${selectedCustomer.district || ''}`,
+      phone: selectedCustomer.phone1,
+      total_amount: totalAmount,
+      items: cart.map(item => ({
+      product_id: item.product_id,
+      qty: item.qty,
+      price: item.price
+      })) 
+    };
+
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const res = await axios.post('http://localhost:5001/api/orders/place', orderData, config);
+
+    if (res.data.success) {
+      toast.success("Order Placed Successfully!");
+      localStorage.removeItem("active_order_cart"); // Cart එක clear කිරීම
+      setCart([]);
+      // මෙතනදී Order History එකට navigate කරන්න පුළුවන්
+    }
+  } catch (err) {
+    toast.error("Something went wrong!");
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] p-4 md:p-6 font-sans">
@@ -84,17 +154,67 @@ const AddOrder = () => {
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 space-y-4"> 
           
+          
           {/* STEP 1: PARTNER DETAILS */}
-          <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
-            <h2 className="text-[11px] font-black uppercase text-gray-400 tracking-widest mb-4 flex items-center gap-2">
-              <User size={18}/> Step 1: Partner Details
-            </h2>
-            <input 
-              type="text" placeholder="Search Saloon or Owner..."
-              className="w-full px-6 py-3 bg-gray-50 border-none rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all"
-              value={cusSearch} onChange={(e) => setCusSearch(e.target.value)}
-            />
-          </div>
+<div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 relative">
+  <h2 className="text-[11px] font-black uppercase text-gray-400 tracking-widest mb-4 flex items-center gap-2">
+    <User size={18}/> Step 1: Partner Details
+  </h2>
+  
+  <div className="relative">
+    <input 
+      type="text" 
+      placeholder="Type Saloon or Owner Name..."
+      className="w-full px-6 py-4 bg-gray-50 border-none rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all"
+      value={cusSearch} 
+      onChange={(e) => handleCustomerSearch(e.target.value)} 
+    />
+  </div>
+
+  {/* සර්ච් කරනකොට එන නම පෙන්වන Dropdown එක */}
+  {suggestions.length > 0 && !selectedCustomer && (
+    <div className="absolute z-50 w-[calc(100%-3rem)] bg-white shadow-2xl rounded-2xl mt-1 border border-gray-100 overflow-hidden">
+      {suggestions.map((c) => (
+        <div 
+          key={c.id} 
+          className="px-6 py-4 hover:bg-[#b4a460] hover:text-white cursor-pointer transition-colors border-b border-gray-50 last:border-0"
+          onClick={() => {
+            setSelectedCustomer(c); // කෙනෙක්ව සිලෙක්ට් කළාම එයාගේ විස්තර save වෙනවා
+            setCusSearch(c.saloon_name); // Input එකේ ඒ නම පේනවා
+            setSuggestions([]); // Dropdown එක වැහෙනවා
+          }}
+        >
+          <p className="font-black text-sm uppercase">{c.saloon_name}</p>
+          <p className="text-[10px] opacity-80 font-bold">{c.owner_name} | {c.phone1}</p>
+        </div>
+      ))}
+    </div>
+  )}
+
+  {/* කෙනෙක්ව සිලෙක්ට් කළාට පස්සේ එයාගේ විස්තර පෙන්වන Card එක */}
+  {selectedCustomer && (
+    <div className="mt-5 p-5 bg-[#b4a460]/10 rounded-[1.5rem] border-2 border-[#b4a460]/20 grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div>
+        <p className="text-[9px] font-black uppercase text-[#b4a460]">Owner</p>
+        <p className="text-sm font-bold text-black">{selectedCustomer.owner_name}</p>
+      </div>
+      <div>
+        <p className="text-[9px] font-black uppercase text-[#b4a460]">Phone</p>
+        <p className="text-sm font-bold text-black">{selectedCustomer.phone1}</p>
+      </div>
+      <div>
+        <p className="text-[9px] font-black uppercase text-[#b4a460]">District</p>
+        <p className="text-sm font-bold text-black uppercase">{selectedCustomer.district}</p>
+      </div>
+      <button 
+        onClick={() => { setSelectedCustomer(null); setCusSearch(''); }}
+        className="text-[10px] font-black text-red-500 uppercase underline"
+      >
+        Change
+      </button>
+    </div>
+  )}
+</div>
 
           {/* STEP 2: SELECTED PRODUCTS */}
           <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 min-h-[300px]">
@@ -110,7 +230,9 @@ const AddOrder = () => {
                         <p className="font-black text-[13px] uppercase text-gray-800 leading-tight">
                           {item.name}
                         </p>
-                        <p className="text-[11px] font-black text-[#b4a460] mt-1.5">Rs. {item.price.toLocaleString()}</p>
+                        <p className="text-[11px] font-black text-[#b4a460] mt-1.5">
+  Rs. {(Number(item.price) || 0).toLocaleString()}
+</p>
                       </div>
 
                       <div className="flex items-center gap-1.5 bg-gray-50 rounded-xl p-1.5 border border-gray-100">
@@ -151,7 +273,9 @@ const AddOrder = () => {
                 <div key={item.product_id} className="flex justify-between items-center pb-3 border-b border-gray-50 last:border-0">
                   <div className="flex-1 truncate mr-2">
                     <p className="font-black text-[11px] text-black uppercase truncate">{item.name}</p>
-                    <p className="text-[10px] text-gray-400 font-bold">Qty: {item.qty} x {item.price.toLocaleString()}</p>
+                    <p className="text-[10px] text-gray-400 font-bold">
+  Qty: {item.qty} x {(Number(item?.price) || 0).toLocaleString()}
+</p>
                   </div>
                   <div className="font-black text-[12px] text-black">
                     {(item.price * item.qty).toLocaleString()}
@@ -165,9 +289,13 @@ const AddOrder = () => {
                  <span className="text-[10px] font-black text-[#b4a460] uppercase tracking-widest">Total Amount</span>
                  <span className="text-2xl font-black">Rs. {totalAmount.toLocaleString()}</span>
                </div>
-               <button className="w-full py-4 bg-[#b4a460] text-black rounded-xl font-black uppercase text-[11px] tracking-widest hover:bg-white transition-all flex items-center justify-center gap-3">
-                 <CheckCircle2 size={20} strokeWidth={3}/> Place Order
-               </button>
+              
+              <button 
+               onClick={handlePlaceOrder} 
+              className="w-full py-4 bg-[#b4a460] text-black rounded-xl font-black uppercase text-[11px] tracking-widest hover:bg-white transition-all flex items-center justify-center gap-3"
+               >
+              <CheckCircle2 size={20} strokeWidth={3}/> Place Order
+              </button>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Toaster } from 'react-hot-toast';
+import ViewOrders from './ViewOrders';
 
 // Import කරගන්න ඔයාගේ Order පේජ් ටික
 import AddOrder from './AddOrder';
@@ -88,20 +89,18 @@ const Orders = () => {
             {activeTab === 'create' && <AddOrder />}
             
             {activeTab === 'history' && (
-               <div className="p-10 text-left">
-                  <div className="flex justify-between items-center mb-10">
-                    <h2 className="text-xl font-serif">Recent <span className="italic">Transactions</span></h2>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-all">
-                        <Filter size={14}/> Filter Results
-                    </button>
-                  </div>
-                  {/* ViewOrders Component එක හදලා මෙතනට දාන්න */}
-                  <div className="py-20 text-center border-2 border-dashed border-gray-50 rounded-[2rem]">
-                    <ClipboardList className="mx-auto text-gray-200 mb-4" size={48} />
-                    <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Order history database is being synced...</p>
-                  </div>
-               </div>
-            )}
+    <div className="p-10 text-left">
+        <div className="flex justify-between items-center mb-10">
+            <h2 className="text-xl font-serif">Recent <span className="italic">Transactions</span></h2>
+            <button className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-all">
+                <Filter size={14}/> Filter Results
+            </button>
+        </div>
+
+        {/* මෙන්න මෙතනදී තමයි අලුත් Table එක පෙන්වන්නේ */}
+        <ViewOrders /> 
+    </div>
+)}
 
             {activeTab === 'tracking' && (
                <div className="py-32 text-center">

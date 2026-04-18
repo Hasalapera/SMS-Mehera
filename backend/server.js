@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { sequelize } = require('./models');
+
 const userRoutes = require('./routes/userRoutes');
 const supportRoutes = require('./routes/supportRoutes');
 const brandRoutes = require('./routes/brandRoutes');
@@ -9,6 +10,7 @@ const productRoutes = require('./routes/productRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const errorHandler = require('./middlewares/errorMiddleware');
+const orderRoutes = require('./routes/orderRoutes'); 
 
 const app = express();
 
@@ -37,6 +39,7 @@ app.use('/api/brands', brandRoutes);
 app.use('/api/category', categoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/customers', customerRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Error Handling
 app.use(errorHandler);
