@@ -42,14 +42,23 @@ const LandingPage = () => {
   }, []);
 
   // Navigation Links Array එක
+  // const navLinks = [
+  //   { name: 'Home', action: scrollToTop },
+  //   { name: 'Products', action: scrollToProducts }, 
+  //   { name: 'Our Brands', path: '#' },
+  //   { name: 'Workshops', path: '#' },
+  //   { name: 'About US', path: '#' },
+  //   { name: 'Contact Us', path: '#' },
+  // ];
+
   const navLinks = [
-    { name: 'Home', action: scrollToTop },
-    { name: 'Products', action: scrollToProducts }, 
-    { name: 'Our Brands', path: '#' },
-    { name: 'Workshops', path: '#' },
-    { name: 'About US', path: '#' },
-    { name: 'Contact Us', path: '#' },
-  ];
+  { name: 'Home', action: scrollToTop },
+  { name: 'Products', action: scrollToProducts }, 
+  { name: 'Our Brands', action: () => document.getElementById('brands-section').scrollIntoView({ behavior: 'smooth' }) },
+  { name: 'Workshops', action: () => document.getElementById('workshops-section').scrollIntoView({ behavior: 'smooth' }) },
+  { name: 'About US', action: () => document.getElementById('about-section').scrollIntoView({ behavior: 'smooth' }) },
+  { name: 'Contact Us', action: () => document.getElementById('contact-section').scrollIntoView({ behavior: 'smooth' }) },
+];
 
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900 overflow-x-hidden">
@@ -182,6 +191,76 @@ const LandingPage = () => {
       {/* <section id='brands-section' className="py-24 px-8 text-center">
         <h1>Our Brands</h1>
       </section> */}
+
+      {/* --- Our Brands Section --- */}
+<section id="brands-section" className="py-24 px-8 bg-white">
+  <div className="max-w-7xl mx-auto text-center space-y-12">
+    <div className="space-y-4">
+      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#b4a460]">Trusted Partners</span>
+      <h2 className="text-4xl font-serif italic text-black">Global Beauty Excellence</h2>
+    </div>
+    <div className="flex flex-wrap justify-center items-center gap-16 md:gap-32 opacity-60">
+      {/* ඔයාට පුළුවන් මේ තැන් වලට අදාළ Brands වල Logos දාන්න */}
+      <div className="text-3xl font-serif tracking-tighter hover:opacity-100 transition-opacity cursor-pointer">INGLOT</div>
+      <div className="text-3xl font-serif tracking-widest hover:opacity-100 transition-opacity cursor-pointer">KAARAL</div>
+      <div className="text-2xl font-black tracking-widest hover:opacity-100 transition-opacity cursor-pointer italic">MEHERA</div>
+    </div>
+  </div>
+</section>
+
+
+{/* --- About & Workshops Section --- */}
+<section id="about-section" className="py-24 px-8 bg-[#fafaf9]">
+  <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+    <div className="order-2 md:order-1 space-y-6">
+      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#b4a460]">Since 1998</span>
+      <h2 className="text-4xl md:text-5xl font-serif leading-tight">Crafting the Future of <span className="italic">Professional Beauty</span> in Sri Lanka.</h2>
+      <p className="text-gray-500 leading-relaxed italic">
+        Mehera International (Pvt) Ltd stands as the leading force in Sri Lanka's beauty industry, representing iconic global brands and providing high-end training for professionals.
+      </p>
+      
+      {/* Workshop Highlight Box */}
+      <div id="workshops-section" className="p-8 bg-white rounded-[2rem] border border-gray-100 shadow-sm mt-8">
+        <h4 className="font-bold text-lg mb-2">Upcoming Workshops</h4>
+        <p className="text-sm text-gray-400 mb-4 italic">Join our expert-led sessions to master the latest techniques in cosmetics and hair care.</p>
+        <button className="text-[10px] font-black uppercase tracking-widest text-[#b4a460] flex items-center gap-2 hover:gap-4 transition-all">
+          View Schedule <ArrowRight size={14} />
+        </button>
+      </div>
+    </div>
+    <div className="order-1 md:order-2">
+      <div className="aspect-[4/5] bg-gray-200 rounded-[3rem] overflow-hidden shadow-2xl relative group">
+        <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500"></div>
+        {/* පින්තූරය මෙතනට: <img src="URL" className="w-full h-full object-cover" /> */}
+        <div className="absolute bottom-10 left-10 text-white">
+          <p className="text-xs uppercase tracking-widest font-bold">Main Headquarters</p>
+          <p className="text-2xl font-serif italic">Colombo, Sri Lanka</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+{/* --- Contact Us Section --- */}
+<section id="contact-section" className="py-24 px-8 bg-white">
+  <div className="max-w-3xl mx-auto text-center space-y-12">
+    <div className="space-y-4">
+      <h2 className="text-4xl font-serif italic">Get in Touch</h2>
+      <p className="text-gray-400 italic">For wholesale inquiries and partnership opportunities.</p>
+    </div>
+    <form className="grid grid-cols-1 gap-6 text-left">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <input type="text" placeholder="YOUR NAME" className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-bold text-[10px] uppercase tracking-widest focus:ring-1 ring-[#b4a460]" />
+        <input type="email" placeholder="EMAIL ADDRESS" className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-bold text-[10px] uppercase tracking-widest focus:ring-1 ring-[#b4a460]" />
+      </div>
+      <textarea placeholder="MESSAGE" className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-bold text-[10px] uppercase tracking-widest h-32 focus:ring-1 ring-[#b4a460]"></textarea>
+      <button className="w-full py-5 bg-black text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-[#b4a460] transition-colors shadow-xl">
+        Send Inquiry
+      </button>
+    </form>
+  </div>
+</section>
 
       <Footer/>
     </div>
