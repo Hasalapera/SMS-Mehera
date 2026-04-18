@@ -59,13 +59,17 @@ const ProductCard = ({ product, onAddToCart }) => {
           {canAddOrders && (
             <button 
               onClick={(e) => {
-      e.stopPropagation(); // Card එක click වීම වළක්වයි
-      onAddToCart();       // Home.jsx එකේ function එක call කරයි
-    }}
-    className="p-3 bg-white text-[#b4a460] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110 active:scale-95"
-    title="Add to Order"
-  >
-    <ShoppingCart size={18} />
+                e.stopPropagation(); // Card එක click වීම වළක්වයි
+                if (onAddToCart) {
+                  onAddToCart(); // 👈 Prop එකක් විදිහට ආපු function එක මෙතනදී run වෙනවා
+                } else {
+                  console.error("onAddToCart function is not provided to ProductCard");
+                }
+              }}
+              className="p-3 bg-white text-[#b4a460] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110 active:scale-95"
+              title="Add to Order"
+            >
+              <ShoppingCart size={18} />
             </button>
           )}
           <button className="p-3 bg-white text-[#9A8B50] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110">
