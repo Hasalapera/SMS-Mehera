@@ -16,7 +16,7 @@ const Navbar = () => {
     { name: 'Home', action: () => navigate('/') },
     { name: 'Products', action: () => navigate('/#products-section') },
     { name: 'Our Brands', action: () => navigate('/brands') },
-    { name: 'Workshops', action: () => navigate('/#workshops-section') },
+    { name: 'Workshops', action: () => navigate('/workshops') },
     { name: 'About US', action: () => navigate('/#about-section') },
     { name: 'Contact Us', action: () => navigate('/#contact-section') },
   ];

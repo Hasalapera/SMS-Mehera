@@ -68,6 +68,7 @@ import AddOnlineOrder from "./pages/management/order/AddOnlineOrder";
 //gihaaaaan testing;
 
 import OurBrands from './pages/OurBrands';
+import Workshops from './pages/Workshops';
 
 function App() {
   const { user, loading } = useAuth();
@@ -87,6 +88,8 @@ function App() {
 
       {/* Gihaaaaan Testing */}
       <Route path="/brands" element={<OurBrands />} />
+      <Route path="/workshops" element={<Workshops />} />
+      
       {/* Gihan Testing */}
       <Route path='/addOnlineOrder' element={<AddOnlineOrder />} />
       <Route 
