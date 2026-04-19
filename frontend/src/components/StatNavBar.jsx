@@ -2,23 +2,26 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 
-const Navbar = () => {
+
+const StatNavBar = () => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Scroll functions
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  
+  const handleNavigation = (path) => {
     setIsMenuOpen(false);
+    navigate(path);
+    // පේජ් එක මාරු වූ පසු උඩටම ස්ක්‍රෝල් කිරීම
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const navLinks = [
-    { name: 'Home', action: () => navigate('/') },
-    { name: 'Products', action: () => navigate('/#products-section') },
-    { name: 'Our Brands', action: () => navigate('/brands') },
-    { name: 'Workshops', action: () => navigate('/workshops') },
-    { name: 'About US', action: () => navigate('/#about-section') },
-    { name: 'Contact Us', action: () => navigate('/#contact-section') },
+    { name: 'Home', action: () => handleNavigation('/') },
+    { name: 'Products', action: () => handleNavigation('/#products-section') },
+    { name: 'Our Brands', action: () => handleNavigation('/brands') },
+    { name: 'Workshops', action: () => handleNavigation('/workshops') },
+    { name: 'About US', action: () => handleNavigation('/about') }, 
+    { name: 'Contact Us', action: () => handleNavigation('/#contact-section') },
   ];
 
   return (
@@ -26,7 +29,7 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto flex justify-between items-center px-6 md:px-12 py-5">
         
         {/* Logo Area */}
-        <div className="flex flex-col text-left cursor-pointer" onClick={() => navigate('/')}>
+        <div className="flex flex-col text-left cursor-pointer" onClick={() => handleNavigation('/')}>
           <img
             src="https://i.postimg.cc/nzwPbHWj/mehera-logo.png"
             alt="Mehera International Logo"
@@ -46,7 +49,7 @@ const Navbar = () => {
             </button>
           ))}
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => handleNavigation('/login')}
             className="bg-black text-white px-7 py-2.5 rounded-full font-bold text-[11px] uppercase tracking-widest hover:bg-[#b4a460] hover:text-black transition-all duration-300 shadow-lg shadow-black/10 ml-4"
           >
             Login
@@ -72,7 +75,7 @@ const Navbar = () => {
             </button>
           ))}
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => handleNavigation('/login')}
             className="w-full bg-black text-white py-4 rounded-xl font-bold uppercase text-xs tracking-widest"
           >
             System Login
@@ -83,4 +86,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default StatNavBar;

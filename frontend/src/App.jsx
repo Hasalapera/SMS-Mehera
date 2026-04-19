@@ -69,6 +69,7 @@ import AddOnlineOrder from "./pages/management/order/AddOnlineOrder";
 
 import OurBrands from './pages/OurBrands';
 import Workshops from './pages/Workshops';
+import AboutUs from './pages/AboutUs';
 
 function App() {
   const { user, loading } = useAuth();
@@ -89,7 +90,8 @@ function App() {
       {/* Gihaaaaan Testing */}
       <Route path="/brands" element={<OurBrands />} />
       <Route path="/workshops" element={<Workshops />} />
-      
+      <Route path="/about" element={<AboutUs />} />
+
       {/* Gihan Testing */}
       <Route path='/addOnlineOrder' element={<AddOnlineOrder />} />
       <Route 
