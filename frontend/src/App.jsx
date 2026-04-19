@@ -65,9 +65,9 @@ import ProductDetail from './pages/management/product/ProductDetail';
 
 import AddOnlineOrder from "./pages/management/order/AddOnlineOrder";
 
-//gihaaaaan testing
+//gihaaaaan testing;
 
-
+import OurBrands from './pages/OurBrands';
 
 function App() {
   const { user, loading } = useAuth();
@@ -86,7 +86,7 @@ function App() {
       <Route path='/change-password' element={user ? <ChangePassword /> : <Navigate to="/login" />} />
 
       {/* Gihaaaaan Testing */}
-
+      <Route path="/brands" element={<OurBrands />} />
       {/* Gihan Testing */}
       <Route path='/addOnlineOrder' element={<AddOnlineOrder />} />
       <Route 
