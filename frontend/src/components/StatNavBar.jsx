@@ -21,7 +21,7 @@ const StatNavBar = () => {
     { name: 'Our Brands', action: () => handleNavigation('/brands') },
     { name: 'Workshops', action: () => handleNavigation('/workshops') },
     { name: 'About US', action: () => handleNavigation('/about') }, 
-    { name: 'Contact Us', action: () => handleNavigation('/#contact-section') },
+    { name: 'Contact Us', action: () => navigate('/contact') },
   ];
 
   return (

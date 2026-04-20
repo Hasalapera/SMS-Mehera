@@ -70,6 +70,7 @@ import AddOnlineOrder from "./pages/management/order/AddOnlineOrder";
 import OurBrands from './pages/OurBrands';
 import Workshops from './pages/Workshops';
 import AboutUs from './pages/AboutUs';
+import Contact from './pages/Contact';
 
 function App() {
   const { user, loading } = useAuth();
@@ -91,6 +92,7 @@ function App() {
       <Route path="/brands" element={<OurBrands />} />
       <Route path="/workshops" element={<Workshops />} />
       <Route path="/about" element={<AboutUs />} />
+      <Route path="/contact" element={<Contact />} />
 
       {/* Gihan Testing */}
       <Route path='/addOnlineOrder' element={<AddOnlineOrder />} />

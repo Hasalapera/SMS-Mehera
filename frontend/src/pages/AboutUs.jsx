@@ -12,7 +12,7 @@ const AboutUs = () => {
       <section className="py-24 px-8 bg-white">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
           <div className="rounded-[3rem] overflow-hidden shadow-2xl bg-gray-100 aspect-[4/3]">
-            <img src="https://images.unsplash.com/photo-1522337094846-8a818192de1f?q=80&w=2194" className="w-full h-full object-cover" alt="Our Identity" />
+            <img src="https://i.postimg.cc/XJB4P7NZ/Gemini-Generated-Image-ynufwwynufwwynuf.png" className="w-full h-full object-cover" alt="Our Identity" />
           </div>
           <div className="space-y-8 text-left">
             <h1 className="text-5xl font-serif text-black leading-tight">Our <span className="italic text-[#b4a460]">Identity</span></h1>
@@ -20,9 +20,9 @@ const AboutUs = () => {
               Mehera International (Pvt) Ltd is a leading force in the Sri Lankan beauty industry. We bridge the gap between international innovation and local expertise.
             </p>
             <div className="grid grid-cols-2 gap-8 pt-4">
-              <div><p className="text-3xl font-serif text-black">2013</p><p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Year Founded</p></div>
+              <div><p className="text-3xl font-serif text-black">2020</p><p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Year Founded</p></div>
               <div><p className="text-3xl font-serif text-black">3+</p><p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Premium Brands</p></div>
-              <div><p className="text-3xl font-serif text-black">5000+</p><p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Trained Professionals</p></div>
+              <div><p className="text-3xl font-serif text-black">4000+</p><p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Trained Professionals</p></div>
               <div><p className="text-3xl font-serif text-black">1</p><p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Flagship Studio</p></div>
             </div>
           </div>
