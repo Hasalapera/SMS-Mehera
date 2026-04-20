@@ -86,7 +86,7 @@ const Footer = () => {
             <div className="space-y-4">
               <div className="flex items-start gap-3 text-gray-500">
                 <MapPin size={16} className="text-[#b4a460] shrink-0" />
-                <span className="text-[11px] font-medium">No 123, Ward Place, Colombo 07, Sri Lanka.</span>
+                <span className="text-[11px] font-medium">No 123, Ward Place, Panadura, Sri Lanka.</span>
               </div>
               <div className="flex items-center gap-3 text-gray-500">
                 <Phone size={16} className="text-[#b4a460] shrink-0" />

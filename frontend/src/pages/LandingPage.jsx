@@ -1,19 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ShoppingBag, ShieldCheck, Menu, X, Loader2, Sparkles } from 'lucide-react';
+import { ArrowRight, ShoppingBag, ShieldCheck, Loader2, Sparkles } from 'lucide-react';
 import axios from 'axios';
+import emailjs from '@emailjs/browser';
 import ProductCard from '../components/ProductCard';
 import StatNavBar from '../components/StatNavBar';
 import Footer from '../components/Footer';
 
-
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const form = useRef(); // Form එක අල්ලගන්න ref එක මෙතන තියෙන්න ඕනේ
+  
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-
+  // Products fetch කිරීම
   useEffect(() => {
     const fetchLandingProducts = async () => {
       try {
@@ -29,14 +30,30 @@ const LandingPage = () => {
     fetchLandingProducts();
   }, []);
 
+  // Email යැවීමේ Function එක
+  const sendEmail = (e) => {
+    e.preventDefault();
+
+    emailjs.sendForm(
+      'service_gnxf86j',
+      'template_9p5jv9r',
+      form.current,
+      'rfwdHsLZUipzt_CJI'
+    )
+    .then((result) => {
+      console.log(result.text);
+      alert("Successfully sent your message! ✅");
+      e.target.reset();
+    }, (error) => {
+      console.log(error.text);
+      alert("Something went wrong. Please try again. ❌");
+    });
+  };
 
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900 overflow-x-hidden">
-
-       {/* Nav bar Section */}
-            <StatNavBar />
-            <div className="pt-5">
-            </div>
+      <StatNavBar />
+      <div className="pt-5"></div>
 
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-8 pt-36 pb-20 md:pt-52 md:pb-32 flex flex-col md:flex-row items-center gap-12 text-left">
@@ -85,7 +102,7 @@ const LandingPage = () => {
               <h2 className="text-4xl font-serif text-black leading-none">Featured <span className="italic">Cosmetics</span></h2>
             </div>
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/products')}
               className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
             >
               View Full Catalog <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
@@ -107,8 +124,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-
-      {/* --- Our Brands Section  --- */}
+      {/* --- Our Brands Section --- */}
       <section id="brands-section" className="py-24 px-8 bg-white border-b border-gray-50">
         <div className="max-w-7xl mx-auto text-center space-y-16">
           <div className="space-y-4">
@@ -123,36 +139,26 @@ const LandingPage = () => {
           </div>
 
           <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24">
-            {/* Inglot Logo */}
             <div className="group flex flex-col items-center gap-4 cursor-pointer">
               <div className="h-16 w-40 flex items-center justify-center grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-110">
                 <img src="https://www.mymall.com.cy/wp-content/uploads/2023/10/INGLOT-logo-a-1024x359.jpg" alt="Inglot" className="max-h-full max-w-full object-contain" />
               </div>
-              <span className="opacity-0 group-hover:opacity-100 text-[8px] font-black tracking-[0.2em] uppercase transition-opacity text-[#b4a460]">Professional Makeup</span>
             </div>
-
-
-            {/* Studio17 Logo */}
             <div className="group flex flex-col items-center gap-4 cursor-pointer">
               <div className="h-24 w-60 flex items-center justify-center grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-110">
-                <img src="https://scontent-bom5-1.xx.fbcdn.net/v/t39.30808-6/487379046_1216520530254563_8678567146182017128_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=2a1932&_nc_eui2=AeGuL-DeeYdSnNa_wrYSy6tP6IztaxZiPX3ojO1rFmI9fWLg-lDoIOOQgLKBRN48KOpBeoqEUAp6PAbKVeGuFW24&_nc_ohc=NA9BEAtUAqcQ7kNvwE4_p4q&_nc_oc=Adq2_5DlpuDVDzymUYmJgJ5V7u5-nDJ2DkR3kPN1DhXFp3FMQiYFw4JdqbnwY-9oaX8&_nc_zt=23&_nc_ht=scontent-bom5-1.xx&_nc_gid=tjmK2nUUbOkexHwwLD51jA&_nc_ss=7a3a8&oh=00_Af2aVgN-ZEODhDuEIeipYW9nh8Y6F1eYtI0m6uDDHyGJqA&oe=69E9D4A2" alt="Studio17" className="max-h-full max-w-full object-contain" />
+                <img src="https://i.postimg.cc/mD8zHh0S/Studio17-Logo.jpg" alt="Studio17" className="max-h-full max-w-full object-contain" />
               </div>
-              <span className="opacity-0 group-hover:opacity-100 text-[8px] font-black tracking-[0.2em] uppercase transition-opacity text-[#b4a460]">Professional Makeup Brushes </span>
             </div>
-
-
-            {/* Kaaral Logo */}
             <div className="group flex flex-col items-center gap-4 cursor-pointer">
               <div className="h-16 w-40 flex items-center justify-center grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-110">
                 <img src="https://wp.logos-download.com/wp-content/uploads/2016/06/Kaaral_logo.png?dl" alt="Kaaral" className="max-h-full max-w-full object-contain" />
               </div>
-              <span className="opacity-0 group-hover:opacity-100 text-[8px] font-black tracking-[0.2em] uppercase transition-opacity text-[#b4a460]">Premium Hair Care</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* --- About & Workshops Section (Matching Original Fonts) --- */}
+      {/* --- About & Workshops Section --- */}
       <section id="about-section" className="py-24 px-8 bg-[#fafaf9]">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-20 items-center text-left">
           <div className="space-y-8">
@@ -171,7 +177,7 @@ const LandingPage = () => {
               <p className="text-sm text-gray-400 font-sans tracking-wide leading-loose">
                 Elevate your artistry with our masterclasses. Designed for beauty professionals to master international techniques.
               </p>
-              <button className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#b4a460] hover:gap-5 transition-all">
+              <button onClick={() => navigate('/workshops')} className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#b4a460] hover:gap-5 transition-all">
                 Explore Schedule <ArrowRight size={14} />
               </button>
             </div>
@@ -179,16 +185,16 @@ const LandingPage = () => {
 
           <div className="relative h-[600px] w-full bg-gray-200 rounded-[3.5rem] overflow-hidden shadow-2xl">
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
-            {/* ඔයාගේ පින්තූරය මෙතනට: <img src="..." className="w-full h-full object-cover" /> */}
+            <img src="https://corp.inglotcosmetics.com/wp-content/uploads/2025/09/250805_INGLOT-0598_F.jpg" className="w-full h-full object-cover" />
             <div className="absolute bottom-12 left-12 z-20 text-white">
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#b4a460] mb-2 block">Our Headquarters</span>
-              <h3 className="text-3xl font-serif italic">Colombo, Sri Lanka</h3>
+              <h3 className="text-3xl font-serif italic">Panadura, Sri Lanka</h3>
             </div>
           </div>
         </div>
       </section>
 
-      {/* --- Contact Us (Matching Original UI) --- */}
+      {/* --- Contact Us --- */}
       <section id="contact-section" className="py-24 px-8 bg-white">
         <div className="max-w-4xl mx-auto text-center space-y-16">
           <div className="space-y-4">
@@ -196,66 +202,33 @@ const LandingPage = () => {
             <p className="text-gray-400 font-sans text-sm tracking-widest uppercase">For Partnerships & Wholesale Inquiries</p>
           </div>
 
-          <form className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-            <input type="text" placeholder="NAME" className="bg-gray-50 p-6 rounded-2xl outline-none font-black text-[10px] tracking-widest border border-transparent focus:border-[#b4a460]/30 transition-all" />
-            <input type="email" placeholder="EMAIL" className="bg-gray-50 p-6 rounded-2xl outline-none font-black text-[10px] tracking-widest border border-transparent focus:border-[#b4a460]/30 transition-all" />
-            <textarea placeholder="YOUR MESSAGE" className="md:col-span-2 bg-gray-50 p-6 rounded-2xl outline-none font-black text-[10px] tracking-widest h-40 border border-transparent focus:border-[#b4a460]/30 transition-all"></textarea>
-            <button className="md:col-span-2 py-6 bg-black text-[#b4a460] rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-[#1a1a1a] transition-all shadow-xl shadow-black/10">
-              Send Message
-            </button>
-          </form>
-        </div>
-      </section>
+          <form ref={form} onSubmit={sendEmail} className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+            <input
+              type="text"
+              name="from_name" 
+              required
+              placeholder="NAME"
+              className="bg-gray-50 p-6 rounded-2xl outline-none font-black text-[10px] tracking-widest border border-transparent focus:border-[#b4a460]/30 transition-all"
+            />
+            <input
+              type="email"
+              name="reply_to" 
+              required
+              placeholder="EMAIL"
+              className="bg-gray-50 p-6 rounded-2xl outline-none font-black text-[10px] tracking-widest border border-transparent focus:border-[#b4a460]/30 transition-all"
+            />
+            <textarea
+              name="message" 
+              required
+              placeholder="YOUR MESSAGE"
+              className="md:col-span-2 bg-gray-50 p-6 rounded-2xl outline-none font-black text-[10px] tracking-widest h-40 border border-transparent focus:border-[#b4a460]/30 transition-all"
+            ></textarea>
 
-
-      {/* --- About & Workshops Section --- */}
-      <section id="about-section" className="py-24 px-8 bg-[#fafaf9]">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-          <div className="order-2 md:order-1 space-y-6">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#b4a460]">Since 1998</span>
-            <h2 className="text-4xl md:text-5xl font-serif leading-tight">Crafting the Future of <span className="italic">Professional Beauty</span> in Sri Lanka.</h2>
-            <p className="text-gray-500 leading-relaxed italic">
-              Mehera International (Pvt) Ltd stands as the leading force in Sri Lanka's beauty industry, representing iconic global brands and providing high-end training for professionals.
-            </p>
-
-            {/* Workshop Highlight Box */}
-            <div id="workshops-section" className="p-8 bg-white rounded-[2rem] border border-gray-100 shadow-sm mt-8">
-              <h4 className="font-bold text-lg mb-2">Upcoming Workshops</h4>
-              <p className="text-sm text-gray-400 mb-4 italic">Join our expert-led sessions to master the latest techniques in cosmetics and hair care.</p>
-              <button className="text-[10px] font-black uppercase tracking-widest text-[#b4a460] flex items-center gap-2 hover:gap-4 transition-all">
-                View Schedule <ArrowRight size={14} />
-              </button>
-            </div>
-          </div>
-          <div className="order-1 md:order-2">
-            <div className="aspect-[4/5] bg-gray-200 rounded-[3rem] overflow-hidden shadow-2xl relative group">
-              <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500"></div>
-              {/* පින්තූරය මෙතනට: <img src="URL" className="w-full h-full object-cover" /> */}
-              <div className="absolute bottom-10 left-10 text-white">
-                <p className="text-xs uppercase tracking-widest font-bold">Main Headquarters</p>
-                <p className="text-2xl font-serif italic">Colombo, Sri Lanka</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-      {/* --- Contact Us Section --- */}
-      <section id="contact-section" className="py-24 px-8 bg-white">
-        <div className="max-w-3xl mx-auto text-center space-y-12">
-          <div className="space-y-4">
-            <h2 className="text-4xl font-serif italic">Get in Touch</h2>
-            <p className="text-gray-400 italic">For wholesale inquiries and partnership opportunities.</p>
-          </div>
-          <form className="grid grid-cols-1 gap-6 text-left">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <input type="text" placeholder="YOUR NAME" className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-bold text-[10px] uppercase tracking-widest focus:ring-1 ring-[#b4a460]" />
-              <input type="email" placeholder="EMAIL ADDRESS" className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-bold text-[10px] uppercase tracking-widest focus:ring-1 ring-[#b4a460]" />
-            </div>
-            <textarea placeholder="MESSAGE" className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-bold text-[10px] uppercase tracking-widest h-32 focus:ring-1 ring-[#b4a460]"></textarea>
-            <button className="w-full py-5 bg-black text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-[#b4a460] transition-colors shadow-xl">
-              Send Inquiry
+            <button
+              type="submit"
+              className="md:col-span-2 py-6 bg-black text-[#b4a460] rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-[#1a1a1a] transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-3"
+            >
+              Send Message <ArrowRight size={16} />
             </button>
           </form>
         </div>

@@ -17,18 +17,18 @@ const Contact = () => {
 
     
     emailjs.sendForm(
-      'service_gnxf86j',   // උදා: service_xxxx
-      'template_9p5jv9r',  // උදා: template_xxxx
+      'service_gnxf86j',   
+      'template_9p5jv9r',  
       form.current, 
       'rfwdHsLZUipzt_CJI'    
     )
     .then((result) => {
         console.log(result.text);
-        alert("පණිවිඩය සාර්ථකව යැවුණා! ✅");
-        e.target.reset(); // Form එක clear කරනවා
+        alert("Successfully sent your message! ✅");
+        e.target.reset(); 
     }, (error) => {
         console.log(error.text);
-        alert("වැරදීමක් වුණා. ආයෙත් උත්සාහ කරන්න. ❌");
+        alert("Something went wrong. Please try again. ❌");
     });
   };
 

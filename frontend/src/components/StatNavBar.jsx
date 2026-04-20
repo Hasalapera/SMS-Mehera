@@ -17,7 +17,7 @@ const StatNavBar = () => {
 
   const navLinks = [
     { name: 'Home', action: () => handleNavigation('/') },
-    { name: 'Products', action: () => handleNavigation('/#products-section') },
+    { name: 'Products', action: () => navigate('/products') },
     { name: 'Our Brands', action: () => handleNavigation('/brands') },
     { name: 'Workshops', action: () => handleNavigation('/workshops') },
     { name: 'About US', action: () => handleNavigation('/about') }, 

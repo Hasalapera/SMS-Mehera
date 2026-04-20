@@ -71,6 +71,7 @@ import OurBrands from './pages/OurBrands';
 import Workshops from './pages/Workshops';
 import AboutUs from './pages/AboutUs';
 import Contact from './pages/Contact';
+import Products from './pages/Products';
 
 function App() {
   const { user, loading } = useAuth();
@@ -93,6 +94,7 @@ function App() {
       <Route path="/workshops" element={<Workshops />} />
       <Route path="/about" element={<AboutUs />} />
       <Route path="/contact" element={<Contact />} />
+      <Route path="/products" element={<Products />} />
 
       {/* Gihan Testing */}
       <Route path='/addOnlineOrder' element={<AddOnlineOrder />} />
