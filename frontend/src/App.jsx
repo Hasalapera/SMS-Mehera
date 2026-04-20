@@ -101,12 +101,12 @@ function App() {
       <Route path="/products" element={<Products />} />
 
       {/* Gihan Testing */}
-      <Route path='/addOnlineOrder' element={<AddOnlineOrder />} />
+      {/* <Route path='/addOnlineOrder' element={<AddOnlineOrder />} /> */}
       <Route 
         path='/product/:id' 
         element={
           user ? (
-            ["admin", "manager", "sales_rep"].includes(userRole) ? (
+            ["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? (
               <ProductDetail />
             ) : (
               <Navigate to="/home" />
@@ -174,8 +174,20 @@ function App() {
         <Route
           path="/orders"
           element={
-            ["admin", "sales_rep"].includes(userRole) ? (
+            ["admin", "sales_rep", "online_store_keeper"].includes(userRole) ? (
               <Orders />
+            ) : (
+              <Navigate to="/home" />
+            )
+          }
+        />
+
+        {/* Add Online Order Route : redirect to add online order */}
+        <Route
+          path="/add-online-order"
+          element={
+            ["admin", "online_store_keeper"].includes(userRole) ? (
+              <AddOnlineOrder />
             ) : (
               <Navigate to="/home" />
             )

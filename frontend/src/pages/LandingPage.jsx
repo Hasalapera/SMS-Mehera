@@ -146,7 +146,7 @@ const LandingPage = () => {
             </div>
             <div className="group flex flex-col items-center gap-4 cursor-pointer">
               <div className="h-24 w-60 flex items-center justify-center grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-110">
-                <img src="https://i.postimg.cc/mD8zHh0S/Studio17-Logo.jpg" alt="Studio17" className="max-h-full max-w-full object-contain" />
+                <img src="https://i.postimg.cc/T2BmPCK6/487379046-1216520530254563-8678567146182017128-n-(1).jpg" alt="Studio17" className="max-h-full max-w-full object-contain" />
               </div>
             </div>
             <div className="group flex flex-col items-center gap-4 cursor-pointer">

@@ -98,7 +98,7 @@ const AddOnlineOrder = () => {
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* වම් පැත්ත: බඩු ලිස්ට් එක */}
-        <div className="lg:col-span-7 space-y-6">
+        {/* <div className="lg:col-span-7 space-y-6">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <input
@@ -121,7 +121,7 @@ const AddOnlineOrder = () => {
               }
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* දකුණු පැත්ත: විස්තර සහ කාට් එක */}
         <div className="lg:col-span-5 space-y-6">
