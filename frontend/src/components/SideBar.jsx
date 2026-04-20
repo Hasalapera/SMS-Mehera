@@ -9,6 +9,7 @@ import {
   Download, UserCheck, ClipboardList, ShoppingBag, Tag
 } from 'lucide-react';
 import { useNavigate, NavLink } from 'react-router-dom';
+import ViewOrders from '../pages/management/order/ViewOrders';
 
 const menuConfig = {
   admin: { 
@@ -20,7 +21,9 @@ const menuConfig = {
     canManageCategories: true, 
     canEditInventory: true,
     canViewCustomers: true,
-    canAddCustomers: true 
+    canAddCustomers: true,
+    canFullManageOrders: true, // Create, View, Edit, Delete
+    canViewOrders: true, 
   },
   manager: { 
     canFullManageUsers: false, 
@@ -32,19 +35,10 @@ const menuConfig = {
     canManageCategories: false, 
     canEditInventory: false, 
     canViewCustomers: true,
-    canAddCustomers: false
-  },
-  // sales_rep: { 
-  //   canFullManageUsers: false, 
-  //   canViewUsers: false, 
-  //   canAddProducts: false, 
-  //   canViewReports: false, 
-  //   canManageBrands: false,
-  //   canManageProducts: false,
-  //   canManageCategories: false,
-  //   canEditInventory: false,
-  //   canViewCustomers: true,  
-  // }
+    canAddCustomers: false,
+    canViewOrders: true,
+    canFullManageOrders: false,
+  }
 };
 
 const NavItem = ({ to, icon: Icon, label, isCollapsed, badge, onClick, isOpen }) => {
@@ -173,12 +167,32 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
           {!isSidebarCollapsed && <p className="text-[10px] uppercase text-gray-500 font-bold mb-2 ml-2">Management</p>}
           
           {/* Orders Section */}
-          <NavItem icon={ShoppingCart} label="Orders" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('orders')} isOpen={openSubMenu === 'orders'} />
+          {/* <NavItem icon={ShoppingCart} label="Orders" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('orders')} isOpen={openSubMenu === 'orders'} />
           {!isSidebarCollapsed && openSubMenu === 'orders' && (
             <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
               <NavLink to="/orders/new" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><PlusCircle size={14} /> New Order</NavLink>
               <NavLink to="/orders/history" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><ClipboardList size={14} /> Order History</NavLink>
             </div>
+          )} */}
+
+          {/* Order */}
+          {permissions.canViewOrders && (
+            <>
+              <NavItem icon={UserCog} label="Orders" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('orders')} isOpen={openSubMenu === 'orders'} />
+              {!isSidebarCollapsed && openSubMenu === 'orders' && (
+                <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
+                  {/* Admin ට පමණක් පේන Full CRUD Actions */}
+                  {permissions.canFullManageUsers && (
+                    <>
+                      <NavLink to="/orders?add-order" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><UserPlus size={14} /> Add Order</NavLink>
+                      <NavLink to="/delete-order" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-red-400 transition-colors"><UserMinus size={14} /> Delete Order</NavLink>
+                    </>
+                  )}
+                  {/* Admin සහ Manager දෙදෙනාටම පේන View Action */}
+                  <NavLink to="/view-orders" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-white transition-colors"><List size={14} /> Order List </NavLink>
+                </div>
+              )}
+            </>
           )}
 
           {/* Customers Section */}

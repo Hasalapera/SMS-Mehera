@@ -7,6 +7,8 @@ const Brand = require('./Brand');
 const Category = require('./Category');
 const Customer = require('./Customer');
 const CustomerNote = require('./CustomerNote');
+const Order = require('./Order');
+const OrderItem = require('./OrderItem');
 
 // 1. User Associations
 // User ටේබල් එක කලින් හැදෙන්න ඕන නිසා මේ පිළිවෙළ වැදගත්
@@ -28,6 +30,10 @@ ProductVariant.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
 // 4. Customer and CustomerNote Associations
 Customer.hasMany(CustomerNote, { foreignKey: 'customer_id', as: 'notes', onDelete: 'CASCADE' });
 CustomerNote.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' });
+
+// 5. Order and OrderItem Associations
+Order.hasMany(OrderItem, { foreignKey: 'order_id' });
+OrderItem.belongsTo(Order, { foreignKey: 'order_id' });
 
 module.exports = {
   sequelize,
