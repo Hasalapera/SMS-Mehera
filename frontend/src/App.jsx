@@ -69,7 +69,13 @@ import AddOrder from "./pages/management/order/AddOrder";
 
 import AddOnlineOrder from "./pages/management/order/AddOnlineOrder";
 
+//gihaaaaan testing;
 
+import OurBrands from './pages/OurBrands';
+import Workshops from './pages/Workshops';
+import AboutUs from './pages/AboutUs';
+import Contact from './pages/Contact';
+import Products from './pages/Products';
 
 function App() {
   const { user, loading } = useAuth();
@@ -87,13 +93,20 @@ function App() {
       <Route path='/login' element={<Login />} />
       <Route path='/change-password' element={user ? <ChangePassword /> : <Navigate to="/login" />} />
 
+      {/* Gihaaaaan Testing */}
+      <Route path="/brands" element={<OurBrands />} />
+      <Route path="/workshops" element={<Workshops />} />
+      <Route path="/about" element={<AboutUs />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/products" element={<Products />} />
+
       {/* Gihan Testing */}
-      <Route path='/addOnlineOrder' element={<AddOnlineOrder />} />
+      {/* <Route path='/addOnlineOrder' element={<AddOnlineOrder />} /> */}
       <Route 
         path='/product/:id' 
         element={
           user ? (
-            ["admin", "manager", "sales_rep"].includes(userRole) ? (
+            ["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? (
               <ProductDetail />
             ) : (
               <Navigate to="/home" />
@@ -161,8 +174,20 @@ function App() {
         <Route
           path="/orders"
           element={
-            ["admin", "sales_rep"].includes(userRole) ? (
+            ["admin", "sales_rep", "online_store_keeper"].includes(userRole) ? (
               <Orders />
+            ) : (
+              <Navigate to="/home" />
+            )
+          }
+        />
+
+        {/* Add Online Order Route : redirect to add online order */}
+        <Route
+          path="/add-online-order"
+          element={
+            ["admin", "online_store_keeper"].includes(userRole) ? (
+              <AddOnlineOrder />
             ) : (
               <Navigate to="/home" />
             )
