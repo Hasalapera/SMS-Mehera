@@ -352,35 +352,32 @@ const AddOrder = () => {
     }
   }, [cart]);
 
-  const increaseQty = (productId) => {
+  const increaseQty = (cartItemId) => {
   setCart(prev => {
     const updatedCart = prev.map(item => 
-      item.product_id === productId ? { ...item, qty: item.qty + 1 } : item
+      item.cartItemId === cartItemId ? { ...item, qty: item.qty + 1 } : item
     );
-    // 💾 LocalStorage එකත් අලුත් කරන්න
     localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
     return updatedCart;
   });
 };
 
-// --- Qty අඩු කරන Function එක ---
-const decreaseQty = (productId) => {
+const decreaseQty = (cartItemId) => {
   setCart(prev => {
     const updatedCart = prev.map(item => 
-      item.product_id === productId ? { ...item, qty: Math.max(1, item.qty - 1) } : item
+      item.cartItemId === cartItemId ? { ...item, qty: Math.max(1, item.qty - 1) } : item
     );
-    // 💾 LocalStorage එකත් අලුත් කරන්න
     localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
     return updatedCart;
   });
 };
 
-  const removeItemCompletely = (productId) => {
-    const updatedCart = cart.filter(item => item.product_id !== productId);
-    setCart(updatedCart);
-    localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
-    toast.error("Product removed from queue");
-  };
+const removeItemCompletely = (cartItemId) => {
+  const updatedCart = cart.filter(item => item.cartItemId !== cartItemId);
+  setCart(updatedCart);
+  localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
+  toast.error("Product removed from queue");
+};
 
   const totalAmount = cart.reduce((sum, item) => {
     const itemPrice = Number(item.price) || 0;
@@ -421,6 +418,7 @@ const decreaseQty = (productId) => {
         total_amount: totalAmount,
         items: cart.map(item => ({
           product_id: item.product_id,
+          variant_id: item.variant_id, 
           qty: item.qty,
           price: item.price
         })) 
@@ -539,23 +537,27 @@ const decreaseQty = (productId) => {
                     <p className="font-black text-[11px] uppercase text-black truncate group-hover:text-[#b4a460] transition-colors">
                       {item.name}
                     </p>
-                    <p className="text-[10px] font-bold text-gray-400 mt-0.5">
-                      LKR {(Number(item.price) || 0).toLocaleString()}
+                    {item.variant_name && item.variant_name !== 'Standard' && (
+                    <p className="text-[9px] text-[#b4a460] font-black uppercase mt-0.5">
+                      {item.variant_name}
                     </p>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 bg-gray-50 rounded-xl p-1 border border-gray-100">
-                    <button onClick={() => decreaseQty(item.product_id)} className="p-1.5 hover:bg-white text-gray-400 transition-all rounded-lg">
-                      <Minus size={14} strokeWidth={3}/>
-                    </button>
-                    <span className="px-1 text-[12px] font-black text-black min-w-[20px] text-center">{item.qty}</span>
-                    <button onClick={() => increaseQty(item.product_id)} className="p-1.5 hover:bg-white text-[#b4a460] transition-all rounded-lg">
-                      <Plus size={14} strokeWidth={3}/>
-                    </button>
-                    <div className="w-[1px] h-4 bg-gray-200 mx-1"></div>
-                    <button onClick={() => removeItemCompletely(item.product_id)} className="p-1.5 hover:text-red-500 text-gray-300 transition-all">
-                      <Trash2 size={14}/>
-                    </button>
+                  )}
+                  <p className="text-[10px] font-bold text-gray-400 mt-0.5">
+                    LKR {(Number(item.price) || 0).toLocaleString()}
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-1.5 bg-gray-50 rounded-xl p-1 border border-gray-100">
+                  <button onClick={() => decreaseQty(item.cartItemId)}>  {/* ✅ */}
+                    <Minus size={14} strokeWidth={3}/>
+                  </button>
+                  <span>{item.qty}</span>
+                  <button onClick={() => increaseQty(item.cartItemId)}>  {/* ✅ */}
+                    <Plus size={14} strokeWidth={3}/>
+                  </button>
+                  <button onClick={() => removeItemCompletely(item.cartItemId)}>  {/* ✅ */}
+                    <Trash2 size={14}/>
+                  </button>
                   </div>
                 </div>
               ))

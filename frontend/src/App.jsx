@@ -4,11 +4,10 @@ import DashboardLayout from "./components/DashboardLayout";
 
 //sales management
 import Customer from "./pages/management/customer/Customer";
-// import AddCustomer from "./pages/management/customer/Addcustomer";
+import AddCustomer from "./pages/management/customer/AddCustomer";
 import ViewCustomer from './pages/management/customer/ViewCustomer';
 import CustomerDetail from './pages/management/customer/CustomerDetail';
 import Orders from "./pages/management/order/Orders";
-// import AddOrder from "./pages/management/order/AddOrder";
 
 //support management
 //import Support from './pages/shared/Support';
@@ -62,6 +61,9 @@ import ProductDetail from './pages/management/product/ProductDetail';
 //Order Management (Now in management/order folder)
 import ViewOrders from "./pages/management/order/ViewOrders";
 import AddOrder from "./pages/management/order/AddOrder";
+
+//Quotation Management
+import Quotation from "./pages/shared/Quotation";
 
 
 //Settings
@@ -121,6 +123,8 @@ function App() {
         <Route path="/profile/:id" element={<UserProfile />} />
         <Route path="/support" element={<Support />} />
 
+        <Route path="/order/:id" element={["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? <Quotation /> : <Navigate to="/home" />} />
+
         {/* --- අලුතින් එකතු කළ STOCK ROUTE --- */}
         <Route
           path="/stock"
@@ -164,6 +168,18 @@ function App() {
           element={
             ["admin", "manager", "sales_rep"].includes(userRole) ? (
               <CustomerDetail />
+            ) : (
+              <Navigate to="/home" />
+            )
+          }
+        />
+
+        {/* Add Customer Route : redirect to add-customer page */}
+        <Route
+          path="/add-customer"
+          element={
+            ["admin", "sales_rep"].includes(userRole) ? (
+              <AddCustomer />
             ) : (
               <Navigate to="/home" />
             )

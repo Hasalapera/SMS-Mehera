@@ -31,6 +31,7 @@ const ViewOrders = () => {
             const res = await axios.get('http://localhost:5001/api/orders/all', {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            console.log("Order Data Check:", res.data);
             setOrders(res.data);
         } catch (err) {
             console.error("Error fetching orders", err);
@@ -188,37 +189,66 @@ const ViewOrders = () => {
                                                     <ShoppingCart size={14} /> Itemized Manifest
                                                 </h4>
                                                 <div className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden shadow-sm">
-                                                    <table className="w-full text-[11px]">
-                                                        <thead className="bg-gray-50/50 border-b border-gray-100">
-                                                            <tr className="text-gray-400 font-black uppercase">
-                                                                <th className="px-8 py-4 text-left">Product Reference</th>
-                                                                <th className="px-8 py-4 text-center">Quantity</th>
-                                                                <th className="px-8 py-4 text-right">Unit Price</th>
-                                                                <th className="px-8 py-4 text-right">Subtotal</th>
+                                                    <table className="w-full text-left text-[11px]">
+                                                    <thead className="bg-gray-50/50 border-b border-gray-100">
+                                                        <tr className="text-gray-400 font-black uppercase tracking-widest">
+                                                        <th className="px-8 py-4 w-2/12">Ref</th>
+                                                        <th className="px-8 py-4 w-5/12">Description</th>
+                                                        <th className="px-8 py-4 w-1/12 text-center">Qty</th>
+                                                        <th className="px-8 py-4 w-2/12 text-right">Unit Price</th>
+                                                        <th className="px-8 py-4 w-2/12 text-right">Subtotal</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-50">
+                                                        {(order.OrderItems || order.items || []).map((item, idx) => {
+                                                        
+                                                        // 🛡️ Safe Data Access (Backend එකෙන් එන විවිධ නාමකරණයන් සඳහා)
+                                                        const variant = item.variant || item.Variant || item.ProductVariant;
+                                                        const product = variant?.product || variant?.Product;
+
+                                                        // ✅ Product Name + Variant Name එකතුව
+                                                        const pName = product?.product_name || "Registry Item";
+                                                        const vName = variant?.variant_name || "Standard Edition";
+
+                                                        return (
+                                                            <tr key={idx} className="hover:bg-gray-50/30 transition-colors">
+                                                            {/* Product Reference */}
+                                                            <td className="px-8 py-5 font-mono font-black text-[#b4a460]">
+                                                                #{item.product_id?.substring(0, 8).toUpperCase()}
+                                                            </td>
+                                                            
+                                                            {/* Description (Product Name & Variant) */}
+                                                            <td className="px-8 py-5 text-left">
+                                                                <div className="flex flex-col">
+                                                                <span className="text-[11px] font-black text-black uppercase leading-tight">
+                                                                    {pName}
+                                                                </span>
+                                                                <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tight italic mt-0.5">
+                                                                    {vName}
+                                                                </span>
+                                                                </div>
+                                                            </td>
+
+                                                            <td className="px-8 py-5 text-center font-black text-sm">{item.qty}</td>
+                                                            <td className="px-8 py-5 text-right text-gray-400 font-bold tabular-nums">
+                                                                LKR {Number(item.price).toLocaleString()}
+                                                            </td>
+                                                            <td className="px-8 py-5 text-right font-black text-black tabular-nums">
+                                                                LKR {(Number(item.qty) * Number(item.price)).toLocaleString()}
+                                                            </td>
                                                             </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-gray-50">
-                                                            {(order.OrderItems || order.items || []).map((item, idx) => (
-                                                                <tr key={idx} className="hover:bg-gray-50/30 transition-colors">
-                                                                    <td className="px-8 py-4 font-bold text-black uppercase">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <div className="w-1.5 h-1.5 rounded-full bg-[#b4a460]"></div>
-                                                                            #{item.product_id?.substring(0, 12).toUpperCase()}...
-                                                                        </div>
-                                                                    </td>
-                                                                    <td className="px-8 py-4 text-center font-black text-sm">{item.qty}</td>
-                                                                    <td className="px-8 py-4 text-right text-gray-400 font-bold">LKR {Number(item.price).toLocaleString()}</td>
-                                                                    <td className="px-8 py-4 text-right font-black text-black">LKR {(Number(item.qty) * Number(item.price)).toLocaleString()}</td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                        {/* Summary Footer inside Table */}
-                                                        <tfoot className="bg-gray-50/30 border-t border-gray-100">
-                                                            <tr>
-                                                                <td colSpan="3" className="px-8 py-4 text-right text-[10px] font-black text-gray-400 uppercase">Grand Total Amount</td>
-                                                                <td className="px-8 py-4 text-right font-black text-lg text-black">LKR {Number(order.total_amount).toLocaleString()}</td>
-                                                            </tr>
-                                                        </tfoot>
+                                                        );
+                                                        })}
+                                                    </tbody>
+                                                    {/* Summary Footer */}
+                                                    <tfoot className="bg-gray-50/30 border-t border-gray-100">
+                                                        <tr>
+                                                        <td colSpan="4" className="px-8 py-4 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Grand Total Amount</td>
+                                                        <td className="px-8 py-4 text-right font-black text-lg text-black tabular-nums">
+                                                            LKR {Number(order.total_amount).toLocaleString()}
+                                                        </td>
+                                                        </tr>
+                                                    </tfoot>
                                                     </table>
                                                 </div>
                                             </div>
@@ -226,10 +256,10 @@ const ViewOrders = () => {
                                             {/* Final Action Row */}
                                             <div className="flex justify-end pt-4 border-t border-gray-100">
                                                 <button 
-                                                    onClick={() => navigate(`/order/${order.order_id}`)} 
-                                                    className="flex items-center gap-2 text-[10px] font-black uppercase text-[#b4a460] hover:text-black hover:tracking-widest transition-all"
+                                                onClick={() => navigate(`/order/${order.order_id}`, { state: { order } })} 
+                                                className="flex items-center gap-2 text-[10px] font-black uppercase text-[#b4a460] hover:text-black hover:tracking-widest transition-all"
                                                 >
-                                                    Open Full Master File <ArrowRight size={14} />
+                                                Open Full Master File <ArrowRight size={14} />
                                                 </button>
                                             </div>
                                         </td>
