@@ -251,8 +251,101 @@ const AddStock = () => {
         ))}
       </div>
 
-
-
+       {/*Empty State*/}
+      {filteredProducts.length === 0 && (
+        <div className="bg-white border border-dashed border-gray-200 rounded-[3rem] py-24 text-center">
+          <div className="bg-gray-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Package className="text-gray-200" size={48} />
+          </div>
+          <h3 className="text-2xl font-black text-black">No Products Found</h3>
+          <p className="text-gray-400 text-sm mt-2 font-medium">Try adjusting your search terms.</p>
+        </div>
+      )}
+ 
+      {/* Add Stock Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-md w-full p-8 animate-in scale-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <h3 className="text-2xl font-black text-black mb-2 uppercase tracking-tight">Add Stock</h3>
+            <p className="text-gray-400 text-sm font-medium mb-8">Enter the quantity to add to inventory.</p>
+ 
+            {/* Form */}
+            <div className="space-y-6">
+              
+              {/*Variant Selector*/}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">
+                  Select Variant
+                </label>
+                <select
+                  value={newStockData.variant_id}
+                  onChange={(e) => setNewStockData({ ...newStockData, variant_id: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-[#b4a460] focus:ring-4 focus:ring-[#b4a460]/10 transition-all outline-none text-black font-semibold text-sm"
+                >
+                  <option value="">Choose a variant...</option>
+                  {products.flatMap(product =>
+                    (product.variants || []).map(variant => (
+                      <option key={variant.variant_id} value={variant.variant_id}>
+                        {product.product_name} - {variant.variant_name || `Variant ${variant.variant_id}`}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+ 
+              {/* Quantity Input */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">
+                  Quantity to Add
+                </label>
+                <input
+                  type="number"
+                  placeholder="Enter quantity..."
+                  value={newStockData.quantity}
+                  onChange={(e) => setNewStockData({ ...newStockData, quantity: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-[#b4a460] focus:ring-4 focus:ring-[#b4a460]/10 transition-all outline-none text-black font-semibold text-sm"
+                  min="1"
+                />
+              </div>
+ 
+              {/* Notes */}
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">
+                  Notes (Optional)
+                </label>
+                <textarea
+                  placeholder="Add notes about this stock addition..."
+                  value={newStockData.notes}
+                  onChange={(e) => setNewStockData({ ...newStockData, notes: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-[#b4a460] focus:ring-4 focus:ring-[#b4a460]/10 transition-all outline-none text-black font-semibold text-sm resize-none"
+                  rows="3"
+                />
+              </div>
+            </div>
+ 
+            {/* Modal Actions */}
+            <div className="flex gap-3 mt-8">
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setNewStockData({ variant_id: '', quantity: '', notes: '' });
+                }}
+                className="flex-1 px-4 py-3 rounded-xl border border-gray-100 text-black font-black text-sm uppercase tracking-widest hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddStock}
+                className="flex-1 px-4 py-3 rounded-xl bg-black text-[#b4a460] font-black text-sm uppercase tracking-widest hover:shadow-lg hover:shadow-[#b4a460]/30 transition-all active:scale-95"
+              >
+                Add Stock
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
 
   );
