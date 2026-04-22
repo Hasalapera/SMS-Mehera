@@ -1,34 +1,46 @@
-const Order = require('../models/Order');
-const OrderItem = require('../models/OrderItem');
+const { Order, OrderItem, ProductVariant, Product, User } = require('../models');
 const sequelize = require('../db/db');
-const sendEmailInvoice = require('../utils/sendEmailInvoice'); // 👈 අලුත් utility එක import කරන්න
+const sendEmailInvoice = require('../utils/sendEmailInvoice');
 
 // --- 1. පවතින සාමාන්‍ය ඕඩර් එක (SALES REP / OFFLINE) ---
 const placeOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
-
   try {
-    const { customer_id, customer_name, shipping_address, phone, total_amount, items } = req.body;
+    const { 
+      customer_id, 
+      customer_name, 
+      shipping_address, 
+      phone, 
+      subtotal,              // 👈 මුලු එකතුව
+      discount_percentage,   // 👈 % එක
+      discount_amount,       // 👈 LKR amount එක
+      total_amount,          // 👈 අවසාන payable එක
+      items 
+    } = req.body;
 
     const newOrder = await Order.create({
       customer_id, 
       customer_name,     
       shipping_address,
       phone,
-      total_amount,
+      subtotal: subtotal || 0,                    // 👈 මුලු එකතුව store කරන්න
+      discount_percentage: discount_percentage || 0, // 👈 % store කරන්න
+      discount_amount: discount_amount || 0,      // 👈 LKR amount store කරන්න
+      total_amount: total_amount || 0,            // 👈 අවසාන එක store කරන්න
       order_status: 'pending',
+      created_by: req.user.user_id,
       order_type: 'offline'
     }, { transaction });
 
     const orderItemsData = items.map(item => ({
       order_id: newOrder.order_id,
       product_id: item.product_id,
+      variant_id: item.variant_id,
       qty: item.qty,
       price: item.price
     }));
 
     await OrderItem.bulkCreate(orderItemsData, { transaction });
-
     await transaction.commit();
 
     res.status(201).json({ 
@@ -36,18 +48,16 @@ const placeOrder = async (req, res) => {
       message: "Order placed successfully!", 
       orderId: newOrder.order_id 
     });
-
   } catch (error) {
-    await transaction.rollback();
+    if (transaction) await transaction.rollback();
     console.error("Order Error:", error);
     res.status(500).json({ success: false, message: "Failed to place order" });
   }
 };
 
-// --- 2. අලුතින් එක් කළ ONLINE/RETAIL ORDER එක (WITH EMAIL) ---
+// --- 2. අලුතින් එක් කළ ONLINE/RETAIL ORDER එක ---
 const placeOnlineOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
-
   try {
     const { 
       customer_name, 
@@ -55,12 +65,14 @@ const placeOnlineOrder = async (req, res) => {
       secondary_phone, 
       district, 
       shipping_address, 
-      email, 
-      items, 
-      total_amount 
+      email,
+      subtotal,              // 👈 NEW
+      discount_percentage,   // 👈 NEW
+      discount_amount,       // 👈 NEW
+      total_amount,          // 👈 UPDATED
+      items 
     } = req.body;
 
-    // 1. Order Header එක Database එකේ සේව් කිරීම
     const newOrder = await Order.create({
       customer_name,
       phone: primary_phone, 
@@ -68,77 +80,100 @@ const placeOnlineOrder = async (req, res) => {
       district,
       shipping_address,
       email,
-      total_amount,
+      subtotal: subtotal || 0,
+      discount_percentage: discount_percentage || 0,
+      discount_amount: discount_amount || 0,
+      total_amount: total_amount || 0,
       order_status: 'pending',
+      created_by: req.user.user_id,
       order_type: 'online' 
     }, { transaction });
 
-    // 2. Order Items ටික සේව් කිරීම
     const orderItemsData = items.map(item => ({
       order_id: newOrder.order_id,
       product_id: item.product_id,
+      variant_id: item.variant_id, 
       qty: item.qty,
       price: item.price
     }));
 
     await OrderItem.bulkCreate(orderItemsData, { transaction });
-
-    //  මුලින්ම Database Transaction එක සාර්ථකව Commit කරනවා
     await transaction.commit();
 
-    //  3. Database එකේ සේව් වුණාට පස්සේ Automatic Email එක යවනවා
+    // Email Invoice යවන විට discount details ඇතුළත් කරන්න
     if (email) {
-      try {
-        // අලුත් ඕඩර් එකේ විස්තර utility එකට යවනවා
-        await sendEmailInvoice(email, {
-          order_id: newOrder.order_id,
-          customer_name,
-          total_amount,
-          shipping_address,
-          district,
-          primary_phone,
-          items // භාණ්ඩ ලැයිස්තුව ඊමේල් එකේ පෙන්වන්න
-        });
-        console.log(`Invoice email sent to: ${email}`);
-      } catch (mailError) {
-        // ඊමේල් එක යවන්න බැරි වුණත් ඕඩර් එක Database එකේ තියෙන නිසා error එකක් යවන්නේ නැහැ
-        console.error("Email Sending Failed:", mailError.message);
-      }
+      sendEmailInvoice(email, {
+        order_id: newOrder.order_id,
+        customer_name,
+        subtotal,
+        discount_percentage,
+        discount_amount,
+        total_amount,
+        shipping_address,
+        district,
+        primary_phone,
+        items 
+      }).catch(err => console.error("Email Failed:", err));
     }
 
     res.status(201).json({ 
       success: true, 
-      message: "Online Order registered & Invoice sent!", 
+      message: "Online Order placed successfully!", 
       orderId: newOrder.order_id 
     });
-
   } catch (error) {
-    // මොකක් හරි වැරදුණොත් Database එක කලින් තිබූ තත්ත්වයට පත් කරනවා
     if (transaction) await transaction.rollback();
     console.error("Online Order Error:", error);
-    res.status(500).json({ success: false, message: "Failed to place online order" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to place online order",
+      error: error.message 
+    });
   }
 };
 
 // --- 3. පවතින සියලුම ඕඩර් ලබාගැනීමේ FUNCTION එක ---
 const getAllOrders = async (req, res) => {
   try {
+    // 🕵️ Middleware එකෙන් එන User ID එක සහ Role එක ගමු
+    const { user_id, role } = req.user; 
+
+    let filter = {};
+
+    // 🛡️ Role එක අනුව Filter එක තීරණය කරමු
+    // Admin හෝ Manager නෙවෙයි නම් විතරක් created_by අනුව filter කරනවා
+    if (role !== 'admin' && role !== 'manager') {
+      filter = { created_by: user_id };
+    }
+
     const orders = await Order.findAll({
+      where: filter, // 👈 අදාළ Filter එක මෙතනට වැටෙනවා
       include: [{
         model: OrderItem,
-      }],
+        include: [{
+          model: ProductVariant,
+          as: 'variant',
+          include: [{
+            model: Product,
+            as: 'product',
+            attributes: ['product_name'] 
+          }]
+        }]
+      },
+      {
+          model: User,
+          as: 'creator',
+          attributes: ['name', 'role'] 
+        }
+    ],
       order: [['created_at', 'DESC']]
     });
-    
+
     res.status(200).json(orders);
   } catch (error) {
-    console.error("Fetch Orders Error:", error);
+    console.error("Fetch Error:", error);
     res.status(500).json({ message: "Failed to fetch orders" });
   }
 };
 
-module.exports = { 
-  placeOrder, 
-  placeOnlineOrder, 
-  getAllOrders 
-};
+module.exports = { placeOrder, placeOnlineOrder, getAllOrders };

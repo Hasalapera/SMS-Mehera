@@ -30,9 +30,12 @@ const Navbar = () => {
       <div className="max-w-full mx-auto px-10 py-4 flex justify-between items-center">
         
         {/* Brand Logo Section */}
-        <div className="flex flex-col cursor-pointer group" onClick={() => navigate('/home')}>
-          <span className="text-xl font-serif tracking-[0.2em] leading-none group-hover:text-[#b4a460] transition-colors">Mehera</span>
-          <span className="text-[8px] text-[#b4a460] uppercase tracking-[0.3em] font-black">International</span>
+        <div className="flex flex-col text-left cursor-pointer" onClick={() => handleNavigation('/home')}>
+          <img
+            src="https://i.postimg.cc/nzwPbHWj/mehera-logo.png"
+            alt="Mehera International Logo"
+            className="h-8 md:h-10 w-auto object-contain"
+          />
         </div>
 
         {/* Desktop Menu (Visible only on LG screens) */}

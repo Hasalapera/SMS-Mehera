@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ShoppingCart, User, Package, Plus, Minus, Trash2, 
-  CheckCircle2, MapPin, Phone, UserPlus, Smartphone, Map, Mail
+  CheckCircle2, MapPin, Phone, UserPlus, Smartphone, Map, Mail, Percent
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import axios from 'axios';
@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const AddOnlineOrder = () => {
   const [cart, setCart] = useState([]);
+  const [discount, setDiscount] = useState(0); // 👈 Discount state එක් කරන්න
   const { token } = useAuth();
 
   const districts = [
@@ -21,10 +22,10 @@ const AddOnlineOrder = () => {
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     primaryPhone: '',
-    secondaryPhone: '', // Optional
+    secondaryPhone: '',
     district: '',
     address: '',
-    email: '' // Now Required
+    email: ''
   });
 
   const loadCartData = () => {
@@ -57,20 +58,24 @@ const AddOnlineOrder = () => {
     toast.error("Item removed from queue");
   };
 
+  // 👇 Subtotal calculation
   const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  
+  // 👇 Discount calculation
+  const discountPercentage = Number(discount) || 0;
+  const discountAmount = (totalAmount * discountPercentage) / 100;
+  const finalAmount = Math.max(0, totalAmount - discountAmount);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setCustomerInfo(prev => ({ ...prev, [name]: value }));
   };
 
-  // 🛡️ Email එකේ Format එක නිවැරදිදැයි බැලීමට (Regex)
   const isValidEmail = (email) => {
     return /\S+@\S+\.\S+/.test(email);
   };
 
   const handlePlaceOnlineOrder = async () => {
-    // ---  DATA VALIDATION  ---
     if (!customerInfo.name || !customerInfo.primaryPhone || !customerInfo.district || !customerInfo.address || !customerInfo.email) {
       toast.error("All marked fields (*) including Email are required!");
       return;
@@ -90,12 +95,23 @@ const AddOnlineOrder = () => {
       const orderData = {
         customer_name: customerInfo.name,
         primary_phone: customerInfo.primaryPhone,
-        secondary_phone: customerInfo.secondaryPhone, // මේක optional විදිහටම යයි
+        secondary_phone: customerInfo.secondaryPhone,
         district: customerInfo.district,
         shipping_address: customerInfo.address,
         email: customerInfo.email,
-        items: cart,
-        total_amount: totalAmount,
+        
+        // 💰 Money fields with discount
+        subtotal: totalAmount,              // මුලු එකතුව
+        discount_percentage: discountPercentage, // % එක
+        discount_amount: discountAmount,    // LKR amount එක
+        total_amount: finalAmount,          // අවසාන payable එක
+        
+        items: cart.map(item => ({
+          product_id: item.product_id,
+          variant_id: item.variant_id,
+          qty: item.qty,
+          price: item.price
+        })),
         order_type: 'online'
       };
 
@@ -106,10 +122,11 @@ const AddOnlineOrder = () => {
       );
 
       if (response.status === 201 || response.status === 200) {
-        toast.success("Online Order Successfully Created! ");
+        toast.success("Online Order Successfully Created!");
         setCart([]);
         localStorage.removeItem("active_order_cart");
         setCustomerInfo({ name: '', primaryPhone: '', secondaryPhone: '', district: '', address: '', email: '' });
+        setDiscount(0); // 👈 Discount reset කරන්න
       }
     } catch (error) {
       toast.error(error.response?.data?.message || "Internal Server Error");
@@ -134,6 +151,7 @@ const AddOnlineOrder = () => {
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
         
+        {/* CUSTOMER REGISTRY SECTION */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <UserPlus size={14} className="text-[#b4a460]" />
@@ -171,12 +189,12 @@ const AddOnlineOrder = () => {
                 </div>
             </div>
 
-            {/* Email Field - REQUIRED */}
+            {/* Email Field */}
             <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#b4a460]" size={16} />
                 <input 
                     type="email" name="email" value={customerInfo.email} onChange={handleInputChange}
-                    placeholder="Email Address * (Required for Send Invoice)" 
+                    placeholder="Email Address * (Required for Invoice)" 
                     className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none"
                 />
             </div>
@@ -222,7 +240,10 @@ const AddOnlineOrder = () => {
                 <div key={item.cartItemId} className="p-4 bg-white border border-gray-100 rounded-[2rem] flex items-center justify-between group hover:border-[#b4a460]/30 transition-all shadow-sm">
                   <div className="flex-1 overflow-hidden pr-4">
                     <h4 className="text-[11px] font-black uppercase text-black leading-tight truncate">{item.name}</h4>
-                    <p className="text-[10px] font-serif italic text-[#b4a460] mt-0.5">Rs. {item.price.toLocaleString()}</p>
+                    {item.variant_name && item.variant_name !== 'Standard' && (
+                      <p className="text-[9px] text-[#b4a460] font-black uppercase mt-0.5">{item.variant_name}</p>
+                    )}
+                    <p className="text-[10px] font-serif italic text-gray-400 mt-0.5">Rs. {item.price.toLocaleString()}</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 bg-gray-100/50 p-1 rounded-xl">
@@ -244,14 +265,50 @@ const AddOnlineOrder = () => {
         </div>
       </div>
 
-      {/* FOOTER */}
+      {/* 👇 UPDATED FOOTER WITH DISCOUNT */}
       <div className="p-8 border-t border-gray-100 bg-white space-y-6">
+        
+        {/* Subtotal Display */}
+        <div className="flex justify-between items-center pb-4 border-b border-gray-50">
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Gross Subtotal</span>
+          <span className="text-sm font-black text-black">Rs. {totalAmount.toLocaleString()}</span>
+        </div>
+
+        {/* Discount Input */}
+        <div className="p-4 bg-[#f8f8f8] rounded-2xl border border-dashed border-gray-200">
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center gap-2">
+              <Percent size={14} className="text-[#b4a460]" />
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Discount Rate</span>
+            </div>
+            <span className="text-[10px] font-black text-[#b4a460]">% Percentage</span>
+          </div>
+          <div className="relative">
+            <input 
+              type="number" 
+              value={discount}
+              onChange={(e) => setDiscount(Math.min(100, Math.max(0, e.target.value)))}
+              placeholder="0"
+              className="w-full bg-white border-none rounded-xl py-3 pl-4 pr-10 text-sm font-black outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all text-right shadow-sm"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-[#b4a460] text-sm">%</span>
+          </div>
+          {discount > 0 && (
+            <div className="mt-3 text-right">
+              <p className="text-[9px] text-[#b4a460] font-black uppercase italic">
+                {discount}% OFF Applied (-Rs. {discountAmount.toLocaleString()})
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Grand Total */}
         <div className="flex justify-between items-center">
           <div>
             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Grand Total</p>
-            <div className="flex items-baseline gap-1 text-[#b4a460]">
-              <span className="text-[10px] font-black">LKR</span>
-              <span className="text-3xl font-black tracking-tighter text-black">{totalAmount.toLocaleString()}</span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[10px] font-black text-[#b4a460]">LKR</span>
+              <span className="text-3xl font-black tracking-tighter text-black">{finalAmount.toLocaleString()}</span>
             </div>
           </div>
           <span className="text-[8px] font-black uppercase px-4 py-1.5 rounded-full bg-[#b4a460]/10 text-[#b4a460]">
@@ -259,9 +316,9 @@ const AddOnlineOrder = () => {
           </span>
         </div>
 
+        {/* Submit Button */}
         <button 
           onClick={handlePlaceOnlineOrder}
-          // 🛡️ Button එක Enable වෙන්නේ Email එකත් ඇතුළත් කළොත් විතරයි
           disabled={cart.length === 0 || !customerInfo.name || !customerInfo.primaryPhone || !customerInfo.district || !customerInfo.email}
           className="w-full py-5 bg-black text-[#b4a460] rounded-[1.5rem] font-black uppercase text-[11px] tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-gray-900 transition-all disabled:bg-gray-100 disabled:text-gray-300 shadow-xl shadow-[#b4a460]/10"
         >
