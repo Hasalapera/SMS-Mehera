@@ -138,9 +138,122 @@ const AddStock = () => {
           </button>
         </div>
       </div>
+
+      {/*Products List*/}
+      <div className="space-y-4">
+        {filteredProducts.map(product => (
+          <div key={product.product_id} className="bg-white border border-gray-100 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            
+            {/*Product Header*/}
+            <button onClick={() => setExpandedProduct(expandedProduct === product.product_id ? null : product.product_id)}
+              className="w-full p-6 flex items-center justify-between hover:bg-gray-50/50 transition-colors text-left"
+            >
+              <div className="flex-1">
+                <h3 className="text-lg font-black text-black uppercase tracking-tight mb-2">
+                  {product.product_name}
+                </h3>
+                <div className="flex items-center gap-4 text-sm text-gray-400 font-semibold">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#b4a460]"></span>
+                    Code: {product.product_code || 'N/A'}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#b4a460]"></span>
+                    Category: {product.category?.category_name || 'N/A'}
+                  </span>
+                  <span className="ml-auto text-[#b4a460] font-black">
+                    {product.variants?.length || 0} Variants
+                  </span>
+                </div>
+              </div>
+              <ChevronDown 
+                size={20} 
+                className={`text-gray-300 transition-transform ${expandedProduct === product.product_id ? 'rotate-180' : ''}`}
+              />
+            </button>
+ 
+            {/*Expanded Variants Section */}
+            {expandedProduct === product.product_id && (
+              <div className="bg-gray-50/50 border-t border-gray-100 divide-y divide-gray-100">
+                {product.variants && product.variants.length > 0 ? (
+                  product.variants.map((variant, idx) => (
+                    <div key={variant.variant_id} className="p-6 hover:bg-gray-100/50 transition-colors">
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-center">
+                        
+                        {/*Variant Info */}
+                        <div className="md:col-span-2">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Variant Details</p>
+                          <div>
+                            <p className="text-black font-bold">{variant.variant_name || `Variant ${idx + 1}`}</p>
+                            {variant.size && <p className="text-sm text-gray-400">Size: {variant.size}</p>}
+                            {variant.color && <p className="text-sm text-gray-400">Color: {variant.color}</p>}
+                          </div>
+                        </div>
+ 
+                        {/*Stock Info */}
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Current Stock</p>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-2xl font-black ${variant.stock_count > 20 ? 'text-green-600' : variant.stock_count > 0 ? 'text-yellow-600' : 'text-red-600'}`}>
+                              {variant.stock_count || 0}
+                            </span>
+                            <span className="text-gray-300 font-bold text-sm">Units</span>
+                          </div>
+                          {variant.stock_count === 0 && (
+                            <div className="flex items-center gap-1.5 mt-2 text-red-600">
+                              <AlertCircle size={14} />
+                              <span className="text-[10px] font-bold">OUT OF STOCK</span>
+                            </div>
+                          )}
+                        </div>
+ 
+                        {/* Price*/}
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Price</p>
+                          <p className="text-lg font-black text-black">{Number(variant.price || 0).toLocaleString()} LKR</p>
+                        </div>
+ 
+                        {/* Actions */}
+                        <div className="flex items-end justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              setNewStockData({
+                                variant_id: variant.variant_id,
+                                quantity: '',
+                                notes: ''
+                              });
+                              setShowAddModal(true);
+                            }}
+                            className="p-3 bg-black text-[#b4a460] rounded-xl hover:shadow-lg hover:shadow-[#b4a460]/30 transition-all active:scale-95"
+                            title="Add stock to this variant"
+                          >
+                            <Plus size={18} />
+                          </button>
+                          <button
+                            className="p-3 bg-gray-200 text-gray-400 rounded-xl hover:bg-gray-300 transition-all active:scale-95"
+                            title="Edit variant"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center">
+                    <AlertCircle size={32} className="text-gray-200 mx-auto mb-3" />
+                    <p className="text-gray-400 font-semibold">No variants available for this product</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+
+
     </div>
-
-
 
   );
  
