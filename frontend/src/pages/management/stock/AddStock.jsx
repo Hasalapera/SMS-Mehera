@@ -87,6 +87,62 @@ const AddStock = () => {
       </div>
     );
   }
+  
+  return (
+    <div className="w-full max-w-7xl mx-auto p-6 animate-in fade-in duration-500">
+      <Toaster position="top-right" />
+ 
+      {/* Header */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4">
+        <div>
+          <h2 className="text-3xl font-extrabold text-black flex items-center gap-3 tracking-tight">
+            <div className="p-3 bg-black rounded-2xl text-[#b4a460] shadow-xl">
+              <Package size={24} />
+            </div>
+            Stock Management
+          </h2>
+          <p className="text-gray-400 text-sm mt-2 ml-14 font-medium">Add and manage product stock levels across variants.</p>
+        </div>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => { setLoading(true); fetchProducts().then(() => setLoading(false)); }}
+            className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-black hover:shadow-md transition-all active:scale-90"
+          >
+            <RefreshCw size={20} />
+          </button>
+          <button 
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-gray-400 hover:text-black transition-colors font-bold text-sm px-2"
+          >
+            <ArrowLeft size={18} /> Back
+          </button>
+        </div>
+      </div>
+ 
+      {/* Search Bar */}
+      <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-sm p-6 mb-8">
+        <div className="flex items-center gap-4">
+          <Search size={20} className="text-gray-300" />
+          <input 
+            type="text"
+            placeholder="Search by product name or code..."
+            className="flex-1 bg-transparent outline-none text-black font-semibold text-sm placeholder-gray-300"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 bg-black text-[#b4a460] px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-widest hover:shadow-lg hover:shadow-[#b4a460]/30 transition-all active:scale-95"
+          >
+            <Plus size={18} /> Add Stock
+          </button>
+        </div>
+      </div>
+    </div>
 
+
+
+  );
+ 
 }
 export default AddStock;
