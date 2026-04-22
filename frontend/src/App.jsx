@@ -73,11 +73,14 @@ import AddOnlineOrder from "./pages/management/order/AddOnlineOrder";
 
 //gihaaaaan testing;
 
+
 import OurBrands from './pages/OurBrands';
 import Workshops from './pages/Workshops';
 import AboutUs from './pages/AboutUs';
 import Contact from './pages/Contact';
 import Products from './pages/Products';
+import FloatingPopup from './components/FloatingPopup';
+import Navbar from './components/Navbar';
 
 function App() {
   const { user, loading } = useAuth();
@@ -90,196 +93,208 @@ function App() {
     user?.is_first_login === 1 || user?.mustChangePassword === true;
 
   return (
-    <Routes>
-      <Route path='/' element={<LandingPage />} />
-      <Route path='/login' element={<Login />} />
-      <Route path='/change-password' element={user ? <ChangePassword /> : <Navigate to="/login" />} />
+    <> 
+      
 
-      {/* Gihaaaaan Testing */}
-      <Route path="/brands" element={<OurBrands />} />
-      <Route path="/workshops" element={<Workshops />} />
-      <Route path="/about" element={<AboutUs />} />
-      <Route path="/contact" element={<Contact />} />
-      <Route path="/products" element={<Products />} />
+      <Routes>
+        <Route path='/' element={<LandingPage />} />
+        <Route path='/login' element={<Login />} />
+        <Route path='/change-password' element={user ? <ChangePassword /> : <Navigate to="/login" />} />
 
-      {/* Gihan Testing */}
-      {/* <Route path='/addOnlineOrder' element={<AddOnlineOrder />} /> */}
-      <Route 
-        path='/product/:id' 
-        element={
-          user ? (
-            ["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? (
-              <ProductDetail />
+        {/* Gihaaaaan Testing */}
+        
+
+        {/* <FloatingPopup /> */}
+        <Route path="/brands" element={<OurBrands />} />
+        <Route path="/workshops" element={<Workshops />} />
+        <Route path="/about" element={<AboutUs />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/products" element={<Products />} />
+
+        {/* Gihan Testing */}
+        {/* <Route path='/addOnlineOrder' element={<AddOnlineOrder />} /> */}
+        <Route 
+          path='/product/:id' 
+          element={
+            user ? (
+              ["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? (
+                <ProductDetail />
+              ) : (
+                <Navigate to="/home" />
+              )
             ) : (
-              <Navigate to="/home" />
+              <Navigate to="/login" />
             )
-          ) : (
-            <Navigate to="/login" />
-          )
-        } 
-      />
-      <Route element={user ? <DashboardLayout /> : <Navigate to="/" />}>
-        <Route path="/inbox" element={<Inbox />} />
-        <Route path="/profile/:id" element={<UserProfile />} />
-        <Route path="/support" element={<Support />} />
-
-        <Route path="/order/:id" element={["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? <Quotation /> : <Navigate to="/home" />} />
-
-        {/* --- අලුතින් එකතු කළ STOCK ROUTE --- */}
-        <Route
-          path="/stock"
-          element={
-            ["admin", "sales_rep", "online_store_keeper", "manager"].includes(
-              userRole,
-            ) ? (
-              <Stock />
-            ) : (
-              <Navigate to="/home" />
-            )
-          }
+          } 
         />
+        <Route element={user ? <DashboardLayout /> : <Navigate to="/" />}>
+          <Route path="/inbox" element={<Inbox />} />
+          <Route path="/profile/:id" element={<UserProfile />} />
+          <Route path="/support" element={<Support />} />
 
-        {/*DashboardLayout එක ඇතුළත : redirect to add customer*/}
+          <Route path="/order/:id" element={["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? <Quotation /> : <Navigate to="/home" />} />
 
-        <Route
-          path="/customer"
-          element={
-            ["admin", "sales_rep"].includes(userRole) ? (
-              <Customer />
-            ) : (
-              <Navigate to="/home" />
-            )
-          }
-        />
+          {/* --- අලුතින් එකතු කළ STOCK ROUTE --- */}
+          <Route
+            path="/stock"
+            element={
+              ["admin", "sales_rep", "online_store_keeper", "manager"].includes(
+                userRole,
+              ) ? (
+                <Stock />
+              ) : (
+                <Navigate to="/home" />
+              )
+            }
+          />
 
-        <Route
-          path="/customers"
-          element={
-            ["admin", "manager", "sales_rep"].includes(userRole) ? (
-              <ViewCustomer />
-            ) : (
-              <Navigate to="/home" />
-            )
-          }
-        />
+          {/*DashboardLayout එක ඇතුළත : redirect to add customer*/}
 
-        <Route
-          path="/customer/:id"
-          element={
-            ["admin", "manager", "sales_rep"].includes(userRole) ? (
-              <CustomerDetail />
-            ) : (
-              <Navigate to="/home" />
-            )
-          }
-        />
+          <Route
+            path="/customer"
+            element={
+              ["admin", "sales_rep"].includes(userRole) ? (
+                <Customer />
+              ) : (
+                <Navigate to="/home" />
+              )
+            }
+          />
 
-        {/* Add Customer Route : redirect to add-customer page */}
-        <Route
-          path="/add-customer"
-          element={
-            ["admin", "sales_rep"].includes(userRole) ? (
-              <AddCustomer />
-            ) : (
-              <Navigate to="/home" />
-            )
-          }
-        />
+          <Route
+            path="/customers"
+            element={
+              ["admin", "manager", "sales_rep"].includes(userRole) ? (
+                <ViewCustomer />
+              ) : (
+                <Navigate to="/home" />
+              )
+            }
+          />
 
-        {/* Add Order Route : redireact to add oder */}
-        <Route
-          path="/orders"
-          element={
-            ["admin", "sales_rep", "online_store_keeper"].includes(userRole) ? (
-              <Orders />
-            ) : (
-              <Navigate to="/home" />
-            )
-          }
-        />
+          <Route
+            path="/customer/:id"
+            element={
+              ["admin", "manager", "sales_rep"].includes(userRole) ? (
+                <CustomerDetail />
+              ) : (
+                <Navigate to="/home" />
+              )
+            }
+          />
 
-        {/* Add Online Order Route : redirect to add online order */}
-        <Route
-          path="/add-online-order"
-          element={
-            ["admin", "online_store_keeper"].includes(userRole) ? (
-              <AddOnlineOrder />
-            ) : (
-              <Navigate to="/home" />
-            )
-          }
-        />
+          {/* Add Customer Route : redirect to add-customer page */}
+          <Route
+            path="/add-customer"
+            element={
+              ["admin", "sales_rep"].includes(userRole) ? (
+                <AddCustomer />
+              ) : (
+                <Navigate to="/home" />
+              )
+            }
+          />
 
-        {/* 1. Dashboard එකට යන්න පුළුවන් Admin සහ Manager ට විතරයි */}
-        <Route
-          path="/dashboard"
-          element={
-            isFirstLogin ? (
-              <Navigate to="/change-password" />
-            ) : ["admin", "manager"].includes(userRole) ? (
-              <Dashboard />
-            ) : (
-              <Navigate to="/home" />
-            )
-          }
-        />
-        <Route
-          path="/home"
-          element={
-            isFirstLogin ? (
-              <Navigate to="/change-password" />
-            ) : ["sales_rep", "online_store_keeper"].includes(userRole) ? (
-              <Home />
-            ) : (
-              <Navigate to="/dashboard" />
-            )
-          }
-        />
-        {/* 3. User Management - Admin ට පමණි */}
-        <Route
-          path="/addUser"
-          element={
-            userRole === "admin" ? <AddUser /> : <Navigate to="/dashboard" />
-          }
-        />
-        <Route
-          path="/all-users"
-          element={
-            ["admin", "manager"].includes(userRole) ? (
-              <ViewUsers />
-            ) : (
-              <Navigate to="/dashboard" />
-            )
-          }
-        />
-        <Route
-          path="/delete-user"
-          element={
-            userRole === "admin" ? <DeleteUser /> : <Navigate to="/dashboard" />
-          }
-        />
+          {/* Add Order Route : redireact to add oder */}
+          <Route
+            path="/orders"
+            element={
+              ["admin", "sales_rep", "online_store_keeper"].includes(userRole) ? (
+                <Orders />
+              ) : (
+                <Navigate to="/home" />
+              )
+            }
+          />
 
-        {/* Brand management - only for admin */}
-        <Route path='/addBrand' element={userRole === 'admin' ? <AddBrand /> : <Navigate to="/dashboard" />} />
-        <Route path='/getBrands' element={userRole === 'admin' ? <ViewBrand /> : <Navigate to="/dashboard" />} />
+          {/* Add Online Order Route : redirect to add online order */}
+          <Route
+            path="/add-online-order"
+            element={
+              ["admin", "online_store_keeper"].includes(userRole) ? (
+                <AddOnlineOrder />
+              ) : (
+                <Navigate to="/home" />
+              )
+            }
+          />
 
-        {/* Category management - only for admin */}
-        <Route path='/addCategory' element={userRole === 'admin' ? <AddCategory /> : <Navigate to="/dashboard" />} /> 
-        <Route path='/getCategories' element={userRole === 'admin' ? <ViewCategories /> : <Navigate to="/dashboard" />} /> 
+          {/* 1. Dashboard එකට යන්න පුළුවන් Admin සහ Manager ට විතරයි */}
+          <Route
+            path="/dashboard"
+            element={
+              isFirstLogin ? (
+                <Navigate to="/change-password" />
+              ) : ["admin", "manager"].includes(userRole) ? (
+                <Dashboard />
+              ) : (
+                <Navigate to="/home" />
+              )
+            }
+          />
+          <Route
+            path="/home"
+            element={
+              isFirstLogin ? (
+                <Navigate to="/change-password" />
+              ) : ["sales_rep", "online_store_keeper"].includes(userRole) ? (
+                <Home />
+              ) : (
+                <Navigate to="/dashboard" />
+              )
+            }
+          />
+          {/* 3. User Management - Admin ට පමණි */}
+          <Route
+            path="/addUser"
+            element={
+              userRole === "admin" ? <AddUser /> : <Navigate to="/dashboard" />
+            }
+          />
+          <Route
+            path="/all-users"
+            element={
+              ["admin", "manager"].includes(userRole) ? (
+                <ViewUsers />
+              ) : (
+                <Navigate to="/dashboard" />
+              )
+            }
+          />
+          <Route
+            path="/delete-user"
+            element={
+              userRole === "admin" ? <DeleteUser /> : <Navigate to="/dashboard" />
+            }
+          />
 
-        {/* product management - admin and manager can view; only admin can add */}
-        <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
-        <Route path='/inventory' element={['admin', 'manager'].includes(userRole) ? <ViewProduct /> : <Navigate to="/dashboard" />} />
-        {/* <Route path='/product/:id' element={['admin', 'manager'].includes(userRole) ? <ProductDetail /> : <Navigate to="/dashboard" />} /> */}
+          {/* Brand management - only for admin */}
+          <Route path='/addBrand' element={userRole === 'admin' ? <AddBrand /> : <Navigate to="/dashboard" />} />
+          <Route path='/getBrands' element={userRole === 'admin' ? <ViewBrand /> : <Navigate to="/dashboard" />} />
 
-        {/* orders management - admin, sales rep, online_store_keeper can create; admin, manager, sales_rep, online_store_keeper can view */}
-        <Route path='/view-orders' element={userRole === 'admin' || userRole === 'manager' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <ViewOrders /> : <Navigate to="/" />} />
-        <Route path="/add-order" element={userRole === 'admin' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <AddOrder /> : <Navigate to="/" />} />
-      </Route>
+          {/* Category management - only for admin */}
+          <Route path='/addCategory' element={userRole === 'admin' ? <AddCategory /> : <Navigate to="/dashboard" />} /> 
+          <Route path='/getCategories' element={userRole === 'admin' ? <ViewCategories /> : <Navigate to="/dashboard" />} /> 
 
-      {/* <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/" />} /> */}
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+          {/* product management - admin and manager can view; only admin can add */}
+          <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
+          <Route path='/inventory' element={['admin', 'manager'].includes(userRole) ? <ViewProduct /> : <Navigate to="/dashboard" />} />
+          {/* <Route path='/product/:id' element={['admin', 'manager'].includes(userRole) ? <ProductDetail /> : <Navigate to="/dashboard" />} /> */}
+
+          {/* orders management - admin, sales rep, online_store_keeper can create; admin, manager, sales_rep, online_store_keeper can view */}
+          <Route path='/view-orders' element={userRole === 'admin' || userRole === 'manager' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <ViewOrders /> : <Navigate to="/" />} />
+          <Route path="/add-order" element={userRole === 'admin' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <AddOrder /> : <Navigate to="/" />} />
+        </Route>
+
+        {/* <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/" />} /> */}
+        <Route path="*" element={<Navigate to="/" />} />
+        
+      </Routes>
+
+     
+      <FloatingPopup /> 
+
+    </> 
   );
 }
 
