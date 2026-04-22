@@ -84,9 +84,12 @@ const Login = () => {
       <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div className="w-full max-w-md mx-auto lg:mx-0">
           <div className="mb-12">
-            <div className="flex flex-col">
-              <span className="text-3xl font-serif tracking-widest text-white leading-none">Mehera</span>
-              <span className="text-[10px] tracking-[0.3em] text-[#b4a460] uppercase mt-1">International (Pvt) Ltd</span>
+            <div className="flex flex-col text-left cursor-pointer">
+              <img
+                src="https://i.postimg.cc/nzwPbHWj/mehera-logo.png"
+                alt="Mehera International Logo"
+                className="h-8 md:h-10 w-auto object-contain"
+              />
             </div>
           </div>
           <h1 className="text-4xl font-medium mb-6 leading-tight">Welcome back to <span className="text-[#b4a460]">Mehera International</span>!</h1>

@@ -42,7 +42,7 @@ const Orders = () => {
     
     // මිල සහ නම තීරණය කිරීම
     const unitPrice = variant ? Number(variant.price) : Number(product.price);
-    const variantName = variant ? variant.variation_name : 'Standard';
+    const variantName = variant ? variant.variant_name : 'Standard';
     
     // Unique ID එකක් හදනවා (Product ID + Variant ID) එකම item එකේ shades වෙන් කර හඳුනාගන්න
     const cartItemId = variant ? `${product.product_id}-${variant.variant_id}` : product.product_id;
@@ -58,7 +58,8 @@ const Orders = () => {
         cartItemId,
         product_id: product.product_id, 
         variant_id: variant?.variant_id || null,
-        name: variant ? `${product.product_name} (${variantName})` : product.product_name, 
+        variant_name: variantName,
+        name: product.product_name, 
         price: unitPrice,
         qty: 1 
       }];
@@ -211,7 +212,7 @@ const Orders = () => {
                   >
                     <div className="flex flex-col">
                       <span className="font-black text-[12px] uppercase tracking-wider text-black group-hover:text-[#b4a460] transition-colors">
-                        {variant.variation_name}
+                        {variant.variant_name}
                       </span>
                       <span className="text-[10px] text-gray-400 font-bold mt-1">
                         INSTOCK: {variant.stock_qty || 'Check Sync'}

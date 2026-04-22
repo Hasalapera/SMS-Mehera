@@ -322,6 +322,7 @@ const AddOrder = () => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const { token } = useAuth(); 
+  const [discount, setDiscount] = useState(0);
 
   // --- දත්ත කියවීමේ ප්‍රධාන FUNCTION එක ---
   const loadCartData = () => {
@@ -352,41 +353,40 @@ const AddOrder = () => {
     }
   }, [cart]);
 
-  const increaseQty = (productId) => {
+  const increaseQty = (cartItemId) => {
   setCart(prev => {
     const updatedCart = prev.map(item => 
-      item.product_id === productId ? { ...item, qty: item.qty + 1 } : item
+      item.cartItemId === cartItemId ? { ...item, qty: item.qty + 1 } : item
     );
-    // 💾 LocalStorage එකත් අලුත් කරන්න
     localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
     return updatedCart;
   });
 };
 
-// --- Qty අඩු කරන Function එක ---
-const decreaseQty = (productId) => {
+const decreaseQty = (cartItemId) => {
   setCart(prev => {
     const updatedCart = prev.map(item => 
-      item.product_id === productId ? { ...item, qty: Math.max(1, item.qty - 1) } : item
+      item.cartItemId === cartItemId ? { ...item, qty: Math.max(1, item.qty - 1) } : item
     );
-    // 💾 LocalStorage එකත් අලුත් කරන්න
     localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
     return updatedCart;
   });
 };
 
-  const removeItemCompletely = (productId) => {
-    const updatedCart = cart.filter(item => item.product_id !== productId);
-    setCart(updatedCart);
-    localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
-    toast.error("Product removed from queue");
-  };
+const removeItemCompletely = (cartItemId) => {
+  const updatedCart = cart.filter(item => item.cartItemId !== cartItemId);
+  setCart(updatedCart);
+  localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
+  toast.error("Product removed from queue");
+};
 
   const totalAmount = cart.reduce((sum, item) => {
     const itemPrice = Number(item.price) || 0;
     const itemQty = Number(item.qty) || 0;
     return sum + (itemPrice * itemQty);
   }, 0);
+
+  const finalPayable = Math.max(0, totalAmount - (Number(discount) || 0));
 
   const handleCustomerSearch = async (query) => {
     setCusSearch(query);
@@ -409,37 +409,51 @@ const decreaseQty = (productId) => {
   };
 
   const handlePlaceOrder = async () => {
-    if (!selectedCustomer) return toast.error("Please select a partner!");
-    if (cart.length === 0) return toast.error("Selection queue is empty!");
+  if (!selectedCustomer) return toast.error("Please select a partner!");
+  if (cart.length === 0) return toast.error("Selection queue is empty!");
 
-    try {
-      const orderData = {
-        customer_id: selectedCustomer.customer_id,
-        customer_name: selectedCustomer.saloon_name,
-        shipping_address: `${selectedCustomer.lane1 || ''}, ${selectedCustomer.district || ''}`,
-        phone: selectedCustomer.phone1,
-        total_amount: totalAmount,
-        items: cart.map(item => ({
-          product_id: item.product_id,
-          qty: item.qty,
-          price: item.price
-        })) 
-      };
+  try {
+    // Discount එක % වලින් නම් calculate කරන්න
+    const discountPercentage = Number(discount) || 0;
+    const discountAmount = (totalAmount * discountPercentage) / 100;
+    const finalAmount = Math.max(0, totalAmount - discountAmount);
 
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.post('http://localhost:5001/api/orders/place', orderData, config);
+    const orderData = {
+      customer_id: selectedCustomer.customer_id,
+      customer_name: selectedCustomer.saloon_name,
+      shipping_address: `${selectedCustomer.lane1 || ''}, ${selectedCustomer.district || ''}`,
+      phone: selectedCustomer.phone1,
+      
+      // 👇 මේවා තමයි database එකට යන්නේ
+      subtotal: totalAmount,              // මුලු එකතුව (discount නැතුව)
+      discount_percentage: discountPercentage, // % එක
+      discount_amount: discountAmount,    // LKR amount එක
+      total_amount: finalAmount,          // අවසාන payable එක
+      
+      items: cart.map(item => ({
+        product_id: item.product_id,
+        variant_id: item.variant_id, 
+        qty: item.qty,
+        price: item.price
+      })) 
+    };
 
-      if (res.data.success) {
-        toast.success("Order Placed Successfully!");
-        localStorage.removeItem("active_order_cart");
-        setCart([]);
-        setSelectedCustomer(null);
-        setCusSearch('');
-      }
-    } catch (err) {
-      toast.error("Something went wrong!");
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const res = await axios.post('http://localhost:5001/api/orders/place', orderData, config);
+
+    if (res.data.success) {
+      toast.success("Order Placed Successfully!");
+      localStorage.removeItem("active_order_cart");
+      setCart([]);
+      setSelectedCustomer(null);
+      setCusSearch('');
+      setDiscount(0); // 👈 discount reset කරන්න
     }
-  };
+  } catch (err) {
+    console.error("Order Error:", err);
+    toast.error("Something went wrong!");
+  }
+};
 
   return (
     <div className="w-full bg-white p-2 text-left animate-in fade-in duration-500">
@@ -539,23 +553,27 @@ const decreaseQty = (productId) => {
                     <p className="font-black text-[11px] uppercase text-black truncate group-hover:text-[#b4a460] transition-colors">
                       {item.name}
                     </p>
-                    <p className="text-[10px] font-bold text-gray-400 mt-0.5">
-                      LKR {(Number(item.price) || 0).toLocaleString()}
+                    {item.variant_name && item.variant_name !== 'Standard' && (
+                    <p className="text-[9px] text-[#b4a460] font-black uppercase mt-0.5">
+                      {item.variant_name}
                     </p>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 bg-gray-50 rounded-xl p-1 border border-gray-100">
-                    <button onClick={() => decreaseQty(item.product_id)} className="p-1.5 hover:bg-white text-gray-400 transition-all rounded-lg">
-                      <Minus size={14} strokeWidth={3}/>
-                    </button>
-                    <span className="px-1 text-[12px] font-black text-black min-w-[20px] text-center">{item.qty}</span>
-                    <button onClick={() => increaseQty(item.product_id)} className="p-1.5 hover:bg-white text-[#b4a460] transition-all rounded-lg">
-                      <Plus size={14} strokeWidth={3}/>
-                    </button>
-                    <div className="w-[1px] h-4 bg-gray-200 mx-1"></div>
-                    <button onClick={() => removeItemCompletely(item.product_id)} className="p-1.5 hover:text-red-500 text-gray-300 transition-all">
-                      <Trash2 size={14}/>
-                    </button>
+                  )}
+                  <p className="text-[10px] font-bold text-gray-400 mt-0.5">
+                    LKR {(Number(item.price) || 0).toLocaleString()}
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-1.5 bg-gray-50 rounded-xl p-1 border border-gray-100">
+                  <button onClick={() => decreaseQty(item.cartItemId)}>  {/* ✅ */}
+                    <Minus size={14} strokeWidth={3}/>
+                  </button>
+                  <span>{item.qty}</span>
+                  <button onClick={() => increaseQty(item.cartItemId)}>  {/* ✅ */}
+                    <Plus size={14} strokeWidth={3}/>
+                  </button>
+                  <button onClick={() => removeItemCompletely(item.cartItemId)}>  {/* ✅ */}
+                    <Trash2 size={14}/>
+                  </button>
                   </div>
                 </div>
               ))
@@ -569,53 +587,86 @@ const decreaseQty = (productId) => {
         </div>
 
         {/* --- UPDATED LIGHT THEME SUMMARY SECTION --- */}
-        <div className="bg-white p-8 rounded-[2.5rem] border-2 border-[#b4a460]/10 shadow-xl shadow-[#b4a460]/5 relative overflow-hidden">
-          
-          {/* Background එකට පොඩි Gold Gradient එකක් දැම්මා ලස්සන වෙන්න */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#b4a460]/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+        <div className="bg-white p-6 rounded-[2.5rem] border-2 border-[#b4a460]/10 shadow-xl shadow-[#b4a460]/5 relative overflow-hidden sticky top-6">
+        {/* Background Decoration */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[#b4a460]/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
 
-          <div className="flex justify-between items-end mb-8 relative z-10">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <ClipboardList size={16} className="text-[#b4a460]" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#b4a460]">
-                    Order Finalization
-                </span>
-              </div>
-              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">
-                Review your selection before placing
-              </p>
+        <div className="relative z-10 flex flex-col space-y-5">
+          {/* 01. Header */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <ClipboardList size={16} className="text-[#b4a460]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#b4a460]">
+                Order Finalization
+              </span>
             </div>
-            
-            <div className="text-right">
-              <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-1">Total Payable</p>
-              <div className="flex items-baseline justify-end gap-1">
-                <span className="text-[10px] font-black text-[#b4a460]">Rs.</span>
-                <span className="text-3xl font-black text-black tracking-tighter leading-none">
-                    {totalAmount.toLocaleString()}
-                </span>
-              </div>
+            <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">
+              Pricing Analysis
+            </p>
+          </div>
+
+          {/* 02. Subtotal Display */}
+          <div className="flex justify-between items-center px-1 pt-2 border-b border-gray-50 pb-4">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Gross Subtotal</span>
+            <span className="text-sm font-black text-black">Rs. {totalAmount.toLocaleString()}</span>
+          </div>
+
+          {/* 03. Discount Percentage Input */}
+          <div className="p-4 bg-[#f8f8f8] rounded-2xl border border-dashed border-gray-200">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Discount Rate</span>
+              <span className="text-[10px] font-black text-[#b4a460]">% Percentage</span>
+            </div>
+            <div className="relative">
+              <input 
+                type="number" 
+                value={discount}
+                onChange={(e) => setDiscount(Math.min(100, Math.max(0, e.target.value)))} // 0-100 අතර තියාගන්නවා
+                placeholder="0"
+                className="w-full bg-white border-none rounded-xl py-3 pl-4 pr-10 text-sm font-black outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all text-right shadow-sm"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-[#b4a460] text-sm">%</span>
             </div>
           </div>
-          
-          <button 
-            onClick={handlePlaceOrder} 
-            disabled={cart.length === 0 || !selectedCustomer}
-            className="w-full py-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.3em] transition-all duration-300 flex items-center justify-center gap-3 shadow-xl group bg-black text-[#b4a460] border border-black shadow-black/10 hover:bg-[#b4a460] hover:text-white hover:border-[#b4a460] hover:scale-[1.02] active:scale-95 disabled:bg-gray-100 disabled:text-gray-300 disabled:border-gray-100 disabled:shadow-none disabled:scale-100 disabled:cursor-not-allowed"
-          >
-            <CheckCircle2 
-              size={18} 
-              strokeWidth={3} 
-              className="transition-transform duration-300 group-hover:rotate-12 group-disabled:rotate-0" 
-            /> 
-            Finalize & Place Order
-          </button>
 
-          {/* Security Tip */}
-          <p className="text-center text-[8px] text-gray-300 font-bold uppercase tracking-widest mt-5">
-            Secure encrypted transaction via Mehera Registry
-          </p>
+          {/* 04. Final Payable (Calculation Updated for %) */}
+          <div className="py-2 text-right">
+            <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-1">Final Payable</p>
+            <div className="flex items-baseline justify-end gap-1">
+              <span className="text-[10px] font-black text-[#b4a460]">Rs.</span>
+              <span className="text-4xl font-black text-black tracking-tighter leading-none">
+                {Math.max(0, totalAmount - (totalAmount * (Number(discount) || 0) / 100)).toLocaleString()}
+              </span>
+            </div>
+            {discount > 0 && (
+              <div className="inline-block mt-2 px-3 py-1 bg-[#b4a460]/10 rounded-lg">
+                <p className="text-[9px] text-[#b4a460] font-black uppercase italic tracking-tighter">
+                  {discount}% OFF Applied (-Rs. {(totalAmount * discount / 100).toLocaleString()})
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* 05. Action Button */}
+          <div className="pt-2">
+            <button 
+              onClick={handlePlaceOrder} 
+              disabled={cart.length === 0 || !selectedCustomer}
+              className="w-full py-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.3em] transition-all duration-300 flex items-center justify-center gap-3 shadow-xl group bg-black text-[#b4a460] border border-black shadow-black/10 hover:bg-[#b4a460] hover:text-white hover:border-[#b4a460] hover:scale-[1.02] active:scale-95 disabled:bg-gray-100 disabled:text-gray-300 disabled:border-gray-100 disabled:shadow-none disabled:scale-100 disabled:cursor-not-allowed"
+            >
+              <CheckCircle2 size={18} strokeWidth={3} className="transition-transform duration-300 group-hover:rotate-12 group-disabled:rotate-0" /> 
+              Finalize Order
+            </button>
+          </div>
+
+          {/* 06. Footer Branding */}
+          <div className="flex items-center justify-center gap-3 opacity-20 pt-2">
+            <div className="h-[1px] flex-1 bg-gray-400"></div>
+            <p className="text-[7px] text-gray-500 font-black uppercase tracking-[0.4em]">Mehera Registry</p>
+            <div className="h-[1px] flex-1 bg-gray-400"></div>
+          </div>
         </div>
+      </div>
       </div>
     </div>
   );
