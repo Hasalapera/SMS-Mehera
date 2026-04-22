@@ -97,7 +97,7 @@ const ViewOrders = () => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-gray-50/50 border-b border-gray-100">
-                                {["Reference", "Client", "Order Date", "Value (LKR)", "Status", "Actions"].map((h) => (
+                                {["Reference", "Client", "Placed By", "Order Date", "Value (LKR)", "Status", "Actions"].map((h) => (
                                     <th key={h} className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>
                                 ))}
                             </tr>
@@ -122,6 +122,20 @@ const ViewOrders = () => {
                                         <td className="px-6 py-8">
                                             <p className="text-sm font-black text-black uppercase">{order.customer_name}</p>
                                             <p className="text-[10px] text-gray-400 font-bold">{order.phone}</p>
+                                        </td>
+                                        <td className="px-6 py-8">
+                                            {order.creator ? (
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-black text-black uppercase leading-none">
+                                                        {order.creator.name}
+                                                    </span>
+                                                    <span className="text-[9px] text-[#b4a460] font-bold uppercase mt-1">
+                                                        {order.creator.role.replace('_', ' ')}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-[9px] text-gray-300 font-bold italic uppercase">Registry Admin</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-8 text-sm font-bold text-gray-600">
                                             {new Date(order.created_at).toLocaleDateString('en-GB')}
@@ -252,6 +266,34 @@ const ViewOrders = () => {
                                                     </table>
                                                 </div>
                                             </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 border-t border-gray-100 pt-8">
+                                            {/* Subtotal Card */}
+                                            <div className="bg-white p-5 rounded-2xl border border-gray-50 shadow-sm flex flex-col justify-center">
+                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Gross Subtotal</span>
+                                                <p className="text-sm font-black text-black leading-none">
+                                                    LKR {Number(order.subtotal || order.total_amount).toLocaleString()}
+                                                </p>
+                                            </div>
+
+                                            {/* Discount Applied Card */}
+                                            <div className="bg-[#b4a460]/5 p-5 rounded-2xl border border-[#b4a460]/10 shadow-sm flex flex-col justify-center">
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-[9px] font-black text-[#b4a460] uppercase tracking-widest">Discount Applied</span>
+                                                    <span className="text-[10px] font-black text-[#b4a460]">{Number(order.discount_percentage || 0)}%</span>
+                                                </div>
+                                                <p className="text-sm font-black text-[#8a7b42] leading-none">
+                                                    - LKR {Number(order.discount_amount || 0).toLocaleString()}
+                                                </p>
+                                            </div>
+
+                                            {/* Net Payable Card */}
+                                            <div className="bg-black p-5 rounded-2xl shadow-xl flex flex-col justify-center">
+                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Net Payable Amount</span>
+                                                <p className="text-xl font-black text-[#b4a460] leading-none tracking-tighter">
+                                                    LKR {Number(order.total_amount).toLocaleString()}
+                                                </p>
+                                            </div>
+                                        </div>
 
                                             {/* Final Action Row */}
                                             <div className="flex justify-end pt-4 border-t border-gray-100">

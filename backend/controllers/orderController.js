@@ -1,4 +1,4 @@
-const { Order, OrderItem, ProductVariant, Product } = require('../models');
+const { Order, OrderItem, ProductVariant, Product, User } = require('../models');
 const sequelize = require('../db/db');
 const sendEmailInvoice = require('../utils/sendEmailInvoice');
 
@@ -6,22 +6,36 @@ const sendEmailInvoice = require('../utils/sendEmailInvoice');
 const placeOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
-    const { customer_id, customer_name, shipping_address, phone, total_amount, items } = req.body;
+    const { 
+      customer_id, 
+      customer_name, 
+      shipping_address, 
+      phone, 
+      subtotal,              // 👈 මුලු එකතුව
+      discount_percentage,   // 👈 % එක
+      discount_amount,       // 👈 LKR amount එක
+      total_amount,          // 👈 අවසාන payable එක
+      items 
+    } = req.body;
 
     const newOrder = await Order.create({
       customer_id, 
       customer_name,     
       shipping_address,
-      phone, // 👈 නිවැරදි phone එක මෙතනට එන්න ඕනේ
-      total_amount,
+      phone,
+      subtotal: subtotal || 0,                    // 👈 මුලු එකතුව store කරන්න
+      discount_percentage: discount_percentage || 0, // 👈 % store කරන්න
+      discount_amount: discount_amount || 0,      // 👈 LKR amount store කරන්න
+      total_amount: total_amount || 0,            // 👈 අවසාන එක store කරන්න
       order_status: 'pending',
+      created_by: req.user.user_id,
       order_type: 'offline'
     }, { transaction });
 
     const orderItemsData = items.map(item => ({
       order_id: newOrder.order_id,
       product_id: item.product_id,
-      variant_id: item.variant_id, // 👈 මේක තිබුණොත් තමයි නම පේන්නේ
+      variant_id: item.variant_id,
       qty: item.qty,
       price: item.price
     }));
@@ -29,7 +43,11 @@ const placeOrder = async (req, res) => {
     await OrderItem.bulkCreate(orderItemsData, { transaction });
     await transaction.commit();
 
-    res.status(201).json({ success: true, message: "Order placed successfully!", orderId: newOrder.order_id });
+    res.status(201).json({ 
+      success: true, 
+      message: "Order placed successfully!", 
+      orderId: newOrder.order_id 
+    });
   } catch (error) {
     if (transaction) await transaction.rollback();
     console.error("Order Error:", error);
@@ -42,8 +60,17 @@ const placeOnlineOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const { 
-      customer_name, primary_phone, secondary_phone, 
-      district, shipping_address, email, items, total_amount 
+      customer_name, 
+      primary_phone, 
+      secondary_phone, 
+      district, 
+      shipping_address, 
+      email,
+      subtotal,              // 👈 NEW
+      discount_percentage,   // 👈 NEW
+      discount_amount,       // 👈 NEW
+      total_amount,          // 👈 UPDATED
+      items 
     } = req.body;
 
     const newOrder = await Order.create({
@@ -53,8 +80,12 @@ const placeOnlineOrder = async (req, res) => {
       district,
       shipping_address,
       email,
-      total_amount,
+      subtotal: subtotal || 0,
+      discount_percentage: discount_percentage || 0,
+      discount_amount: discount_amount || 0,
+      total_amount: total_amount || 0,
       order_status: 'pending',
+      created_by: req.user.user_id,
       order_type: 'online' 
     }, { transaction });
 
@@ -69,10 +100,14 @@ const placeOnlineOrder = async (req, res) => {
     await OrderItem.bulkCreate(orderItemsData, { transaction });
     await transaction.commit();
 
+    // Email Invoice යවන විට discount details ඇතුළත් කරන්න
     if (email) {
       sendEmailInvoice(email, {
         order_id: newOrder.order_id,
         customer_name,
+        subtotal,
+        discount_percentage,
+        discount_amount,
         total_amount,
         shipping_address,
         district,
@@ -81,18 +116,38 @@ const placeOnlineOrder = async (req, res) => {
       }).catch(err => console.error("Email Failed:", err));
     }
 
-    res.status(201).json({ success: true, message: "Online Order Place වුණා!", orderId: newOrder.order_id });
+    res.status(201).json({ 
+      success: true, 
+      message: "Online Order placed successfully!", 
+      orderId: newOrder.order_id 
+    });
   } catch (error) {
     if (transaction) await transaction.rollback();
     console.error("Online Order Error:", error);
-    res.status(500).json({ success: false, message: "Failed to place online order" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to place online order",
+      error: error.message 
+    });
   }
 };
 
 // --- 3. පවතින සියලුම ඕඩර් ලබාගැනීමේ FUNCTION එක ---
 const getAllOrders = async (req, res) => {
   try {
+    // 🕵️ Middleware එකෙන් එන User ID එක සහ Role එක ගමු
+    const { user_id, role } = req.user; 
+
+    let filter = {};
+
+    // 🛡️ Role එක අනුව Filter එක තීරණය කරමු
+    // Admin හෝ Manager නෙවෙයි නම් විතරක් created_by අනුව filter කරනවා
+    if (role !== 'admin' && role !== 'manager') {
+      filter = { created_by: user_id };
+    }
+
     const orders = await Order.findAll({
+      where: filter, // 👈 අදාළ Filter එක මෙතනට වැටෙනවා
       include: [{
         model: OrderItem,
         include: [{
@@ -104,9 +159,16 @@ const getAllOrders = async (req, res) => {
             attributes: ['product_name'] 
           }]
         }]
-      }],
+      },
+      {
+          model: User,
+          as: 'creator',
+          attributes: ['name', 'role'] 
+        }
+    ],
       order: [['created_at', 'DESC']]
     });
+
     res.status(200).json(orders);
   } catch (error) {
     console.error("Fetch Error:", error);

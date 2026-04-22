@@ -132,11 +132,12 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
           />
 
           {!isSidebarCollapsed && (
-            <div className="flex flex-col text-left animate-in fade-in slide-in-from-left-2 duration-500">
-              <span className="text-xl font-serif tracking-widest leading-none">Mehera</span>
-              <span className="text-[8px] tracking-[0.2em] text-[#b4a460] uppercase mt-1">
-                International (Pvt) Ltd
-              </span>
+            <div className="flex flex-col text-left cursor-pointer" onClick={() => handleNavigation('/home')}>
+              <img
+                src="https://i.postimg.cc/nzwPbHWj/mehera-logo.png"
+                alt="Mehera International Logo"
+                className="h-8 md:h-10 w-auto object-contain"
+              />
             </div>
           )}
         </div>

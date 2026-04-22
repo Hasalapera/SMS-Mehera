@@ -39,6 +39,10 @@ OrderItem.belongsTo(Order, { foreignKey: 'order_id' });
 OrderItem.belongsTo(ProductVariant, { foreignKey: 'variant_id', as: 'variant' });
 ProductVariant.hasMany(OrderItem, { foreignKey: 'variant_id' });
 
+// 7. User and Order Associations 
+Order.belongsTo(User, { as: 'creator', foreignKey: 'created_by' });
+User.hasMany(Order, { foreignKey: 'created_by' });
+
 module.exports = {
   sequelize,
   User,
