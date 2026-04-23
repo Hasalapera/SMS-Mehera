@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  Plus, Search, Package, AlertCircle, CheckCircle, 
-  Loader2, ChevronDown, ArrowLeft, RefreshCw, Edit2, Trash2
+  Plus, Search, Package, AlertCircle, 
+  Loader2, ChevronDown, ArrowLeft, RefreshCw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
@@ -17,15 +17,13 @@ const AddStock = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedProduct, setExpandedProduct] = useState(null);
-  const [editingVariant, setEditingVariant] = useState(null);
 
-  // Modal States
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newStockData, setNewStockData] = useState({
-    variant_id: '',
-    quantity: '',
-    notes: ''
-  });
+  // Inline stock input state: { variant_id: quantity }
+  const [inlineQuantity, setInlineQuantity] = useState({});
+  
+  // Bulk distribution state
+  const [bulkQuantity, setBulkQuantity] = useState('');
+  const [selectedProductForBulk, setSelectedProductForBulk] = useState(null);
 
   useEffect(() => {
     if (!token) {
@@ -53,32 +51,101 @@ const AddStock = () => {
     }
   };
 
-  const handleAddStock = async () => {
-    if (!newStockData.variant_id || !newStockData.quantity) {
-      toast.error("Please select variant and enter quantity");
+  // Handle inline quantity input
+  const handleQuantityChange = (variantId, value) => {
+    setInlineQuantity({
+      ...inlineQuantity,
+      [variantId]: value
+    });
+  };
+
+  // Add stock for single variant (inline)
+  const handleAddStock = async (variantId) => {
+    const quantity = inlineQuantity[variantId];
+
+    if (!quantity || quantity === '') {
+      toast.error("Please enter a quantity");
       return;
     }
- 
+
+    const parsedQty = Number(quantity);
+    if (!Number.isInteger(parsedQty) || parsedQty <= 0) {
+      toast.error("Quantity must be a positive whole number");
+      return;
+    }
+
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.post('http://localhost:5001/api/stock/addStock', newStockData, config);
+      await axios.patch(
+        `http://localhost:5001/api/products/variants/${variantId}/add-stock`,
+        { quantity: parsedQty },
+        config
+      );
       
       toast.success("Stock added successfully!");
-      setShowAddModal(false);
-      setNewStockData({ variant_id: '', quantity: '', notes: '' });
+      
+      // Clear input & refresh
+      setInlineQuantity({ ...inlineQuantity, [variantId]: '' });
       fetchProducts();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to add stock");
     }
   };
 
+  // Bulk add stock to all variants of a product
+  const handleBulkAddStock = async (productId) => {
+    if (!bulkQuantity || bulkQuantity === '') {
+      toast.error("Please enter a quantity");
+      return;
+    }
+
+    const parsedQty = Number(bulkQuantity);
+    if (!Number.isInteger(parsedQty) || parsedQty <= 0) {
+      toast.error("Quantity must be a positive whole number");
+      return;
+    }
+
+    const product = products.find(p => p.product_id === productId);
+    if (!product || !product.variants || product.variants.length === 0) {
+      toast.error("No variants found for this product");
+      return;
+    }
+
+    try {
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      let successCount = 0;
+
+      // Add stock to each variant
+      for (const variant of product.variants) {
+        try {
+          await axios.patch(
+            `http://localhost:5001/api/products/variants/${variant.variant_id}/add-stock`,
+            { quantity: parsedQty },
+            config
+          );
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to add stock to variant ${variant.variant_id}`);
+        }
+      }
+
+      toast.success(`Stock added to ${successCount} variants!`);
+      
+      // Clear inputs & refresh
+      setBulkQuantity('');
+      setSelectedProductForBulk(null);
+      fetchProducts();
+    } catch (err) {
+      toast.error("Failed to add bulk stock");
+    }
+  };
+
   const filteredProducts = products.filter(product => {
     const pName = product.product_name?.toLowerCase() || '';
-    const pCode = product.product_code?.toLowerCase() || '';
     const search = searchTerm.toLowerCase();
-    return pName.includes(search) || pCode.includes(search);
+    return pName.includes(search);
   });
- 
+
   if (loading) {
     return (
       <div className="w-full min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-white">
@@ -87,11 +154,11 @@ const AddStock = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="w-full max-w-7xl mx-auto p-6 animate-in fade-in duration-500">
       <Toaster position="top-right" />
- 
+
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4">
         <div>
@@ -118,34 +185,29 @@ const AddStock = () => {
           </button>
         </div>
       </div>
- 
+
       {/* Search Bar */}
       <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-sm p-6 mb-8">
         <div className="flex items-center gap-4">
           <Search size={20} className="text-gray-300" />
           <input 
             type="text"
-            placeholder="Search by product name or code..."
+            placeholder="Search by product name..."
             className="flex-1 bg-transparent outline-none text-black font-semibold text-sm placeholder-gray-300"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <button 
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 bg-black text-[#b4a460] px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-widest hover:shadow-lg hover:shadow-[#b4a460]/30 transition-all active:scale-95"
-          >
-            <Plus size={18} /> Add Stock
-          </button>
         </div>
       </div>
 
-      {/*Products List*/}
+      {/* Products List */}
       <div className="space-y-4">
         {filteredProducts.map(product => (
           <div key={product.product_id} className="bg-white border border-gray-100 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-shadow">
             
-            {/*Product Header*/}
-            <button onClick={() => setExpandedProduct(expandedProduct === product.product_id ? null : product.product_id)}
+            {/* Product Header - Clickable to Expand */}
+            <button
+              onClick={() => setExpandedProduct(expandedProduct === product.product_id ? null : product.product_id)}
               className="w-full p-6 flex items-center justify-between hover:bg-gray-50/50 transition-colors text-left"
             >
               <div className="flex-1">
@@ -153,10 +215,6 @@ const AddStock = () => {
                   {product.product_name}
                 </h3>
                 <div className="flex items-center gap-4 text-sm text-gray-400 font-semibold">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#b4a460]"></span>
-                    Code: {product.product_code || 'N/A'}
-                  </span>
                   <span className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#b4a460]"></span>
                     Category: {product.category?.category_name || 'N/A'}
@@ -171,78 +229,115 @@ const AddStock = () => {
                 className={`text-gray-300 transition-transform ${expandedProduct === product.product_id ? 'rotate-180' : ''}`}
               />
             </button>
- 
-            {/*Expanded Variants Section */}
+
+            {/* Expanded Variants - Table Style */}
             {expandedProduct === product.product_id && (
               <div className="bg-gray-50/50 border-t border-gray-100 divide-y divide-gray-100">
                 {product.variants && product.variants.length > 0 ? (
-                  product.variants.map((variant, idx) => (
-                    <div key={variant.variant_id} className="p-6 hover:bg-gray-100/50 transition-colors">
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-center">
-                        
-                        {/*Variant Info */}
-                        <div className="md:col-span-2">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Variant Details</p>
-                          <div>
-                            <p className="text-black font-bold">{variant.variant_name || `Variant ${idx + 1}`}</p>
+                  <>
+                    {/* Table Header */}
+                    <div className="p-6 bg-gray-100/50 grid grid-cols-1 md:grid-cols-5 gap-6 font-black text-[10px] uppercase tracking-widest text-gray-400">
+                      <div className="md:col-span-2">Variant</div>
+                      <div>Current Stock</div>
+                      <div>Price</div>
+                      <div>Action</div>
+                    </div>
+
+                    {/* Table Rows */}
+                    {product.variants.map((variant) => (
+                      <div key={variant.variant_id} className="p-6 hover:bg-gray-100/50 transition-colors">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-center">
+                          
+                          {/* Variant Info */}
+                          <div className="md:col-span-2">
+                            <p className="text-black font-bold">{variant.variant_name || `Variant ${variant.variant_id}`}</p>
                             {variant.size && <p className="text-sm text-gray-400">Size: {variant.size}</p>}
                             {variant.color && <p className="text-sm text-gray-400">Color: {variant.color}</p>}
                           </div>
-                        </div>
- 
-                        {/*Stock Info */}
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Current Stock</p>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-2xl font-black ${variant.stock_count > 20 ? 'text-green-600' : variant.stock_count > 0 ? 'text-yellow-600' : 'text-red-600'}`}>
+
+                          {/* Current Stock */}
+                          <div>
+                            <span className={`text-2xl font-black ${
+                              variant.stock_count > 20 ? 'text-green-600' : 
+                              variant.stock_count > 0 ? 'text-yellow-600' : 
+                              'text-red-600'
+                            }`}>
                               {variant.stock_count || 0}
                             </span>
-                            <span className="text-gray-300 font-bold text-sm">Units</span>
+                            <p className="text-gray-400 text-xs font-semibold">Units</p>
+                            {variant.stock_count === 0 && (
+                              <div className="flex items-center gap-1.5 mt-2 text-red-600 text-[10px] font-bold">
+                                <AlertCircle size={12} />
+                                OUT OF STOCK
+                              </div>
+                            )}
                           </div>
-                          {variant.stock_count === 0 && (
-                            <div className="flex items-center gap-1.5 mt-2 text-red-600">
-                              <AlertCircle size={14} />
-                              <span className="text-[10px] font-bold">OUT OF STOCK</span>
-                            </div>
-                          )}
-                        </div>
- 
-                        {/* Price*/}
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Price</p>
-                          <p className="text-lg font-black text-black">{Number(variant.price || 0).toLocaleString()} LKR</p>
-                        </div>
- 
-                        {/* Actions */}
-                        <div className="flex items-end justify-end gap-2">
-                          <button
-                            onClick={() => {
-                              setNewStockData({
-                                variant_id: variant.variant_id,
-                                quantity: '',
-                                notes: ''
-                              });
-                              setShowAddModal(true);
-                            }}
-                            className="p-3 bg-black text-[#b4a460] rounded-xl hover:shadow-lg hover:shadow-[#b4a460]/30 transition-all active:scale-95"
-                            title="Add stock to this variant"
-                          >
-                            <Plus size={18} />
-                          </button>
-                          <button
-                            className="p-3 bg-gray-200 text-gray-400 rounded-xl hover:bg-gray-300 transition-all active:scale-95"
-                            title="Edit variant"
-                          >
-                            <Edit2 size={18} />
-                          </button>
+
+                          {/* Price */}
+                          <div>
+                            <p className="text-lg font-black text-black">
+                              {Number(variant.price || 0).toLocaleString()} LKR
+                            </p>
+                          </div>
+
+                          {/* Inline Add Stock */}
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              placeholder="Qty"
+                              value={inlineQuantity[variant.variant_id] || ''}
+                              onChange={(e) => handleQuantityChange(variant.variant_id, e.target.value)}
+                              className="w-16 px-3 py-2 rounded-lg border border-gray-200 text-sm font-semibold outline-none focus:border-[#b4a460] focus:ring-2 focus:ring-[#b4a460]/20"
+                              min="1"
+                            />
+                            <button
+                              onClick={() => handleAddStock(variant.variant_id)}
+                              className="p-3 bg-black text-[#b4a460] rounded-xl hover:shadow-lg hover:shadow-[#b4a460]/30 transition-all active:scale-95 font-bold"
+                              title="Add stock"
+                            >
+                              <Plus size={18} />
+                            </button>
+                          </div>
                         </div>
                       </div>
+                    ))}
+
+                    {/* Bulk Add Stock Section */}
+                    <div className="p-6 bg-white border-t-2 border-[#b4a460]/20">
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1">
+                          <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">
+                            Add Same Quantity to All Variants
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="Enter quantity..."
+                            value={selectedProductForBulk === product.product_id ? bulkQuantity : ''}
+                            onChange={(e) => {
+                              setSelectedProductForBulk(product.product_id);
+                              setBulkQuantity(e.target.value);
+                            }}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-[#b4a460] focus:ring-4 focus:ring-[#b4a460]/10 transition-all outline-none text-black font-semibold text-sm"
+                            min="1"
+                          />
+                        </div>
+                        <button
+                          onClick={() => handleBulkAddStock(product.product_id)}
+                          className="px-6 py-3 bg-[#b4a460] text-black font-black text-sm uppercase tracking-widest rounded-xl hover:shadow-lg hover:shadow-[#b4a460]/30 transition-all active:scale-95"
+                          title="Add to all variants"
+                        >
+                          Bulk Add
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-gray-400 font-semibold mt-2">
+                        Will add the same quantity to all {product.variants.length} variants
+                      </p>
                     </div>
-                  ))
+                  </>
                 ) : (
                   <div className="p-8 text-center">
                     <AlertCircle size={32} className="text-gray-200 mx-auto mb-3" />
-                    <p className="text-gray-400 font-semibold">No variants available for this product</p>
+                    <p className="text-gray-400 font-semibold">No variants available</p>
                   </div>
                 )}
               </div>
@@ -251,7 +346,7 @@ const AddStock = () => {
         ))}
       </div>
 
-       {/*Empty State*/}
+      {/* Empty State */}
       {filteredProducts.length === 0 && (
         <div className="bg-white border border-dashed border-gray-200 rounded-[3rem] py-24 text-center">
           <div className="bg-gray-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -261,94 +356,8 @@ const AddStock = () => {
           <p className="text-gray-400 text-sm mt-2 font-medium">Try adjusting your search terms.</p>
         </div>
       )}
- 
-      {/* Add Stock Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in">
-          <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-md w-full p-8 animate-in scale-in-95 duration-200">
-            
-            {/* Modal Header */}
-            <h3 className="text-2xl font-black text-black mb-2 uppercase tracking-tight">Add Stock</h3>
-            <p className="text-gray-400 text-sm font-medium mb-8">Enter the quantity to add to inventory.</p>
- 
-            {/* Form */}
-            <div className="space-y-6">
-              
-              {/*Variant Selector*/}
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">
-                  Select Variant
-                </label>
-                <select
-                  value={newStockData.variant_id}
-                  onChange={(e) => setNewStockData({ ...newStockData, variant_id: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-[#b4a460] focus:ring-4 focus:ring-[#b4a460]/10 transition-all outline-none text-black font-semibold text-sm"
-                >
-                  <option value="">Choose a variant...</option>
-                  {products.flatMap(product =>
-                    (product.variants || []).map(variant => (
-                      <option key={variant.variant_id} value={variant.variant_id}>
-                        {product.product_name} - {variant.variant_name || `Variant ${variant.variant_id}`}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
- 
-              {/* Quantity Input */}
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">
-                  Quantity to Add
-                </label>
-                <input
-                  type="number"
-                  placeholder="Enter quantity..."
-                  value={newStockData.quantity}
-                  onChange={(e) => setNewStockData({ ...newStockData, quantity: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-[#b4a460] focus:ring-4 focus:ring-[#b4a460]/10 transition-all outline-none text-black font-semibold text-sm"
-                  min="1"
-                />
-              </div>
- 
-              {/* Notes */}
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">
-                  Notes (Optional)
-                </label>
-                <textarea
-                  placeholder="Add notes about this stock addition..."
-                  value={newStockData.notes}
-                  onChange={(e) => setNewStockData({ ...newStockData, notes: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white focus:border-[#b4a460] focus:ring-4 focus:ring-[#b4a460]/10 transition-all outline-none text-black font-semibold text-sm resize-none"
-                  rows="3"
-                />
-              </div>
-            </div>
- 
-            {/* Modal Actions */}
-            <div className="flex gap-3 mt-8">
-              <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  setNewStockData({ variant_id: '', quantity: '', notes: '' });
-                }}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-100 text-black font-black text-sm uppercase tracking-widest hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddStock}
-                className="flex-1 px-4 py-3 rounded-xl bg-black text-[#b4a460] font-black text-sm uppercase tracking-widest hover:shadow-lg hover:shadow-[#b4a460]/30 transition-all active:scale-95"
-              >
-                Add Stock
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
-
   );
- 
-}
+};
+
 export default AddStock;
