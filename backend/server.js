@@ -24,7 +24,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // ✅ CORS එක පාරක් පමණක් Configure කරන්න
 app.use(cors({
   origin: 'http://localhost:5173', 
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], 
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], 
   credentials: true
 }));
 

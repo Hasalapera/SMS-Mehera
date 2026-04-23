@@ -14,6 +14,9 @@ import Orders from "./pages/management/order/Orders";
 
 //stock management
 import Stock from "./pages/management/stock/stock";
+import AddStock from "./pages/management/stock/AddStock";
+import EditStock from "./pages/management/stock/EditStock";
+import ViewStock from "./pages/management/stock/ViewStock";
 
 // Public Pages
 import LandingPage from "./pages/LandingPage";
@@ -32,31 +35,20 @@ import Home from "./pages/roles/Home";
 // User Management (Now in management/user folder)
 import AddUser from "./pages/management/user/AddUser";
 import ViewUsers from "./pages/management/user/ViewUser";
-// import UpdateUser from './pages/management/user/UpdateUser';
-
 import DeleteUser from "./pages/management/user/DeleteUser";
 
 // Brand Management (Now in management/brand folder)
 import AddBrand from "./pages/management/brand/AddBrand";
 import ViewBrand from "./pages/management/brand/ViewBrand";
-// import UpdateBrand from './pages/management/brand/UpdateBrand';
-// import DeleteBrand from './pages/management/brand/DeleteBrand';
 
 // Category management (Now in management/category folder)
 import AddCategory from './pages/management/category/AddCategory';
 import ViewCategories from './pages/management/category/ViewCategories';
-// import UpdateCategory from './pages/management/category/UpdateCategory';
-// import DeleteCategory from './pages/management/category/DeleteCategory';
 
 // Product Management (Now in management/product folder)
-
 import AddProduct from './pages/management/product/AddProduct';
 import ViewProduct from './pages/management/product/ViewProduct';
 import ProductDetail from './pages/management/product/ProductDetail';
-
-// import ViewProducts from './pages/management/product/ViewProducts';
-// import UpdateProduct from './pages/management/product/UpdateProduct';
-// import DeleteProduct from './pages/management/product/DeleteProduct';
 
 //Order Management (Now in management/order folder)
 import ViewOrders from "./pages/management/order/ViewOrders";
@@ -262,34 +254,39 @@ function App() {
             }
           />
           <Route
-            path="/delete-user"
-            element={
-              userRole === "admin" ? <DeleteUser /> : <Navigate to="/dashboard" />
-            }
-          />
+          path="/delete-user"
+          element={
+            userRole === "admin" ? <DeleteUser /> : <Navigate to="/dashboard" />
+          }
+        />
 
-          {/* Brand management - only for admin */}
-          <Route path='/addBrand' element={userRole === 'admin' ? <AddBrand /> : <Navigate to="/dashboard" />} />
-          <Route path='/getBrands' element={userRole === 'admin' ? <ViewBrand /> : <Navigate to="/dashboard" />} />
+        {/* Brand management - only for admin */}
+        <Route path='/addBrand' element={userRole === 'admin' ? <AddBrand /> : <Navigate to="/dashboard" />} />
+        <Route path='/getBrands' element={userRole === 'admin' ? <ViewBrand /> : <Navigate to="/dashboard" />} />
 
-          {/* Category management - only for admin */}
-          <Route path='/addCategory' element={userRole === 'admin' ? <AddCategory /> : <Navigate to="/dashboard" />} /> 
-          <Route path='/getCategories' element={userRole === 'admin' ? <ViewCategories /> : <Navigate to="/dashboard" />} /> 
+        {/* Category management - only for admin */}
+        <Route path='/addCategory' element={userRole === 'admin' ? <AddCategory /> : <Navigate to="/dashboard" />} /> 
+        <Route path='/getCategories' element={userRole === 'admin' ? <ViewCategories /> : <Navigate to="/dashboard" />} /> 
 
-          {/* product management - admin and manager can view; only admin can add */}
-          <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
-          <Route path='/inventory' element={['admin', 'manager'].includes(userRole) ? <ViewProduct /> : <Navigate to="/dashboard" />} />
-          {/* <Route path='/product/:id' element={['admin', 'manager'].includes(userRole) ? <ProductDetail /> : <Navigate to="/dashboard" />} /> */}
+        {/* product management - admin and manager can view; only admin can add */}
+        <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
+        <Route path='/inventory' element={['admin', 'manager'].includes(userRole) ? <ViewProduct /> : <Navigate to="/dashboard" />} />
+        {/* <Route path='/product/:id' element={['admin', 'manager'].includes(userRole) ? <ProductDetail /> : <Navigate to="/dashboard" />} /> */}
 
-          {/* orders management - admin, sales rep, online_store_keeper can create; admin, manager, sales_rep, online_store_keeper can view */}
-          <Route path='/view-orders' element={userRole === 'admin' || userRole === 'manager' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <ViewOrders /> : <Navigate to="/" />} />
-          <Route path="/add-order" element={userRole === 'admin' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <AddOrder /> : <Navigate to="/" />} />
-        </Route>
+        {/* orders management - admin, sales rep, online_store_keeper can create; admin, manager, sales_rep, online_store_keeper can view */}
+        <Route path='/view-orders' element={userRole === 'admin' || userRole === 'manager' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <ViewOrders /> : <Navigate to="/" />} />
+        <Route path="/add-order" element={userRole === 'admin' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <AddOrder /> : <Navigate to="/" />} />
 
-        {/* <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/" />} /> */}
-        <Route path="*" element={<Navigate to="/" />} />
-        
-      </Routes>
+        {/* stock management - admin, sales rep, online_store_keeper can view; only admin can add/edit */}
+        <Route path='/addStock' element={userRole === 'admin' ? <AddStock /> : <Navigate to="/dashboard" />} />
+        <Route path='/editStock' element={userRole === 'admin' ? <EditStock /> : <Navigate to="/dashboard" />} />
+        <Route path='/viewStock' element={['admin', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ViewStock /> : <Navigate to="/dashboard" />} />
+
+</Route>
+
+      {/* <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/" />} /> */}
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
 
      
       <FloatingPopup /> 
