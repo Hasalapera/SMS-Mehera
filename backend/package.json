@@ -12,19 +12,23 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.95.3",
     "@types/sequelize": "^4.28.20",
+    "axios": "^1.15.2",
     "bcrypt": "^6.0.0",
     "cloudinary": "^1.41.3",
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
+    "groq-sdk": "^1.1.2",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^8.0.5",
     "pg": "^8.19.0",
     "pg-hstore": "^2.3.4",
+    "react-to-print": "^3.3.0",
     "sequelize": "^6.37.7"
   },
   "devDependencies": {
