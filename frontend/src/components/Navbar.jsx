@@ -42,7 +42,7 @@ const Navbar = () => {
         { name: 'Home', path: '/home' },
         { name: 'Orders', path: '/orders' },
         { name: 'Customer', path: '/customer' },
-        { name: 'History', path: '/history' },
+        { name: 'History', path: '/orders/history' },
         { name: 'Stock', path: '/stock' },
         { name: 'Support', path: '/support' }
     ];

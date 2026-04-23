@@ -132,6 +132,7 @@ function App() {
           <Route path="/profile/:id" element={<UserProfile />} />
           <Route path="/support" element={<Support />} />
 
+          
           <Route path="/order/:id" element={["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? <Quotation /> : <Navigate to="/home" />} />
 
           {/* --- අලුතින් එකතු කළ STOCK ROUTE --- */}
@@ -284,6 +285,9 @@ function App() {
           {/* orders management - admin, sales rep, online_store_keeper can create; admin, manager, sales_rep, online_store_keeper can view */}
           <Route path='/view-orders' element={userRole === 'admin' || userRole === 'manager' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <ViewOrders /> : <Navigate to="/" />} />
           <Route path="/add-order" element={userRole === 'admin' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <AddOrder /> : <Navigate to="/" />} />
+          
+          {/* History Route - Added online_store_keeper permission */}
+          <Route path="/orders/history" element={["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? <ViewOrders /> : <Navigate to="/" />} />
         </Route>
 
         {/* <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/" />} /> */}
