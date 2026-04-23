@@ -6,7 +6,8 @@ import {
   BarChart2, Settings, HelpCircle, LogOut, ChevronDown, 
   ChevronRight, Menu, Inbox, SlidersHorizontal, PlusCircle, 
   ChevronLeft, UserPlus, UserMinus, UserCog, List, FileText, 
-  Download, UserCheck, ClipboardList, ShoppingBag, Tag
+  Download, History, PackageX, ShoppingBasket, ReceiptText, Tag, Boxes,
+  PackagePlus, PackageSearch, SquarePen
 } from 'lucide-react';
 import { useNavigate, NavLink } from 'react-router-dom';
 import ViewOrders from '../pages/management/order/ViewOrders';
@@ -24,6 +25,8 @@ const menuConfig = {
     canAddCustomers: true,
     canFullManageOrders: true, // Create, View, Edit, Delete
     canViewOrders: true, 
+    canManageStocks: true,
+    canViewStocks: true
   },
   manager: { 
     canFullManageUsers: false, 
@@ -38,6 +41,8 @@ const menuConfig = {
     canAddCustomers: false,
     canViewOrders: true,
     canFullManageOrders: false,
+    canManageStocks: false,
+    canViewStocks: true
   }
 };
 
@@ -132,11 +137,12 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
           />
 
           {!isSidebarCollapsed && (
-            <div className="flex flex-col text-left animate-in fade-in slide-in-from-left-2 duration-500">
-              <span className="text-xl font-serif tracking-widest leading-none">Mehera</span>
-              <span className="text-[8px] tracking-[0.2em] text-[#b4a460] uppercase mt-1">
-                International (Pvt) Ltd
-              </span>
+            <div className="flex flex-col text-left cursor-pointer" onClick={() => handleNavigation('/home')}>
+              <img
+                src="https://i.postimg.cc/nzwPbHWj/mehera-logo.png"
+                alt="Mehera International Logo"
+                className="h-8 md:h-10 w-auto object-contain"
+              />
             </div>
           )}
         </div>
@@ -178,18 +184,18 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
           {/* Order */}
           {permissions.canViewOrders && (
             <>
-              <NavItem icon={UserCog} label="Orders" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('orders')} isOpen={openSubMenu === 'orders'} />
+              <NavItem icon={ReceiptText} label="Orders" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('orders')} isOpen={openSubMenu === 'orders'} />
               {!isSidebarCollapsed && openSubMenu === 'orders' && (
                 <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
                   {/* Admin ට පමණක් පේන Full CRUD Actions */}
                   {permissions.canFullManageUsers && (
                     <>
-                      <NavLink to="/orders?add-order" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><UserPlus size={14} /> Add Order</NavLink>
-                      <NavLink to="/delete-order" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-red-400 transition-colors"><UserMinus size={14} /> Delete Order</NavLink>
+                      <NavLink to="/orders?add-order" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><ShoppingBasket size={14} /> Add Order</NavLink>
+                      <NavLink to="/delete-order" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-red-400 transition-colors"><PackageX size={14} /> Delete Order</NavLink>
                     </>
                   )}
                   {/* Admin සහ Manager දෙදෙනාටම පේන View Action */}
-                  <NavLink to="/view-orders" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-white transition-colors"><List size={14} /> Order List </NavLink>
+                  <NavLink to="/view-orders" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-white transition-colors"><History size={14} /> Order List </NavLink>
                 </div>
               )}
             </>
@@ -306,6 +312,26 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                   {userRole === 'admin' && (
                     <NavLink to="/addProduct" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><PlusCircle size={14} /> Add Product</NavLink>
                   )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* stock section */}
+          {permissions.canViewStocks && (
+            <>
+              <NavItem icon={Boxes} label="Stocks" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('stock')} isOpen={openSubMenu === 'stock'} />
+              {!isSidebarCollapsed && openSubMenu === 'stock' && (
+                <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
+                  {/* Admin ට පමණක් පේන Full CRUD Actions */}
+                  {permissions.canManageStocks && (
+                    <>
+                      <NavLink to="/addStock" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><PackagePlus size={14} /> Add Stocks</NavLink>
+                      <NavLink to="/editStock" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-red-400 transition-colors"><SquarePen size={14} /> Edit Stocks</NavLink>
+                    </>
+                  )}
+                  {/* Admin සහ Manager දෙදෙනාටම පේන View Action */}
+                  <NavLink to="/viewStock" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-white transition-colors"><PackageSearch size={14} /> View Stocks </NavLink>
                 </div>
               )}
             </>

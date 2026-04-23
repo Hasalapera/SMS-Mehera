@@ -8,7 +8,11 @@ const ProductCard = ({ product, onAddToCart }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const canAddOrders = user && ["admin", "sales_rep"].includes(user.role);
+  // 🛡️ Debugging: Role එක හරියටම එනවද කියලා බලන්න
+  console.log("Current User Role:", user?.role);
+
+  const userRole = user?.role?.toLowerCase();
+  const canAddOrders = user && ["admin", "sales_rep", "online_store_keeper"].includes(userRole);
 
   const variants = product?.variants || [];
   const variantsPreview = variants.slice(0, 4);
@@ -17,14 +21,10 @@ const ProductCard = ({ product, onAddToCart }) => {
   const displayPrice = firstVariant ? firstVariant.price : product?.price;
   const displayStock = firstVariant ? firstVariant.stock_count : 0;
 
-  
-
-  // 🛡️ හැම තැනම පාවිච්චි කරන්න පුළුවන් පොදු function එකක්
   const handleNavigation = () => {
     if (user) {
       navigate(`/product/${product.product_id}`);
     } else {
-      // ලොග් වුණාම ආපහු මේ product එකටම එන්න ඕන නම් state එකත් එක්ක යවන්න
       navigate('/login', { state: { from: `/product/${product.product_id}` } });
     }
   };
@@ -56,12 +56,14 @@ const ProductCard = ({ product, onAddToCart }) => {
 
         {/* --- Side Hover Actions --- */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+          
+          {/* ✅ Now visible for 'online_store_keeper' role */}
           {canAddOrders && (
             <button 
               onClick={(e) => {
-                e.stopPropagation(); // Card එක click වීම වළක්වයි
+                e.stopPropagation(); 
                 if (onAddToCart) {
-                  onAddToCart(); // 👈 Prop එකක් විදිහට ආපු function එක මෙතනදී run වෙනවා
+                  onAddToCart(); 
                 } else {
                   console.error("onAddToCart function is not provided to ProductCard");
                 }
@@ -72,11 +74,12 @@ const ProductCard = ({ product, onAddToCart }) => {
               <ShoppingCart size={18} />
             </button>
           )}
+
           <button className="p-3 bg-white text-[#9A8B50] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110">
             <Heart size={18} />
           </button>
           <button 
-            onClick={handleNavigation} // 🛡️ මෙතනත් ආරක්ෂාව දැම්මා
+            onClick={handleNavigation}
             className="p-3 bg-white text-[#9A8B50] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110"
           >
             <Eye size={18} />
@@ -120,7 +123,7 @@ const ProductCard = ({ product, onAddToCart }) => {
           </div>
           
           <button 
-            onClick={handleNavigation} // 🛡️ මෙතනත් ආරක්ෂිතයි
+            onClick={handleNavigation}
             className="flex items-center justify-center w-10 h-10 bg-black text-[#b4a460] rounded-2xl hover:bg-[#1a1a1a] hover:scale-110 active:scale-95 transition-all shadow-lg shadow-[#b4a460]/20"
           >
             <ChevronRight size={20} strokeWidth={3} />
