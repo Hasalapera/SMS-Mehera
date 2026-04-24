@@ -13,7 +13,7 @@ const customerRoutes = require('./routes/customerRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const orderRoutes = require('./routes/orderRoutes'); 
 const aiRoutes = require('./routes/aiRoutes'); // ✅ AI Route එක Import කරන්න
-
+const contactRoutes = require('./routes/contactRoutes');
 const errorHandler = require('./middlewares/errorMiddleware');
 
 const app = express();
@@ -49,6 +49,8 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/ask-ai', aiRoutes); // ✅ AI Endpoint එක register කරන්න
 
+
+app.use('/api/contact', contactRoutes);
 // Error Handling (අන්තිමටම තියෙන්න ඕනේ)
 app.use(errorHandler);
 
