@@ -39,7 +39,7 @@ const Product = sequelize.define('Product', {
   timestamps: true,
   underscored: true,
   paranoid: true, // Enable soft deletes (adds deletedAt field)
-  deletedAt: 'deleted_at', // Use deleted_at instead of deletedAt
+  deletedAt: 'deleted_at', // Customize deletedAt field name
 });
 
 module.exports = Product;

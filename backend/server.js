@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors'); // ✅ මෙතන විතරක් තිබුණාම ඇති
+const cors = require('cors'); 
 const { sequelize } = require('./models');
 
 // Routes Import
@@ -11,17 +11,18 @@ const productRoutes = require('./routes/productRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const orderRoutes = require('./routes/orderRoutes'); 
-const aiRoutes = require('./routes/aiRoutes'); // ✅ AI Route එක Import කරන්න
+const aiRoutes = require('./routes/aiRoutes'); // import AI routes
 
 const errorHandler = require('./middlewares/errorMiddleware');
 
 const app = express();
 
-// ✅ Image Upload සඳහා ලිමිට් එක මෙතන පමණක් දාන්න
+// set Image Upload limit
 app.use(express.json({ limit: '50mb' }));
+// set URL-encoded data limit
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// ✅ CORS එක පාරක් පමණක් Configure කරන්න
+// ✅ Configure CORS to allow requests from the frontend (adjust origin as needed)
 app.use(cors({
   origin: 'http://localhost:5173', 
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], 
@@ -34,6 +35,7 @@ app.use((req, res, next) => {
     next();
 });
 
+// Test Route
 app.get('/', (req, res) => {
     res.send("Server is working perfectly with Sequelize!");
 });
@@ -46,9 +48,9 @@ app.use('/api/category', categoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/ask-ai', aiRoutes); // ✅ AI Endpoint එක register කරන්න
+app.use('/api/ask-ai', aiRoutes); // register AI routes endpoint
 
-// Error Handling (අන්තිමටම තියෙන්න ඕනේ)
+// Error Handling 
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5001;
@@ -57,7 +59,7 @@ const PORT = process.env.PORT || 5001;
 sequelize.sync({ alter: true })
   .then(() => {
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`Server running on port ${PORT}`);
     });
   })
   .catch(err => {
