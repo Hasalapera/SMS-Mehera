@@ -1,6 +1,6 @@
 const { Order, OrderItem, ProductVariant, Product, User } = require('../models');
 const sequelize = require('../db/db');
-const sendEmailInvoice = require('../utils/sendEmailInvoice');
+const { sendEmailInvoice } = require('../utils/sendEmailInvoice'); // 👈 Import එක {} ඇතුළේ තියෙනවාද බලන්න
 
 // --- 1. පවතින සාමාන්‍ය ඕඩර් එක (SALES REP / OFFLINE) ---
 const placeOrder = async (req, res) => {
@@ -41,15 +41,13 @@ const placeOrder = async (req, res) => {
     }));
 
     await OrderItem.bulkCreate(orderItemsData, { transaction });
-    await transaction.commit();
+    
+    await transaction.commit(); // ✅ කලින්ම Commit කරනවා
 
-    res.status(201).json({ 
-      success: true, 
-      message: "Order placed successfully!", 
-      orderId: newOrder.order_id 
-    });
+    res.status(201).json({ success: true, message: "Order placed successfully!", orderId: newOrder.order_id });
   } catch (error) {
-    if (transaction) await transaction.rollback();
+    // ⚠️ Commit වුණාට පස්සේ rollback කරන්න බැරි නිසා මේ condition එක වැදගත්
+    if (transaction && !transaction.finished) await transaction.rollback();
     console.error("Order Error:", error);
     res.status(500).json({ success: false, message: "Failed to place order" });
   }
@@ -74,12 +72,8 @@ const placeOnlineOrder = async (req, res) => {
     } = req.body;
 
     const newOrder = await Order.create({
-      customer_name,
-      phone: primary_phone, 
-      secondary_phone,
-      district,
-      shipping_address,
-      email,
+      customer_name, phone: primary_phone, secondary_phone,
+      district, shipping_address, email,
       subtotal: subtotal || 0,
       discount_percentage: discount_percentage || 0,
       discount_amount: discount_amount || 0,
@@ -98,31 +92,38 @@ const placeOnlineOrder = async (req, res) => {
     }));
 
     await OrderItem.bulkCreate(orderItemsData, { transaction });
-    await transaction.commit();
 
+    // ✅ DB එකේ වැඩේ ඉවරයි - Commit කරනවා
+    await transaction.commit();
     // Send discount details while sending email
     if (email) {
-      sendEmailInvoice(email, {
-        order_id: newOrder.order_id,
-        customer_name,
-        subtotal,
-        discount_percentage,
-        discount_amount,
-        total_amount,
-        shipping_address,
-        district,
-        primary_phone,
-        items 
-      }).catch(err => console.error("Email Failed:", err));
+      try {
+        // await එක අනිවාර්යයි, නැත්නම් හිරවෙන්න පුළුවන්
+        await sendEmailInvoice(email, {
+          order_id: newOrder.order_id,
+          customer_name,
+          subtotal,
+          discount_percentage,
+          discount_amount,
+          total_amount,
+          shipping_address,
+          district,
+          primary_phone,
+          items 
+        });
+        console.log(`✅ Invoice sent to ${email}`);
+      } catch (emailErr) {
+        // ඊමේල් එක ෆේල් වුණත් ඕඩර් එක දැනටමත් සේව් වෙලා තියෙන්නේ
+        console.error("❌ Email process failed but order is saved:", emailErr.message);
+      }
     }
 
-    res.status(201).json({ 
-      success: true, 
-      message: "Online Order placed successfully!", 
-      orderId: newOrder.order_id 
-    });
+    res.status(201).json({ success: true, message: "Online Order placed successfully!", orderId: newOrder.order_id });
+
   } catch (error) {
-    if (transaction) await transaction.rollback();
+    // ⚠️ Transaction එක ඉවර නැතිනම් විතරක් Rollback කරන්න
+    if (transaction && !transaction.finished) await transaction.rollback();
+    
     console.error("Online Order Error:", error);
     res.status(500).json({ 
       success: false, 
@@ -137,7 +138,6 @@ const getAllOrders = async (req, res) => {
   try {
     // 🕵️ get user id and role from middleware
     const { user_id, role } = req.user; 
-
     let filter = {};
 
     // deside filter based on role 

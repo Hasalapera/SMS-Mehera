@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors'); 
@@ -11,8 +12,8 @@ const productRoutes = require('./routes/productRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const orderRoutes = require('./routes/orderRoutes'); 
-const aiRoutes = require('./routes/aiRoutes'); // import AI routes
-
+const aiRoutes = require('./routes/aiRoutes'); // ✅ AI Route එක Import කරන්න
+const contactRoutes = require('./routes/contactRoutes');
 const errorHandler = require('./middlewares/errorMiddleware');
 
 const app = express();
@@ -49,7 +50,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/ask-ai', aiRoutes); // register AI routes endpoint
-
+app.use('/api/contact', contactRoutes);
 // Error Handling 
 app.use(errorHandler);
 
