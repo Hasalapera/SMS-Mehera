@@ -86,7 +86,7 @@ const Login = () => {
           <div className="mb-12">
             <div className="flex flex-col text-left cursor-pointer">
               <img
-                src="https://i.postimg.cc/nzwPbHWj/mehera-logo.png"
+                src="https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png"
                 alt="Mehera International Logo"
                 className="h-8 md:h-10 w-auto object-contain"
               />

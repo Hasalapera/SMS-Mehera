@@ -3,7 +3,7 @@ const {Brand, sequelize} = require('../models');
 const addBrand = async (req, res) => {
     try {
         const { brand_name, description } = req.body;
-        // Cloudinary එකෙන් එන URL එක මෙන්න මෙතන තියෙන්නේ:
+        // url that brings back from cloudinary after uploading the image
         const image_url = req.file ? req.file.path : null;
 
         const brand = await Brand.create({

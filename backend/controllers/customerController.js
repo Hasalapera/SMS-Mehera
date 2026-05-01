@@ -1,5 +1,5 @@
 
-const { Customer, CustomerNote } = require('../models'); // 👈 Sequelize Models එක ගත්තා
+const { Customer, CustomerNote } = require('../models'); // Take Sequelize models
 const { Op } = require('sequelize'); // 👈 Sequelize Operators
 
 
@@ -115,7 +115,7 @@ const deleteNote = async (req, res) => {
     }
 };
 
-// Customer Count එක ගන්න (Frontend එකේ ID Reference එකට ඕනේ නිසා)
+// get Customer Count Function
 const getCustomerCount = async (req, res) => {
     try {
         const count = await Customer.count();
@@ -138,9 +138,9 @@ const searchCustomers = async (req, res) => {
         const customers = await Customer.findAll({
             where: {
                 [Op.or]: [
-                    { saloon_name: { [Op.iLike]: `%${q}%` } }, // Saloon නම අනුව
-                    { owner_name: { [Op.iLike]: `%${q}%` } },  // අයිතිකරුගේ නම අනුව
-                    { phone1: { [Op.iLike]: `%${q}%` } }       // ෆෝන් නම්බර් එක අනුව
+                    { saloon_name: { [Op.iLike]: `%${q}%` } }, // Saloon name search
+                    { owner_name: { [Op.iLike]: `%${q}%` } },  // Owner name search
+                    { phone1: { [Op.iLike]: `%${q}%` } }       // Phone number search
                 ]
             },
             limit: 10 // රිසල්ට් 10කට සීමා කිරීම (Performance සඳහා)
@@ -149,7 +149,7 @@ const searchCustomers = async (req, res) => {
         res.status(200).json(customers);
     } catch (err) {
         console.error("Search Error:", err.message);
-        res.status(500).json({ error: "සෙවීමේදී දෝෂයක් ඇති විය" });
+        res.status(500).json({ error: "An error occurred while searching." });
     }
 };
 

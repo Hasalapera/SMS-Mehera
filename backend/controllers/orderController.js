@@ -7,16 +7,26 @@ const placeOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const { 
-      customer_id, customer_name, shipping_address, phone, 
-      subtotal, discount_percentage, discount_amount, total_amount, items 
+      customer_id, 
+      customer_name, 
+      shipping_address, 
+      phone, 
+      subtotal,              // Total
+      discount_percentage,   // % 
+      discount_amount,       
+      total_amount,          // final total after discount
+      items 
     } = req.body;
 
     const newOrder = await Order.create({
-      customer_id, customer_name, shipping_address, phone,
-      subtotal: subtotal || 0,
-      discount_percentage: discount_percentage || 0,
-      discount_amount: discount_amount || 0,
-      total_amount: total_amount || 0,
+      customer_id, 
+      customer_name,     
+      shipping_address,
+      phone,
+      subtotal: subtotal || 0,                    // store sub total
+      discount_percentage: discount_percentage || 0, // % store 
+      discount_amount: discount_amount || 0,      // store discount amount
+      total_amount: total_amount || 0,            // store final payable amount
       order_status: 'pending',
       created_by: req.user.user_id,
       order_type: 'offline'
@@ -43,14 +53,22 @@ const placeOrder = async (req, res) => {
   }
 };
 
-// --- 2. අලුතින් එක් කළ ONLINE/RETAIL ORDER එක (FIXED) ---
+// --- 2. ONLINE/RETAIL ORDER  ---
 const placeOnlineOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const { 
-      customer_name, primary_phone, secondary_phone, district, 
-      shipping_address, email, subtotal, discount_percentage, 
-      discount_amount, total_amount, items 
+      customer_name, 
+      primary_phone, 
+      secondary_phone, 
+      district, 
+      shipping_address, 
+      email,
+      subtotal,              
+      discount_percentage,   
+      discount_amount,       
+      total_amount,          
+      items 
     } = req.body;
 
     const newOrder = await Order.create({
@@ -77,8 +95,7 @@ const placeOnlineOrder = async (req, res) => {
 
     // ✅ DB එකේ වැඩේ ඉවරයි - Commit කරනවා
     await transaction.commit();
-
-    // 🚀 දැන් තමයි ඊමේල් එක යවන්නේ (DB එකේ වැඩේට බාධාවක් වෙන්නේ නැහැ)
+    // Send discount details while sending email
     if (email) {
       try {
         // await එක අනිවාර්යයි, නැත්නම් හිරවෙන්න පුළුවන්
@@ -116,18 +133,21 @@ const placeOnlineOrder = async (req, res) => {
   }
 };
 
-// --- 3. පවතින සියලුම ඕඩර් ලබාගැනීමේ FUNCTION එක ---
+// --- 3. get all orders ---
 const getAllOrders = async (req, res) => {
   try {
+    // 🕵️ get user id and role from middleware
     const { user_id, role } = req.user; 
     let filter = {};
 
+    // deside filter based on role 
+    // Filter by created_by only if not Admin or Manager, Admins and Managers can see all orders, while Sales Reps see only their own.
     if (role !== 'admin' && role !== 'manager') {
       filter = { created_by: user_id };
     }
 
     const orders = await Order.findAll({
-      where: filter,
+      where: filter, // get order from relevant filter 
       include: [{
         model: OrderItem,
         include: [{
