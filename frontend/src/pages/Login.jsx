@@ -44,6 +44,7 @@ const Login = () => {
         
       if (data.token) {
           localStorage.setItem('token', data.token);
+          // localStorage.setItem('expiresAt', data.expiresAt);
       }
 
       // 🔴 Case 01: Password වෙනස් කළ යුතු නව පරිශීලකයෙකු නම්
@@ -57,7 +58,7 @@ const Login = () => {
 
           localStorage.setItem('user', JSON.stringify(tempUser)); 
           
-          login(tempUser, data.token);
+          login(tempUser, data.token, data.expiresAt); // 🔴 Context එක හරහා user දත්ත update කිරීම (ChangePassword එකට යන විටත් මේ දත්ත අල්ලන්න පුළුවන්)
           
           // 'userId' ලෙස යවන්න (ChangePassword එකේ අල්ලන නම)
           navigate('/change-password', { state: { userId: data.user_id } });
@@ -66,7 +67,7 @@ const Login = () => {
       
       // 🔴 Case 02: සාමාන්‍ය Login වීම
       else {
-          login(data.user, data.token); // 🔴 Context එක හරහා user දත්ත update කිරීම
+          login(data.user, data.token, data.expiresAt); // 🔴 Context එක හරහා user දත්ත update කිරීම
           
           // Role එක අනුව navigate කිරීම
           navigate(data.user.redirectPath || '/dashboard');
