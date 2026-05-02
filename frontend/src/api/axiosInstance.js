@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useAuth } from './context/AuthContext'; // ⚠️ Can't use hooks in file
+import { useAuth } from '../pages/context/AuthContext'; // ⚠️ Can't use hooks in file
 
 const api = axios.create({
     baseURL: 'http://localhost:5001/api',

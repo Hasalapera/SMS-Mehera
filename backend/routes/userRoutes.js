@@ -36,7 +36,7 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController'); 
 const { isAdmin, isAdminOrManager, verifyToken } = require('../middlewares/authMiddleware');
-const { loginUser, logoutUser } = require('../controllers/authController');
+const { loginUser, logoutUser, refreshAccessToken } = require('../controllers/authController');
 const multer = require('multer');
 const { storage } = require('../config/cloudinary'); 
 
@@ -45,6 +45,7 @@ const upload = multer({ storage: storage });
 // PUBLIC ROUTES (no auth needed)
 router.post('/login', loginUser);
 router.post('/logout', logoutUser);
+router.post('/refresh-token', refreshAccessToken);
 
 // PROTECTED ROUTES (auth needed)
 router.put('/update-password', verifyToken, userController.updatePassword);

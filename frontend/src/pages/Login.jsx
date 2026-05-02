@@ -31,7 +31,6 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    console.log("Login form submitted..."); // 🔴 test 1
 
     try {
       const response = await axios.post('http://localhost:5001/api/users/login', {
@@ -39,38 +38,30 @@ const Login = () => {
           password
       });
 
-      const data = response.data;
-      console.log("Backend response received:", data); //test 2
-        
-      if (data.token) {
-          localStorage.setItem('token', data.token);
-          // localStorage.setItem('expiresAt', data.expiresAt);
-      }
+      // 1. Backend එකෙන් එන දත්ත ටික Destructure කරගමු
+      const { user, accessToken, refreshToken, expiresAt, mustChangePassword, user_id, role } = response.data;
 
-      // 🔴 Case 01: Password වෙනස් කළ යුතු නව පරිශීලකයෙකු නම්
-      if (data.mustChangePassword === true) {
-        console.log("Going to change password page...");
+      // 2. Case 01: Password වෙනස් කළ යුතු නම්
+      if (mustChangePassword === true) {
           const tempUser = { 
-              user_id: data.user_id, 
+              user_id: user_id, 
               is_first_login: 1, 
-              role: data.role || 'user' 
+              role: role || 'user' 
           };
 
-          localStorage.setItem('user', JSON.stringify(tempUser)); 
+          // 🔴 වැදගත්: පරාමිති 4ම නියමිත පිළිවෙලට යවන්න
+          login(tempUser, accessToken, refreshToken, expiresAt); 
           
-          login(tempUser, data.token, data.expiresAt); // 🔴 Context එක හරහා user දත්ත update කිරීම (ChangePassword එකට යන විටත් මේ දත්ත අල්ලන්න පුළුවන්)
-          
-          // 'userId' ලෙස යවන්න (ChangePassword එකේ අල්ලන නම)
-          navigate('/change-password', { state: { userId: data.user_id } });
+          navigate('/change-password', { state: { userId: user_id } });
           return;
       }
       
-      // 🔴 Case 02: සාමාන්‍ය Login වීම
+      // 3. Case 02: සාමාන්‍ය Login වීම
       else {
-          login(data.user, data.token, data.expiresAt); // 🔴 Context එක හරහා user දත්ත update කිරීම
+          // 🔴 වැදගත්: මෙතනත් පරාමිති 4ම නිවැරදි පිළිවෙලට
+          login(user, accessToken, refreshToken, expiresAt); 
           
-          // Role එක අනුව navigate කිරීම
-          navigate(data.user.redirectPath || '/dashboard');
+          navigate(user.redirectPath || '/dashboard');
           return;
       }
 

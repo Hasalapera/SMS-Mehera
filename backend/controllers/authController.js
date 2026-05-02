@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { User } = require('../models');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
@@ -11,14 +12,14 @@ const loginUser = async (req, res) => {
         if (!user) {
             return res.status(401).json({ 
                 success: false,
-                message: "That email address is not registered!" 
+                message: "Invalid email or password" 
             });
         }
 
         if (user.deleted_at) {
             return res.status(401).json({ 
                 success: false,
-                message: "This account has been deleted!" 
+                message: "Account deleted" 
             });
         }
 
@@ -27,50 +28,121 @@ const loginUser = async (req, res) => {
         if (!isMatch) {
             return res.status(401).json({ 
                 success: false,
-                message: "The password you entered is incorrect!" 
+                message: "Invalid email or password" 
             });
         }
 
-        // 🔑 JWT TOKEN සෑදීම
-        const token = jwt.sign(
+        // 🔑 ACCESS TOKEN (15 minutes)
+        const accessToken = jwt.sign(
             { user_id: user.user_id, role: user.role },
             process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
+            { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
         );
 
-        // 🍪 HttpOnly Cookie එක Set කිරීම (Frontend JS වලට access කරන්න බෑ)
-        const cookieMaxAge = parseInt(process.env.JWT_EXPIRES_IN || '1d') === parseInt(process.env.JWT_EXPIRES_IN)
-            ? (process.env.JWT_EXPIRES_IN.includes('s') ? parseInt(process.env.JWT_EXPIRES_IN) * 1000 : 
-               process.env.JWT_EXPIRES_IN.includes('m') ? parseInt(process.env.JWT_EXPIRES_IN) * 60 * 1000 : 
-               24 * 60 * 60 * 1000)
-            : 30 * 1000; // Default 30 seconds
-        
-        res.cookie('token', token, {
-            httpOnly: true,           // ✅ JavaScript වලට access නොහැක
-            secure: process.env.NODE_ENV === 'production',  // HTTPS only in production
-            sameSite: 'Lax',          // CSRF protection
-            maxAge: cookieMaxAge,     // milliseconds
+        // 🔑 REFRESH TOKEN (7 days)
+        const refreshToken = jwt.sign(
+            { user_id: user.user_id },
+            process.env.REFRESH_TOKEN_SECRET,
+            { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d' }
+        );
+
+        // Set HttpOnly cookies
+        const accessTokenMaxAge = 15 * 60 * 1000; // 15 minutes
+        const refreshTokenMaxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Lax',
+            maxAge: accessTokenMaxAge,
             path: '/'
         });
 
-        // Safe user object (password remove කරන්න)
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Lax',
+            maxAge: refreshTokenMaxAge,
+            path: '/'
+        });
+
+        // Safe user
         const safeUser = user.toJSON();
         delete safeUser.password;
 
-        // 📤 Frontend එකට expiresAt time එක දෙන්න (countdown එකට)
-        const decoded = jwt.decode(token);
-        
+        // Decoded tokens
+        const accessDecoded = jwt.decode(accessToken);
+        const refreshDecoded = jwt.decode(refreshToken);
+
         res.status(200).json({
             success: true,
             message: "Logged in successfully",
+            accessToken,
+            refreshToken, // ⚠️ localStorage එකට දෙන්න
             user: safeUser,
-            token: token,  // localStorage එකට තබන්න
-            expiresAt: decoded.exp,  // Frontend countdown එකට
-            mustChangePassword: user.is_default_password
+            expiresAt: accessDecoded.exp,
+            refreshExpiresAt: refreshDecoded.exp
         });
 
     } catch (err) {
-        console.error("Login Error:", err.message);
+        console.error("Login error:", err.message);
+        res.status(500).json({ 
+            success: false,
+            error: err.message 
+        });
+    }
+};
+
+// 🆕 REFRESH TOKEN ROUTE
+const refreshAccessToken = async (req, res) => {
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            return res.status(401).json({ 
+                success: false,
+                message: "Refresh token required" 
+            });
+        }
+
+        try {
+            // Verify refresh token
+            const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+            // Generate new access token
+            const newAccessToken = jwt.sign(
+                { user_id: decoded.user_id, role: decoded.role },
+                process.env.JWT_SECRET,
+                { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
+            );
+
+            // Set new cookie
+            res.cookie('accessToken', newAccessToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'Lax',
+                maxAge: 15 * 60 * 1000,
+                path: '/'
+            });
+
+            const decoded2 = jwt.decode(newAccessToken);
+
+            res.status(200).json({
+                success: true,
+                message: "Access token refreshed",
+                accessToken: newAccessToken,
+                expiresAt: decoded2.exp
+            });
+
+        } catch (jwtErr) {
+            return res.status(401).json({ 
+                success: false,
+                message: "Refresh token expired or invalid" 
+            });
+        }
+
+    } catch (err) {
+        console.error("Refresh error:", err.message);
         res.status(500).json({ 
             success: false,
             error: err.message 
@@ -79,8 +151,14 @@ const loginUser = async (req, res) => {
 };
 
 const logoutUser = (req, res) => {
-    // 🍪 Cookie clear කිරීම
-    res.clearCookie('token', {
+    res.clearCookie('accessToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+        path: '/'
+    });
+
+    res.clearCookie('refreshToken', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'Lax',
@@ -93,4 +171,4 @@ const logoutUser = (req, res) => {
     });
 };
 
-module.exports = { loginUser, logoutUser };
+module.exports = { loginUser, refreshAccessToken, logoutUser };

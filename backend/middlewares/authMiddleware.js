@@ -2,20 +2,20 @@ require('dotenv').config();
 const jwt = require('jsonwebtoken');
 
 const verifyToken = (req, res, next) => {
-    // Authorization header එකෙන් token ගමු
+    // Authorization header එකෙන් token ගන්න
     const authHeader = req.headers['authorization'];
     const tokenFromHeader = authHeader && authHeader.split(' ')[1];
     
-    // Cookie එකෙන් token ගමු (HttpOnly cookie automated එකයි)
-    const tokenFromCookie = req.cookies?.token;
+    // Cookie එකෙන් token ගන්න
+    const tokenFromCookie = req.cookies?.accessToken;
     
-    // දෙකින් එකක් ගමු
     const token = tokenFromHeader || tokenFromCookie;
 
     if (!token) {
         return res.status(401).json({ 
             success: false,
-            message: "No token, authorization denied!" 
+            message: "No token, authorization denied!",
+            code: 'NO_TOKEN'
         });
     }
     
@@ -27,12 +27,14 @@ const verifyToken = (req, res, next) => {
         if (err.name === 'TokenExpiredError') {
             return res.status(401).json({ 
                 success: false,
-                message: "Token expired!" 
+                message: "Access token expired",
+                code: 'TOKEN_EXPIRED'
             });
         }
         return res.status(401).json({ 
             success: false,
-            message: "Token is not valid!" 
+            message: "Token is not valid!",
+            code: 'INVALID_TOKEN'
         });
     }
 };
