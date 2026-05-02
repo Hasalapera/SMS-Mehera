@@ -34,7 +34,7 @@ const loginUser = async (req, res) => {
         // Check if default password needs changing
         if (user.is_default_password === true) {
             return res.status(200).json({
-                message: "තාවකාලික මුරපදය වෙනස් කළ යුතුයි!",
+                message: "Logged in successfully, but you must change your password.",
                 mustChangePassword: true,
                 role: user.role, 
                 token,
@@ -48,7 +48,7 @@ const loginUser = async (req, res) => {
         delete safeUser.password;
 
         res.status(200).json({
-            message: "සාර්ථකව ලොග් විය",
+            message: "Logged in successfully",
             token,
             user: safeUser,
         });

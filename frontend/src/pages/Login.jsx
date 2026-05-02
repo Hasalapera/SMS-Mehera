@@ -14,11 +14,11 @@ const Login = () => {
   const navigate = useNavigate();
 
   const images = [
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=800"
+    "https://i.postimg.cc/gj1x07Pm/Beauty-Routines-vol-2-Model-3b-768x960.webp",
+    "https://i.postimg.cc/pTJQpzWC/5901905015067-CREACH-PEACH-EYE-SHADOW-PALETTE-05-550x-(1).webp",
+    "https://i.postimg.cc/0rgHC8q3/Gemini-Generated-Image-i8xelui8xelui8xe.webp",
+    "https://i.postimg.cc/0yCJGPRj/Gemini-Generated-Image-doi3gvdoi3gvdoi3-copy.webp",
+    "https://i.postimg.cc/9ffwJZ1Z/INGLOT-X-MAURA-BRUSH-SET-1.webp"
   ];
 
   useEffect(() => {
@@ -86,7 +86,7 @@ const Login = () => {
           <div className="mb-12">
             <div className="flex flex-col text-left cursor-pointer">
               <img
-                src="https://i.postimg.cc/nzwPbHWj/mehera-logo.png"
+                src="https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png"
                 alt="Mehera International Logo"
                 className="h-8 md:h-10 w-auto object-contain"
               />

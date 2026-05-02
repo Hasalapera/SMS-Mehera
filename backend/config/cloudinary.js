@@ -11,9 +11,9 @@ cloudinary.config({
 const productDynamicStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
-    let folderPath = 'mehera-international/products'; // Default පාර
+    let folderPath = 'mehera-international/products'; // Default path 
 
-    // පින්තූරය එන field name එක අනුව ෆෝල්ඩර් එක මාරු කිරීම
+    // change folder based on the fieldname
     if (file.fieldname === 'main_image') {
       folderPath = 'mehera-international/products/main_images';
     } else if (file.fieldname === 'variant_images') {
@@ -28,13 +28,13 @@ const productDynamicStorage = new CloudinaryStorage({
   },
 });
 
-//profile pictures සඳහා storage එක
+//storage for profile pictures
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'mehera-international/user_profiles', // Sub-folder එක
+    folder: 'mehera-international/user_profiles', // Sub-folder 
     allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
-    transformation: [{ width: 400, height: 400, crop: 'limit' }] // පින්තූරය Optimize කිරීම
+    transformation: [{ width: 400, height: 400, crop: 'limit' }] // Image Optimize 
   },
 });
 

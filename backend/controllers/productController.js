@@ -4,19 +4,19 @@ const addProduct = async (req, res) => {
     try {
         const { product_name, brand_id, category_id, description, variants } = req.body;
         
-        // 1. Main Image URL එක ගැනීම
+        // 1. get main image URL (if Provided)
         const mainImageUrl = req.files['main_image'] ? req.files['main_image'][0].path : null;
 
-        // 2. Product එක Create කිරීම
+        // 2. create product 
         const newProduct = await Product.create({
             product_name,
             brand_id,
             category_id,
             description,
-            image_url: mainImageUrl // 👈 මෙතන තමයි DB එකට යන්නේ
+            image_url: mainImageUrl 
         });
 
-        // 3. Variants සහ ඒවයේ පින්තූර Handle කිරීම
+        // 3. handle variants and their images
         const parsedVariants = JSON.parse(variants);
         const variantImages = req.files['variant_images'] || [];
         let imageCounter = 0;
@@ -35,7 +35,7 @@ const addProduct = async (req, res) => {
                 price: v.price,
                 stock_count: v.stock_count,
                 critical_stock_level: v.critical_stock_level,
-                image_url: vImgUrl // 👈 Variant එකේ URL එක
+                image_url: vImgUrl // 👈 Variant URL
             });
         });
 

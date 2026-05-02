@@ -349,7 +349,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
       <div 
         onClick={() => navigate(`/profile/${loggedUser.user_id}`)} 
         className={`mt-auto pt-6 border-t border-gray-800 cursor-pointer ${isSidebarCollapsed ? 'flex flex-col items-center' : ''}`}
-      >
+        >
         {!isSidebarCollapsed ? (
           <div className="flex items-center gap-3 p-2 bg-[#1A1A1A] rounded-xl border border-gray-800 mb-4 text-left hover:bg-white/5 transition-all">
             
