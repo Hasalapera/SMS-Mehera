@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "NODE_ENV=development nodemon server.js",
-    "migrate:run": "node -e \"require('./migrations/migrator').runMigrations()\"",
-    "migrate:rollback": "node -e \"require('./migrations/migrator').rollbackMigrations()\"",
-    "start": "NODE_ENV=production node server.js"
+    "dev": "cross-env NODE_ENV=development nodemon server.js",
+    "migrate:run": "cross-env NODE_ENV=development node -e \"require('./migrations/migrator').runMigrations()\"",
+    "migrate:rollback": "cross-env NODE_ENV=development node -e \"require('./migrations/migrator').rollbackMigrations()\"",
+    "start": "cross-env NODE_ENV=production node server.js"
   },
   "keywords": [],
   "author": "",
@@ -33,6 +33,7 @@
     "sequelize": "^6.37.7"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "nodemon": "^3.1.14",
     "sequelize-cli": "^6.6.5"
   }
