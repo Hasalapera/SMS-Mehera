@@ -23,8 +23,59 @@ const AddUser = () => {
     "Moneragala", "Ratnapura", "Kegalle"
   ];
 
+  const getBirthdayFromNIC = (nic) => {
+  let year, days;
+
+  if (nic.length === 10) {
+    year = parseInt("19" + nic.substring(0, 2));
+    days = parseInt(nic.substring(2, 5));
+  } else if (nic.length === 12) {
+    year = parseInt(nic.substring(0, 4));
+    days = parseInt(nic.substring(4, 7));
+  } else {
+    return null;
+  }
+
+  if (days > 500) days -= 500;
+
+  // 🔴 වැදගත්: ලංකාවේ NIC වල පෙබරවාරි 29 හැම අවුරුද්දකම තියෙනවා කියලා සලකනවා.
+  // ඒ නිසා අධික අවුරුද්දක් නොවන වසරකදී දවස් 60 හෝ ඊට වැඩි නම්, 
+  // JavaScript වල දවසක් ඉදිරියට යන නිසා එකක් අඩු කරන්න ඕනේ.
+  const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+  if (!isLeap && days >= 60) {
+    days -= 1;
+  }
+
+  // 🔴 Timezone අවුල නැති කරන්න මෙහෙම හදමු
+  const dob = new Date(year, 0); 
+  dob.setDate(days);
+
+  // ISO string වෙනුවට දවස පස්සට නොයන විදිහට YYYY-MM-DD format එක ගමු
+  const y = dob.getFullYear();
+  const m = String(dob.getMonth() + 1).padStart(2, '0');
+  const d = String(dob.getDate()).padStart(2, '0');
+
+  return `${y}-${m}-${d}`;
+};
+
+  // const handleChange = (e) => {
+  //   setFormData({ ...formData, [e.target.name]: e.target.value });
+  // };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    let updatedData = { ...formData, [name]: value };
+
+    // 🔴 මෙතන තමයි වැඩේ වෙන්නේ:
+    // යූසර් NIC එක ටයිප් කරනකොට ඒක 10ක් හෝ 12ක් වුණ ගමන් DOB එක හදමු
+    if (name === 'nic_no') {
+      const extractedDob = getBirthdayFromNIC(value);
+      if (extractedDob) {
+        updatedData.dob = extractedDob; // Calendar එකට ඔටෝම සෙට් වෙනවා
+      }
+    }
+
+    setFormData(updatedData);
   };
 
   const handleDistrictChange = (district) => {
@@ -37,34 +88,68 @@ const AddUser = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // NIC validation
-    const nicRegex = /^([0-9]{9}[xXvV]|[0-9]{12})$/;
+    const { nic_no, dob, email, contact_no, name, role, selectedDistricts } = formData;
 
-    if (!nicRegex.test(formData.nic_no)) {
-      toast.error("Invalid NIC format! Use 12 digits or 9 digits with 'V'.");
-      return; 
+    // 1. Email Validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address!");
+      return;
     }
 
-    if (formData.role === 'sales_rep' && formData.selectedDistricts.length === 0) {
+    // 2. Contact Number Validation (Must be exactly 10 digits)
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(contact_no)) {
+      toast.error("Contact number must be exactly 10 digits!");
+      return;
+    }
+
+    // 3. NIC & Birthday Correlation Validation
+    const nicRegex = /^([0-9]{9}[xXvV]|[0-9]{12})$/;
+    if (!nicRegex.test(nic_no)) {
+      toast.error("Invalid NIC format!");
+      return;
+    }
+
+    const dobYear = new Date(dob).getFullYear().toString(); // e.g., "1998" or "2001"
+    
+    if (nic_no.length === 10) {
+      // Old NIC: Check if first 2 digits match last 2 digits of DOB year
+      const nicYearPart = nic_no.substring(0, 2); // e.g., "98"
+      const dobYearLastTwo = dobYear.substring(2, 4); // e.g., "98"
+
+      if (nicYearPart !== dobYearLastTwo) {
+        toast.error(`NIC (Old) doesn't match with Birth Year ${dobYear}!`);
+        return;
+      }
+    } else if (nic_no.length === 12) {
+      // New NIC: Check if first 4 digits match full DOB year
+      const nicYearPart = nic_no.substring(0, 4); // e.g., "2001"
+
+      if (nicYearPart !== dobYear) {
+        toast.error(`NIC (New) doesn't match with Birth Year ${dobYear}!`);
+        return;
+      }
+    }
+
+    // 4. District check for Sales Rep
+    if (role === 'sales_rep' && selectedDistricts.length === 0) {
       toast.error("Please select at least one district for Sales Rep.");
       return;
     }
     
     setLoading(true);
-
-    const token = localStorage.getItem('token'); 
+    const token = localStorage.getItem('accessToken'); 
 
     try {
       const response = await axios.post(
         'http://localhost:5001/api/users/addUser', 
         formData, 
-        {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }
+        { headers: { 'Authorization': `Bearer ${token}` } }
       );
       
       if (response.status === 201) {
-        toast.success(`User ${formData.name} added successfully!`);
+        toast.success(`User ${name} added successfully!`);
         setFormData({ 
           name: '', email: '', role: 'sales_rep', contact_no: '', 
           dob: '', nic_no: '', selectedDistricts: [] 

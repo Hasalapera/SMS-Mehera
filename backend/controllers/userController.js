@@ -71,27 +71,27 @@ const addUserByAdmin = async (req, res) => {
 };
 
 const updatePassword = async (req, res) => {
+    // console.log("--- Update Password Process Started ---");
     try {
-        // 1. old_password එක මෙතනින් අයින් කළා
+        // 1. Get user_id and new_password from request body
         const { user_id, new_password } = req.body;
 
+        // 2. Find the user by user_id
         const user = await User.findByPk(user_id);
         
+        // If user not found, return 404
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // 🛡️ 2. පරණ පාස්වර්ඩ් එක චෙක් කරන කොටස (bcrypt.compare) සම්පූර්ණයෙන්ම අයින් කළා.
-        // මොකද යූසර් දැනටමත් තාවකාලික පාස්වර්ඩ් එකෙන් ලොග් වෙලා ඉන්නේ.
-
-        // 3. අලුත් පාස්වර්ඩ් එක Hash කිරීම
+        // 3. Hash the new password before saving to the database
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(new_password, salt);
 
-        // 4. යූසර්ගේ පාස්වර්ඩ් එක අප්ඩේට් කරලා flag එක වෙනස් කිරීම
+        // 4. Update the user's password and flag
         await user.update({
             password: hashedPassword,
-            is_default_password: false // මින් පස්සේ ආයේ මේ පේජ් එකට එන්නේ නැහැ
+            is_default_password: false // Set to false since it's no longer the default password
         });
 
         res.status(200).json({ message: "Password updated successfully" });
@@ -104,6 +104,7 @@ const updatePassword = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
     try {
+        // Fetch all users along with their assigned areas (if any), excluding passwords and including soft-deleted users
         const users = await User.findAll({
             include: [{
                 model: UserArea,
@@ -170,34 +171,43 @@ const restoreUser = async (req, res) => {
 
 const changePassword = async (req, res) => {
     try {
+        // 1. Get user_id, old_password, and new_password from request body
         const userId = req.body.userId || req.body.user_id;
         const oldPassword = req.body.oldPassword || req.body.currentPassword;
         const newPassword = req.body.newPassword;
 
+        // 2. Validate input
         if (!userId || !oldPassword || !newPassword) {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
+        // 3. Find the user by user_id
         const user = await User.findByPk(userId);
         
+        // If user not found, return 404
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
 
+        // 4. Compare old password with the stored hashed password
         const isMatch = await bcrypt.compare(oldPassword, user.password);
         
+        // If passwords don't match, return 401
         if (!isMatch) {
             return res.status(401).json({ error: "Current password is incorrect" });
         }
 
+        // 5. Hash the new password before saving to the database
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
 
+        // 6. Update the user's password and set is_default_password to false
         await user.update({
             password: hashedPassword,
             is_default_password: false
         });
 
+        // 7. Return success response
         res.status(200).json({ message: "Password changed successfully" });
 
     } catch (err) {
@@ -208,16 +218,20 @@ const changePassword = async (req, res) => {
 
 const getUserProfile = async (req, res) => {
     try {
+        // Get user ID from request parameters
         const { id } = req.params;
+        // Validate that the ID is a valid UUID format to prevent unnecessary database queries
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+        // If the ID is not valid, return a 400 Bad Request response
         if (!id || !uuidRegex.test(id)) {
             return res.status(400).json({ error: "Invalid user id format" });
         }
 
-        // define attributes here to avoid 'baseAttributes is not defined' error
+        // Fetch user profile along with assigned areas, excluding password fields
         const baseAttributes = { exclude: ['password', 'default_password'] };
 
+        // Use paranoid: false to include soft-deleted users in the search, so that we can return a proper message if the user is deleted
         const user = await User.findOne({
             where: { user_id: id },
             include: [{
@@ -228,12 +242,14 @@ const getUserProfile = async (req, res) => {
             attributes: baseAttributes
         });
 
+        // If user not found, return 404
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
 
+        // Convert user instance to JSON and format districts for frontend
         const userData = user.toJSON();
-        // Frontend එකේ districts map කරන නිසා මෙතනින් ඒක සකස් කරලා යවමු
+        // Create a districts array based on the associated areas for easier frontend consumption
         userData.districts = userData.areas ? userData.areas.map(a => a.district_name) : [];
 
         res.status(200).json({
@@ -260,8 +276,7 @@ const updateProfile = async (req, res) => {
 
         const updateData = {};
         
-        // 🛡️ වැදගත්ම කොටස: නම තිබුණොත් විතරක් updateData එකට දාන්න
-        // frontend එකෙන් 'name' ලෙස එවන නිසා ඒක මුලින්ම බලන්න
+        // if name is provided and not empty, then add to updateData, otherwise ignore it (so it won't overwrite existing name with null or empty)
         const incomingName = req.body.name || req.body.full_name;
         if (incomingName && incomingName.trim() !== "") {
             updateData.name = incomingName.trim();
@@ -275,11 +290,12 @@ const updateProfile = async (req, res) => {
             updateData.profile_image = req.file.path || req.file.secure_url;
         }
 
-        // 🚀 UpdateData හි දත්ත තිබේ නම් පමණක් update කරන්න
+        // if there is data in updateData, then only update, otherwise skip the update to avoid overwriting existing data with null or empty values
         if (Object.keys(updateData).length > 0) {
             await user.update(updateData);
         }
 
+        // Fetch the updated user profile to return in the response, excluding password fields
         const updatedUser = await User.findByPk(userId, {
             attributes: { exclude: ['password', 'default_password'] },
         });
@@ -297,27 +313,52 @@ const updateProfile = async (req, res) => {
 
 const resetToDefaultPassword = async (req, res) => {
     try {
+        // 1. Get user_id from request body
         const { user_id } = req.body;
 
+        // 2. Find the user by user_id
         const user = await User.findByPk(user_id);
         
+        // If user not found, return 404
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
 
+        // 3. Hash the default password before saving to the database
         const defaultPassword = user.default_password;
+        // 4. Update the user's password and set is_default_password to true
         const salt = await bcrypt.genSalt(10);
+        // 4. Update the user's password and set is_default_password to true
         const hashedPassword = await bcrypt.hash(defaultPassword, salt);
 
+        // 5. Update the user's password and set is_default_password to true
         await user.update({
             password: hashedPassword,
             is_default_password: true
         });
 
+        // 6. Return success response
         res.status(200).json({ message: "Password reset to default" });
 
     } catch (err) {
         console.error("Reset Password Error:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const verifySession = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user.user_id, {
+            attributes: { exclude: ['password'] }
+        });
+        
+        if (!user) {
+            return res.status(401).json({ message: "User not found" });
+        }
+
+        res.status(200).json(user);
+    } catch (err) {
+        console.error("Verify Session Error:", err.message);
         res.status(500).json({ error: err.message });
     }
 };
@@ -331,5 +372,6 @@ module.exports = {
     restoreUser,
     changePassword,
     getUserProfile,
-    updateProfile
+    updateProfile,
+    verifySession
 };

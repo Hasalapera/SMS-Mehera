@@ -11,7 +11,6 @@ const Order = require('./Order');
 const OrderItem = require('./OrderItem');
 
 // 1. User Associations
-// User ටේබල් එක කලින් හැදෙන්න ඕන නිසා මේ පිළිවෙළ වැදගත්
 User.hasMany(UserArea, { foreignKey: 'user_id', as: 'areas', onDelete: 'CASCADE' });
 UserArea.belongsTo(User, { foreignKey: 'user_id' });
 

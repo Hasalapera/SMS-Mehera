@@ -14,11 +14,11 @@ const Login = () => {
   const navigate = useNavigate();
 
   const images = [
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&q=80&w=800"
+    "https://i.postimg.cc/gj1x07Pm/Beauty-Routines-vol-2-Model-3b-768x960.webp",
+    "https://i.postimg.cc/pTJQpzWC/5901905015067-CREACH-PEACH-EYE-SHADOW-PALETTE-05-550x-(1).webp",
+    "https://i.postimg.cc/0rgHC8q3/Gemini-Generated-Image-i8xelui8xelui8xe.webp",
+    "https://i.postimg.cc/0yCJGPRj/Gemini-Generated-Image-doi3gvdoi3gvdoi3-copy.webp",
+    "https://i.postimg.cc/9ffwJZ1Z/INGLOT-X-MAURA-BRUSH-SET-1.webp"
   ];
 
   useEffect(() => {
@@ -31,7 +31,6 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    console.log("Login form submitted..."); // 🔴 test 1
 
     try {
       const response = await axios.post('http://localhost:5001/api/users/login', {
@@ -39,37 +38,30 @@ const Login = () => {
           password
       });
 
-      const data = response.data;
-      console.log("Backend response received:", data); //test 2
-        
-      if (data.token) {
-          localStorage.setItem('token', data.token);
-      }
+      // 1. Backend එකෙන් එන දත්ත ටික Destructure කරගමු
+      const { user, accessToken, refreshToken, expiresAt, mustChangePassword, user_id, role } = response.data;
 
-      // 🔴 Case 01: Password වෙනස් කළ යුතු නව පරිශීලකයෙකු නම්
-      if (data.mustChangePassword === true) {
-        console.log("Going to change password page...");
+      // 2. Case 01: Password වෙනස් කළ යුතු නම්
+      if (mustChangePassword === true) {
           const tempUser = { 
-              user_id: data.user_id, 
+              user_id: user_id, 
               is_first_login: 1, 
-              role: data.role || 'user' 
+              role: role || 'user' 
           };
 
-          localStorage.setItem('user', JSON.stringify(tempUser)); 
+          // 🔴 වැදගත්: පරාමිති 4ම නියමිත පිළිවෙලට යවන්න
+          login(tempUser, accessToken, refreshToken, expiresAt); 
           
-          login(tempUser, data.token);
-          
-          // 'userId' ලෙස යවන්න (ChangePassword එකේ අල්ලන නම)
-          navigate('/change-password', { state: { userId: data.user_id } });
+          navigate('/change-password', { state: { userId: user_id } });
           return;
       }
       
-      // 🔴 Case 02: සාමාන්‍ය Login වීම
+      // 3. Case 02: සාමාන්‍ය Login වීම
       else {
-          login(data.user, data.token); // 🔴 Context එක හරහා user දත්ත update කිරීම
+          // 🔴 වැදගත්: මෙතනත් පරාමිති 4ම නිවැරදි පිළිවෙලට
+          login(user, accessToken, refreshToken, expiresAt); 
           
-          // Role එක අනුව navigate කිරීම
-          navigate(data.user.redirectPath || '/dashboard');
+          navigate(user.redirectPath || '/dashboard');
           return;
       }
 
@@ -86,7 +78,7 @@ const Login = () => {
           <div className="mb-12">
             <div className="flex flex-col text-left cursor-pointer">
               <img
-                src="https://i.postimg.cc/nzwPbHWj/mehera-logo.png"
+                src="https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png"
                 alt="Mehera International Logo"
                 className="h-8 md:h-10 w-auto object-contain"
               />

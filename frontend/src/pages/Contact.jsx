@@ -1,35 +1,42 @@
-import React, { useRef, useEffect } from 'react';
-import emailjs from '@emailjs/browser';
+import React, { useRef, useEffect, useState } from 'react';
+import axios from 'axios'; // 👈 axios import කරන්න අමතක කරන්න එපා
 import { Phone, Mail, Clock, MapPin, Facebook, Instagram, Send } from 'lucide-react';
 import StatNavBar from '../components/StatNavBar';
 import Footer from '../components/Footer';
 
 const Contact = () => {
   const form = useRef();
+  const [loading, setLoading] = useState(false); // 👈 loading state එකක් එකතු කළා
 
-  // පේජ් එක ලෝඩ් වෙද්දී උඩටම ස්ක්‍රෝල් කිරීම
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  const sendEmail = (e) => {
+  // --- Nodemailer හරහා Backend එකට Data යවන Function එක ---
+  const sendEmail = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
-    
-    emailjs.sendForm(
-      'service_gnxf86j',   
-      'template_9p5jv9r',  
-      form.current, 
-      'rfwdHsLZUipzt_CJI'    
-    )
-    .then((result) => {
-        console.log(result.text);
+    const formData = {
+      from_name: form.current.from_name.value,
+      reply_to: form.current.reply_to.value,
+      message: form.current.message.value,
+    };
+
+    try {
+      // 🚀 ඔයාගේ Backend URL එක (මෙතන 5001 වෙනුවට ඔයාගේ port එක බලන්න)
+      const res = await axios.post('http://localhost:5001/api/contact/send-message', formData);
+      
+      if (res.data.success) {
         alert("Successfully sent your message! ✅");
         e.target.reset(); 
-    }, (error) => {
-        console.log(error.text);
-        alert("Something went wrong. Please try again. ❌");
-    });
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      alert("Something went wrong. Please try again later. ❌");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -77,7 +84,6 @@ const Contact = () => {
               />
             </div>
 
-            {/* Social Media Links */}
             <div className="pt-8 space-y-6 border-t border-gray-100">
                 <p className="font-serif text-xl italic">Follow Us on Social Media</p>
                 <div className="flex gap-8">
@@ -103,7 +109,7 @@ const Contact = () => {
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Full Name</label>
                 <input 
                   type="text" 
-                  name="from_name" // Template එකේ ඇති {{from_name}} ට සමාන විය යුතුයි
+                  name="from_name" 
                   required 
                   placeholder="Your name" 
                   className="w-full p-5 bg-gray-50 rounded-2xl outline-none focus:ring-1 ring-[#b4a460]/50 transition-all font-sans" 
@@ -114,7 +120,7 @@ const Contact = () => {
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Email Address</label>
                 <input 
                   type="email" 
-                  name="reply_to" // Template එකේ ඇති {{reply_to}} ට සමාන විය යුතුයි
+                  name="reply_to" 
                   required 
                   placeholder="your.email@example.com" 
                   className="w-full p-5 bg-gray-50 rounded-2xl outline-none focus:ring-1 ring-[#b4a460]/50 transition-all font-sans" 
@@ -124,7 +130,7 @@ const Contact = () => {
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Message</label>
                 <textarea 
-                  name="message" // Template එකේ ඇති {{message}} ට සමාන විය යුතුයි
+                  name="message" 
                   required 
                   rows="4" 
                   placeholder="Tell us more about your inquiry..." 
@@ -134,9 +140,10 @@ const Contact = () => {
 
               <button 
                 type="submit" 
-                className="w-full py-5 bg-black text-[#b4a460] rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-[#1a1a1a] transition-all flex items-center justify-center gap-3 shadow-xl"
+                disabled={loading} // 👈 load වෙන වෙලාවට button එක disable කරනවා
+                className={`w-full py-5 bg-black text-[#b4a460] rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 shadow-xl ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#1a1a1a]'}`}
               >
-                Send Message <Send size={16} />
+                {loading ? "Sending..." : "Send Message"} <Send size={16} />
               </button>
             </form>
           </div>
@@ -146,18 +153,15 @@ const Contact = () => {
       {/* --- Section 3: Find Us (Google Maps) --- */}
       <section className="py-24 px-8 bg-[#fafaf9]">
         <div className="max-w-7xl mx-auto text-center space-y-12">
-            <h2 className="text-4xl font-serif italic text-black">Find Studio17</h2>
-            
-            {/* Map Container */}
+            <h2 className="text-4xl font-serif italic text-black">Find Mehera Flagship Store</h2>
             <div className="w-full h-[500px] bg-gray-100 rounded-[3.5rem] overflow-hidden shadow-2xl border-8 border-white group">
                 <iframe 
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.785237305987!2d79.8612!3d6.9142!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae259123456789%3A0x1234567890abcdef!2sStudio17%20Colombo!5e0!3m2!1sen!2slk!4v1713580000000!5m2!1sen!2slk" 
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.7985117651!2d79.8596642!3d6.9146775!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae2596d00000001%3A0x7d6f55447b9264!2sColombo%2007%2C%20Sri%20Lanka!5e0!3m2!1sen!2slk!4v1714000000000!5m2!1sen!2slk" 
                     width="100%" 
                     height="100%" 
                     style={{ border: 0 }} 
                     allowFullScreen="" 
                     loading="lazy" 
-                    referrerPolicy="no-referrer-when-downgrade"
                     title="Studio17 Location"
                     className="grayscale group-hover:grayscale-0 transition-all duration-1000"
                 ></iframe>
@@ -170,7 +174,6 @@ const Contact = () => {
   );
 };
 
-// Sub-component for Contact Information Cards
 const ContactInfoCard = ({ icon, title, detail }) => (
   <div className="p-8 bg-white rounded-3xl border border-gray-100 hover:border-[#b4a460]/30 transition-all group flex gap-6 items-start">
     <div className="text-[#b4a460] mt-1">{icon}</div>

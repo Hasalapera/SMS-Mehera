@@ -191,7 +191,6 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                   {permissions.canFullManageUsers && (
                     <>
                       <NavLink to="/orders?add-order" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><ShoppingBasket size={14} /> Add Order</NavLink>
-                      <NavLink to="/delete-order" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-red-400 transition-colors"><PackageX size={14} /> Delete Order</NavLink>
                     </>
                   )}
                   {/* Admin සහ Manager දෙදෙනාටම පේන View Action */}
@@ -349,7 +348,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
       <div 
         onClick={() => navigate(`/profile/${loggedUser.user_id}`)} 
         className={`mt-auto pt-6 border-t border-gray-800 cursor-pointer ${isSidebarCollapsed ? 'flex flex-col items-center' : ''}`}
-      >
+        >
         {!isSidebarCollapsed ? (
           <div className="flex items-center gap-3 p-2 bg-[#1A1A1A] rounded-xl border border-gray-800 mb-4 text-left hover:bg-white/5 transition-all">
             

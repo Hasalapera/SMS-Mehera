@@ -46,7 +46,7 @@ const Order = sequelize.define('Order', {
     defaultValue: 'offline' // 'online' or 'offline'
   },
 
-  // --- Money Related Fields (නිවැරදි පිළිවෙළ) ---
+  // --- Money Related Fields ---
   subtotal: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true,
@@ -65,7 +65,7 @@ const Order = sequelize.define('Order', {
     defaultValue: 0,
     comment: 'Discount amount in LKR'
   },
-  total_amount: {  // ✅ එක වතාවක් පමණක්
+  total_amount: {  // Final amount after applying discount
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
     comment: 'Final payable amount after discount'
@@ -86,7 +86,7 @@ const Order = sequelize.define('Order', {
   },
   created_by: {
   type: DataTypes.UUID,
-  allowNull: true, // Login වෙලා කරන ඕඩර් වලට විතරක් වැටෙන්න
+  allowNull: true, 
   references: {
     model: 'users',
     key: 'user_id'

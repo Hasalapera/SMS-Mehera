@@ -124,6 +124,7 @@ function App() {
           <Route path="/profile/:id" element={<UserProfile />} />
           <Route path="/support" element={<Support />} />
 
+          
           <Route path="/order/:id" element={["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? <Quotation /> : <Navigate to="/home" />} />
 
           {/* --- අලුතින් එකතු කළ STOCK ROUTE --- */}
