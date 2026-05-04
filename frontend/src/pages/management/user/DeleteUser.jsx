@@ -10,7 +10,7 @@ const DeleteUser = () => {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await axios.get('http://localhost:5001/api/users/all-users', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -38,7 +38,7 @@ const DeleteUser = () => {
 
       if (adminPassword) {
         try {
-          const token = localStorage.getItem('token');
+          const token = localStorage.getItem('accessToken');
           await axios.put(`http://localhost:5001/api/users/delete-user/${userId}`, 
             { adminPassword: adminPassword },
             {

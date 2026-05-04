@@ -9,7 +9,7 @@ const ProductCard = ({ product, onAddToCart }) => {
   const { user } = useAuth();
 
   // 🛡️ Debugging: Role එක හරියටම එනවද කියලා බලන්න
-  console.log("Current User Role:", user?.role);
+  // console.log("Current User Role:", user?.role);
 
   const userRole = user?.role?.toLowerCase();
   const canAddOrders = user && ["admin", "sales_rep", "online_store_keeper"].includes(userRole);

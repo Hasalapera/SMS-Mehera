@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { addUserByAdmin,resetToDefaultPassword, updatePassword, getAllUsers, softDeleteUser } = require('../controllers/userController');
 const { isAdmin, isAdminOrManager, verifyToken } = require('../middlewares/authMiddleware');
-const { loginUser } = require('../controllers/authController');
+const { loginUser, refreshAccessToken, logoutUser } = require('../controllers/authController');
 
 const multer = require('multer');
 const { storage } = require('../config/cloudinary'); 
@@ -12,6 +12,8 @@ const upload = multer({ storage: storage });
 router.post('/login', loginUser);
 router.put('/update-password', updatePassword);
 router.put('/reset-password', resetToDefaultPassword); 
+router.post('/logout', logoutUser);
+router.post('/refresh-token', refreshAccessToken);
 
 router.put('/change-password', userController.changePassword); 
 
@@ -25,9 +27,5 @@ router.post('/addUser', addUserByAdmin);
 router.get('/all-users', isAdminOrManager, userController.getAllUsers);
 router.put('/delete-user/:id', isAdmin, softDeleteUser);
 router.put('/restore-user/:id', isAdmin, userController.restoreUser);
-
-
-
-
 
 module.exports = router;
