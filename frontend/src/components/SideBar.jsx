@@ -123,37 +123,32 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
       
       {/* Brand Logo Section */}
       <div className={`mb-8 flex items-center ${isSidebarCollapsed ? 'flex-col gap-4' : 'justify-between'} px-1`}>
-        
-        <div className="flex items-center gap-3">
-          {/* Logo Image */}
-          <img 
-            src={isSidebarCollapsed ? getAssetUrl('logo-icon') : getAssetUrl('main-logo')} 
-            alt="Mehera Logo" 
-            className={`${isSidebarCollapsed ? 'w-8 h-8' : 'w-10 h-10'} object-contain transition-all duration-300`}
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = 'https://ui-avatars.com/api/?name=Mehera&background=b4a460&color=000'} 
-            }
-          />
-
-          {!isSidebarCollapsed && (
-            <div className="flex flex-col text-left cursor-pointer" onClick={() => handleNavigation('/home')}>
-              <img
-                src="https://i.postimg.cc/nzwPbHWj/mehera-logo.png"
-                alt="Mehera International Logo"
-                className="h-8 md:h-10 w-auto object-contain"
-              />
-            </div>
-          )}
-        </div>
-
-        <button 
-          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
-          className="text-gray-400 hover:text-[#b4a460] p-2.5 rounded-lg hover:bg-white/10 transition-all"
-        >
-          {isSidebarCollapsed ? <Menu size={18} /> : <ChevronLeft size={18} />}
-        </button>
+      <div 
+        className="flex items-center gap-3 cursor-pointer" 
+        onClick={() => !isSidebarCollapsed && handleNavigation('/home')}
+      >
+        {/* Unified Logo - එකම Image Tag එකකින් වැඩේ කරමු */}
+        <img 
+          src={isSidebarCollapsed ? getAssetUrl('logo-icon') : getAssetUrl('main-logo')} 
+          alt="Mehera Logo" 
+          // Sidebar එක ලොකු වුණාම w-32 (ලොකු) සහ පොඩි වුණාම w-8 (පොඩි) වෙනවා
+          className={`transition-all duration-300 object-contain ${
+            isSidebarCollapsed ? 'w-8 h-8' : 'w-32 h-10' 
+          }`}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = 'https://ui-avatars.com/api/?name=Mehera&background=b4a460&color=000'} 
+          }
+        />
       </div>
+
+      <button 
+        onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+        className="text-gray-400 hover:text-[#b4a460] p-2.5 rounded-lg hover:bg-white/10 transition-all"
+      >
+        {isSidebarCollapsed ? <Menu size={18} /> : <ChevronLeft size={18} />}
+      </button>
+    </div>
 
       <nav className="flex-1 space-y-6 overflow-y-auto custom-scrollbar pr-1 text-left">
         {/* Menu Section */}
@@ -190,11 +185,11 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                   {/* Admin ට පමණක් පේන Full CRUD Actions */}
                   {permissions.canFullManageUsers && (
                     <>
-                      <NavLink to="/orders?add-order" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><ShoppingBasket size={14} /> Add Order</NavLink>
+                      <NavLink to="/orders?add-order" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><ShoppingBasket size={14} /> Add Order</NavLink>
                     </>
                   )}
                   {/* Admin සහ Manager දෙදෙනාටම පේන View Action */}
-                  <NavLink to="/view-orders" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-white transition-colors"><History size={14} /> Order List </NavLink>
+                  <NavLink to="/view-orders" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><History size={14} /> Order List </NavLink>
                 </div>
               )}
             </>
@@ -215,23 +210,14 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                   
                   {/* 🛡️ Manager ට පේන්නේ නැති වෙන්න මෙතනට permission check එකක් දැම්මා */}
                   {permissions.canAddCustomers && (
-                    <NavLink 
-                      to="/add-customer" 
-                      className={({ isActive }) => 
-                        `flex items-center gap-2 p-2 text-[11px] transition-colors ${
-                          isActive ? 'text-[#b4a460]' : 'text-gray-500 hover:text-[#b4a460]'
-                        }`
-                      }
-                    >
-                      <UserPlus size={14} /> Add Customer
-                    </NavLink>
+                    <NavLink to="/add-customer" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><UserPlus size={14} /> Add Customer</NavLink>
                   )}
 
                   <NavLink 
                     to="/customers" 
                     className={({ isActive }) => 
                       `flex items-center gap-2 p-2 text-[11px] transition-colors ${
-                        isActive ? 'text-[#b4a460]' : 'text-gray-500 hover:text-[#b4a460]'
+                        isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'
                       }`
                     }
                   >
@@ -248,8 +234,8 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
               <NavItem icon={BarChart2} label="Reports" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('reports')} isOpen={openSubMenu === 'reports'} />
               {!isSidebarCollapsed && openSubMenu === 'reports' && (
                 <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
-                  <NavLink to="/reports/daily-summary" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><FileText size={14} /> Daily Summary</NavLink>
-                  <NavLink to="/reports/qb-export" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><Download size={14} /> QB Export</NavLink>
+                  <NavLink to="/reports/daily-summary" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><FileText size={14} /> Daily Summary</NavLink>
+                  <NavLink to="/reports/qb-export" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><Download size={14} /> QB Export</NavLink>
                 </div>
               )}
             </>
@@ -264,12 +250,12 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                   {/* Admin ට පමණක් පේන Full CRUD Actions */}
                   {permissions.canFullManageUsers && (
                     <>
-                      <NavLink to="/addUser" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><UserPlus size={14} /> Add User</NavLink>
-                      <NavLink to="/delete-user" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-red-400 transition-colors"><UserMinus size={14} /> Delete User</NavLink>
+                      <NavLink to="/addUser" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><UserPlus size={14} /> Add User</NavLink>
+                      <NavLink to="/delete-user" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><UserMinus size={14} /> Delete User</NavLink>
                     </>
                   )}
                   {/* Admin සහ Manager දෙදෙනාටම පේන View Action */}
-                  <NavLink to="/all-users" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-white transition-colors"><List size={14} /> User List </NavLink>
+                  <NavLink to="/all-users" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><List size={14} /> User List </NavLink>
                 </div>
               )}
             </>
@@ -281,8 +267,8 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
               <NavItem icon={Tag} label="Brands" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('brand')} isOpen={openSubMenu === 'brand'} />
               {!isSidebarCollapsed && openSubMenu === 'brand' && (
                 <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
-                  <NavLink to="/getBrands" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><SlidersHorizontal size={14} /> Brands</NavLink>
-                  <NavLink to="/addBrand" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><PlusCircle size={14} /> Add Brand</NavLink>
+                  <NavLink to="/getBrands" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><SlidersHorizontal size={14} /> Brands</NavLink>
+                  <NavLink to="/addBrand" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><PlusCircle size={14} /> Add Brand</NavLink>
                 </div>
               )}
             </>
@@ -294,8 +280,8 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
               <NavItem icon={List} label="Categories" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('category')} isOpen={openSubMenu === 'category'} />
               {!isSidebarCollapsed && openSubMenu === 'category' && (
                 <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
-                  <NavLink to="/getCategories" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><List size={14} /> Categories</NavLink>
-                  <NavLink to="/addCategory" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><PlusCircle size={14} /> Add Category</NavLink>
+                  <NavLink to="/getCategories" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><List size={14} /> Categories</NavLink>
+                  <NavLink to="/addCategory" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><PlusCircle size={14} /> Add Category</NavLink>
                 </div>
               )}
             </>
@@ -307,9 +293,9 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
               <NavItem icon={Package} label="Products" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('product')} isOpen={openSubMenu === 'product'} />
               {!isSidebarCollapsed && openSubMenu === 'product' && (
                 <div className="ml-9 space-y-1 border-l border-gray-800 pl-2">
-                  <NavLink to="/inventory" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><SlidersHorizontal size={14} /> Inventory</NavLink>
+                  <NavLink to="/inventory" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><SlidersHorizontal size={14} /> Inventory</NavLink>
                   {userRole === 'admin' && (
-                    <NavLink to="/addProduct" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><PlusCircle size={14} /> Add Product</NavLink>
+                    <NavLink to="/addProduct" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><PlusCircle size={14} /> Add Product</NavLink>
                   )}
                 </div>
               )}
@@ -325,12 +311,12 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                   {/* Admin ට පමණක් පේන Full CRUD Actions */}
                   {permissions.canManageStocks && (
                     <>
-                      <NavLink to="/addStock" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><PackagePlus size={14} /> Add Stocks</NavLink>
-                      <NavLink to="/editStock" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-red-400 transition-colors"><SquarePen size={14} /> Edit Stocks</NavLink>
+                      <NavLink to="/addStock" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><PackagePlus size={14} /> Add Stocks</NavLink>
+                      <NavLink to="/editStock" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><SquarePen size={14} /> Edit Stocks</NavLink>
                     </>
                   )}
                   {/* Admin සහ Manager දෙදෙනාටම පේන View Action */}
-                  <NavLink to="/viewStock" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-white transition-colors"><PackageSearch size={14} /> View Stocks </NavLink>
+                  <NavLink to="/viewStock" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-500 hover:text-white'}`}><PackageSearch size={14} /> View Stocks </NavLink>
                 </div>
               )}
             </>
