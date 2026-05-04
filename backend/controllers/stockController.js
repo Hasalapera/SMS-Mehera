@@ -90,6 +90,65 @@ const batchAddStockToVariants = async (req, res) => {
     }
 };
 
+const batchEditStockForVariants = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const { updates } = req.body;
+
+        if (!Array.isArray(updates) || updates.length === 0) {
+            await transaction.rollback();
+            return res.status(400).json({ error: 'Updates array is required' });
+        }
+
+        const appliedUpdates = [];
+        let totalChange = 0;
+
+        for (const update of updates) {
+            const variantId = update?.variant_id;
+            const newStock = Number(update?.newStock);
+
+            if (!variantId || !Number.isInteger(newStock) || newStock < 0) {
+                await transaction.rollback();
+                return res.status(400).json({ error: 'Each update must include variant_id and non-negative integer newStock' });
+            }
+
+            const variant = await ProductVariant.findByPk(variantId, { transaction });
+            if (!variant) {
+                await transaction.rollback();
+                return res.status(404).json({ error: `Variant not found: ${variantId}` });
+            }
+
+            const oldStock = Number(variant.stock_count || 0);
+            const change = newStock - oldStock;
+
+            await variant.update({ stock_count: newStock }, { transaction });
+
+            appliedUpdates.push({
+                variant_id: variant.variant_id,
+                oldStock,
+                newStock,
+                change
+            });
+            totalChange += change;
+        }
+
+        await transaction.commit();
+        res.status(200).json({
+            message: 'Batch stock edit successful',
+            summary: {
+                updatedVariants: appliedUpdates.length,
+                totalChange
+            },
+            appliedUpdates
+        });
+    } catch (err) {
+        await transaction.rollback();
+        console.error('Batch Edit Stock Error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+
 const batchRevertStockForVariants = async (req, res) => {
     const transaction = await sequelize.transaction();
     try {
@@ -155,5 +214,6 @@ const batchRevertStockForVariants = async (req, res) => {
 module.exports = {
     addStockToVariant,
     batchAddStockToVariants,
+    batchEditStockForVariants,
     batchRevertStockForVariants
 };
