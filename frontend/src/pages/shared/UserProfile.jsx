@@ -82,7 +82,7 @@ const UserProfile = () => {
     }
 
     setIsUpdating(true);
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     try {
       const response = await axios.put('http://localhost:5001/api/users/change-password', {
         userId: user.user_id,
@@ -107,7 +107,7 @@ const UserProfile = () => {
 
     const handleUpdateProfile = async () => {
     setIsUpdating(true);
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const uploadData = new FormData();
     uploadData.append("user_id", user.user_id);
     if(formData.full_name) uploadData.append("name", formData.full_name);

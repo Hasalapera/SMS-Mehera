@@ -191,7 +191,6 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                   {permissions.canFullManageUsers && (
                     <>
                       <NavLink to="/orders?add-order" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-[#b4a460] transition-colors"><ShoppingBasket size={14} /> Add Order</NavLink>
-                      <NavLink to="/delete-order" className="flex items-center gap-2 p-2 text-[11px] text-gray-500 hover:text-red-400 transition-colors"><PackageX size={14} /> Delete Order</NavLink>
                     </>
                   )}
                   {/* Admin සහ Manager දෙදෙනාටම පේන View Action */}

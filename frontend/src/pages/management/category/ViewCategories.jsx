@@ -18,7 +18,7 @@ const ViewCategories = () => {
             // Backend එකේ getCategories එකේදී 'include: [Product]' දාලා තිබිය යුතුයි
             const response = await axios.get('http://localhost:5001/api/category/getCategories', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
                 }
             });
             const data = response.data.categories || response.data;

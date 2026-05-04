@@ -346,6 +346,23 @@ const resetToDefaultPassword = async (req, res) => {
     }
 };
 
+const verifySession = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user.user_id, {
+            attributes: { exclude: ['password'] }
+        });
+        
+        if (!user) {
+            return res.status(401).json({ message: "User not found" });
+        }
+
+        res.status(200).json(user);
+    } catch (err) {
+        console.error("Verify Session Error:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
 module.exports = {
     addUserByAdmin,
     updatePassword,
@@ -355,5 +372,6 @@ module.exports = {
     restoreUser,
     changePassword,
     getUserProfile,
-    updateProfile
+    updateProfile,
+    verifySession
 };

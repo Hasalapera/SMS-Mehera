@@ -1,8 +1,8 @@
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors'); 
 const { sequelize } = require('./models');
+const { runMigrations } = require('./migrations/migrator');
 
 // Routes Import
 const userRoutes = require('./routes/userRoutes');
@@ -12,36 +12,47 @@ const productRoutes = require('./routes/productRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const orderRoutes = require('./routes/orderRoutes'); 
-const aiRoutes = require('./routes/aiRoutes'); // ✅ AI Route එක Import කරන්න
+const aiRoutes = require('./routes/aiRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const errorHandler = require('./middlewares/errorMiddleware');
 
 const app = express();
+const PORT = process.env.PORT || 5001;
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// set Image Upload limit
+// =====================================================
+// MIDDLEWARE
+// =====================================================
+
 app.use(express.json({ limit: '50mb' }));
-// set URL-encoded data limit
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// ✅ Configure CORS to allow requests from the frontend (adjust origin as needed)
 app.use(cors({
   origin: 'http://localhost:5173', 
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], 
   credentials: true
 }));
 
-// Logging Middleware
-app.use((req, res, next) => {
-    console.log(`${req.method} ${req.path}`);
+// Request logging (development only)
+if (NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    console.log(`${req.method.padEnd(6)} ${req.path}`);
     next();
-});
+  });
+}
 
-// Test Route
+// =====================================================
+// ROUTES
+// =====================================================
+
 app.get('/', (req, res) => {
-    res.send("Server is working perfectly with Sequelize!");
+    res.json({
+      message: "✅ Mehera Backend API Server",
+      version: "1.0.0",
+      environment: NODE_ENV
+    });
 });
 
-// Routes Registration
 app.use('/api/users', userRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/brands', brandRoutes);
@@ -49,21 +60,45 @@ app.use('/api/category', categoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/ask-ai', aiRoutes); // register AI routes endpoint
+app.use('/api/ask-ai', aiRoutes);
 app.use('/api/contact', contactRoutes);
-// Error Handling 
+
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5001;
+// =====================================================
+// DATABASE & SERVER STARTUP
+// =====================================================
 
-// Sync database and start server
-sequelize.sync({ alter: true })
-  .then(() => {
+const startServer = async () => {
+  try {
+    console.log('\n🔗 Connecting to database...');
+    await sequelize.authenticate();
+    console.log('✓ Database connection successful');
+
+    // 👈 REMOVE sync completely! Only authenticate
+    // එක වෙලාවට ඔයා හදලා තිබුණු සෙට් අප් එක දැනටමත් උසස්:
+    // සර්වර් එක NEVER sync කරන්න development වලත්!
+    
+    console.log('✓ Database ready');
+
+    // Start server
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on port ${PORT}`);
+      console.log(`\n${'='.repeat(50)}`);
+      console.log(`🚀 Server started successfully`);
+      console.log(`${'='.repeat(50)}`);
+      console.log(`📍 Port: ${PORT}`);
+      console.log(`🌍 Environment: ${NODE_ENV}`);
+      console.log(`📅 Started: ${new Date().toLocaleString()}`);
+      console.log(`${'='.repeat(50)}\n`);
     });
-  })
-  .catch(err => {
-    console.error('Failed to sync database:', err);
+
+  } catch (error) {
+    console.error('\n❌ Server startup failed:');
+    console.error(error.message);
     process.exit(1);
-  });
+  }
+};
+
+startServer();
+
+module.exports = app;
