@@ -52,7 +52,7 @@ const AddUser = () => {
     
     setLoading(true);
 
-    const token = localStorage.getItem('token'); 
+    const token = localStorage.getItem('accessToken'); 
 
     try {
       const response = await axios.post(

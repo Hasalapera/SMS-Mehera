@@ -22,7 +22,7 @@
 
 //     if (file) data.append('supportFile', file);
 //         try {
-//             const token = localStorage.getItem('token');
+//             const token = localStorage.getItem('accessToken');
             
 //             // සම්පූර්ණ URL එක මෙලෙස ලබා දෙන්න
 //             const response = await axios.post(
@@ -151,7 +151,7 @@ const Support = () => {
 
     if (file) data.append('supportFile', file);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       
       const response = await axios.post(
         'http://localhost:5001/api/support/send-email', data, {
