@@ -150,7 +150,7 @@ const AddStock = () => {
       setIsApplying(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const response = await axios.patch(
-        'http://localhost:5001/api/products/variants/batch-add-stock',
+        'http://localhost:5001/api/stock/variants/batch-add-stock',
         { updates },
         config
       );
@@ -186,7 +186,7 @@ const AddStock = () => {
       setIsUndoing(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const response = await axios.patch(
-        'http://localhost:5001/api/products/variants/batch-revert-stock',
+        'http://localhost:5001/api/stock/variants/batch-revert-stock',
         { updates: lastAppliedSummary.updates },
         config
       );
