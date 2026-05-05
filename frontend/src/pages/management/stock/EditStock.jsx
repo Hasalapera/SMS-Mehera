@@ -154,7 +154,7 @@ const EditStock = () => {
       setIsApplying(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const response = await axios.patch(
-        'http://localhost:5001/api/products/variants/batch-edit-stock',
+        'http://localhost:5001/api/stock/variants/batch-edit-stock',
         { updates },
         config
       );
@@ -193,20 +193,25 @@ const EditStock = () => {
     try {
       setIsUndoing(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
+      
+      // For EDIT operations, SET back to old value (not subtract)
+      const revertUpdates = lastAppliedSummary.updates.map(u => ({
+        variant_id: u.variant_id,
+        newStock: u.oldStock  // ✅ SET it back to old stock value
+      }));
+
       const response = await axios.patch(
-        'http://localhost:5001/api/products/variants/batch-revert-stock',
-        { updates: lastAppliedSummary.updates.map(u => ({ 
-          variant_id: u.variant_id, 
-          quantity: u.oldStock 
-        })) },
+        'http://localhost:5001/api/stock/variants/batch-edit-stock',  // ✅ Use edit endpoint
+        { updates: revertUpdates },
         config
       );
 
-      const reverted = Number(response.data?.summary?.revertedVariants || lastAppliedSummary.updates.length);
+      const reverted = Number(response.data?.summary?.updatedVariants || lastAppliedSummary.updates.length);
       toast.success(`Reverted stock update for ${reverted} variant(s)`);
       setLastAppliedSummary(null);
       fetchProducts();
     } catch (err) {
+      console.error('Failed to undo:', err);
       toast.error(err.response?.data?.error || 'Failed to undo last apply');
     } finally {
       setIsUndoing(false);
