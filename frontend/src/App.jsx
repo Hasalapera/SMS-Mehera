@@ -281,7 +281,8 @@ function App() {
         {/* stock management - admin, sales rep, online_store_keeper can view; only admin can add/edit */}
         <Route path='/addStock' element={userRole === 'admin' ? <AddStock /> : <Navigate to="/dashboard" />} />
         <Route path='/editStock' element={userRole === 'admin' ? <EditStock /> : <Navigate to="/dashboard" />} />
-        <Route path='/viewStock' element={['admin', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ViewStock /> : <Navigate to="/dashboard" />} />
+        <Route path='/viewStock' element={['admin', 'manager', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ViewStock /> : <Navigate to="/dashboard" />} />
+
 
 </Route>
 
