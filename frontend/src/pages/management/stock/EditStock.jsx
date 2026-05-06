@@ -63,7 +63,7 @@ const EditStock = () => {
         variant_name: v.variant_name,
         price: Number(v.price || 0),
         stock_count: Number(v.stock_count || 0),
-        newStockQty: String(v.stock_count) // ← set current stock as default
+        newStockQty: String(v.stock_count) // set current stock as default
       })),
       bulkQty: ''
     };
@@ -117,6 +117,12 @@ const EditStock = () => {
       return;
     }
 
+    //Confirm before filling all variants
+    const confirmed = window.confirm(
+      `Are you sure you want to set all variants of "${product.product_name}" to ${parsedQty} units?`
+    );
+    if (!confirmed) return;
+
     setSelectedProducts((prev) =>
       prev.map((p) =>
         p.product_id !== productId
@@ -130,25 +136,28 @@ const EditStock = () => {
   };
 
   const handleApplyAllStock = async () => {
-    const updates = [];
+  const updates = [];
 
-    selectedProducts.forEach((product) => {
-      product.variants.forEach((variant) => {
-        const newQty = Number(variant.newStockQty);
-        if (Number.isInteger(newQty) && newQty >= 0) {
-          updates.push({ 
-            variant_id: variant.variant_id, 
-            newStock: newQty,
-            oldStock: variant.stock_count
-          });
-        }
-      });
+  selectedProducts.forEach((product) => {
+    product.variants.forEach((variant) => {
+      const newQty = Number(variant.newStockQty);
+      const oldQty = Number(variant.stock_count);
+      //Only push if quantity actually changed
+      if (Number.isInteger(newQty) && newQty >= 0 && newQty !== oldQty) {
+        updates.push({ 
+          variant_id: variant.variant_id, 
+          newStock: newQty,
+          oldStock: oldQty
+        });
+      }
     });
+  });
 
-    if (updates.length === 0) {
-      toast.error('Set at least one valid stock quantity before applying changes');
-      return;
-    }
+  if (updates.length === 0) {
+    // Clear message explaining why
+    toast.error('No stock quantities were changed. Please update at least one variant before applying.');
+    return;
+  }
 
     try {
       setIsApplying(true);
@@ -197,11 +206,11 @@ const EditStock = () => {
       // For EDIT operations, SET back to old value (not subtract)
       const revertUpdates = lastAppliedSummary.updates.map(u => ({
         variant_id: u.variant_id,
-        newStock: u.oldStock  // ✅ SET it back to old stock value
+        newStock: u.oldStock  //SET it back to old stock value
       }));
 
       const response = await axios.patch(
-        'http://localhost:5001/api/stock/variants/batch-edit-stock',  // ✅ Use edit endpoint
+        'http://localhost:5001/api/stock/variants/batch-edit-stock',  //✅ Use edit endpoint
         { updates: revertUpdates },
         config
       );
