@@ -27,13 +27,24 @@ const AddCustomer = () => {
 
   const [formData, setFormData] = useState(initialFormState);
 
+  // useEffect(() => {
+  //   const fetchCustomerCount = async () => {
+  //     try {
+  //       const res = await axios.get('http://localhost:5001/api/customers/count');
+  //       setCustomerCount(res.data.count || 0);
+  //     } catch (err) { console.error(err); }
+  //   };
+  //   fetchCustomerCount();
+  // }, []);
+
+  const fetchCustomerCount = async () => {
+    try {
+      const res = await axios.get('http://localhost:5001/api/customers/count');
+      setCustomerCount(res.data.count || 0);
+    } catch (err) { console.error(err); }
+  };
+
   useEffect(() => {
-    const fetchCustomerCount = async () => {
-      try {
-        const res = await axios.get('http://localhost:5001/api/customers/count');
-        setCustomerCount(res.data.count || 0);
-      } catch (err) { console.error(err); }
-    };
     fetchCustomerCount();
   }, []);
 
@@ -72,11 +83,20 @@ const AddCustomer = () => {
 
     setLoading(true);
     try {
-      const submissionData = { ...formData, customer_display_id: nextCustomerId, address: `${formData.lane1}, ${formData.lane2}` };
+      const submissionData = { 
+        ...formData, 
+        customer_display_id: nextCustomerId, 
+        address: `${formData.lane1}, ${formData.lane2}` 
+      };
 
       await axios.post('http://localhost:5001/api/customers/add', submissionData);
       toast.success("Customer Registered Successfully!");
-      setTimeout(() => navigate('/home'), 1500);
+
+      // ✅ මෙන්න මෙතන තමයි වෙනස වෙන්නේ:
+      setFormData(initialFormState); // ෆෝම් එක හිස් කරනවා
+      setErrors({}); // Error highlights අයින් කරනවා
+      fetchCustomerCount(); // අලුත් කවුන්ට් එක අරන් ඊළඟ ID එක (CUS-XXXX) හදනවා
+
     } catch (err) {
       toast.error(err.response?.data?.message || "Registration failed");
     } finally { setLoading(false); }
