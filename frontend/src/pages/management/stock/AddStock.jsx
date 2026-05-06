@@ -366,7 +366,7 @@ const AddStock = () => {
                         <div key={variant.variant_id} className="grid grid-cols-[1fr_auto] gap-3 items-center">
                           <div>
                             <p className="text-[12px] font-bold text-black">{variant.variant_name || 'Variant'}</p>
-                            <p className="text-[10px] text-gray-400 font-semibold">Current: {variant.stock_count} | Rs. {variant.price.toLocaleString()}</p>
+                            <p className="text-[10px] text-gray-400 font-semibold">{variant.stock_count} units • Rs. {variant.price.toLocaleString()} each</p>
                           </div>
                           <input
                             type="number"
