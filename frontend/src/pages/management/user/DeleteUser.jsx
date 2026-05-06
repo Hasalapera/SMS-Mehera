@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Trash2, AlertTriangle, UserX, Search, ShieldCheck, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import { toast, Toaster } from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 const DeleteUser = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const currentUser = JSON.parse(localStorage.getItem('user'));
 
   const fetchUsers = async () => {
     try {
@@ -16,7 +19,9 @@ const DeleteUser = () => {
       });
 
       if (response.data && Array.isArray(response.data.users)) {
-        const activeUsers = response.data.users.filter(u => u.deleted_at === null);
+        const activeUsers = response.data.users.filter(
+          (u) => u.deleted_at === null && u.user_id !== currentUser?.user_id
+        );
         setUsers(activeUsers);
       } else {
         setUsers([]);
@@ -33,29 +38,90 @@ const DeleteUser = () => {
   useEffect(() => { fetchUsers(); }, []);
 
   const handleSoftDelete = async (userId, userName) => {
-    if (window.confirm(`Are you sure you want to archive ${userName}? This will disable their system access.`)) {
-      const adminPassword = prompt("Please enter your admin password to confirm:");
+    const result = await Swal.fire({
+      title: 'Archive Account?',
+      text: `Do you want to archive ${userName}? This will disable system access.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#b4a460',
+      cancelButtonColor: '#000000',
+      confirmButtonText: 'Yes, archive it!',
+      background: '#ffffff',
+      customClass: {
+        popup: 'rounded-[2rem]',
+      }
+    });
+
+    if (result.isConfirmed) {
+      const { value: adminPassword } = await Swal.fire({
+        title: 'Verify Authority',
+        input: 'password',
+        inputLabel: 'Enter Admin Password to confirm',
+        inputPlaceholder: 'Enter your password',
+        confirmButtonColor: '#b4a460',
+        background: '#ffffff',
+        customClass: {
+          popup: 'rounded-[2rem]',
+        },
+        inputAttributes: {
+          autocapitalize: 'off',
+          autocorrect: 'off'
+        }
+      });
 
       if (adminPassword) {
         try {
           const token = localStorage.getItem('accessToken');
-          await axios.put(`http://localhost:5001/api/users/delete-user/${userId}`, 
-            { adminPassword: adminPassword },
+
+          await axios.put(
+            `http://localhost:5001/api/users/delete-user/${userId}`,
+            { adminPassword },
             {
               headers: { Authorization: `Bearer ${token}` }
             }
           );
-          toast.success(`${userName} archived successfully!`);
-          fetchUsers(); // Refresh the list after deletion
+
+          await Swal.fire({
+            title: 'Archived Successfully!',
+            text: `${userName} has been archived successfully.`,
+            icon: 'success',
+            confirmButtonColor: '#b4a460',
+            background: '#ffffff',
+            customClass: {
+              popup: 'rounded-[2rem]',
+            }
+          });
+
+          fetchUsers();
         } catch (err) {
           console.error("Error archiving user:", err.response?.data || err.message);
-          const errorMsg = err.response?.data?.message || "Failed to archive user. Please check your password and try again.";
-          toast.error(errorMsg);
+
+          Swal.fire({
+            title: 'Security Error',
+            text:
+              err.response?.data?.message ||
+              'Failed to archive user. Please check your password and try again.',
+            icon: 'error',
+            confirmButtonColor: '#b4a460',
+            background: '#ffffff',
+            customClass: {
+              popup: 'rounded-[2rem]',
+            }
+          });
         }
-    }else {
-      toast.error("Archiving cancelled. Admin password is required.");
-     }
-   }
+      } else {
+        Swal.fire({
+          title: 'Cancelled',
+          text: 'Admin password is required.',
+          icon: 'info',
+          confirmButtonColor: '#b4a460',
+          background: '#ffffff',
+          customClass: {
+            popup: 'rounded-[2rem]',
+          }
+        });
+      }
+    }
   };
 
   const filteredUsers = users.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()));
