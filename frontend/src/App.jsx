@@ -104,7 +104,7 @@ function App() {
         <Route path="/about" element={<AboutUs />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/products" element={<Products />} />
-        {/* <Route path="/product/:id" element={<ProductDetail />} /> */}
+        <Route path="/product/:id" element={<ProductDetail />} />
 
         <Route element={user ? <DashboardLayout /> : <Navigate to="/" />}>
           <Route path="/inbox" element={<Inbox />} />
