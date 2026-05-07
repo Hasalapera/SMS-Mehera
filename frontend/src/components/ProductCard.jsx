@@ -16,7 +16,7 @@ const ProductCard = ({ product, onAddToCart }) => {
 
   const firstVariant = variants.length > 0 ? variants[0] : null;
   const displayPrice = firstVariant ? firstVariant.price : product?.price;
-  const displayStock = firstVariant ? firstVariant.stock_count : 0;
+  // const displayStock = firstVariant ? firstVariant.stock_count : 0;
 
   const handleNavigation = () => {
     // දැන් ලොග් වෙලා හිටියත් නැතත් ඕනෑම කෙනෙකුට පේජ් එක බලන්න පුළුවන් ✅
@@ -42,11 +42,11 @@ const ProductCard = ({ product, onAddToCart }) => {
         </div>
 
         {/* Stock Level Badge */}
-        <div className="absolute top-6 right-6">
+        {/* <div className="absolute top-6 right-6">
           <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter shadow-sm ${displayStock > 0 ? 'bg-white text-green-600' : 'bg-red-50 text-red-600'}`}>
             {displayStock > 0 ? `${displayStock} IN STOCK` : 'OUT OF STOCK'}
           </span>
-        </div>
+        </div> */}
 
         {/* --- Side Hover Actions --- */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">

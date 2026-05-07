@@ -1,4 +1,4 @@
-const {Brand, sequelize} = require('../models');
+const {Brand, Product, sequelize} = require('../models');
 
 const addBrand = async (req, res) => {
     try {
@@ -25,7 +25,24 @@ const addBrand = async (req, res) => {
 
 const getBrands = async (req, res) => {
     try {
-        const brands = await Brand.findAll();
+        const brands = await Brand.findAll({
+            attributes: {
+                include: [
+                    // 💡 Subquery එකක් පාවිච්චි කරලා ඒ ඒ බ්‍රෑන්ඩ් එකට අදාළ ප්‍රොඩක්ට්ස් ගණන ගමු
+                    [
+                        sequelize.literal(`(
+                            SELECT COUNT(*)
+                            FROM products AS product
+                            WHERE
+                                product.brand_id = "Brand".brand_id
+                                AND product.deleted_at IS NULL
+                        )`),
+                        'productCount'
+                    ]
+                ]
+            },
+            order: [['createdAt', 'DESC']] // අලුත්ම ඒවා උඩට එන්න
+        });
 
         res.status(200).json({
             message: "Brands retrieved successfully",
