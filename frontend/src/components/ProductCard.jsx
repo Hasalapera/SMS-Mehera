@@ -19,11 +19,8 @@ const ProductCard = ({ product, onAddToCart }) => {
   const displayStock = firstVariant ? firstVariant.stock_count : 0;
 
   const handleNavigation = () => {
-    if (user) {
-      navigate(`/product/${product.product_id}`);
-    } else {
-      navigate('/login', { state: { from: `/product/${product.product_id}` } });
-    }
+    // දැන් ලොග් වෙලා හිටියත් නැතත් ඕනෑම කෙනෙකුට පේජ් එක බලන්න පුළුවන් ✅
+    navigate(`/product/${product.product_id}`);
   };
 
   return (

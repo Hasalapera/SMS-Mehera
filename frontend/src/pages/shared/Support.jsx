@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { MessageCircle, Paperclip, Send, HelpCircle, ShieldCheck, Mail, Loader2, X } from 'lucide-react';
 import { useAuth } from '../../pages/context/AuthContext'; // Path preserved from your snippet logic
+import Swal from 'sweetalert2';
 
 const Support = () => {
   const { user } = useAuth();
@@ -10,6 +11,31 @@ const Support = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [adminWhatsApp, setAdminWhatsApp] = useState([]);
+
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    const fetchAdminContacts = async () => {
+      if (user?.role?.toLowerCase() !== 'admin') {
+        try {
+          const token = localStorage.getItem('accessToken');
+          const response = await axios.get('http://localhost:5001/api/support/getAdminContacts', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          // නම්බර්ස් ටික විතරක් Array එකකට වෙන් කරගන්නවා
+          const numbers = response.data.admins
+            .map(a => a.contact_no)
+            .filter(n => n); // empty numbers අයින් කරනවා
+          
+          setAdminWhatsApp(numbers);
+        } catch (err) {
+          console.error("Admin contacts fetch error:", err);
+        }
+      }
+    };
+    fetchAdminContacts();
+  }, [user]);
 
   useEffect(() => {
     if (!file) {
@@ -51,30 +77,80 @@ const Support = () => {
           }
         });
       
-      alert(response.data.message);
-      setFormData({ subject: '', message: '' });
-      setFile(null); 
-      setPreviewUrl(null);
+        Swal.fire({
+          title: 'Transmission Successful!',
+          text: 'Your support ticket has been routed to the administration.',
+          icon: 'success',
+          confirmButtonColor: '#b4a460',
+          background: '#ffffff',
+          customClass: {
+            popup: 'rounded-[2rem]',
+            confirmButton: 'rounded-xl px-10 py-3'
+          }
+        });
+
+        // ✅ Form එක සම්පූර්ණයෙන්ම Clear කිරීම
+        setFormData({ subject: '', message: '' });
+        setFile(null); 
+        setPreviewUrl(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
       
     } catch (err) {
       console.error("Email Error:", err.response?.data || err.message);
       const errorMsg = err.response?.data?.error || "cannot send email";
-      alert("cannot send email: " + errorMsg);
+      Swal.fire({
+        title: 'Transmission Failed',
+        text: errorMsg,
+        icon: 'error',
+        confirmButtonColor: '#000000',
+        background: '#ffffff',
+        customClass: {
+          popup: 'rounded-[2rem]',
+          confirmButton: 'rounded-xl px-10 py-3'
+        }
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const openWhatsApp = () => {
-    const targetNumber = adminWhatsApp.length > 0 
-      ? adminWhatsApp[0] 
-      : "94765747129"; 
+    let rawNumber = "";
+
+    if (user?.role?.toLowerCase() === 'admin') {
+      rawNumber = import.meta.env.VITE_DEV_TEAM_WHATSAPP || "94755728290"; 
+    } else {
+      rawNumber = adminWhatsApp.length > 0 ? adminWhatsApp[0] : "94765747129";
+    }
+
+    // 1. මුලින්ම ඉලක්කම් නොවන සේරම අයින් කරනවා (+, spaces, dashes)
+    let cleanNumber = rawNumber.toString().replace(/\D/g, '');
+
+    // 2. නම්බර් එක '0' කෑල්ලෙන් පටන් ගන්නවා නම්, ඒක අයින් කරලා '94' ඇඩ් කරනවා
+    if (cleanNumber.startsWith('0')) {
+      cleanNumber = '94' + cleanNumber.substring(1);
+    }
+    
+    // 3. යම් හෙයකින් නම්බර් එක 7... විදිහට පටන් ගත්තොත් (94 හෝ 0 නැතුව)
+    // ඒකටත් 94 ඇඩ් කරන එක ආරක්ෂිතයි
+    else if (cleanNumber.length === 9 && cleanNumber.startsWith('7')) {
+      cleanNumber = '94' + cleanNumber;
+    }
+
+    if (!cleanNumber) {
+      Swal.fire({ title: 'Error', text: 'Invalid Contact Number', icon: 'error' });
+      return;
+    }
 
     const text = window.encodeURIComponent(
-      `Support Request: ${formData.subject}\nFrom: ${user.name}\nMessage: ${formData.message}`
+      `*Support Request [${user?.role?.toUpperCase()}]*\n` +
+      `*Subject:* ${formData.subject}\n` +
+      `*From:* ${user.name}\n` +
+      `*Message:* ${formData.message}`
     );
     
-    window.open(`https://wa.me/${targetNumber}?text=${text}`, '_blank');
+    // දැන් ලින්ක් එක හරියටම ජෙනරේට් වෙනවා
+    window.open(`https://wa.me/${cleanNumber}?text=${text}`, '_blank');
   };
 
   return (
@@ -136,7 +212,7 @@ const Support = () => {
              
              <div className="relative">
                <input 
-                  type="file" accept="image/*"
+                  type="file" accept="image/*" ref={fileInputRef}
                   onChange={(e) => setFile(e.target.files[0])}
                   className="text-xs text-gray-600 file:mr-4 file:py-2 file:px-6 file:rounded-xl file:border-0 file:bg-[#b4a460] file:text-black file:font-bold hover:file:bg-[#9a8b50] cursor-pointer"
                />

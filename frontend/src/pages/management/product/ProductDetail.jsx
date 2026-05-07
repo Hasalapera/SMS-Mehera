@@ -19,6 +19,9 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const allowedRoles = ["admin", "sales_rep", "online_store_keeper"];
+  const canAddToOrder = user && allowedRoles.includes(user.role);
+
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) {
@@ -193,9 +196,7 @@ export default function ProductDetail() {
                       <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">SKU</th>
                       <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Price</th>
                       <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Stock</th>
-                      {["admin", "sales_rep", "online_store_keeper"].includes(user?.role) && (
-                        <th className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 text-right">Add to Queue</th>
-                      )}
+                      {canAddToOrder && <th className="px-4 py-4 text-[9px] text-center font-black uppercase tracking-[0.2em] text-gray-400">Action</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -217,20 +218,19 @@ export default function ProductDetail() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          {["admin", "sales_rep", "online_store_keeper"].includes(user?.role) && (
-                            <div className="flex items-center justify-end">
-                                <button 
-                                  onClick={() => handleAddToCart(variant)}
-                                  disabled={Number(variant.stock_count) <= 0}
-                                  className={`p-2 rounded-full transition-all ${
-                                    Number(variant.stock_count) <= 0 
-                                    ? "bg-gray-100 text-gray-300 cursor-not-allowed" 
-                                    : "bg-white text-black hover:bg-black hover:text-[#c9a84c] hover:scale-110 active:scale-95 shadow-md"
-                                  }`}
-                                >
-                                  <PlusCircle size={22} strokeWidth={2.5}/>
-                                </button>
-                            </div>
+                          {canAddToOrder && (
+                            <button 
+                              onClick={() => handleAddToCart(variant)}
+                              disabled={Number(variant.stock_count) <= 0}
+                              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-black uppercase text-[8px] tracking-widest transition-all ml-auto ${
+                                Number(variant.stock_count) <= 0 
+                                ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+                                : "bg-black text-[#c9a84c] hover:scale-105 shadow-lg active:scale-95"
+                              }`}
+                            >
+                              <PlusCircle size={12} />
+                              Add
+                            </button>
                           )}
                         </td>
                       </tr>

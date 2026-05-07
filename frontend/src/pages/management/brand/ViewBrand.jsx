@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Tag, FileText, Globe, Loader2, Image as ImageIcon, LayoutGrid } from 'lucide-react';
+import { Tag, FileText, Globe, Loader2, Image as ImageIcon, LayoutGrid, Trash2 } from 'lucide-react';
 import axios from 'axios';
 import { toast, Toaster } from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 const ViewBrands = () => {
   const [brands, setBrands] = useState([]);
@@ -12,13 +13,11 @@ const ViewBrands = () => {
   useEffect(() => {
     const fetchBrands = async () => {
       try {
+        setLoading(true);
         const response = await axios.get('http://localhost:5001/api/brands/getBrands');
-        // Backend එකෙන් array එකක් එනවා නම් response.data, 
-        // නැත්නම් response.data.brands (කලින් කෝඩ් එක අනුව)
         const brandData = response.data.brands || response.data;
         setBrands(brandData);
         
-        // මුලින්ම තියෙන brand එක පෙන්වන්න සෙට් කරනවා
         if (brandData.length > 0) {
           setActiveTab(brandData[0].brand_id);
         }
@@ -28,8 +27,55 @@ const ViewBrands = () => {
         setLoading(false);
       }
     };
-    fetchBrands();
-  }, []);
+
+    fetchBrands(); // කෙලින්ම මේ useEffect එක ඇතුළෙම කෝල් කරන්න
+  }, []); 
+
+  // 🗑️ Delete/Archive Logic
+  const handleDeleteBrand = async (brandId, brandName) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Do you want to deactivate "${brandName}"? This will hide the brand and its linked products from the active inventory.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#000',
+      confirmButtonText: 'Yes, deactivate it!',
+      background: '#ffffff',
+      color: '#000000',
+      customClass: {
+        popup: 'rounded-[2rem]',
+        confirmButton: 'rounded-xl px-6 py-3 font-bold',
+        cancelButton: 'rounded-xl px-6 py-3 font-bold'
+      }
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const token = localStorage.getItem('accessToken');
+        await axios.delete(`http://localhost:5001/api/brands/delete/${brandId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        toast.success(`${brandName} moved to archive`);
+        
+        // UI එකෙන් අයින් කරන්න
+        const updatedBrands = brands.filter(b => b.brand_id !== brandId);
+        setBrands(updatedBrands);
+        
+        // ඊළඟට තියෙන Brand එක පෙන්වන්න
+        if (updatedBrands.length > 0) {
+          setActiveTab(updatedBrands[0].brand_id);
+        } else {
+          setActiveTab(null);
+        }
+
+      } catch (err) {
+        console.error("Delete Error:", err);
+        toast.error(err.response?.data?.error || "Failed to delete brand");
+      }
+    }
+  };
 
   const activeBrand = brands.find(b => b.brand_id === activeTab);
 
@@ -78,6 +124,13 @@ const ViewBrands = () => {
       {/* Brand Content Card */}
       {activeBrand && (
         <div className="bg-white border border-gray-100 rounded-[3rem] shadow-sm p-8 md:p-12 animate-in slide-in-from-bottom-5 duration-500">
+          <button 
+            onClick={() => handleDeleteBrand(activeBrand.brand_id, activeBrand.brand_name)}
+            className="absolute top-8 right-8 p-4 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-3xl transition-all group"
+            title="Deactivate Brand"
+          >
+            <Trash2 size={24} className="group-hover:scale-110 transition-transform" />
+          </button>
           <div className="flex flex-col lg:flex-row gap-12 items-start">
             
             {/* Left: Brand Logo Area */}
