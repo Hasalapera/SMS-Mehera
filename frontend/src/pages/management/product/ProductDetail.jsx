@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, PlusCircle } from "lucide-react"; // Added PlusCircle icon
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
+import { toast } from "react-hot-toast"; // For showing toast notifications
 
 const formatStatus = (status) => {
   if (!status) return "Unknown";
@@ -12,11 +13,14 @@ const formatStatus = (status) => {
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { token, logout } = useAuth();
+  const { token, logout, user } = useAuth();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const allowedRoles = ["admin", "sales_rep", "online_store_keeper"];
+  const canAddToOrder = user && allowedRoles.includes(user.role);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -42,7 +46,6 @@ export default function ProductDetail() {
           logout();
           return;
         }
-
         setProduct(null);
         setError(err.response?.status === 404 ? "Product not found" : "Failed to load product details");
       } finally {
@@ -53,11 +56,39 @@ export default function ProductDetail() {
     fetchProduct();
   }, [id, token, logout]);
 
+  // --- ADD TO ORDER LOGIC (Add variant to order queue) ---
+  const handleAddToCart = (variant) => {
+    const savedCart = JSON.parse(localStorage.getItem("active_order_cart") || "[]");
+    
+    // Creating a unique cart item ID by combining product ID and variant ID
+    const cartItemId = `${product.product_id}-${variant.variant_id}`;
+    const existingItemIndex = savedCart.findIndex(item => item.cartItemId === cartItemId);
+    
+    let updatedCart;
+    if (existingItemIndex > -1) {
+      updatedCart = [...savedCart];
+      updatedCart[existingItemIndex].qty += 1;
+    } else {
+      updatedCart = [...savedCart, { 
+        cartItemId,
+        product_id: product.product_id, 
+        variant_id: variant.variant_id,
+        name: `${product.product_name} (${variant.variant_name})`, 
+        price: Number(variant.price),
+        qty: 1 
+      }];
+    }
+
+    localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
+    window.dispatchEvent(new Event('focus')); // Send a signal to Dashboard to refresh cart
+    toast.success(`${variant.variant_name} added to order queue!`);
+  };
+
   if (loading) {
     return (
       <div className="p-8 bg-[#f5f5f0] min-h-screen flex flex-col items-center justify-center gap-3">
         <Loader2 className="animate-spin text-[#c9a84c]" size={42} />
-        <p className="text-gray-500">Loading product...</p>
+        <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Syncing Product Registry...</p>
       </div>
     );
   }
@@ -65,14 +96,11 @@ export default function ProductDetail() {
   if (error || !product) {
     return (
       <div className="p-8 bg-[#f5f5f0] min-h-screen">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 font-medium"
-        >
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 font-medium">
           <ArrowLeft size={20} /> Back to Inventory
         </button>
-        <div className="text-center py-24">
-          <p className="text-2xl text-gray-500">{error || "Product not found"}</p>
+        <div className="text-center py-24 text-gray-400 font-serif italic">
+          <p className="text-2xl">{error || "Product not found"}</p>
         </div>
       </div>
     );
@@ -83,142 +111,120 @@ export default function ProductDetail() {
   const totalStock = variants.reduce((sum, item) => sum + Number(item.stock_count || 0), 0);
 
   return (
-    <div className="p-8 bg-[#f5f5f0] min-h-screen">
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 font-medium"
-      >
-        <ArrowLeft size={20} /> Back to Inventory
-      </button>
+    <div className="w-full min-h-screen bg-[#fcfcfc]">
+      <div className="p-6 md:p-8">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-600 hover:text-black mb-8 font-black uppercase text-[10px] tracking-widest transition-colors">
+          <ArrowLeft size={16} /> Back to Inventory
+        </button>
 
-      <div className="bg-white rounded-lg shadow-md p-8 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-          <div className="flex items-center justify-center">
-            <div className="bg-[#C0B26D] rounded-lg w-full h-64 flex items-center justify-center">
-              <img
-                src={product.image_url || "https://placehold.co/400x400/C0B26D/white?text=No+Image"}
-                alt={product.product_name || "Product"}
-                className="w-full h-full object-contain p-4"
-              />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* LEFT SIDE: Image & Description */}
+          <div className="bg-white rounded-4xl shadow-xl shadow-gray-200/50 p-8 border border-gray-100">
+            <div className="flex flex-col gap-6">
+              {/* Image */}
+              <div className="flex items-center justify-center">
+                <div className="bg-gray-50 rounded-[2.5rem] w-full h-72 flex items-center justify-center p-6 border border-gray-100 shadow-inner">
+                  <img src={product.image_url || "https://placehold.co/400x400/C0B26D/white?text=No+Image"} alt={product.product_name} className="w-full h-full object-contain" />
+                </div>
+              </div>
+
+              {/* Title & Brand */}
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#c9a84c] mb-2 block">{product.brand?.brand_name || "Premium Brand"}</span>
+                <h2 className="text-2xl font-serif italic text-black leading-tight">{product.product_name}</h2>
+              </div>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Status</p>
+                  <span className={`text-[10px] font-black uppercase tracking-widest ${product.status === "active" ? "text-green-600" : "text-red-600"}`}>
+                    {formatStatus(product.status)}
+                  </span>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Category</p>
+                  <span className="text-[11px] font-bold text-black uppercase">{product.category?.category_name || "-"}</span>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Starting Price</p>
+                  <span className="text-lg font-serif italic text-[#c9a84c]">{firstVariantPrice > 0 ? `Rs. ${firstVariantPrice.toLocaleString()}` : "N/A"}</span>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Network Stock</p>
+                  <span className="text-lg font-serif italic text-black">{totalStock} Units</span>
+                </div>
+              </div>
+
+              {/* Description */}
+              <p className="text-gray-500 leading-relaxed italic text-sm border-t border-gray-50 pt-4">
+                {product.description || "No professional description available for this registry item."}
+              </p>
             </div>
           </div>
 
-          <div className="md:col-span-2">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.product_name}</h1>
-
-            <div className="space-y-4 mb-6">
-              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
-                <span className="text-gray-600 font-medium">Status</span>
-                <span
-                  className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                    product.status === "active"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  {formatStatus(product.status)}
-                </span>
+          {/*RIGHT SIDE: Variants Table */}
+          {variants.length > 0 && (
+            <div className="bg-white rounded-4xl shadow-xl shadow-gray-200/50 overflow-hidden border border-gray-100 flex flex-col">
+              <div className="bg-[#b4a460] px-8 py-5 flex items-center justify-between">
+                <h2 className="text-sm font-black text-white uppercase tracking-widest">Product Variations</h2>
+                <span className="text-[10px] font-bold text-black/60">{variants.length} Variants</span>
               </div>
 
-              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
-                <span className="text-gray-600 font-medium">Brand</span>
-                <span className="text-gray-900 font-semibold">{product.brand?.brand_name || "-"}</span>
-              </div>
-
-              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
-                <span className="text-gray-600 font-medium">Category</span>
-                <span className="text-gray-900 font-semibold">{product.category?.category_name || "-"}</span>
-              </div>
-
-              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
-                <span className="text-gray-600 font-medium">Unit Price (from first variant)</span>
-                <span className="text-2xl font-bold text-[#c9a84c]">
-                  {firstVariantPrice > 0 ? `${firstVariantPrice.toLocaleString()} LKR` : "N/A"}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
-                <span className="text-gray-600 font-medium">Total Stock</span>
-                <span className="text-xl font-bold text-gray-900">{totalStock} units</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600 font-medium">Number of Variants</span>
-                <span className="text-lg font-bold text-[#c9a84c] bg-[#f5f5f0] px-4 py-2 rounded-lg">
-                  {variants.length}
-                </span>
+              <div className="overflow-x-auto flex-1">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100 sticky top-0">
+                      <th className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Variant</th>
+                      <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">SKU</th>
+                      <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Price</th>
+                      <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Stock</th>
+                      {canAddToOrder && <th className="px-4 py-4 text-[9px] text-center font-black uppercase tracking-[0.2em] text-gray-400">Action</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {variants.map((variant) => (
+                      <tr key={variant.variant_id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                          <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center p-2 shrink-0">
+                              <img src={variant.image_url || product.image_url} alt="v" className="max-h-full max-w-full object-contain" />
+                            </div>
+                            <span className="font-bold text-sm text-black">{variant.variant_name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-[10px] font-mono font-bold text-gray-400 uppercase">{variant.sku}</td>
+                        <td className="px-4 py-4 font-serif italic text-sm text-black">Rs. {Number(variant.price || 0).toLocaleString()}</td>
+                        <td className="px-4 py-4">
+                          <span className={`font-bold text-sm ${Number(variant.stock_count || 0) <= 5 ? "text-red-500" : "text-black"}`}>
+                            {variant.stock_count}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {canAddToOrder && (
+                            <button 
+                              onClick={() => handleAddToCart(variant)}
+                              disabled={Number(variant.stock_count) <= 0}
+                              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-black uppercase text-[8px] tracking-widest transition-all ml-auto ${
+                                Number(variant.stock_count) <= 0 
+                                ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+                                : "bg-black text-[#c9a84c] hover:scale-105 shadow-lg active:scale-95"
+                              }`}
+                            >
+                              <PlusCircle size={12} />
+                              Add
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-
-            <p className="text-gray-600 leading-relaxed italic border-t border-gray-200 pt-6">
-              {product.description || "No description available"}
-            </p>
-          </div>
+          )}
         </div>
       </div>
-
-      {variants.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="bg-[#1a1a1a] px-8 py-4 flex items-center justify-between">
-            <h2 className="text-white font-bold text-lg">Product Variants</h2>
-            <span className="text-gray-400 text-sm">{variants.length} variant(s)</span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-[#f9f8f4] border-b border-gray-200">
-                  <th className="px-6 py-4 text-left text-gray-700 font-semibold text-xs uppercase tracking-wider">Image</th>
-                  <th className="px-6 py-4 text-left text-gray-700 font-semibold text-xs uppercase tracking-wider">SKU</th>
-                  <th className="px-6 py-4 text-left text-gray-700 font-semibold text-xs uppercase tracking-wider">Variant Name</th>
-                  <th className="px-6 py-4 text-left text-gray-700 font-semibold text-xs uppercase tracking-wider">Unit Price</th>
-                  <th className="px-6 py-4 text-left text-gray-700 font-semibold text-xs uppercase tracking-wider">Stock Qty</th>
-                  <th className="px-6 py-4 text-left text-gray-700 font-semibold text-xs uppercase tracking-wider">Critical Level</th>
-                </tr>
-              </thead>
-              <tbody>
-                {variants.map((variant, index) => (
-                  <tr
-                    key={variant.variant_id}
-                    className={`border-b border-gray-100 ${index % 2 === 0 ? "bg-white" : "bg-[#faf9f5]"} hover:bg-gray-50`}
-                  >
-                    <td className="px-6 py-4">
-                      <div className="w-12 h-12 bg-[#C0B26D] rounded-lg flex items-center justify-center">
-                        <img
-                          src={variant.image_url || product.image_url || "https://placehold.co/80x80/C0B26D/white?text=V"}
-                          alt="variant"
-                          className="w-full h-full object-contain rounded-lg"
-                        />
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-mono font-semibold text-gray-700">{variant.sku}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-gray-700">{variant.variant_name}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-bold text-gray-900">{Number(variant.price || 0).toLocaleString()} LKR</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`font-bold text-lg ${
-                          Number(variant.stock_count || 0) <= 0 ? "text-red-600" : "text-[#c9a84c]"
-                        }`}
-                      >
-                        {Number(variant.stock_count || 0)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-gray-600">{Number(variant.critical_stock_level || 0)}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

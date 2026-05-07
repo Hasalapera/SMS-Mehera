@@ -9,5 +9,6 @@ const uploadBrand = multer({ storage: brandStorage });
 
 router.post('/addBrand', verifyToken, isAdmin, uploadBrand.single('brand_image'), brandController.addBrand);
 router.get('/getBrands', brandController.getBrands);
+router.delete('/delete/:id', verifyToken, isAdmin, brandController.deleteBrand);
 
 module.exports = router;

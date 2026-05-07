@@ -16,12 +16,16 @@ const OrderItem = sequelize.define('OrderItem', {
     }
   },
   product_id: { 
-    type: DataTypes.UUID, // Product ID එකත් UUID ලෙස සකස් කර ඇත
+    type: DataTypes.UUID, 
     allowNull: false 
   },
-  variant_id: { // Diagram එකේ තිබූ field එක
-    type: DataTypes.INTEGER, 
-    allowNull: true 
+  variant_id: {
+    type: DataTypes.UUID, 
+    allowNull: true,
+    references: {
+      model: 'product_variants',
+      key: 'variant_id'
+    }
   },
   qty: { type: DataTypes.INTEGER, allowNull: false },
   price: { type: DataTypes.DECIMAL(10, 2), allowNull: false }

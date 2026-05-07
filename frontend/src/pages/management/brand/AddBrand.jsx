@@ -36,7 +36,7 @@ const AddBrand = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       await axios.post('http://localhost:5001/api/brands/addBrand', data, {
         headers: { 
           'Authorization': `Bearer ${token}`,

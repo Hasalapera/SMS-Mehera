@@ -1,14 +1,14 @@
 import React from 'react';
-import { 
-  Instagram, Facebook, Twitter, Mail, MapPin, 
-  Phone, Heart, Leaf, Star, Sparkles 
+import {
+  Instagram, Facebook, Twitter, Mail, MapPin,
+  Phone, Heart, Leaf, Star, Sparkles
 } from 'lucide-react';
 
 const Footer = () => {
   return (
     <footer className="w-full bg-[#fdfdfb] border-t border-gray-100 pt-16 pb-8 px-10 mt-auto">
       <div className="max-w-7xl mx-auto">
-        
+
         {/* Upper Section: Brand Promises */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16 pb-12 border-b border-gray-50">
           <div className="flex flex-col items-center text-center gap-3">
@@ -35,20 +35,26 @@ const Footer = () => {
 
         {/* Middle Section: Links & Contact */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-          
+
           {/* Brand Story */}
           <div className="space-y-6">
-            <div className="flex flex-col">
-              <span className="text-2xl font-serif tracking-[0.2em] text-black leading-none">MEHERA</span>
-              <span className="text-[9px] text-[#b4a460] font-black uppercase tracking-[0.4em] mt-1">International</span>
+            <div
+              className="flex flex-col items-start text-left cursor-pointer"
+              onClick={() => handleNavigation('/')}
+            >
+              <img
+                src="https://i.postimg.cc/nzwPbHWj/mehera-logo.png"
+                alt="Mehera International Logo"
+                className="h-8 md:h-10 w-auto object-contain"
+              />
             </div>
             <p className="text-gray-500 text-xs leading-relaxed font-medium">
               Bringing premium international cosmetics to Sri Lanka. Experience the art of beauty with our curated collection of luxury brands.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-[#b4a460] transition-colors"><Instagram size={18} /></a>
-              <a href="#" className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-[#b4a460] transition-colors"><Facebook size={18} /></a>
-              <a href="#" className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-[#b4a460] transition-colors"><Twitter size={18} /></a>
+              <a href="https://www.facebook.com/share/1DiVXugd9a/?mibextid=wwXIfr" className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-[#b4a460] transition-colors"><Instagram size={18} /></a>
+              <a href="https://www.facebook.com/share/1DiVXugd9a/?mibextid=wwXIfr" className="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-[#b4a460] transition-colors"><Facebook size={18} /></a>
+             
             </div>
           </div>
 
@@ -80,7 +86,7 @@ const Footer = () => {
             <div className="space-y-4">
               <div className="flex items-start gap-3 text-gray-500">
                 <MapPin size={16} className="text-[#b4a460] shrink-0" />
-                <span className="text-[11px] font-medium">No 123, Ward Place, Colombo 07, Sri Lanka.</span>
+                <span className="text-[11px] font-medium">No 123, Ward Place, Panadura, Sri Lanka.</span>
               </div>
               <div className="flex items-center gap-3 text-gray-500">
                 <Phone size={16} className="text-[#b4a460] shrink-0" />

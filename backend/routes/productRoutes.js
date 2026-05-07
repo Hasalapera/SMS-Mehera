@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/productController');
-const { isAdmin, verifyToken } = require('../middlewares/authMiddleware');
+const { isAdmin, isAdminOrManager, verifyToken } = require('../middlewares/authMiddleware');
 
 const multer = require('multer');
 const { productDynamicStorage } = require('../config/cloudinary'); 

@@ -27,7 +27,7 @@ const AddProduct = () => {
   useEffect(() => {
     const fetchBrands = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('accessToken');
         const headers = { Authorization: `Bearer ${token}` };
 
         const brandsResponse = await axios.get('http://localhost:5001/api/brands/getBrands', { headers });
@@ -107,7 +107,7 @@ const AddProduct = () => {
     });
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       await axios.post('http://localhost:5001/api/products/addProduct', data, {
         headers: { 
             'Authorization': `Bearer ${token}`,

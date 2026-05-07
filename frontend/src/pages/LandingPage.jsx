@@ -1,37 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ShoppingBag, ShieldCheck, Menu, X, Loader2, Sparkles } from 'lucide-react';
+import { ArrowRight, ShoppingBag, ShieldCheck, Loader2, Sparkles } from 'lucide-react';
 import axios from 'axios';
+import emailjs from '@emailjs/browser';
 import ProductCard from '../components/ProductCard';
+import StatNavBar from '../components/StatNavBar';
 import Footer from '../components/Footer';
-
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const form = useRef(); // Form එක අල්ලගන්න ref එක මෙතන තියෙන්න ඕනේ
+  
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // පේජ් එකේ උඩටම Scroll කරන Function එක (Home Link එක සඳහා)
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setIsMenuOpen(false);
-  };
-
-  const scrollToProducts = () => {
-    const productSection = document.getElementById('products-section');
-    if (productSection) {
-      productSection.scrollIntoView({ behavior: 'smooth' });
-    }
-    setIsMenuOpen(false);
-  };
-
+  // Products fetch කිරීම
   useEffect(() => {
     const fetchLandingProducts = async () => {
       try {
         const response = await axios.get('http://localhost:5001/api/products/getProducts');
         const data = response.data?.products || response.data;
-        setProducts(data.slice(0, 8)); 
+        setProducts(data.slice(0, 8));
       } catch (err) {
         console.error("Failed to fetch products for landing", err);
       } finally {
@@ -41,75 +30,30 @@ const LandingPage = () => {
     fetchLandingProducts();
   }, []);
 
-  // Navigation Links Array එක
-  const navLinks = [
-    { name: 'Home', action: scrollToTop },
-    { name: 'Products', action: scrollToProducts }, 
-    { name: 'Our Brands', path: '#' },
-    { name: 'Workshops', path: '#' },
-    { name: 'About US', path: '#' },
-    { name: 'Contact Us', path: '#' },
-  ];
+  // Email යැවීමේ Function එක
+  const sendEmail = (e) => {
+    e.preventDefault();
+
+    emailjs.sendForm(
+      'service_gnxf86j',
+      'template_9p5jv9r',
+      form.current,
+      'rfwdHsLZUipzt_CJI'
+    )
+    .then((result) => {
+      console.log(result.text);
+      alert("Successfully sent your message! ✅");
+      e.target.reset();
+    }, (error) => {
+      console.log(error.text);
+      alert("Something went wrong. Please try again. ❌");
+    });
+  };
 
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900 overflow-x-hidden">
-      
-      {/* Navbar Section */}
-      <nav className="fixed top-0 left-0 w-full bg-white/80 backdrop-blur-md z-[1000] border-b border-gray-50">
-        <div className="max-w-7xl mx-auto flex justify-between items-center px-6 md:px-12 py-5">
-          
-          {/* Logo Area */}
-          <div className="flex flex-col text-left cursor-pointer" onClick={scrollToTop}>
-            <span className="text-xl md:text-2xl font-serif tracking-widest leading-none text-black">Mehera</span>
-            <span className="text-[9px] tracking-[0.3em] text-[#b4a460] uppercase mt-1 font-bold">International</span>
-          </div>
-
-          {/* Desktop Links - අලුතින් එකතු කළ කොටස */}
-          <div className="hidden lg:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <button
-                key={link.name}
-                onClick={link.action ? link.action : () => {}}
-                className="text-[11px] font-black uppercase tracking-[0.15em] text-gray-400 hover:text-[#b4a460] transition-colors"
-              >
-                {link.name}
-              </button>
-            ))}
-            <button 
-              onClick={() => navigate('/login')} 
-              className="bg-black text-white px-7 py-2.5 rounded-full font-bold text-[11px] uppercase tracking-widest hover:bg-[#b4a460] hover:text-black transition-all duration-300 shadow-lg shadow-black/10 ml-4"
-            >
-              Login
-            </button>
-          </div>
-
-          {/* Mobile Toggle */}
-          <button className="lg:hidden text-black p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-            {isMenuOpen ? <X size={26} /> : <Menu size={26} />}
-          </button>
-        </div>
-
-        {/* Mobile Dropdown Menu */}
-        <div className={`lg:hidden absolute top-full left-0 w-full bg-white border-b border-gray-100 transition-all duration-500 overflow-hidden ${isMenuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}`}>
-          <div className="flex flex-col p-8 gap-6 text-left">
-            {navLinks.map((link) => (
-              <button
-                key={link.name}
-                onClick={link.action ? link.action : () => setIsMenuOpen(false)}
-                className="text-xs font-black uppercase tracking-widest text-gray-500 border-b border-gray-50 pb-4"
-              >
-                {link.name}
-              </button>
-            ))}
-            <button 
-              onClick={() => navigate('/login')}
-              className="w-full bg-black text-white py-4 rounded-xl font-bold uppercase text-xs tracking-widest"
-            >
-              System Login
-            </button>
-          </div>
-        </div>
-      </nav>
+      <StatNavBar />
+      <div className="pt-5"></div>
 
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-8 pt-36 pb-20 md:pt-52 md:pb-32 flex flex-col md:flex-row items-center gap-12 text-left">
@@ -157,11 +101,11 @@ const LandingPage = () => {
               </div>
               <h2 className="text-4xl font-serif text-black leading-none">Featured <span className="italic">Cosmetics</span></h2>
             </div>
-            <button 
-                onClick={() => navigate('/login')}
-                className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
+            <button
+              onClick={() => navigate('/products')}
+              className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
             >
-                View Full Catalog <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+              View Full Catalog <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
 
@@ -179,11 +123,118 @@ const LandingPage = () => {
           )}
         </div>
       </section>
-      {/* <section id='brands-section' className="py-24 px-8 text-center">
-        <h1>Our Brands</h1>
-      </section> */}
 
-      <Footer/>
+      {/* --- Our Brands Section --- */}
+      <section id="brands-section" className="py-24 px-8 bg-white border-b border-gray-50">
+        <div className="max-w-7xl mx-auto text-center space-y-16">
+          <div className="space-y-4">
+            <div className="flex justify-center items-center gap-2 text-[#b4a460]">
+              <Sparkles size={16} />
+              <span className="text-[10px] font-black uppercase tracking-[0.4em]">Official Distributor in Sri Lanka</span>
+              <Sparkles size={16} />
+            </div>
+            <h2 className="text-4xl md:text-5xl font-serif text-black leading-none">
+              Global <span className="italic text-[#b4a460]">Partnerships</span>
+            </h2>
+          </div>
+
+          <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24">
+            <div className="group flex flex-col items-center gap-4 cursor-pointer">
+              <div className="h-16 w-40 flex items-center justify-center grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-110">
+                <img src="https://www.mymall.com.cy/wp-content/uploads/2023/10/INGLOT-logo-a-1024x359.jpg" alt="Inglot" className="max-h-full max-w-full object-contain" />
+              </div>
+            </div>
+            <div className="group flex flex-col items-center gap-4 cursor-pointer">
+              <div className="h-24 w-60 flex items-center justify-center grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-110">
+                <img src="https://i.postimg.cc/T2BmPCK6/487379046-1216520530254563-8678567146182017128-n-(1).jpg" alt="Studio17" className="max-h-full max-w-full object-contain" />
+              </div>
+            </div>
+            <div className="group flex flex-col items-center gap-4 cursor-pointer">
+              <div className="h-16 w-40 flex items-center justify-center grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-110">
+                <img src="https://wp.logos-download.com/wp-content/uploads/2016/06/Kaaral_logo.png?dl" alt="Kaaral" className="max-h-full max-w-full object-contain" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --- About & Workshops Section --- */}
+      <section id="about-section" className="py-24 px-8 bg-[#fafaf9]">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-20 items-center text-left">
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#b4a460]">Est. 1998</span>
+              <h2 className="text-5xl md:text-6xl font-serif leading-tight text-black">
+                The Art of <br /> <span className="italic text-[#b4a460]">Professional</span> Beauty.
+              </h2>
+              <p className="text-gray-500 text-lg leading-relaxed font-sans italic max-w-md">
+                Mehera International is a leading force in the beauty industry, bringing the world's most sophisticated formulations to Sri Lanka.
+              </p>
+            </div>
+
+            <div id="workshops-section" className="p-10 bg-white rounded-[2.5rem] shadow-sm border border-gray-50 space-y-4">
+              <h4 className="font-serif text-2xl italic text-black">Upcoming Workshops</h4>
+              <p className="text-sm text-gray-400 font-sans tracking-wide leading-loose">
+                Elevate your artistry with our masterclasses. Designed for beauty professionals to master international techniques.
+              </p>
+              <button onClick={() => navigate('/workshops')} className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#b4a460] hover:gap-5 transition-all">
+                Explore Schedule <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+
+          <div className="relative h-[600px] w-full bg-gray-200 rounded-[3.5rem] overflow-hidden shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+            <img src="https://corp.inglotcosmetics.com/wp-content/uploads/2025/09/250805_INGLOT-0598_F.jpg" className="w-full h-full object-cover" />
+            <div className="absolute bottom-12 left-12 z-20 text-white">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#b4a460] mb-2 block">Our Headquarters</span>
+              <h3 className="text-3xl font-serif italic">Panadura, Sri Lanka</h3>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --- Contact Us --- */}
+      <section id="contact-section" className="py-24 px-8 bg-white">
+        <div className="max-w-4xl mx-auto text-center space-y-16">
+          <div className="space-y-4">
+            <h2 className="text-5xl font-serif text-black italic">Connect <span className="text-[#b4a460]">With Us</span></h2>
+            <p className="text-gray-400 font-sans text-sm tracking-widest uppercase">For Partnerships & Wholesale Inquiries</p>
+          </div>
+
+          <form ref={form} onSubmit={sendEmail} className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+            <input
+              type="text"
+              name="from_name" 
+              required
+              placeholder="NAME"
+              className="bg-gray-50 p-6 rounded-2xl outline-none font-black text-[10px] tracking-widest border border-transparent focus:border-[#b4a460]/30 transition-all"
+            />
+            <input
+              type="email"
+              name="reply_to" 
+              required
+              placeholder="EMAIL"
+              className="bg-gray-50 p-6 rounded-2xl outline-none font-black text-[10px] tracking-widest border border-transparent focus:border-[#b4a460]/30 transition-all"
+            />
+            <textarea
+              name="message" 
+              required
+              placeholder="YOUR MESSAGE"
+              className="md:col-span-2 bg-gray-50 p-6 rounded-2xl outline-none font-black text-[10px] tracking-widest h-40 border border-transparent focus:border-[#b4a460]/30 transition-all"
+            ></textarea>
+
+            <button
+              type="submit"
+              className="md:col-span-2 py-6 bg-black text-[#b4a460] rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-[#1a1a1a] transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-3"
+            >
+              Send Message <ArrowRight size={16} />
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <Footer />
     </div>
   );
 };

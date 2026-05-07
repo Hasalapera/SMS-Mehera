@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Tag, FileText, LayoutGrid, Loader2, Search, Package, ChevronRight, Calendar, ArrowUpRight } from 'lucide-react';
+import { Tag, FileText, LayoutGrid, Loader2, Search, Package, ChevronRight, Calendar, ArrowUpRight, Trash2 } from 'lucide-react';
 import axios from 'axios';
 import { toast, Toaster } from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 const ViewCategories = () => {
     const {token} = useAuth();
@@ -11,6 +12,41 @@ const ViewCategories = () => {
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState(null);
 
+    const handleDeleteCategory = async (id, name) => {
+        const result = await Swal.fire({
+            title: 'Deactivate Category?',
+            text: `Are you sure you want to archive "${name}"? This will hide it from the active inventory but won't delete associated products.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#b4a460', // Mehera Gold
+            cancelButtonColor: '#000',
+            confirmButtonText: 'Yes, Archive it!',
+            background: '#ffffff',
+            customClass: { popup: 'rounded-[3rem]' }
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await axios.delete(`http://localhost:5001/api/category/delete/${id}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
+                });
+
+                toast.success(`${name} archived successfully`);
+                
+                // UI එකෙන් අයින් කිරීම
+                const updatedList = categories.filter(c => c.category_id !== id);
+                setCategories(updatedList);
+                
+                // ඊළඟට තියෙන කැටගරි එක සිලෙක්ට් කිරීම
+                if (updatedList.length > 0) setSelectedCategory(updatedList[0].category_id);
+                else setSelectedCategory(null);
+
+            } catch (err) {
+                toast.error(err.response?.data?.error || "Failed to delete category");
+            }
+        }
+    };
+
     // 1. Categories සහ ඒවාට අදාළ Products Fetch කරගැනීම
     useEffect(() => {
         const fetchCategories = async () => {
@@ -18,7 +54,7 @@ const ViewCategories = () => {
             // Backend එකේ getCategories එකේදී 'include: [Product]' දාලා තිබිය යුතුයි
             const response = await axios.get('http://localhost:5001/api/category/getCategories', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
                 }
             });
             const data = response.data.categories || response.data;
@@ -125,6 +161,13 @@ const ViewCategories = () => {
                 <div className="space-y-8 animate-in slide-in-from-right-10 duration-700">
                 {/* Category Info Card */}
                 <div className="bg-white border border-gray-100 rounded-[3.5rem] p-10 shadow-sm relative overflow-hidden">
+                    <button 
+                        onClick={() => handleDeleteCategory(activeCategory.category_id, activeCategory.category_name)}
+                        className="absolute top-8 right-8 p-4 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all z-20 group"
+                        title="Delete Category"
+                    >
+                        <Trash2 size={24} className="group-hover:scale-110 transition-transform" />
+                    </button>
                     <div className="absolute top-0 right-0 p-12 opacity-[0.03] text-black">
                         <Tag size={200} />
                     </div>

@@ -8,7 +8,7 @@ const Customer = sequelize.define('Customer', {
         primaryKey: true,
         field: 'customer_id'
     },
-    // ID Reference (CUS-0001 වැනි දේ සේව් කර ගැනීමට)
+    // ID Reference (CUS-0001)
     customer_display_id: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -40,7 +40,7 @@ const Customer = sequelize.define('Customer', {
         allowNull: true,
         field: 'phone2'
     },
-    // ලිපිනය Lane 01 සහ 02 ලෙස වෙන් කර ගබඩා කිරීම වඩාත් සුදුසුයි
+    // Address fields
     lane1: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -69,7 +69,7 @@ const Customer = sequelize.define('Customer', {
     tableName: 'customers',
     timestamps: true,
     underscored: true,
-    paranoid: true, // Soft deletes සක්‍රීය කිරීම
+    paranoid: true, // enable soft deletes
     deletedAt: 'deleted_at'
 });
 

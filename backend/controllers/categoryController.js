@@ -1,11 +1,11 @@
 const { Category, Product } = require('../models');
 
 const addCategory = async (req, res) => {
-    // Frontend එකෙන් එවන දත්ත (Destructuring)
+    // destructure data from the frontend request body
     const { name, description } = req.body;
 
     try {
-        // 1. මේ නමින්ම Category එකක් දැනටමත් තියෙනවද බලනවා
+        // 1. check if category with the same name already exists (case-insensitive)
         const existingCategory = await Category.findOne({ 
             where: { category_name: name } 
         });
@@ -14,13 +14,13 @@ const addCategory = async (req, res) => {
             return res.status(400).json({ error: 'මෙම කාණ්ඩය (Category) දැනටමත් පද්ධතියට ඇතුළත් කර ඇත.' });
         }
 
-        // 2. අලුත් Category එක නිර්මාණය කිරීම
+        // 2. create new category
         const newCategory = await Category.create({
             category_name: name,
             category_description: description
         });
 
-        // 3. සාර්ථක ප්‍රතිචාරය යැවීම
+        // 3. success response
         return res.status(201).json({
             message: 'Category added successfully!',
             category: newCategory
@@ -29,7 +29,7 @@ const addCategory = async (req, res) => {
     } catch (error) {
         console.error('Error adding category:', error);
         
-        // Sequelize Unique Constraint Error එකක් ආවොත් (ආරක්ෂාවට)
+        // If the error is due to unique constraint violation, send a specific message
         if (error.name === 'SequelizeUniqueConstraintError') {
             return res.status(400).json({ error: 'මෙම Category නාමය දැනටමත් පවතී.' });
         }
@@ -43,7 +43,7 @@ const getCategories = async (req, res) => {
         const categories = await Category.findAll({
             include: [{ 
                 model: Product, 
-                as: 'products' // models/index.js එකේ දාපු alias එකම වෙන්න ඕනේ
+                as: 'products' // model association alias 
             }],
             order: [['category_name', 'ASC']]
         });
@@ -54,7 +54,24 @@ const getCategories = async (req, res) => {
     }
 };
 
+const deleteCategory = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const category = await Category.findByPk(id);
+
+        if (!category) return res.status(404).json({ error: "Category not found" });
+
+        // paranoid: true නිසා මේකෙන් වෙන්නේ Soft Delete එකක්
+        await category.destroy();
+
+        res.status(200).json({ message: "Category archived successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 module.exports = {
     addCategory,
-    getCategories
+    getCategories,
+    deleteCategory
 };

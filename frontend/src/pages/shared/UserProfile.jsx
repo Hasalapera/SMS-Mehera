@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { 
   User, Mail, Phone, CreditCard, MapPin, 
-  Shield, Calendar, Camera, Edit2, Save, X, Lock, KeyRound, RefreshCw, Loader2
+  Shield, Calendar, Camera, Edit2, Save, X, Lock, KeyRound, RefreshCw, Loader2, Eye, EyeOff
 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 
@@ -82,7 +82,7 @@ const UserProfile = () => {
     }
 
     setIsUpdating(true);
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     try {
       const response = await axios.put('http://localhost:5001/api/users/change-password', {
         userId: user.user_id,
@@ -107,7 +107,7 @@ const UserProfile = () => {
 
     const handleUpdateProfile = async () => {
     setIsUpdating(true);
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     const uploadData = new FormData();
     uploadData.append("user_id", user.user_id);
     if(formData.full_name) uploadData.append("name", formData.full_name);
@@ -298,12 +298,16 @@ const UserProfile = () => {
           <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in duration-300">
             <div className="flex justify-between items-center mb-10">
               <h2 className="text-2xl font-serif text-black flex items-center gap-3"><Lock size={24} className="text-[#b4a460]" /> Security Registry</h2>
-              <button onClick={() => setShowPassModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={24} className="text-gray-400" /></button>
+              <button onClick={() => {setShowPassModal(false); setPassData({ currentPassword: '',newPassword: '',confirmPassword: ''}); }} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={24} className="text-gray-400" /></button>
             </div>
             <div className="space-y-6">
-              <PasswordInput label="Current Security Key" name="currentPassword" onChange={handlePasswordChange} />
-              <PasswordInput label="New Security Key" name="newPassword" onChange={handlePasswordChange} />
-              <PasswordInput label="Verify New Key" name="confirmPassword" onChange={handlePasswordChange} />
+              <PasswordInput label="Current Security Key" name="currentPassword" value={passData.currentPassword} onChange={handlePasswordChange} />
+              <PasswordInput label="New Security Key" name="newPassword" value={passData.newPassword} onChange={handlePasswordChange} />
+              <PasswordInput label="Verify New Key" name="confirmPassword" value={passData.confirmPassword} onChange={handlePasswordChange} />
+              <button type="button" onClick={() => setPassData({ currentPassword: '',newPassword: '',confirmPassword: ''})}
+                disabled={isUpdating} className="w-full py-4 border border-gray-200 text-gray-600 font-bold rounded-2xl hover:bg-gray-50 transition-all text-sm uppercase tracking-widest">
+                Clear
+              </button>
               <button onClick={handlePasswordUpdate} disabled={isUpdating} className="w-full py-5 bg-black text-white font-bold rounded-2xl mt-6 hover:bg-[#b4a460] transition-all text-sm uppercase tracking-widest shadow-xl flex items-center justify-center gap-2">
                 {isUpdating && <Loader2 className="animate-spin" size={18} />}
                 Update Security Key
@@ -324,11 +328,34 @@ const InfoItem = ({ name, icon: Icon, label, value, isEditable, onChange, type =
   </div>
 );
 
-const PasswordInput = ({ label, name, onChange }) => (
-  <div className="space-y-2">
-    <p className="text-[10px] uppercase text-gray-400 font-bold tracking-[0.1em]">{label}</p>
-    <input type="password" name={name} onChange={onChange} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:border-[#b4a460] focus:ring-2 focus:ring-[#b4a460]/10 focus:outline-none transition-all" />
-  </div>
-);
+const PasswordInput = ({ label, name,value, onChange }) => {
+  const [showPassword, setShowPassword] = useState(false);
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[10px] uppercase text-gray-400 font-bold tracking-[0.1em]">
+        {label}
+      </p>
+
+      <div className="relative">
+        <input
+          type={showPassword ? "text" : "password"}
+          name={name}
+          value={value}
+          onChange={onChange}
+          className="w-full p-4 pr-12 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:border-[#b4a460] focus:ring-2 focus:ring-[#b4a460]/10 focus:outline-none transition-all"
+        />
+
+        <button
+          type="button"
+          onClick={() => setShowPassword(!showPassword)}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
+        >
+          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default UserProfile;

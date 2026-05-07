@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-import AddCustomer from './Addcustomer';
+import AddCustomer from './AddCustomer';
 import ViewCustomer from './ViewCustomer';
 
 const Customer = () => {

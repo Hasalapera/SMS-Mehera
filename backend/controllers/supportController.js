@@ -1,5 +1,36 @@
 const nodemailer = require('nodemailer');
 const pool = require('../db/db'); 
+const crypto = require('crypto');
+const {User, sequelize} = require('../models');
+
+
+const decryptContact = (text) => {
+    if (!text) return "";
+    
+    // 💡 පරණ ඒවා Encrypt වෙලා නැති නිසා, ඒවායේ සාමාන්‍යයෙන් ":" නැහැ.
+    // ඒ වගේම ඒවා කෙලින්ම නම්බර් එකක් විදිහට තියෙන්නේ.
+    if (!text.includes(':')) return text; 
+
+    try {
+        const [ivText, encryptedText] = text.split(':');
+        const iv = Buffer.from(ivText, 'hex');
+        const encrypted = Buffer.from(encryptedText, 'hex');
+        
+        // ඔයා පාවිච්චි කරන Algorithm සහ Secret Key එක මෙතනට දෙන්න
+        const decipher = crypto.createDecipheriv(
+            'aes-256-cbc', 
+            Buffer.from(process.env.CRYPTO_SECRET_KEY, 'hex'), 
+            iv
+        );
+        
+        let decrypted = decipher.update(encrypted);
+        decrypted = Buffer.concat([decrypted, decipher.final()]);
+        return decrypted.toString();
+    } catch (err) {
+        // Decrypt කරන්න බැරි වුණොත් (සමහර විට පරණ ඩේටා නිසා) කෙලින්ම text එක යවනවා
+        return text;
+    }
+};
 
 const sendSupportEmail = async (req, res) => {
     const { subject, message, senderEmail, senderName } = req.body;
@@ -20,16 +51,18 @@ const sendSupportEmail = async (req, res) => {
             recipientEmails = devEmail ? [devEmail] : [];
             whatsappNumbers = devWA ? [devWA] : [];
         } else {
-            console.log("Logged Role Detected: User/Sales_rep");
-            // If User, send to all System Admins
             const adminEmailsResult = await pool.query(
-                "SELECT email, contact_no FROM users WHERE role = 'admin' AND is_active = true"
+                "SELECT email, contact_no FROM users WHERE role = 'admin' AND is_active = true",
+                { type: pool.QueryTypes.SELECT }
             );
             
-            recipientEmails = adminEmailsResult.rows.map(row => row.email);
-            whatsappNumbers = adminEmailsResult.rows.filter(row => row.contact_no).map(row => row.contact_no);
+            recipientEmails = adminEmailsResult.map(row => row.email);
+            
+            // 🚨 මෙතනදී Decrypt කරලා තමයි නම්බර්ස් ටික ගන්නේ
+            whatsappNumbers = adminEmailsResult
+                .filter(row => row.contact_no)
+                .map(row => decryptContact(row.contact_no)); // Decrypt function එක පාවිච්චි කළා
 
-            // Fallback if no admins found in DB
             if (recipientEmails.length === 0) {
                 recipientEmails = [process.env.DEFAULT_SUPPORT_EMAIL];
                 whatsappNumbers = [process.env.DEFAULT_SUPPORT_WHATSAPP];
@@ -84,4 +117,23 @@ const sendSupportEmail = async (req, res) => {
     }
 };
 
-module.exports = { sendSupportEmail };
+const getAdminContacts = async (req, res) => {
+    try {
+        const admins = await User.findAll({
+            where: { role: 'admin', is_active: true },
+            attributes: ['contact_no']
+        });
+
+        // 🚨 Frontend එකට යවන්න කලින් මෙතනත් Decrypt කරනවා
+        const decryptedAdmins = admins.map(admin => ({
+            contact_no: decryptContact(admin.contact_no)
+        }));
+
+        res.status(200).json({ admins: decryptedAdmins });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+
+module.exports = { sendSupportEmail, getAdminContacts, decryptContact };

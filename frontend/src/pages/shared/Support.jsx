@@ -1,116 +1,8 @@
-// import React, { useState } from 'react';
-// import axios from 'axios';
-// import { MessageCircle, Paperclip, Send } from 'lucide-react';
-// import { useAuth } from '../context/AuthContext';
-
-// const Support = () => {
-//   const { user } = useAuth();
-//   const [formData, setFormData] = useState({ subject: '', message: '' });
-//   const [file, setFile] = useState(null);
-//   const [loading, setLoading] = useState(false);
-//   const [adminWhatsApp, setAdminWhatsApp] = useState([]);
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     setLoading(true);
-
-//     const data = new FormData();
-//     data.append('subject', formData.subject);
-//     data.append('message', formData.message);
-//     data.append('senderEmail', user.email);
-//     data.append('senderName', user.name);
-
-//     if (file) data.append('supportFile', file);
-//         try {
-//             const token = localStorage.getItem('token');
-            
-//             // සම්පූර්ණ URL එක මෙලෙස ලබා දෙන්න
-//             const response = await axios.post(
-//                 'http://localhost:5001/api/support/send-email', data, {
-//                     headers: {
-//                         Authorization: `Bearer ${token}`
-//                     }
-//                 });
-            
-//             alert(response.data.message);
-//             setFormData({ subject: '', message: '' });
-//         } catch (err) {
-//             console.error("Email Error:", err.response?.data || err.message);
-//             const errorMsg = err.response?.data?.error || "cannot send email";
-//             alert("cannot send email: " + errorMsg);
-//         } finally {
-//             setLoading(false);
-//         }
-//     };
-
-//     const openWhatsApp = () => {
-//         const targetNumber = adminWhatsApp.length > 0 
-//         ? adminWhatsApp[0] 
-//         : "94765747129"; // Default number hō developer number
-
-//     const text = window.encodeURIComponent(
-//         `Support Request: ${formData.subject}\nFrom: ${user.name}\nMessage: ${formData.message}`
-//     );
-    
-//     window.open(`https://wa.me/${targetNumber}?text=${text}`, '_blank');
-//     };
-
-//   return (
-//     <div className="max-w-2xl mx-auto p-8 bg-white rounded-2xl shadow-xl border mt-10">
-//       <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-//         සහාය සේවාව <span className="ml-2 text-blue-500 font-normal text-sm">(Support Center)</span>
-//       </h2>
-
-//       <form onSubmit={handleSubmit} className="space-y-5">
-//         <input 
-//           type="text" placeholder="මාතෘකාව" required
-//           className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-//           value={formData.subject} onChange={(e) => setFormData({...formData, subject: e.target.value})}
-//         />
-        
-//         <textarea 
-//           placeholder="ඔබේ ගැටලුව විස්තර කරන්න..." rows="4" required
-//           className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-//           value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})}
-//         ></textarea>
-
-//         {/* File Upload Section */}
-//         <div className="flex items-center space-x-2 bg-gray-50 p-3 rounded-xl border border-dashed border-gray-300">
-//           <Paperclip size={20} className="text-gray-500" />
-//           <input 
-//             type="file" 
-//             onChange={(e) => setFile(e.target.files[0])}
-//             className="text-sm text-gray-600 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-//           />
-//         </div>
-
-//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-//           <button 
-//             type="submit" disabled={loading}
-//             className="flex items-center justify-center bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition font-bold"
-//           >
-//             <Send size={18} className="mr-2" /> {loading ? "යවමින්..." : "ඊමේල් එවන්න"}
-//           </button>
-
-//           <button 
-//             type="button" onClick={openWhatsApp}
-//             className="flex items-center justify-center bg-green-500 text-white py-3 rounded-xl hover:bg-green-600 transition font-bold"
-//           >
-//             <MessageCircle size={18} className="mr-2" /> WhatsApp පණිවිඩයක්
-//           </button>
-//         </div>
-//       </form>
-//     </div>
-//   );
-// };
-
-// export default Support;
-
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { MessageCircle, Paperclip, Send, HelpCircle, ShieldCheck, Mail, Loader2, X } from 'lucide-react';
 import { useAuth } from '../../pages/context/AuthContext'; // Path preserved from your snippet logic
+import Swal from 'sweetalert2';
 
 const Support = () => {
   const { user } = useAuth();
@@ -119,6 +11,31 @@ const Support = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [adminWhatsApp, setAdminWhatsApp] = useState([]);
+
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    const fetchAdminContacts = async () => {
+      if (user?.role?.toLowerCase() !== 'admin') {
+        try {
+          const token = localStorage.getItem('accessToken');
+          const response = await axios.get('http://localhost:5001/api/support/getAdminContacts', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          // නම්බර්ස් ටික විතරක් Array එකකට වෙන් කරගන්නවා
+          const numbers = response.data.admins
+            .map(a => a.contact_no)
+            .filter(n => n); // empty numbers අයින් කරනවා
+          
+          setAdminWhatsApp(numbers);
+        } catch (err) {
+          console.error("Admin contacts fetch error:", err);
+        }
+      }
+    };
+    fetchAdminContacts();
+  }, [user]);
 
   useEffect(() => {
     if (!file) {
@@ -151,7 +68,7 @@ const Support = () => {
 
     if (file) data.append('supportFile', file);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       
       const response = await axios.post(
         'http://localhost:5001/api/support/send-email', data, {
@@ -160,30 +77,80 @@ const Support = () => {
           }
         });
       
-      alert(response.data.message);
-      setFormData({ subject: '', message: '' });
-      setFile(null); 
-      setPreviewUrl(null);
+        Swal.fire({
+          title: 'Transmission Successful!',
+          text: 'Your support ticket has been routed to the administration.',
+          icon: 'success',
+          confirmButtonColor: '#b4a460',
+          background: '#ffffff',
+          customClass: {
+            popup: 'rounded-[2rem]',
+            confirmButton: 'rounded-xl px-10 py-3'
+          }
+        });
+
+        // ✅ Form එක සම්පූර්ණයෙන්ම Clear කිරීම
+        setFormData({ subject: '', message: '' });
+        setFile(null); 
+        setPreviewUrl(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
       
     } catch (err) {
       console.error("Email Error:", err.response?.data || err.message);
       const errorMsg = err.response?.data?.error || "cannot send email";
-      alert("cannot send email: " + errorMsg);
+      Swal.fire({
+        title: 'Transmission Failed',
+        text: errorMsg,
+        icon: 'error',
+        confirmButtonColor: '#000000',
+        background: '#ffffff',
+        customClass: {
+          popup: 'rounded-[2rem]',
+          confirmButton: 'rounded-xl px-10 py-3'
+        }
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const openWhatsApp = () => {
-    const targetNumber = adminWhatsApp.length > 0 
-      ? adminWhatsApp[0] 
-      : "94765747129"; 
+    let rawNumber = "";
+
+    if (user?.role?.toLowerCase() === 'admin') {
+      rawNumber = import.meta.env.VITE_DEV_TEAM_WHATSAPP || "94755728290"; 
+    } else {
+      rawNumber = adminWhatsApp.length > 0 ? adminWhatsApp[0] : "94765747129";
+    }
+
+    // 1. මුලින්ම ඉලක්කම් නොවන සේරම අයින් කරනවා (+, spaces, dashes)
+    let cleanNumber = rawNumber.toString().replace(/\D/g, '');
+
+    // 2. නම්බර් එක '0' කෑල්ලෙන් පටන් ගන්නවා නම්, ඒක අයින් කරලා '94' ඇඩ් කරනවා
+    if (cleanNumber.startsWith('0')) {
+      cleanNumber = '94' + cleanNumber.substring(1);
+    }
+    
+    // 3. යම් හෙයකින් නම්බර් එක 7... විදිහට පටන් ගත්තොත් (94 හෝ 0 නැතුව)
+    // ඒකටත් 94 ඇඩ් කරන එක ආරක්ෂිතයි
+    else if (cleanNumber.length === 9 && cleanNumber.startsWith('7')) {
+      cleanNumber = '94' + cleanNumber;
+    }
+
+    if (!cleanNumber) {
+      Swal.fire({ title: 'Error', text: 'Invalid Contact Number', icon: 'error' });
+      return;
+    }
 
     const text = window.encodeURIComponent(
-      `Support Request: ${formData.subject}\nFrom: ${user.name}\nMessage: ${formData.message}`
+      `*Support Request [${user?.role?.toUpperCase()}]*\n` +
+      `*Subject:* ${formData.subject}\n` +
+      `*From:* ${user.name}\n` +
+      `*Message:* ${formData.message}`
     );
     
-    window.open(`https://wa.me/${targetNumber}?text=${text}`, '_blank');
+    // දැන් ලින්ක් එක හරියටම ජෙනරේට් වෙනවා
+    window.open(`https://wa.me/${cleanNumber}?text=${text}`, '_blank');
   };
 
   return (
@@ -245,7 +212,7 @@ const Support = () => {
              
              <div className="relative">
                <input 
-                  type="file" accept="image/*"
+                  type="file" accept="image/*" ref={fileInputRef}
                   onChange={(e) => setFile(e.target.files[0])}
                   className="text-xs text-gray-600 file:mr-4 file:py-2 file:px-6 file:rounded-xl file:border-0 file:bg-[#b4a460] file:text-black file:font-bold hover:file:bg-[#9a8b50] cursor-pointer"
                />
