@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, Loader2, PackageSearch } from 'lucide-react';
+import { Search, ChevronDown, Loader2, PackageSearch, X, PlusCircle } from 'lucide-react';
 import axios from 'axios';
 import ProductCard from '../../components/ProductCard';
 import { useAuth } from '../context/AuthContext';
@@ -10,16 +9,15 @@ const Home = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState(null); // Modal එක පාලනය කිරීමට
   const { token } = useAuth();
 
-  // 1. Backend එකෙන් Inventory (Products) දත්ත ටික ගන්නවා
+  // 1. Backend එකෙන් දත්ත ගැනීම
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
         const response = await axios.get('http://localhost:5001/api/products/getProducts', config);
-        
-        // Backend structure එක අනුව මෙතන දත්ත ටික ගන්න
         const data = response.data?.products || response.data;
         setProducts(data);
       } catch (err) {
@@ -31,62 +29,72 @@ const Home = () => {
     fetchProducts();
   }, [token]);
 
-  // 2. Search Filter එක (හොයන නම අනුව products ටික filter කරනවා)
+  // 2. Search Filter
   const filteredProducts = products.filter(p => 
     p.product_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const categories = ["Cosmetics", "Skin Care", "Hair Care", "Cleaning"];
+  // --- ADD TO CART LOGIC (With Luxury Notification & Variants) ---
+  const handleAddToCart = (product, variant = null) => {
+    toast.dismiss(); // පරණ නොටිෆිකේෂන් අයින් කරයි
 
-  // const handleAddToCart = (product) => {
-  // console.log("Add to cart button clicked for:", product.name); // බටන් එක වැඩද බලන්න මේක දැම්මා
-
-    // නිවැරදි කළ handleAddToCart Function එක
-  // --- පිරිසිදු කළ සහ නිවැරදි කරන ලද handleAddToCart Function එක ---
-  const handleAddToCart = (product) => {
-    const saved = localStorage.getItem("active_order_cart");
-    const existingCart = saved ? JSON.parse(saved) : [];
+    const savedCart = JSON.parse(localStorage.getItem("active_order_cart") || "[]");
     
-    // දැනටමත් cart එකේ මේ product එක තියෙනවද බලන්න
-    const exists = existingCart.find(item => item.product_id === product.product_id);
+    // මිල සහ Variant නම තීරණය කිරීම
+    const unitPrice = variant ? Number(variant.price) : (product.price || 0);
+    const variantName = variant ? variant.variant_name : 'Standard';
+    const cartItemId = variant ? `${product.product_id}-${variant.variant_id}` : product.product_id;
 
+    const existingItemIndex = savedCart.findIndex(item => item.cartItemId === cartItemId);
+    
     let updatedCart;
-    if (exists) {
-      // තිබේ නම් quantity එක වැඩි කරන්න
-      updatedCart = existingCart.map(item => 
-        item.product_id === product.product_id ? { ...item, qty: item.qty + 1 } : item
-      );
+    if (existingItemIndex > -1) {
+      updatedCart = [...savedCart];
+      updatedCart[existingItemIndex].qty += 1;
     } else {
-      // අලුතින් එකතු කරන්නේ නම් නිවැරදි මිල ලබාගන්න
-      // 1. selling_price හෝ 2. price හෝ 3. පළමු variant එකේ මිල බලන්න
-      const unitPrice = product.selling_price || 
-                        product.price || 
-                        (product.variants && product.variants.length > 0 ? product.variants[0].price : 0);
-
-      updatedCart = [...existingCart, { 
+      updatedCart = [...savedCart, { 
+        cartItemId,
         product_id: product.product_id, 
+        variant_id: variant?.variant_id || null,
+        variant_name: variantName,
         name: product.product_name, 
-        price: Number(unitPrice), 
+        price: unitPrice,
         qty: 1,
         image: product.image_url
       }];
     }
-    
-    // LocalStorage එකට සේව් කරන්න
+
     localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
-    
-    // සාර්ථක පණිවිඩයක් පෙන්වන්න
-    toast.success(`${product.product_name} added to cart!`);
+    window.dispatchEvent(new Event('focus')); // අනිත් Components වලට දැනුම් දීම
+
+    // 🔥 Mehera Luxury Style Toast
+    toast.success(`${variantName} added to order!`, {
+      style: {
+        borderRadius: '1.5rem',
+        background: '#141414',
+        color: '#b4a460',
+        fontSize: '10px',
+        fontWeight: '900',
+        textTransform: 'uppercase',
+        letterSpacing: '0.15em',
+        padding: '16px 24px',
+        border: '1px solid rgba(180, 164, 96, 0.2)',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
+      },
+      iconTheme: {
+        primary: '#b4a460',
+        secondary: '#141414',
+      },
+    });
+
+    setSelectedProduct(null); // Modal එක වහන්න
   };
-    
-  
 
   return (
-
-    <div className="w-full min-h-screen bg-[#f8f9fa] text-black overflow-x-hidden">
+    <div className="w-full min-h-screen bg-[#f8f9fa] text-black overflow-x-hidden text-left">
       
-      {/* --- Performance Rankings (Sales Rep ට පේන කෑල්ල) --- */}
-      <div className="w-full px-6 pt-10 pb-4 text-left">
+      {/* HEADER */}
+      <div className="w-full px-6 pt-10 pb-4">
           <h1 className="text-4xl font-black text-black uppercase tracking-tight">
               Inventory Catalog
           </h1>
@@ -96,7 +104,7 @@ const Home = () => {
           </p>
       </div>
 
-      {/* --- Search & Filter Bar --- */}
+      {/* SEARCH BAR */}
       <div className="max-w-full px-6 py-4 flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 group w-full">
           <input 
@@ -112,7 +120,7 @@ const Home = () => {
         </button>
       </div>
 
-      {/* --- Product Catalog Section --- */}
+      {/* PRODUCT LIST */}
       <div className="max-w-full px-6 p-6">
         {loading ? (
           <div className="h-64 flex flex-col items-center justify-center gap-3">
@@ -125,7 +133,14 @@ const Home = () => {
               <ProductCard 
                 key={product.product_id} 
                 product={product} 
-                onAddToCart={() => handleAddToCart(product)} 
+                onAddToCart={() => {
+                  // Variants තියෙනවා නම් Modal එක පෙන්වනවා, නැත්නම් කෙලින්ම ඇඩ් කරනවා
+                  if (product.variants && product.variants.length > 0) {
+                    setSelectedProduct(product);
+                  } else {
+                    handleAddToCart(product);
+                  }
+                }} 
               />
             ))}
           </div>
@@ -136,6 +151,63 @@ const Home = () => {
           </div>
         )}
       </div>
+
+      {/* --- VARIATION SELECTION MODAL  --- */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-md p-4">
+          <div className="bg-white rounded-[3rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in duration-300">
+            <div className="p-10 space-y-8 text-left">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-3xl font-serif italic text-black leading-tight">{selectedProduct.product_name}</h3>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="w-8 h-[2px] bg-[#b4a460]"></div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Available Shades / Variants</p>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedProduct(null)} className="p-3 hover:bg-gray-100 rounded-full transition-all">
+                  <X size={20} className="text-gray-400" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 max-h-[450px] overflow-y-auto pr-3 custom-scrollbar">
+                {selectedProduct.variants.map((variant) => (
+                  <button
+                    key={variant.variant_id}
+                    onClick={() => handleAddToCart(selectedProduct, variant)}
+                    className="flex justify-between items-center p-6 bg-gray-50 hover:bg-[#b4a460]/10 border border-gray-100 hover:border-[#b4a460]/30 rounded-3xl transition-all group w-full"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-black text-[12px] uppercase tracking-wider text-black group-hover:text-[#b4a460] transition-colors">
+                        {variant.variant_name}
+                      </span>
+                      <span className="text-[10px] text-gray-400 font-bold mt-1">
+                        INSTOCK: {variant.stock_qty || variant.stock_count || 'Check Sync'}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-6">
+                      <span className="font-serif italic text-xl text-black">
+                        Rs. {Number(variant.price).toLocaleString()}
+                      </span>
+                      <div className="p-3 bg-white rounded-xl shadow-sm group-hover:bg-black group-hover:text-[#b4a460] transition-all transform group-hover:scale-110">
+                        <PlusCircle size={20} />
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              
+              <button 
+                onClick={() => setSelectedProduct(null)}
+                className="w-full py-4 text-[9px] font-black uppercase tracking-[0.4em] text-gray-300 hover:text-red-500 transition-colors"
+              >
+                Close Selection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

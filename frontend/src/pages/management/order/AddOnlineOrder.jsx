@@ -101,10 +101,10 @@ const AddOnlineOrder = () => {
         email: customerInfo.email,
         
         // 💰 Money fields with discount
-        subtotal: totalAmount,              // මුලු එකතුව
-        discount_percentage: discountPercentage, // % එක
-        discount_amount: discountAmount,    // LKR amount එක
-        total_amount: finalAmount,          // අවසාන payable එක
+        subtotal: totalAmount,             
+        discount_percentage: discountPercentage, 
+        discount_amount: discountAmount,    
+        total_amount: finalAmount,          
         
         items: cart.map(item => ({
           product_id: item.product_id,

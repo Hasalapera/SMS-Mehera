@@ -18,7 +18,7 @@ const Orders = () => {
   const [activeTab, setActiveTab] = useState('create');
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState(null); // Variation Modal එක සඳහා
+  const [selectedProduct, setSelectedProduct] = useState(null); 
   const userRole = user?.role;
 
   // Inventory එක load කරගැනීම
@@ -36,15 +36,15 @@ const Orders = () => {
     if (activeTab === 'create') fetchProducts();
   }, [activeTab]);
 
-  // --- ADD TO CART LOGIC (With Variations) ---
+  // --- ADD TO CART LOGIC (Luxury Style & Fixes) ---
   const handleAddToCart = (product, variant = null) => {
+    // 1. පරණ පේජ් වල හිරවුණු notifications ඔක්කොම dismiss කරනවා
+    toast.dismiss();
+
     const savedCart = JSON.parse(localStorage.getItem("active_order_cart") || "[]");
     
-    // මිල සහ නම තීරණය කිරීම
     const unitPrice = variant ? Number(variant.price) : Number(product.price);
     const variantName = variant ? variant.variant_name : 'Standard';
-    
-    // Unique ID එකක් හදනවා (Product ID + Variant ID) එකම item එකේ shades වෙන් කර හඳුනාගන්න
     const cartItemId = variant ? `${product.product_id}-${variant.variant_id}` : product.product_id;
 
     const existingItemIndex = savedCart.findIndex(item => item.cartItemId === cartItemId);
@@ -66,11 +66,30 @@ const Orders = () => {
     }
 
     localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
-    
-    // දකුණු පැත්තේ AddOrder component එකට දැනුම් දීම
     window.dispatchEvent(new Event('focus'));
-    toast.success(`${variantName} added to order!`);
-    setSelectedProduct(null); // Modal එක වහන්න
+
+    // 2. 🔥 Mehera Luxury Style Toast Notification
+    toast.success(`${variantName} added to order!`, {
+      id: cartItemId, // එකම අයිතමය දිගටම ඇඩ් කරද්දී ස්පෑම් නොවී එකම මැසේජ් එක අප්ඩේට් වෙයි
+      style: {
+        borderRadius: '1.5rem',
+        background: '#141414',
+        color: '#b4a460',
+        fontSize: '10px',
+        fontWeight: '900',
+        textTransform: 'uppercase',
+        letterSpacing: '0.15em',
+        padding: '16px 24px',
+        border: '1px solid rgba(180, 164, 96, 0.2)',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
+      },
+      iconTheme: {
+        primary: '#b4a460',
+        secondary: '#141414',
+      },
+    });
+
+    setSelectedProduct(null); 
   };
 
   const tabs = [
@@ -80,7 +99,7 @@ const Orders = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#fdfdfb] p-4 md:p-8">
+    <div className="min-h-screen bg-[#fdfdfb] p-4 md:p-8 text-left">
       <Toaster position="top-right" />
       
       {/* HEADER */}
