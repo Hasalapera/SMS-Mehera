@@ -150,7 +150,7 @@ const AddStock = () => {
       setIsApplying(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const response = await axios.patch(
-        'http://localhost:5001/api/products/variants/batch-add-stock',
+        'http://localhost:5001/api/stock/variants/batch-add-stock',
         { updates },
         config
       );
@@ -186,7 +186,7 @@ const AddStock = () => {
       setIsUndoing(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const response = await axios.patch(
-        'http://localhost:5001/api/products/variants/batch-revert-stock',
+        'http://localhost:5001/api/stock/variants/batch-revert-stock',
         { updates: lastAppliedSummary.updates },
         config
       );
@@ -366,7 +366,7 @@ const AddStock = () => {
                         <div key={variant.variant_id} className="grid grid-cols-[1fr_auto] gap-3 items-center">
                           <div>
                             <p className="text-[12px] font-bold text-black">{variant.variant_name || 'Variant'}</p>
-                            <p className="text-[10px] text-gray-400 font-semibold">Current: {variant.stock_count} | Rs. {variant.price.toLocaleString()}</p>
+                            <p className="text-[10px] text-gray-400 font-semibold">{variant.stock_count} units • Rs. {variant.price.toLocaleString()} each</p>
                           </div>
                           <input
                             type="number"

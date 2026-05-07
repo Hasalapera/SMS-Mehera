@@ -103,22 +103,6 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/products" element={<Products />} />
 
-        {/* Gihan Testing */}
-        {/* <Route path='/addOnlineOrder' element={<AddOnlineOrder />} /> */}
-        <Route 
-          path='/product/:id' 
-          element={
-            user ? (
-              ["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? (
-                <ProductDetail />
-              ) : (
-                <Navigate to="/home" />
-              )
-            ) : (
-              <Navigate to="/login" />
-            )
-          } 
-        />
         <Route element={user ? <DashboardLayout /> : <Navigate to="/" />}>
           <Route path="/inbox" element={<Inbox />} />
           <Route path="/profile/:id" element={<UserProfile />} />
@@ -273,6 +257,8 @@ function App() {
         <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
         <Route path='/inventory' element={['admin', 'manager'].includes(userRole) ? <ViewProduct /> : <Navigate to="/dashboard" />} />
         {/* <Route path='/product/:id' element={['admin', 'manager'].includes(userRole) ? <ProductDetail /> : <Navigate to="/dashboard" />} /> */}
+        <Route path='/product/:id' element={['admin', 'manager', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ProductDetail /> : <Navigate to="/home" />} />
+
 
         {/* orders management - admin, sales rep, online_store_keeper can create; admin, manager, sales_rep, online_store_keeper can view */}
         <Route path='/view-orders' element={userRole === 'admin' || userRole === 'manager' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <ViewOrders /> : <Navigate to="/" />} />
@@ -281,7 +267,8 @@ function App() {
         {/* stock management - admin, sales rep, online_store_keeper can view; only admin can add/edit */}
         <Route path='/addStock' element={userRole === 'admin' ? <AddStock /> : <Navigate to="/dashboard" />} />
         <Route path='/editStock' element={userRole === 'admin' ? <EditStock /> : <Navigate to="/dashboard" />} />
-        <Route path='/viewStock' element={['admin', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ViewStock /> : <Navigate to="/dashboard" />} />
+        <Route path='/viewStock' element={['admin', 'manager', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ViewStock /> : <Navigate to="/dashboard" />} />
+
 
 </Route>
 
