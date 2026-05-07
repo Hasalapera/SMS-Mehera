@@ -19,6 +19,7 @@ const Category = sequelize.define('Category', {
 }, {
     tableName: 'categories',
     timestamps: true,
+    paranoid: true,
     underscored: true
 });
 

@@ -24,6 +24,7 @@ const Brand = sequelize.define('Brand', {
 }, {
     tableName: 'brands',
     timestamps: true,
+    paranoid: true,
     underscored: true
 });
 

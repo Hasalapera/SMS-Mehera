@@ -1,6 +1,7 @@
 
 const { Customer, CustomerNote } = require('../models'); // Take Sequelize models
 const { Op } = require('sequelize'); // 👈 Sequelize Operators
+const { encrypt, decrypt } = require('../utils/cryptoUtils'); // For encrypting/decrypting contact numbers
 
 
 const createCustomer = async (req, res) => {
@@ -15,8 +16,8 @@ const createCustomer = async (req, res) => {
             type,
             saloon_name,
             owner_name,
-            phone1,
-            phone2,
+            phone1: encrypt(phone1), // Encrypt phone number before saving to DB
+            phone2: phone2 ? encrypt(phone2) : null, // Encrypt if provided
             lane1,
             lane2,
             district,
@@ -34,7 +35,16 @@ const createCustomer = async (req, res) => {
 const getAllCustomers = async (req, res) => {
     try {
         const customers = await Customer.findAll();
-        res.status(200).json(customers);
+
+        const decryptedCustomers = customers.map(c => {
+            const customer = c.toJSON();
+            // Optional: check if phone exists before decrypting
+            customer.phone1 = customer.phone1 ? decrypt(customer.phone1) : null;
+            customer.phone2 = customer.phone2 ? decrypt(customer.phone2) : null;
+            return customer;
+        });
+
+        res.status(200).json(decryptedCustomers);
     } catch (err) {
         console.error("Controller Error:", err.message);
         res.status(500).json({ error: err.message });
@@ -45,13 +55,20 @@ const getAllCustomers = async (req, res) => {
 const getCustomer = async (req, res) => {
     try {
         const { id } = req.params;
-        const customer = await Customer.findByPk(id, {
+        const customerData = await Customer.findByPk(id, {
             include: [{ model: CustomerNote, as: 'notes', separate: true, order: [['created_at', 'DESC']] }]
         });
 
-        if (!customer) {
+        // මෙතන customerData කියලා නිවැරදි කරන්න
+        if (!customerData) { 
             return res.status(404).json({ error: 'Customer not found' });
         }
+
+        const customer = customerData.toJSON();
+
+        // Decrypt phone numbers
+        customer.phone1 = decrypt(customer.phone1);
+        customer.phone2 = decrypt(customer.phone2);
 
         res.status(200).json({
             message: 'Customer retrieved successfully',

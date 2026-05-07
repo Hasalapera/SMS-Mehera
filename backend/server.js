@@ -2,13 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors'); 
 const { sequelize } = require('./models');
-const { runMigrations } = require('./migrations/migrator');
+const { runMigrations } = require('./utils/migrator');
 
 // Routes Import
 const userRoutes = require('./routes/userRoutes');
 const supportRoutes = require('./routes/supportRoutes');
 const brandRoutes = require('./routes/brandRoutes');
 const productRoutes = require('./routes/productRoutes');
+const stockRoutes = require('./routes/stockRoutes');  
 const customerRoutes = require('./routes/customerRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const orderRoutes = require('./routes/orderRoutes'); 
@@ -58,6 +59,7 @@ app.use('/api/support', supportRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/category', categoryRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/stock', stockRoutes); 
 app.use('/api/customers', customerRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/ask-ai', aiRoutes);

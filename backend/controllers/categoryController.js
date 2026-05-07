@@ -54,7 +54,24 @@ const getCategories = async (req, res) => {
     }
 };
 
+const deleteCategory = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const category = await Category.findByPk(id);
+
+        if (!category) return res.status(404).json({ error: "Category not found" });
+
+        // paranoid: true නිසා මේකෙන් වෙන්නේ Soft Delete එකක්
+        await category.destroy();
+
+        res.status(200).json({ message: "Category archived successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 module.exports = {
     addCategory,
-    getCategories
+    getCategories,
+    deleteCategory
 };

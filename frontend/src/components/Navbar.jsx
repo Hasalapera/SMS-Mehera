@@ -43,7 +43,7 @@ const Navbar = () => {
         { name: 'Orders', path: '/orders' },
         { name: 'Customer', path: '/customer' },
         { name: 'History', path: '/orders/history' },
-        { name: 'Stock', path: '/stock' },
+        { name: 'Stock', path: '/viewStock' },
         { name: 'Support', path: '/support' }
     ];
 

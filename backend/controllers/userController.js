@@ -1,6 +1,7 @@
 const { User, UserArea, sequelize } = require('../models');
 const bcrypt = require('bcrypt');
 const { sendWelcomeEmail } = require('../utils/emailSender');
+const { encrypt, decrypt } = require('../utils/cryptoUtils');
 
 
 const addUserByAdmin = async (req, res) => {
@@ -32,7 +33,7 @@ const addUserByAdmin = async (req, res) => {
                 password: hashedPassword,
                 role,
                 dob,
-                contact_no,
+                contact_no: encrypt(contact_no), // Encrypt contact number before saving
                 nic_no,
                 is_active: true,
                 is_default_password: true,
@@ -115,9 +116,18 @@ const getAllUsers = async (req, res) => {
             paranoid: false // Include soft-deleted users
         });
 
+        const decryptedUsers = users.map(user => {
+            const userData = user.toJSON();
+            if (userData.contact_no) {
+                userData.contact_no = decrypt(userData.contact_no); // Decrypt contact number before sending to frontend
+            }
+            return userData;
+        });
+
         res.status(200).json({
+            success: true,
             message: "Users retrieved successfully",
-            users
+            users: decryptedUsers
         });
 
     } catch (err) {
@@ -249,6 +259,11 @@ const getUserProfile = async (req, res) => {
 
         // Convert user instance to JSON and format districts for frontend
         const userData = user.toJSON();
+
+        // Decrypt contact number before sending to frontend
+        if (userData.contact_no) {
+            userData.contact_no = decrypt(userData.contact_no);
+        }
         // Create a districts array based on the associated areas for easier frontend consumption
         userData.districts = userData.areas ? userData.areas.map(a => a.district_name) : [];
 
@@ -275,6 +290,11 @@ const updateProfile = async (req, res) => {
         if (!user) return res.status(404).json({ error: "User not found" });
 
         const updateData = {};
+
+        if (req.body.contact_no) {
+            // save the encrypted contact number in the database, but return the decrypted version in the response, so that we don't expose the encrypted value to the frontend
+            updateData.contact_no = encrypt(req.body.contact_no);
+        }
         
         // if name is provided and not empty, then add to updateData, otherwise ignore it (so it won't overwrite existing name with null or empty)
         const incomingName = req.body.name || req.body.full_name;
@@ -300,6 +320,11 @@ const updateProfile = async (req, res) => {
             attributes: { exclude: ['password', 'default_password'] },
         });
 
+        // Decrypt contact number before sending to frontend        
+        if (userData.contact_no) {
+            userData.contact_no = decrypt(userData.contact_no);
+        }
+
         res.status(200).json({
             message: "Profile updated successfully",
             user: updatedUser
@@ -314,7 +339,16 @@ const updateProfile = async (req, res) => {
 const resetToDefaultPassword = async (req, res) => {
     try {
         // 1. Get user_id from request body
-        const { user_id } = req.body;
+        const { user_id, adminPassword } = req.body;
+        const loggedInAdminId = req.user?.user_id;
+
+        const adminUser = await User.findByPk(loggedInAdminId);
+        if (!adminUser) return res.status(404).json({ error: "Admin session not found." });
+
+        const isMatch = await bcrypt.compare(adminPassword, adminUser.password);
+        if (!isMatch) {
+            return res.status(401).json({ error: "Authentication failed: Invalid admin password." });
+        }
 
         // 2. Find the user by user_id
         const user = await User.findByPk(user_id);
@@ -336,6 +370,19 @@ const resetToDefaultPassword = async (req, res) => {
             password: hashedPassword,
             is_default_password: true
         });
+
+        // send email to user with the default password
+        try {
+            await sendWelcomeEmail(user.email, user.name, defaultPassword, user.role);
+        } catch (mailErr) {
+            console.error("Email Sending Error:", mailErr.message);
+            // Email එක යැවුණේ නැතත් password එක reset වුණු නිසා success response එකක් යවනවා 
+            // හැබැයි warning එකක් එක්ක
+            return res.status(200).json({ 
+                message: "Password reset in DB, but failed to send email.",
+                warning: "Email not sent."
+            });
+        }
 
         // 6. Return success response
         res.status(200).json({ message: "Password reset to default" });
