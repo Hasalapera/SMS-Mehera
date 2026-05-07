@@ -11,7 +11,7 @@ const upload = multer({ storage: storage });
 
 router.post('/login', loginUser);
 router.put('/update-password', updatePassword);
-router.put('/reset-password', resetToDefaultPassword); 
+router.put('/reset-password',verifyToken, isAdmin, resetToDefaultPassword); 
 router.post('/logout', logoutUser);
 router.post('/refresh-token', refreshAccessToken);
 

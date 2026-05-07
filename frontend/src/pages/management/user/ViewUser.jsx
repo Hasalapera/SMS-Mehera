@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  Search, UserCog, Shield, 
+  Search, UserCog, Shield, RefreshCw, MoreVertical, Eye,
   Mail, Phone, ArrowRight, UserX, UserPlus, Filter, Check
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 
 const ViewUser = () => {
   const [users, setUsers] = useState([]);
@@ -12,6 +13,7 @@ const ViewUser = () => {
   const [selectedRole, setSelectedRole] = useState("all"); // Filter එක සඳහා
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [statusFilter, setStatusFilter] = useState("all"); // "all", "active", "deleted" වගේ values තියෙන state එකක්
 
   const user = JSON.parse(localStorage.getItem('user')); 
 
@@ -20,7 +22,8 @@ const ViewUser = () => {
     { id: 'admin', name: 'Admin' },
     { id: 'manager', name: 'Manager' },
     { id: 'sales_rep', name: 'Sales Rep' },
-    { id: 'online_store_keeper', name: 'Store Keeper' }
+    { id: 'online_store_keeper', name: 'Store Keeper' },
+    { id: 'deleted', name: 'Deleted Users' } 
   ];
 
   const fetchUsers = useCallback(async () => {
@@ -49,43 +52,167 @@ const ViewUser = () => {
   }, []);
 
   // Filter Logic: Search term සහ Selected Role දෙකම අනුව
-  const filteredUsers = users.filter(user => {
-  // මෙතනදී (user.name || "") වගේ දෙයක් දැම්මම, නම නැති වුණත් error එකක් එන්නේ නැහැ
-  const name = user.full_name || user.name || ""; 
-  const email = user.email || "";
-  
-  const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                       email.toLowerCase().includes(searchTerm.toLowerCase());
-                       
-  const matchesRole = selectedRole === "all" || user.role === selectedRole;
-  
-  return matchesSearch && matchesRole;
-});
+  const filteredUsers = users.filter((user) => {
+    const name = user.full_name || user.name || "";
+    const email = user.email || "";
+    const isDeleted = user.deleted_at !== null;
 
-const handleRestore = async (userId) => {
-  if(window.confirm("Are you sure you want to restore this user?")) {
-    const adminPassword = prompt("Please enter your admin password to confirm:");
+    const matchesSearch =
+      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.toLowerCase().includes(searchTerm.toLowerCase());
 
-    if(adminPassword){
+    let matchesRole = false;
+
+    if (selectedRole === "all") {
+      matchesRole = !isDeleted; // only active users
+    } else if (selectedRole === "deleted") {
+      matchesRole = isDeleted; // only deleted users
+    } else {
+      matchesRole = user.role === selectedRole && !isDeleted;
+    }
+
+    return matchesSearch && matchesRole;
+  });
+
+const handleRestore = async (userId, userName) => {
+  // 1. Confirmation Dialog
+  const result = await Swal.fire({
+    title: 'Restore Account?',
+    text: `Do you want to restore ${userName}'s account?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#b4a460',
+    cancelButtonColor: '#000000',
+    confirmButtonText: 'Yes, restore it!',
+    background: '#ffffff',
+    customClass: {
+      popup: 'rounded-[2rem]',
+    }
+  });
+
+  if (result.isConfirmed) {
+    // 2. Admin password prompt
+    const { value: adminPassword } = await Swal.fire({
+      title: 'Verify Authority',
+      input: 'password',
+      inputLabel: 'Enter Admin Password to confirm',
+      inputPlaceholder: 'Enter your password',
+      confirmButtonColor: '#b4a460',
+      background: '#ffffff',
+      customClass: {
+        popup: 'rounded-[2rem]',
+      },
+      inputAttributes: {
+        autocapitalize: 'off',
+        autocorrect: 'off'
+      }
+    });
+
+    if (adminPassword) {
       try {
         const token = localStorage.getItem('accessToken');
-        const response = await axios.put(`http://localhost:5001/api/users/restore-user/${userId}`, 
-          {adminPassword: adminPassword}, 
+
+        const response = await axios.put(
+          `http://localhost:5001/api/users/restore-user/${userId}`,
+          { adminPassword },
           {
             headers: { Authorization: `Bearer ${token}` }
           }
         );
-        if(response.status === 200) {
-          alert("User restored successfully!");
-          fetchUsers(); // Updating the list after recovery
-        } 
-      }catch (err) {
+
+        if (response.status === 200) {
+          // Success alert
+          Swal.fire({
+            title: 'Account Restored!',
+            text: `${userName}'s account has been restored successfully.`,
+            icon: 'success',
+            confirmButtonColor: '#b4a460',
+            background: '#ffffff',
+            customClass: {
+              popup: 'rounded-[2rem]',
+            }
+          });
+
+          fetchUsers();
+        }
+      } catch (err) {
         console.error("Error restoring user:", err.response?.data || err.message);
-        const errorMsg = err.response?.data?.message || "Failed to restore user. Please check your password and try again.";
-        alert(errorMsg);
+
+        Swal.fire({
+          title: 'Security Error',
+          text:
+            err.response?.data?.message ||
+            'Failed to restore user. Please check your password and try again.',
+          icon: 'error',
+          confirmButtonColor: '#b4a460',
+          background: '#ffffff',
+          customClass: {
+            popup: 'rounded-[2rem]',
+          }
+        });
       }
-    } else {
-      alert("Restoration cancelled. Admin password is required.");
+    }
+  }
+};
+
+const handleResetPassword = async (userId, userName) => {
+  // 🛡️ 1. Confirmation Dialog එක
+  const result = await Swal.fire({
+    title: 'Are you sure?',
+    text: `Do you want to reset the password for ${userName}?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#b4a460', // ඔයාගේ Gold Color එක
+    cancelButtonColor: '#000000',  // Black
+    confirmButtonText: 'Yes, reset it!',
+    background: '#ffffff',
+    customClass: {
+      popup: 'rounded-[2rem]', // ඔයාගේ UI එකේ වගේම curve එක
+    }
+  });
+
+  if (result.isConfirmed) {
+    // 🔑 2. Admin Password එක ඉල්ලන Prompt එක
+    const { value: adminPassword } = await Swal.fire({
+      title: 'Verify Authority',
+      input: 'password',
+      inputLabel: 'Enter Admin Password to confirm',
+      inputPlaceholder: 'Enter your password',
+      confirmButtonColor: '#b4a460',
+      inputAttributes: {
+        autocapitalize: 'off',
+        autocorrect: 'off'
+      }
+    });
+
+    if (adminPassword) {
+      try {
+        const token = localStorage.getItem('accessToken');
+        const response = await axios.put(
+          'http://localhost:5001/api/users/reset-password',
+          { user_id: userId, adminPassword: adminPassword },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (response.status === 200) {
+          // ✅ Success Alert
+          Swal.fire({
+            title: 'Registry Sync Success!',
+            text: `New credentials sent to ${userName} via email.`,
+            icon: 'success',
+            confirmButtonColor: '#b4a460'
+          });
+          fetchUsers();
+        }
+      } catch (err) {
+        // ❌ Error Alert
+        Swal.fire({
+          title: 'Security Error',
+          text: err.response?.data?.error || "Verification failed.",
+          icon: 'error',
+          confirmButtonColor: '#b4a460'
+        });
+      }
     }
   }
 };
@@ -150,7 +277,7 @@ const handleRestore = async (userId) => {
       </div>
 
       {/* List Table Section */}
-      <div className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm overflow-visible">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -159,7 +286,7 @@ const handleRestore = async (userId) => {
                 <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase">System Role</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase text-center">Status</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase text-right">Actions</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase text-right">Restore</th>
+                {/* <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase text-right">Restore</th> */}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -167,28 +294,28 @@ const handleRestore = async (userId) => {
                 <tr>
                   <td colSpan="4" className="px-6 py-20 text-center text-gray-400 italic">Synchronizing with server...</td>
                 </tr>
-              ) : filteredUsers.map((user) => {
-                const isDeleted = user.deleted_at !== null;
+              ) : filteredUsers.map((emp) => {
+                const isDeleted = emp.deleted_at !== null;
                 return (
-                  <tr key={user.user_id} className={`group ${isDeleted ? 'opacity-40 grayscale' : 'hover:bg-gray-50/80 transition-colors'}`}>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
+                  <tr key={emp.user_id} className={`group ${isDeleted ? 'bg-gray-50/40' : 'hover:bg-gray-50/80 transition-colors'}`}>
+                    <td className={`px-6 py-4 transition-all ${isDeleted ? 'opacity-30 grayscale' : ''}`}>
+                      <div className="flex items-center gap-3 ">
                         <img 
-                          src={user.picture_url || `https://ui-avatars.com/api/?name=${user.name}&background=b4a460&color=fff`} 
+                          src={emp.picture_url || `https://ui-avatars.com/api/?name=${emp.name}&background=b4a460&color=fff`} 
                           className="w-10 h-10 rounded-xl object-cover" 
                           alt="" 
                         />
                         <div>
-                          <p className="text-sm font-bold text-gray-900">{user.name}</p>
+                          <p className="text-sm font-bold text-gray-900">{emp.name}</p>
                           <p className="text-xs text-gray-400 flex items-center gap-1">
-                            <Mail size={12} /> {user.email}
+                            <Mail size={12} /> {emp.email}
                           </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-[10px] font-bold px-2 py-1 bg-[#b4a460]/10 text-[#8a7b42] rounded-md border border-[#b4a460]/20 uppercase">
-                        {user.role.replace('_', ' ')}
+                        {emp.role.replace('_', ' ')}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -199,23 +326,70 @@ const handleRestore = async (userId) => {
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button 
-                        onClick={() => !isDeleted && navigate(`/profile/${user.user_id}`)}
-                        className={`text-[11px] font-bold uppercase transition-colors ${isDeleted ? 'text-gray-300' : 'text-gray-400 hover:text-[#b4a460]'}`}
-                      >
-                        View Profile
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end items-center gap-2">
+                      
+                      {/* 1. ප්‍රධාන බටන් එක (View Profile) - හැමෝටම පේනවා */}
+                      {!isDeleted && (
+                        <button 
+                          onClick={() => navigate(`/profile/${emp.user_id}`)}
+                          className="p-2 text-gray-400 hover:text-[#b4a460] hover:bg-[#b4a460]/10 rounded-lg transition-all"
+                          title="View Profile"
+                        >
+                          <Eye size={18} />
+                        </button>
+                      )}
+
+                      {/* 2. අනිත් සේරම වැඩ කෑලි ටික මේ Dropdown එක ඇතුළට */}
+                      {user?.role === 'admin' && (
+                        <div className="relative group/menu">
+                          <button className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition-all">
+                            <MoreVertical size={18} />
+                          </button>
+
+                          {/* Dropdown Menu - Hover කරද්දී පේන විදිහට (නැත්නම් State එකකින් හදන්නත් පුළුවන්) */}
+                          <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-50 py-2">
+                            
+                            {/* Reset Password Option */}
+                            {!isDeleted && emp.user_id !== user.user_id && (
+                              <button
+                                onClick={() => {
+                                  if (emp.is_default_password) {
+                                    Swal.fire({ title: 'Already Reset', text: 'User is on default password.', icon: 'info', confirmButtonColor: '#b4a460' });
+                                  } else {
+                                    handleResetPassword(emp.user_id, emp.name);
+                                  }
+                                }}
+                                className={`w-full text-left px-4 py-2.5 text-xs font-bold flex items-center gap-2 ${emp.is_default_password ? 'text-gray-300 cursor-not-allowed' : 'text-red-500 hover:bg-red-50'}`}
+                              >
+                                <RefreshCw size={14} /> 
+                                {emp.is_default_password ? "Already Reset" : "Reset Password"}
+                              </button>
+                            )}
+
+                            {/* Restore Option */}
+                            {isDeleted && (
+                              <button
+                                onClick={() => handleRestore(emp.user_id, emp.name)}
+                                className="w-full text-left px-4 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-50 flex items-center gap-2 transition-colors rounded-xl"
+                              >
+                                <RefreshCw size={14} className="text-emerald-500" /> Restore Account
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                    {/* <td className="px-6 py-4 text-right">
                       {isDeleted && (
                         <button 
-                          onClick={() => handleRestore(user.user_id)}
+                          onClick={() => handleRestore(emp.user_id)}
                           className='bg-red-500/20 text-white-500 border border-red-500/50 px-3 py-1 rounded-lg hover:bg-amber-200 hover:text-red-600 transition-all text-xs font-bold'
                           >
                           Restore User
                       </button>
                       )}
-                    </td>
+                    </td> */}
                   </tr>
                 );
               })}

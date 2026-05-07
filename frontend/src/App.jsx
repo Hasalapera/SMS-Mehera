@@ -13,7 +13,6 @@ import Orders from "./pages/management/order/Orders";
 //import Support from './pages/shared/Support';
 
 //stock management
-import Stock from "./pages/management/stock/stock";
 import AddStock from "./pages/management/stock/AddStock";
 import EditStock from "./pages/management/stock/EditStock";
 import ViewStock from "./pages/management/stock/ViewStock";
@@ -27,6 +26,7 @@ import ChangePassword from "./pages/ChangePassword";
 import Inbox from "./pages/shared/Inbox";
 import UserProfile from "./pages/shared/UserProfile";
 import Support from "./pages/shared/Support";
+import UnderConstruction from './pages/shared/UnderConstruction';
 
 // Role Dashboards (Now in roles folder)
 import Dashboard from "./pages/roles/Dashboard";
@@ -61,6 +61,7 @@ import Quotation from "./pages/shared/Quotation";
 //Settings
 // import SettingsPage from './pages/SettingsPage';
 
+
 import AddOnlineOrder from "./pages/management/order/AddOnlineOrder";
 
 //gihaaaaan testing;
@@ -92,6 +93,7 @@ function App() {
         <Route path='/' element={<LandingPage />} />
         <Route path='/login' element={<Login />} />
         <Route path='/change-password' element={user ? <ChangePassword /> : <Navigate to="/login" />} />
+        <Route path="/under-construction" element={<UnderConstruction />} />
 
         {/* Gihaaaaan Testing */}
         
@@ -103,22 +105,6 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/products" element={<Products />} />
 
-        {/* Gihan Testing */}
-        {/* <Route path='/addOnlineOrder' element={<AddOnlineOrder />} /> */}
-        <Route 
-          path='/product/:id' 
-          element={
-            user ? (
-              ["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? (
-                <ProductDetail />
-              ) : (
-                <Navigate to="/home" />
-              )
-            ) : (
-              <Navigate to="/login" />
-            )
-          } 
-        />
         <Route element={user ? <DashboardLayout /> : <Navigate to="/" />}>
           <Route path="/inbox" element={<Inbox />} />
           <Route path="/profile/:id" element={<UserProfile />} />
@@ -129,12 +115,12 @@ function App() {
 
           {/* --- අලුතින් එකතු කළ STOCK ROUTE --- */}
           <Route
-            path="/stock"
+            path="/viewStock"
             element={
               ["admin", "sales_rep", "online_store_keeper", "manager"].includes(
                 userRole,
               ) ? (
-                <Stock />
+                <ViewStock />
               ) : (
                 <Navigate to="/home" />
               )
@@ -146,7 +132,7 @@ function App() {
           <Route
             path="/customer"
             element={
-              ["admin", "sales_rep"].includes(userRole) ? (
+              ["admin", "sales_rep", "online_store_keeper", "manager"].includes(userRole) ? (
                 <Customer />
               ) : (
                 <Navigate to="/home" />
@@ -157,7 +143,7 @@ function App() {
           <Route
             path="/customers"
             element={
-              ["admin", "manager", "sales_rep"].includes(userRole) ? (
+              ["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? (
                 <ViewCustomer />
               ) : (
                 <Navigate to="/home" />
@@ -273,6 +259,8 @@ function App() {
         <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
         <Route path='/inventory' element={['admin', 'manager'].includes(userRole) ? <ViewProduct /> : <Navigate to="/dashboard" />} />
         {/* <Route path='/product/:id' element={['admin', 'manager'].includes(userRole) ? <ProductDetail /> : <Navigate to="/dashboard" />} /> */}
+        <Route path='/product/:id' element={['admin', 'manager', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ProductDetail /> : <Navigate to="/home" />} />
+
 
         {/* orders management - admin, sales rep, online_store_keeper can create; admin, manager, sales_rep, online_store_keeper can view */}
         <Route path='/view-orders' element={userRole === 'admin' || userRole === 'manager' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <ViewOrders /> : <Navigate to="/" />} />
@@ -281,12 +269,14 @@ function App() {
         {/* stock management - admin, sales rep, online_store_keeper can view; only admin can add/edit */}
         <Route path='/addStock' element={userRole === 'admin' ? <AddStock /> : <Navigate to="/dashboard" />} />
         <Route path='/editStock' element={userRole === 'admin' ? <EditStock /> : <Navigate to="/dashboard" />} />
-        <Route path='/viewStock' element={['admin', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ViewStock /> : <Navigate to="/dashboard" />} />
+        <Route path='/viewStock' element={['admin', 'manager', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ViewStock /> : <Navigate to="/dashboard" />} />
+
 
 </Route>
 
       {/* <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/" />} /> */}
-      <Route path="*" element={<Navigate to="/" />} />
+      {/* <Route path="*" element={<Navigate to="/under-construction" />} /> */}
+      <Route path="*" element={<Navigate to="/under-construction" replace />} />
     </Routes>
 
      
