@@ -78,7 +78,7 @@ const StatNavBar = () => {
             onClick={() => handleNavigation('/login')}
             className="w-full bg-black text-white py-4 rounded-xl font-bold uppercase text-xs tracking-widest"
           >
-            System Login
+            Login
           </button>
         </div>
       </div>

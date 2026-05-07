@@ -19,6 +19,9 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const allowedRoles = ["admin", "sales_rep", "online_store_keeper"];
+  const canAddToOrder = user && allowedRoles.includes(user.role);
+
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) {
@@ -176,9 +179,7 @@ export default function ProductDetail() {
                       <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">SKU</th>
                       <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Price</th>
                       <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">Stock</th>
-                      {["admin", "sales_rep", "online_store_keeper"].includes(user?.role) && (
-                        <th className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 text-right">Action</th>
-                      )}
+                      {canAddToOrder && <th className="px-4 py-4 text-[9px] text-center font-black uppercase tracking-[0.2em] text-gray-400">Action</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -200,7 +201,7 @@ export default function ProductDetail() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          {["admin", "sales_rep", "online_store_keeper"].includes(user?.role) && (
+                          {canAddToOrder && (
                             <button 
                               onClick={() => handleAddToCart(variant)}
                               disabled={Number(variant.stock_count) <= 0}

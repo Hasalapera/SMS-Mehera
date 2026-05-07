@@ -38,7 +38,29 @@ const getBrands = async (req, res) => {
     }
 };
 
+const deleteBrand = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const brand = await Brand.findByPk(id);
+        if (!brand) {
+            return res.status(404).json({ error: "Brand not found" });
+        }
+
+        await brand.destroy();
+
+        res.status(200).json({
+            message: "Brand deleted successfully"
+        });
+
+    } catch (err) {
+        console.error("Delete Brand Error:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
 module.exports = {
     addBrand,
-    getBrands
+    getBrands,
+    deleteBrand
 };  
