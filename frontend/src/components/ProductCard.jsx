@@ -8,9 +8,6 @@ const ProductCard = ({ product, onAddToCart }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // 🛡️ Debugging: Role එක හරියටම එනවද කියලා බලන්න
-  // console.log("Current User Role:", user?.role);
-
   const userRole = user?.role?.toLowerCase();
   const canAddOrders = user && ["admin", "sales_rep", "online_store_keeper"].includes(userRole);
 
@@ -57,13 +54,34 @@ const ProductCard = ({ product, onAddToCart }) => {
         {/* --- Side Hover Actions --- */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
           
-          {/* ✅ Now visible for 'online_store_keeper' role */}
+          {/* ✅ ShoppingCart with Luxury Toast Notification */}
           {canAddOrders && (
             <button 
               onClick={(e) => {
                 e.stopPropagation(); 
                 if (onAddToCart) {
                   onAddToCart(); 
+                  
+                  // 🔥 Mehera Theme Toast
+                  toast.success(`${product.product_name} added to queue!`, {
+                    style: {
+                      borderRadius: '1.5rem',
+                      background: '#141414',
+                      color: '#b4a460',
+                      fontSize: '10px',
+                      fontWeight: '900',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.15em',
+                      padding: '16px 24px',
+                      border: '1px solid rgba(180, 164, 96, 0.2)',
+                      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                    },
+                    iconTheme: {
+                      primary: '#b4a460',
+                      secondary: '#141414',
+                    },
+                  });
+
                 } else {
                   console.error("onAddToCart function is not provided to ProductCard");
                 }

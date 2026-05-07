@@ -74,6 +74,7 @@ import Contact from './pages/Contact';
 import Products from './pages/Products';
 import FloatingPopup from './components/FloatingPopup';
 import Navbar from './components/Navbar';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   const { user, loading } = useAuth();
@@ -87,8 +88,13 @@ function App() {
 
   return (
     <> 
-      
-
+      <Toaster 
+        position="top-right" 
+        reverseOrder={false} 
+        toastOptions={{
+          duration: 3000, 
+        }}
+      />
       <Routes>
         <Route path='/' element={<LandingPage />} />
         <Route path='/login' element={<Login />} />
