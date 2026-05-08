@@ -581,7 +581,8 @@ const AddOrder = () => {
             {cart && cart.length > 0 ? (
               cart.map((item) => (
                 <div
-                  key={item.product_id}
+                  //key={item.product_id} // can't use this because we need to differentiate variants of the same product
+                  key={item.cartItemId} 
                   className="p-4 bg-white rounded-2xl border border-gray-100 flex justify-between items-center group hover:border-[#b4a460]/30 transition-all"
                 >
                   <div className="flex-1 min-w-0 mr-4">
