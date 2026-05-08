@@ -72,12 +72,12 @@ export default function ProductDetail() {
     } else {
       updatedCart = [...savedCart, { 
         cartItemId,
-        product_id: product.product_id, 
+        product_id: product.product_id,
         variant_id: variant.variant_id,
-        name: `${product.product_name}`, 
-        variant_name: variant.variant_name, 
+        variant_name: variant.variant_name,
+        name: product.product_name,
         price: Number(variant.price),
-        qty: 1 
+        qty: 1
       }];
     }
 
