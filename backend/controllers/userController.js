@@ -281,28 +281,21 @@ const getUserProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
     try {
         const userId = req.user?.user_id || req.body.user_id;
-        if(!userId) {
-            return res.status(400).json({ error: "User ID is required" });
-        }
+        if(!userId) return res.status(400).json({ error: "User ID is required" });
 
         const user = await User.findByPk(userId);
-        
         if (!user) return res.status(404).json({ error: "User not found" });
 
         const updateData = {};
-
         if (req.body.contact_no) {
-            // save the encrypted contact number in the database, but return the decrypted version in the response, so that we don't expose the encrypted value to the frontend
-            updateData.contact_no = encrypt(req.body.contact_no);
+            updateData.contact_no = encrypt(req.body.contact_no); // ✅ Encrypt කරනවා
         }
         
-        // if name is provided and not empty, then add to updateData, otherwise ignore it (so it won't overwrite existing name with null or empty)
         const incomingName = req.body.name || req.body.full_name;
         if (incomingName && incomingName.trim() !== "") {
             updateData.name = incomingName.trim();
         }
 
-        if (req.body.contact_no) updateData.contact_no = req.body.contact_no;
         if (req.body.dob && req.body.dob !== "") updateData.dob = req.body.dob;
         if (req.body.nic_no) updateData.nic_no = req.body.nic_no;
         
@@ -310,24 +303,23 @@ const updateProfile = async (req, res) => {
             updateData.profile_image = req.file.path || req.file.secure_url;
         }
 
-        // if there is data in updateData, then only update, otherwise skip the update to avoid overwriting existing data with null or empty values
         if (Object.keys(updateData).length > 0) {
             await user.update(updateData);
         }
 
-        // Fetch the updated user profile to return in the response, excluding password fields
-        const updatedUser = await User.findByPk(userId, {
+        const updatedUserInstance = await User.findByPk(userId, {
             attributes: { exclude: ['password', 'default_password'] },
         });
 
-        // Decrypt contact number before sending to frontend        
+        // ✅ මචං මෙතන තමයි 'userData' define කළේ. දැන් error එක එන්නේ නැහැ.
+        const userData = updatedUserInstance.toJSON(); 
         if (userData.contact_no) {
             userData.contact_no = decrypt(userData.contact_no);
         }
 
         res.status(200).json({
             message: "Profile updated successfully",
-            user: updatedUser
+            user: userData 
         });
 
     } catch (err) {

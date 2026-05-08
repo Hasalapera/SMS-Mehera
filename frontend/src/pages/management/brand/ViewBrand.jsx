@@ -173,8 +173,11 @@ const ViewBrands = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-50">
                 <div className="p-6 bg-gray-50 rounded-3xl">
                   <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Total Products</p>
-                  <p className="text-2xl font-black text-black">--</p> 
-                  {/* පසුව count එක දාන්න පුළුවන් */}
+                  <p className="text-2xl font-black text-black">
+                  {/* 🚀 Backend එකෙන් එන productCount එක මෙතනට දානවා */}
+                  {activeBrand.productCount || 0}
+                </p>
+                <p className="text-[9px] text-gray-400 font-medium uppercase mt-1">Items in registry</p>
                 </div>
                 <div className="p-6 bg-gray-50 rounded-3xl">
                   <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Created Date</p>
