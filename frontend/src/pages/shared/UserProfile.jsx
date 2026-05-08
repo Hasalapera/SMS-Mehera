@@ -3,13 +3,16 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { 
   User, Mail, Phone, CreditCard, MapPin, 
-  Shield, Calendar, Camera, Edit2, Save, X, Lock, KeyRound, RefreshCw, Loader2, Eye, EyeOff
+  Shield, Calendar, Camera, Edit2, Save, X, Lock, KeyRound, RefreshCw, Loader2, Eye, EyeOff, Clock
 } from 'lucide-react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom'; // navigate එකත් ගත්තා
+import toast, { Toaster } from 'react-hot-toast'; // Toaster එකත් දාන්න ඕනේ
 
 const UserProfile = () => {
   const { id } = useParams();
-  const {login} = useAuth(); 
+  const navigate = useNavigate();
+  const { token, logout, login } = useAuth(); // ✅ මෙතන ලස්සනට ඔක්කොම එකවර ගත්තා (පරණ double declaration එක අයින් කළා)
+  
   const [isEditing, setIsEditing] = useState(false);
   const [showPassModal, setShowPassModal] = useState(false);
   const [user, setUser] = useState(null);
@@ -25,7 +28,6 @@ const UserProfile = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
-  
   const fallbackAvatar = "https://i.pravatar.cc/150?u=hasala";
 
   const [formData, setFormData] = useState({
@@ -37,77 +39,66 @@ const UserProfile = () => {
   });
 
   useEffect(() => {
-  const fetchLatestData = async () => {
-    try {
-      // 1. URL එකේ ID එකක් තියෙනවා නම් ඒක ගන්න, නැත්නම් LocalStorage එකේ ඉන්න කෙනාව ගන්න
-      const storedUser = JSON.parse(localStorage.getItem('user'));
-      const targetId = id || storedUser?.user_id;
+    if(!token) { navigate('/'); return; } // Token නැත්නම් එළියට
 
-      if (!targetId) return;
+    const fetchLatestData = async () => {
+      try {
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        const targetId = id || storedUser?.user_id;
+        if (!targetId) return;
 
-      const response = await axios.get(`http://localhost:5001/api/users/profile/${targetId}`);
-      const fetchedUser = response.data.user;
+        // ✅ මචං මෙතන Header එක නැති නිසයි මුලින් ඩේටා ලෝඩ් වෙන්නේ නැත්තේ
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const response = await axios.get(`http://localhost:5001/api/users/profile/${targetId}`, config);
+        const fetchedUser = response.data.user;
 
-      // 2. වැදගත්: අපි බලන්නේ අපේම ප්‍රොෆයිල් එක නම් විතරක් LocalStorage එක Update කරන්න
-      if (!id || id === storedUser?.user_id) {
-        localStorage.setItem('user', JSON.stringify(fetchedUser));
+        if (!id || id === storedUser?.user_id) {
+          localStorage.setItem('user', JSON.stringify(fetchedUser));
+        }
+        
+        setUser(fetchedUser);
+        setFormData({
+          full_name: fetchedUser.name || fetchedUser.full_name || '',
+          contact_no: fetchedUser.contact_no || '',
+          dob: fetchedUser.dob ? fetchedUser.dob.split('T')[0] : '', 
+          nic_no: fetchedUser.nic_no || '',
+          picture_url: fetchedUser.profile_image || fetchedUser.picture_url || fallbackAvatar
+        });
+      } catch (err) {
+        if (err.response?.status === 401) logout();
+        console.error("Sync error:", err);
       }
-      
-      setUser(fetchedUser);
-      setFormData({
-        full_name: fetchedUser.name || fetchedUser.full_name || '',
-        contact_no: fetchedUser.contact_no || '',
-        dob: formatDateForInput(fetchedUser.dob), 
-        nic_no: fetchedUser.nic_no || '',
-        picture_url: fetchedUser.profile_image || fetchedUser.picture_url || fallbackAvatar
-      });
-    } catch (err) {
-      console.error("Failed to sync profile data:", err);
-    }
-  };
+    };
 
-  fetchLatestData();
-}, [id]);
+    fetchLatestData();
+  }, [id, token]);
 
-  // --- Password Update Logic (Moved inside the component) ---
   const handlePasswordUpdate = async () => {
     if (passData.newPassword !== passData.confirmPassword) {
-      alert("System Error: New security keys do not match. Please verify.");
+      toast.error("New security keys do not match!");
       return;
     }
-
-    if (passData.currentPassword === passData.newPassword) {
-      alert("Security Alert: New key cannot be the same as the current key.");
-      return;
-    }
-
     setIsUpdating(true);
-    const token = localStorage.getItem('accessToken');
     try {
-      const response = await axios.put('http://localhost:5001/api/users/change-password', {
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.put('http://localhost:5001/api/users/change-password', {
         userId: user.user_id,
         oldPassword: passData.currentPassword,
         newPassword: passData.newPassword
-      }, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
+      }, config);
 
-      if (response.status === 200) {
-        alert("Registry Sync: Security key updated successfully.");
-        setShowPassModal(false);
-        setPassData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      }
+      toast.success("Security key updated successfully!");
+      setShowPassModal(false);
+      setPassData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
-      console.error("Security update failed:", err);
-      alert(err.response?.data?.message || "Critical Error: Synchronization failed.");
+      toast.error(err.response?.data?.message || "Password update failed.");
     } finally {
       setIsUpdating(false);
     }
   };
 
-    const handleUpdateProfile = async () => {
+  const handleUpdateProfile = async () => {
     setIsUpdating(true);
-    const token = localStorage.getItem('accessToken');
     const uploadData = new FormData();
     uploadData.append("user_id", user.user_id);
     if(formData.full_name) uploadData.append("name", formData.full_name);
@@ -115,202 +106,143 @@ const UserProfile = () => {
     uploadData.append("dob", formData.dob);
     uploadData.append("nic_no", formData.nic_no);
     
-    const file = fileInputRef.current?.files[0];
-    if (file) {
-      uploadData.append("image", file);
-    } else {
-      uploadData.append("profile_image", formData.picture_url);
+    if (fileInputRef.current?.files[0]) {
+      uploadData.append("image", fileInputRef.current.files[0]);
     }
 
     try {
-      const response = await axios.put('http://localhost:5001/api/users/update-profile', uploadData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        const config = { 
+            headers: { 
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data'
+            } 
+        };
+        const response = await axios.put('http://localhost:5001/api/users/update-profile', uploadData, config);
+
+        if (response.status === 200) {
+            const updatedUser = response.data.user;
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            login(updatedUser, token, localStorage.getItem('refreshToken'), localStorage.getItem('expiresAt'));
+            setUser(updatedUser);
+            window.dispatchEvent(new Event('storage')); 
+            
+            setIsEditing(false); 
+            toast.success("Profile synchronized successfully!");
         }
-      });
-
-      if (response.status === 200) {
-        const updatedUser = response.data.user;
-        
-        // 1. LocalStorage එකේ අලුත් දත්ත සේව් කිරීම
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        
-        // 2. දැනට ඉන්න පේජ් එකේ (UserProfile) State එක update කිරීම
-        login(updatedUser); // <-- මේකෙන් Context එකේ දත්තත් update වෙනවා
-        setUser(updatedUser);
-        
-        // 3. මෙන්න මේ පේළිය අනිවාර්යයෙන්ම දාන්න - SideBar එකට පණිවිඩය යවන්නේ මේකෙන්
-        window.dispatchEvent(new Event('storage')); 
-        
-        setIsEditing(false);
-        alert("Profile successfully synchronized with registry.");
-      }
     } catch (err) {
-      console.error("Update failed:", err);
-      console.log("Backend Message:", err.response?.data);
-      alert("System synchronization failed. Please verify connection.");
+        toast.error("System synchronization failed.");
     } finally {
-      setIsUpdating(false);
+        setIsUpdating(false);
     }
   };
 
-  // ... Helpers (handleImageSelect, startCamera, capturePhoto, Date Logic) ටික ඔයා ලියපු විදිහටම තබා ගන්න ...
-  const handleImageSelect = (file) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => setFormData(prev => ({ ...prev, picture_url: e.target.result }));
-    reader.readAsDataURL(file);
-  };
+  // --- Helpers ---
+  const handleImageSelect = (file) => { if (!file) return; const reader = new FileReader(); reader.onload = (e) => setFormData(prev => ({ ...prev, picture_url: e.target.result })); reader.readAsDataURL(file); };
+  const startCamera = async () => { setIsCapturing(true); try { const stream = await navigator.mediaDevices.getUserMedia({ video: true }); if (videoRef.current) videoRef.current.srcObject = stream; } catch (err) { setIsCapturing(false); } };
+  const capturePhoto = () => { const canvas = canvasRef.current; const video = videoRef.current; if (canvas && video) { canvas.width = video.videoWidth; canvas.height = video.videoHeight; canvas.getContext('2d').drawImage(video, 0, 0); canvas.toBlob((blob) => { const file = new File([blob], `cap.jpg`, { type: "image/jpeg" }); const dt = new DataTransfer(); dt.items.add(file); fileInputRef.current.files = dt.files; setFormData(prev => ({ ...prev, picture_url: URL.createObjectURL(file) })); video.srcObject.getTracks().forEach(track => track.stop()); setIsCapturing(false); }, 'image/jpeg', 0.6); } };
 
-  const startCamera = async () => {
-    setIsCapturing(true);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) videoRef.current.srcObject = stream;
-    } catch (err) { setIsCapturing(false); }
-  };
+  if (!user) return <div className="p-10 text-center font-bold italic text-[#b4a460] tracking-widest">Initialising Registry...</div>;
 
-  const capturePhoto = () => {
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    if (canvas && video) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      canvas.getContext('2d').drawImage(video, 0, 0);
-      canvas.toBlob((blob) => {
-        const file = new File([blob], `capture_${Date.now()}.jpg`, { type: "image/jpeg" });
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(file);
-        fileInputRef.current.files = dataTransfer.files;
-        setFormData(prev => ({ ...prev, picture_url: URL.createObjectURL(file) }));
-        const stream = video.srcObject;
-        stream.getTracks().forEach(track => track.stop());
-        setIsCapturing(false);
-      }, 'image/jpeg', 0.6);
-    }
-  };
-
-  const getCleanDate = (dateString) => {
-    if (!dateString || typeof dateString !== 'string') return null;
-    const onlyDate = dateString.split('T')[0]; 
-    const parts = onlyDate.split('-'); 
-    return parts.length === 3 ? { year: parts[0], month: parts[1], day: parts[2], formatted: onlyDate } : null;
-  };
-
-  const formatDateDisplay = (dateString) => {
-    const clean = getCleanDate(dateString);
-    if (!clean) return "Not Provided";
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${clean.day} ${months[parseInt(clean.month, 10) - 1]} ${clean.year}`;
-  };
-
-  const formatDateForInput = (dateString) => {
-    const clean = getCleanDate(dateString);
-    return clean ? clean.formatted : '';
-  };
-
-  const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-  const handlePasswordChange = (e) => setPassData({ ...passData, [e.target.name]: e.target.value });
-  const loggedInUserId = JSON.parse(localStorage.getItem('user'))?.user_id;
-
-  if (!user) return <div className="p-10 text-center font-bold italic text-gray-500 tracking-widest">Initialising Profile Registry...</div>;
+  // ✅ Created At ලෙඩේට විසඳුම:
+  const joinDate = user.createdAt || user.created_at;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto animate-in fade-in duration-500 relative text-left">
-      {/* --- Profile Header Card --- */}
+    <div className="p-4 md:p-8 max-w-6xl mx-auto animate-in fade-in duration-500 text-left bg-gray-50/20 min-h-screen">
+      <Toaster position="top-right" />
+      
+      {/* Profile Header Card */}
       <div className="flex flex-col md:flex-row items-center gap-8 mb-10 bg-white p-8 rounded-[2rem] shadow-sm border border-gray-50">
         <div className="relative group">
           <div className="w-32 h-32 rounded-3xl overflow-hidden ring-4 ring-[#b4a460]/20 shadow-xl bg-gray-100">
             {isCapturing ? <video ref={videoRef} autoPlay className="w-full h-full object-cover scale-x-[-1]" /> : <img src={formData.picture_url} alt="User" className="w-full h-full object-cover" />}
           </div>
           <div className="absolute -bottom-2 -right-2 flex gap-1">
-            {isCapturing ? <button onClick={capturePhoto} className="p-2 bg-green-600 text-white rounded-xl shadow-lg hover:bg-green-700 transition-colors"><Save size={16} /></button> : <button onClick={() => isEditing && fileInputRef.current.click()} disabled={!isEditing} className={`p-2 rounded-xl shadow-lg transition-colors ${isEditing ? 'bg-black text-white hover:bg-[#b4a460]' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}><Camera size={18} /></button>}
-            {isEditing && !isCapturing && <button onClick={startCamera} className="p-2 bg-black text-white rounded-xl shadow-lg hover:bg-[#b4a460]"><RefreshCw size={16} /></button>}
+            {isEditing && (
+              <>
+                <button onClick={isCapturing ? capturePhoto : () => fileInputRef.current.click()} className="p-2 bg-black text-white rounded-xl shadow-lg hover:bg-[#b4a460] transition-colors">{isCapturing ? <Save size={16} /> : <Camera size={16} />}</button>
+                {!isCapturing && <button onClick={startCamera} className="p-2 bg-black text-white rounded-xl shadow-lg hover:bg-[#b4a460]"><RefreshCw size={16} /></button>}
+              </>
+            )}
           </div>
           <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageSelect(e.target.files[0])} />
           <canvas ref={canvasRef} className="hidden" />
         </div>
         
         <div className="text-center md:text-left flex-1">
-          {isEditing ? <input name="full_name" value={formData.full_name} onChange={handleInputChange} className="text-2xl font-serif text-black border-b-2 border-[#b4a460] focus:outline-none mb-2 bg-transparent w-full max-w-md px-1" /> : <h1 className="text-3xl font-serif text-black mb-1">{formData.full_name || "User Name"}</h1>}
+          {isEditing ? <input name="full_name" value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} className="text-2xl font-serif text-black border-b-2 border-[#b4a460] focus:outline-none mb-2 bg-transparent w-full max-w-md px-1" /> : <h1 className="text-3xl font-serif text-black mb-1">{formData.full_name || "User Name"}</h1>}
           <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-2">
             <span className="px-3 py-1 bg-[#b4a460]/10 text-[#8a7b42] rounded-full text-[10px] font-bold uppercase tracking-widest border border-[#b4a460]/20">{user.role}</span>
-            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all duration-300 ${user.is_active ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>{user.is_active ? 'Active Account' : 'Inactive'}</span>
+            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all duration-300 ${user.is_active ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>{user.is_active ? 'Active Node' : 'Inactive'}</span>
           </div>
         </div>
 
-        {(!id || id === loggedInUserId) && (
+        {(!id || id === JSON.parse(localStorage.getItem('user'))?.user_id) && (
           <div className="flex flex-col sm:flex-row md:flex-col gap-2">
-            <button onClick={() => setIsEditing(!isEditing)} className="flex items-center justify-center gap-2 px-6 py-3 bg-[#b4a460] text-black rounded-2xl font-bold text-sm hover:scale-105 transition-all shadow-lg min-w-[160px]">
-              {isEditing ? <><X size={16} /> Cancel Edit</> : <><Edit2 size={16} /> Edit Profile</>}
+            <button onClick={() => setIsEditing(!isEditing)} className={`flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all shadow-lg min-w-[160px] ${isEditing ? 'bg-gray-100 text-gray-400' : 'bg-[#b4a460] text-black hover:bg-black hover:text-white'}`}>
+              {isEditing ? <><X size={16} /> Cancel</> : <><Edit2 size={16} /> Edit Profile</>}
             </button>
-            {!isEditing && <button onClick={() => setShowPassModal(true)} className="flex items-center justify-center gap-2 px-6 py-3 bg-[#b4a460] text-black rounded-2xl font-bold text-sm hover:scale-105 transition-all shadow-lg min-w-[160px]"><KeyRound size={16} /> Security</button>}
+            {!isEditing && <button onClick={() => setShowPassModal(true)} className="flex items-center justify-center gap-2 px-6 py-3 bg-white text-black border border-gray-200 rounded-2xl font-bold text-sm shadow-md min-w-[160px] hover:bg-gray-50"><KeyRound size={16} /> Security</button>}
           </div>              
         )}
       </div>
 
-      {/* --- Main Content Sections --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
           <section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-100">
             <h2 className="text-xl font-serif mb-8 flex items-center gap-3 text-black"><div className="p-2 bg-[#b4a460]/10 rounded-lg text-[#b4a460]"><User size={22} /></div>Identity Registry</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-8">
-              <InfoItem icon={Mail} label="Email Address" value={user.email} />
-              <InfoItem name="contact_no" icon={Phone} label="Contact No" value={formData.contact_no} isEditable={isEditing} onChange={handleInputChange} />
-              <InfoItem name="nic_no" icon={CreditCard} label="NIC" value={formData.nic_no} isEditable={isEditing} onChange={handleInputChange} />
-              <InfoItem name="dob" icon={Calendar} label="Date of Birth" value={isEditing ? formData.dob : formatDateDisplay(formData.dob)} isEditable={isEditing} onChange={handleInputChange} type="date" />
+              <InfoItem icon={Mail} label="Registry Email" value={user.email} />
+              <InfoItem name="contact_no" icon={Phone} label="Contact No" value={formData.contact_no} isEditable={isEditing} onChange={(e) => setFormData({...formData, contact_no: e.target.value})} />
+              <InfoItem name="nic_no" icon={CreditCard} label="NIC" value={formData.nic_no} isEditable={isEditing} onChange={(e) => setFormData({...formData, nic_no: e.target.value})} />
+              <InfoItem name="dob" icon={Calendar} label="Date of Birth" value={isEditing ? formData.dob : new Date(formData.dob).toLocaleDateString('en-GB')} isEditable={isEditing} onChange={(e) => setFormData({...formData, dob: e.target.value})} type="date" />
             </div>
           </section>
 
-          {user.role === 'sales_rep' && (
-            <section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-100">
-              <h2 className="text-xl font-serif mb-8 flex items-center gap-3 text-black"><div className="p-2 bg-[#b4a460]/10 rounded-lg text-[#b4a460]"><MapPin size={22} /></div>Assigned Operational Sectors</h2>
-              <div className="flex flex-wrap gap-3">{user.districts?.length > 0 ? user.districts.map((d, i) => <span key={i} className="px-5 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl text-xs font-bold text-gray-600 shadow-sm">{d}</span>) : <p className="text-sm text-gray-400 italic font-medium px-2">No operational sectors assigned.</p>}</div>
-            </section>
-          )}
-
           {isEditing && (
             <div className="flex justify-end pt-4">
-              <button onClick={handleUpdateProfile} disabled={isUpdating} className="w-full sm:w-auto px-12 py-4 bg-black text-white font-bold rounded-[1.5rem] shadow-2xl shadow-black/20 hover:bg-[#b4a460] transition-all flex items-center justify-center gap-3 text-base">
-                {isUpdating ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                {isUpdating ? "Synchronizing..." : "Commit Records"}
+              <button onClick={handleUpdateProfile} disabled={isUpdating} className="w-full sm:w-auto px-12 py-4 bg-black text-white font-bold rounded-[1.5rem] shadow-2xl hover:bg-[#b4a460] transition-all flex items-center justify-center gap-3 text-base">
+                {isUpdating ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />} Commit Changes
               </button>
             </div>
           )}
         </div>
 
         <div className="space-y-8">
-          <section className="bg-black text-white p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#b4a460]/10 rounded-full blur-3xl"></div>
-            <h2 className="text-lg font-serif mb-8 flex items-center gap-3 text-[#b4a460]"><Shield size={20} /> System Credentials</h2>
-            <div className="space-y-6 relative z-10">
-              <div><p className="text-[10px] uppercase text-gray-500 font-bold tracking-[0.2em] mb-2">System UUID</p><p className="text-xs font-mono opacity-80 leading-relaxed">{user.user_id}</p></div>
-              <div className="pt-6 border-t border-white/10"><p className="text-[10px] uppercase text-gray-500 font-bold tracking-[0.2em] mb-2">Registry Joined</p><p className="text-sm font-medium">{user.created_at ? new Date(user.created_at).toDateString() : "Live Record"}</p></div>
+          <section className="bg-white p-10 rounded-[2.5rem] shadow-xl border-2 border-[#b4a460]/10 relative overflow-hidden">
+            <h2 className="text-lg font-serif mb-8 flex items-center gap-3 text-black"><Shield size={20} /> Audit Logs</h2>
+            <div className="space-y-6 relative z-10 text-left">
+              <div className="flex gap-4">
+                <div className="p-3 bg-gray-50 rounded-2xl text-[#b4a460]"><Clock size={20} /></div>
+                <div>
+                  <p className="text-[10px] uppercase text-gray-500 font-bold tracking-[0.2em] mb-1">Registry Joined</p>
+                  <p className="text-sm font-bold text-gray-900">
+                    {joinDate ? new Date(joinDate).toDateString() : "Live Record"}
+                  </p>
+                </div>
+              </div>
+              <div className="pt-6 border-t border-gray-50">
+                <p className="text-[10px] uppercase text-gray-300 font-black mb-2">Node UUID</p>
+                <code className="text-[9px] text-gray-400 block break-all font-mono bg-gray-50 p-4 rounded-xl">{user.user_id}</code>
+              </div>
             </div>
           </section>
         </div>
       </div>
 
-      {/* --- Password Modal --- */}
+      {/* Password Modal */}
       {showPassModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in duration-300">
             <div className="flex justify-between items-center mb-10">
-              <h2 className="text-2xl font-serif text-black flex items-center gap-3"><Lock size={24} className="text-[#b4a460]" /> Security Registry</h2>
-              <button onClick={() => {setShowPassModal(false); setPassData({ currentPassword: '',newPassword: '',confirmPassword: ''}); }} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={24} className="text-gray-400" /></button>
+              <h2 className="text-2xl font-serif text-black flex items-center gap-3"><Lock size={24} className="text-[#b4a460]" /> Security</h2>
+              <button onClick={() => setShowPassModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={24} className="text-gray-400" /></button>
             </div>
             <div className="space-y-6">
-              <PasswordInput label="Current Security Key" name="currentPassword" value={passData.currentPassword} onChange={handlePasswordChange} />
-              <PasswordInput label="New Security Key" name="newPassword" value={passData.newPassword} onChange={handlePasswordChange} />
+              <PasswordInput label="Current Key" name="currentPassword" value={passData.currentPassword} onChange={handlePasswordChange} />
+              <PasswordInput label="New Key" name="newPassword" value={passData.newPassword} onChange={handlePasswordChange} />
               <PasswordInput label="Verify New Key" name="confirmPassword" value={passData.confirmPassword} onChange={handlePasswordChange} />
-              <button type="button" onClick={() => setPassData({ currentPassword: '',newPassword: '',confirmPassword: ''})}
-                disabled={isUpdating} className="w-full py-4 border border-gray-200 text-gray-600 font-bold rounded-2xl hover:bg-gray-50 transition-all text-sm uppercase tracking-widest">
-                Clear
-              </button>
-              <button onClick={handlePasswordUpdate} disabled={isUpdating} className="w-full py-5 bg-black text-white font-bold rounded-2xl mt-6 hover:bg-[#b4a460] transition-all text-sm uppercase tracking-widest shadow-xl flex items-center justify-center gap-2">
-                {isUpdating && <Loader2 className="animate-spin" size={18} />}
-                Update Security Key
+              <button onClick={handlePasswordUpdate} disabled={isUpdating} className="w-full py-4 bg-black text-white font-bold rounded-2xl mt-6 hover:bg-[#b4a460] transition-all flex items-center justify-center gap-2 text-sm">
+                {isUpdating && <Loader2 className="animate-spin" size={18} />} Update Key
               </button>
             </div>
           </div>
@@ -320,39 +252,22 @@ const UserProfile = () => {
   );
 };
 
-// ... Internal Components ...
-const InfoItem = ({ name, icon: Icon, label, value, isEditable, onChange, type = "text" }) => (
+// ... Sub Components ...
+const InfoItem = ({ icon: Icon, label, value, isEditable, onChange, type = "text" }) => (
   <div className="space-y-2">
     <p className="text-[10px] uppercase text-gray-400 font-bold tracking-[0.15em] flex items-center gap-2"><Icon size={14} className="text-[#b4a460]" /> {label}</p>
-    {isEditable ? <input type={type} name={name} value={value || ''} onChange={onChange} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#b4a460]/20 focus:border-[#b4a460] transition-all" /> : <p className="text-sm font-bold text-gray-800 px-1">{value || "Not Recorded"}</p>}
+    {isEditable ? <input type={type} value={value || ''} onChange={onChange} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#b4a460]/20 focus:border-[#b4a460] transition-all" /> : <p className="text-sm font-bold text-gray-800 px-1">{value || "Not Recorded"}</p>}
   </div>
 );
 
-const PasswordInput = ({ label, name,value, onChange }) => {
+const PasswordInput = ({ label, name, value, onChange }) => {
   const [showPassword, setShowPassword] = useState(false);
-
   return (
-    <div className="space-y-2">
-      <p className="text-[10px] uppercase text-gray-400 font-bold tracking-[0.1em]">
-        {label}
-      </p>
-
+    <div className="space-y-2 text-left">
+      <p className="text-[10px] uppercase text-gray-400 font-bold tracking-[0.1em]">{label}</p>
       <div className="relative">
-        <input
-          type={showPassword ? "text" : "password"}
-          name={name}
-          value={value}
-          onChange={onChange}
-          className="w-full p-4 pr-12 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:border-[#b4a460] focus:ring-2 focus:ring-[#b4a460]/10 focus:outline-none transition-all"
-        />
-
-        <button
-          type="button"
-          onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors"
-        >
-          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-        </button>
+        <input type={showPassword ? "text" : "password"} name={name} value={value} onChange={onChange} className="w-full p-4 pr-12 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:border-[#b4a460] outline-none" />
+        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
       </div>
     </div>
   );
