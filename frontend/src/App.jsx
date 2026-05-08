@@ -74,6 +74,7 @@ import Contact from './pages/Contact';
 import Products from './pages/Products';
 import FloatingPopup from './components/FloatingPopup';
 import Navbar from './components/Navbar';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   const { user, loading } = useAuth();
@@ -87,8 +88,13 @@ function App() {
 
   return (
     <> 
-      
-
+      <Toaster 
+        position="top-right" 
+        reverseOrder={false} 
+        toastOptions={{
+          duration: 3000, 
+        }}
+      />
       <Routes>
         <Route path='/' element={<LandingPage />} />
         <Route path='/login' element={<Login />} />
@@ -260,7 +266,7 @@ function App() {
         <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
         <Route path='/inventory' element={['admin', 'manager'].includes(userRole) ? <ViewProduct /> : <Navigate to="/dashboard" />} />
         {/* <Route path='/product/:id' element={['admin', 'manager'].includes(userRole) ? <ProductDetail /> : <Navigate to="/dashboard" />} /> */}
-        {/* <Route path='/product/:id' element={['admin', 'manager', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ProductDetail /> : <Navigate to="/home" />} /> */}
+        <Route path='/product/:id' element={['admin', 'manager', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ProductDetail /> : <Navigate to="/home" />} />
 
 
         {/* orders management - admin, sales rep, online_store_keeper can create; admin, manager, sales_rep, online_store_keeper can view */}

@@ -3,6 +3,7 @@ import axios from 'axios'; // 👈 axios import කරන්න අමතක ක
 import { Phone, Mail, Clock, MapPin, Facebook, Instagram, Send } from 'lucide-react';
 import StatNavBar from '../components/StatNavBar';
 import Footer from '../components/Footer';
+import Swal from 'sweetalert2';
 
 const Contact = () => {
   const form = useRef();
@@ -24,16 +25,38 @@ const Contact = () => {
     };
 
     try {
-      // 🚀 ඔයාගේ Backend URL එක (මෙතන 5001 වෙනුවට ඔයාගේ port එක බලන්න)
       const res = await axios.post('http://localhost:5001/api/contact/send-message', formData);
       
       if (res.data.success) {
-        alert("Successfully sent your message! ✅");
+        Swal.fire({
+          title: '<span style="font-family: serif; font-style: italic; font-size: 26px;">Message Sent!</span>',
+          html: '<p style="font-family: sans-serif; font-style: italic; color: #6b7280; font-size: 14px;">Thank you for contacting Mehera International. We will get back to you shortly.</p>',
+          icon: 'success',
+          iconColor: '#b4a460',
+          confirmButtonText: 'DONE',
+          confirmButtonColor: '#000000',
+          background: '#ffffff',
+          customClass: {
+            popup: 'rounded-[2.5rem] p-10 border border-[#b4a460]/20 shadow-2xl',
+            confirmButton: 'rounded-xl px-10 py-3 font-black text-[10px] tracking-widest'
+          }
+        });
         e.target.reset(); 
       }
     } catch (error) {
       console.error("Error sending email:", error);
-      alert("Something went wrong. Please try again later. ❌");
+      
+      Swal.fire({
+        title: '<span style="font-family: serif; font-style: italic; font-size: 26px;">Oops...</span>',
+        html: '<p style="font-family: sans-serif; font-style: italic; color: #6b7280; font-size: 14px;">Something went wrong. Please check your connection and try again.</p>',
+        icon: 'error',
+        confirmButtonText: 'TRY AGAIN',
+        confirmButtonColor: '#000000',
+        customClass: {
+          popup: 'rounded-[2.5rem] p-10 shadow-2xl',
+          confirmButton: 'rounded-xl px-10 py-3 font-black text-[10px] tracking-widest'
+        }
+      });
     } finally {
       setLoading(false);
     }

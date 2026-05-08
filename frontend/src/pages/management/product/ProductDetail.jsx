@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, PlusCircle } from "lucide-react"; // Added PlusCircle icon
+import { ArrowLeft, Loader2, PlusCircle } from "lucide-react"; 
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
-import { toast } from "react-hot-toast"; // For showing toast notifications
+import { toast } from "react-hot-toast"; 
 
 const formatStatus = (status) => {
   if (!status) return "Unknown";
@@ -56,11 +56,12 @@ export default function ProductDetail() {
     fetchProduct();
   }, [id, token, logout]);
 
-  // --- ADD TO ORDER LOGIC (Add variant to order queue) ---
+  // --- ADD TO ORDER LOGIC (Fixed Notification Stalling) ---
   const handleAddToCart = (variant) => {
+    // 1. කලින් තියෙන Toast එක අතින් Dismiss කරලා අලුත් එකකට ඉඩ හදනවා
+    toast.dismiss(); 
+
     const savedCart = JSON.parse(localStorage.getItem("active_order_cart") || "[]");
-    
-    // Creating a unique cart item ID by combining product ID and variant ID
     const cartItemId = `${product.product_id}-${variant.variant_id}`;
     const existingItemIndex = savedCart.findIndex(item => item.cartItemId === cartItemId);
     
@@ -71,17 +72,37 @@ export default function ProductDetail() {
     } else {
       updatedCart = [...savedCart, { 
         cartItemId,
-        product_id: product.product_id, 
+        product_id: product.product_id,
         variant_id: variant.variant_id,
-        name: `${product.product_name} (${variant.variant_name})`, 
+        variant_name: variant.variant_name,
+        name: product.product_name,
         price: Number(variant.price),
-        qty: 1 
+        qty: 1
       }];
     }
 
     localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
-    window.dispatchEvent(new Event('focus')); // Send a signal to Dashboard to refresh cart
-    toast.success(`${variant.variant_name} added to order queue!`);
+    window.dispatchEvent(new Event('focus')); 
+
+    // 2. 🔥 Luxury Style Toast (id එක අයින් කළා හිරවීම වැළැක්වීමට)
+    toast.success(`${variant.variant_name} added to order!`, {
+      style: {
+        borderRadius: '1.5rem',
+        background: '#141414',
+        color: '#b4a460',
+        fontSize: '10px',
+        fontWeight: '900',
+        textTransform: 'uppercase',
+        letterSpacing: '0.15em',
+        padding: '16px 24px',
+        border: '1px solid rgba(180, 164, 96, 0.2)',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+      },
+      iconTheme: {
+        primary: '#b4a460',
+        secondary: '#141414',
+      },
+    });
   };
 
   if (loading) {
@@ -111,7 +132,7 @@ export default function ProductDetail() {
   const totalStock = variants.reduce((sum, item) => sum + Number(item.stock_count || 0), 0);
 
   return (
-    <div className="w-full min-h-screen bg-[#fcfcfc]">
+    <div className="w-full min-h-screen bg-[#fcfcfc] text-left">
       <div className="p-6 md:p-8">
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-600 hover:text-black mb-8 font-black uppercase text-[10px] tracking-widest transition-colors">
           <ArrowLeft size={16} /> Back to Inventory
@@ -121,20 +142,17 @@ export default function ProductDetail() {
           {/* LEFT SIDE: Image & Description */}
           <div className="bg-white rounded-4xl shadow-xl shadow-gray-200/50 p-8 border border-gray-100">
             <div className="flex flex-col gap-6">
-              {/* Image */}
               <div className="flex items-center justify-center">
                 <div className="bg-gray-50 rounded-[2.5rem] w-full h-72 flex items-center justify-center p-6 border border-gray-100 shadow-inner">
-                  <img src={product.image_url || "https://placehold.co/400x400/C0B26D/white?text=No+Image"} alt={product.product_name} className="w-full h-full object-contain" />
+                  <img src={product.image_url || "https://placehold.co/400x400/C0B26D/white?text=No+Image"} alt={product.product_name} className="w-full h-full object-contain mix-blend-multiply" />
                 </div>
               </div>
 
-              {/* Title & Brand */}
               <div>
                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#c9a84c] mb-2 block">{product.brand?.brand_name || "Premium Brand"}</span>
                 <h2 className="text-2xl font-serif italic text-black leading-tight">{product.product_name}</h2>
               </div>
 
-              {/* Stats Grid */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                   <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Status</p>
@@ -156,7 +174,6 @@ export default function ProductDetail() {
                 </div>
               </div>
 
-              {/* Description */}
               <p className="text-gray-500 leading-relaxed italic text-sm border-t border-gray-50 pt-4">
                 {product.description || "No professional description available for this registry item."}
               </p>
@@ -187,8 +204,8 @@ export default function ProductDetail() {
                       <tr key={variant.variant_id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                          <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center p-2 shrink-0">
-                              <img src={variant.image_url || product.image_url} alt="v" className="max-h-full max-w-full object-contain" />
+                            <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center p-2 shrink-0">
+                              <img src={variant.image_url || product.image_url} alt="v" className="max-h-full max-w-full object-contain mix-blend-multiply" />
                             </div>
                             <span className="font-bold text-sm text-black">{variant.variant_name}</span>
                           </div>
