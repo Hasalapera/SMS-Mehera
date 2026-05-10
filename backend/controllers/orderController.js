@@ -178,4 +178,24 @@ const getAllOrders = async (req, res) => {
   }
 };
 
-module.exports = { placeOrder, placeOnlineOrder, getAllOrders };
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+
+    const order = await Order.findByPk(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    order.order_status = status;
+    await order.save();
+
+    res.status(200).json({ success: true, message: "Order status updated", order });
+  } catch (error) {
+    console.error("Status Update Error:", error);
+    res.status(500).json({ success: false, message: "Failed to update order status" });
+  }
+};
+
+module.exports = { placeOrder, placeOnlineOrder, getAllOrders, updateOrderStatus };

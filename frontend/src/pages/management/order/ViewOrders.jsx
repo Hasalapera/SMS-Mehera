@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
     Calendar, User, Hash, Filter, ShoppingBag, RefreshCw, 
-    Loader2, Search, ArrowRight, ClipboardList, ChevronDown, 
+    Loader2, Search, ArrowRight, ClipboardList, ChevronDown, ChevronLeft, ChevronRight,
     Trash2, MapPin, Truck, ShoppingCart 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { toast, Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
+import {MySwal} from '../../utils/swalConfig';
 
 const statusBadge = {
     // pending:   { bg: "bg-[#b4a460]/10", text: "text-[#8a7b42]", border: "border-[#b4a460]/20" },
@@ -32,6 +33,11 @@ const ViewOrders = () => {
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("All");
     const [expandedOrderId, setExpandedOrderId] = useState(null);
+    const loggedUser = JSON.parse(localStorage.getItem('user'));
+    const isAdmin = loggedUser?.role === 'admin';
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 10;
+
 
     const fetchOrders = async () => {
         if (!token) return;
@@ -63,9 +69,48 @@ const ViewOrders = () => {
         return matchSearch && matchStatus;
     });
 
+    const indexOfLastRow = currentPage * rowsPerPage;
+    const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+    const currentRows = filtered.slice(indexOfFirstRow, indexOfLastRow);
+    const totalPages = Math.ceil(filtered.length / rowsPerPage);
+
+    // පේජ් මාරු කරන ෆන්ක්ෂන් එක
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+    const handleStatusUpdate = async (orderId, newStatus) => {
+        const result = await MySwal.fire({
+            title: 'Are you sure?',
+            text: `You are about to mark this order as "${newStatus}". This action cannot be undone.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: `Yes, mark as ${newStatus}`,
+            cancelButtonText: 'No, keep current status',
+            reverseButtons: true,
+        });
+
+        if (result.isConfirmed) {
+            setLoading(true);
+            try {
+                // 💡 මෙන්න මේ Backend route එක උඹේ තිබිය යුතුයි. 
+                // නැත්නම් එකක් හදාගන්න (router.put('/update-order-status/:id', ...))
+                await axios.put(`http://localhost:5001/api/orders/update-order-status/${orderId}`, 
+                    { status: newStatus }, 
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                toast.success(`Order ${newStatus} successfully!`);
+                fetchOrders(); 
+            } catch (err) {
+                console.error("Status Update Error:", err);
+                toast.error("Failed to update status.");
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
     return (
         <div className="w-full min-h-screen bg-[#fcfcfc] text-left">
-            <Toaster position="top-right" />
 
             {/* Header Section */}
             <div className="bg-[#f8f8f8] px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b border-gray-100">
@@ -105,16 +150,16 @@ const ViewOrders = () => {
                 <div className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm overflow-hidden">
                     <table className="w-full text-left border-collapse">
                         <thead>
-    <tr className="bg-gray-50/50 border-b border-gray-100">
-        {["Reference", "Client", "Placed By", "Order Date", "Value (LKR)", "Status", "Payment Status", "Actions"].map((h) => (
-            <th key={h} className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>
-        ))}
-    </tr>
-</thead>
+                            <tr className="bg-gray-50/50 border-b border-gray-100">
+                                {["Reference", "Client", "Placed By", "Order Date", "Value (LKR)", "Order Status", "Payment Status", "Actions"].map((h) => (
+                                    <th key={h} className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>
+                                ))}
+                            </tr>
+                        </thead>
                         <tbody className="divide-y divide-gray-50">
                             {loading ? (
-                                <tr><td colSpan={6} className="py-20 text-center font-black uppercase text-[10px] tracking-widest text-gray-400">Syncing with Registry...</td></tr>
-                            ) : filtered.map((order) => (
+                                <tr><td colSpan={8} className="py-20 text-center font-black uppercase text-[10px] tracking-widest text-gray-400">Syncing with Registry...</td></tr>
+                            ) : currentRows.map((order) => (
                                 <React.Fragment key={order.order_id}>
                                     <tr className="group hover:bg-[#faf8f0] transition-all duration-200 relative">
                                         <td className="px-6 py-8">
@@ -185,8 +230,8 @@ const ViewOrders = () => {
 
                                     {/* Expanded Detail Panel */}
                                     {expandedOrderId === order.order_id && (
-                                        <tr className="bg-[#fafafa] animate-in slide-in-from-top-2 duration-300">
-                                        <td colSpan={6} className="px-10 py-10 border-l-4 border-[#b4a460]">
+                                        <tr className="bg-[#fafafa] animate-in slide-in-from-top-2 duration-300 ">
+                                        <td colSpan={8} className="px-10 py-10 border-l-4 border-[#b4a460]">
                                             
                                             {/* --- Row 01: Shipping & Logistics (50/50 split) --- */}
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
@@ -346,12 +391,32 @@ const ViewOrders = () => {
                                         </div>
 
                                             {/* Final Action Row */}
-                                            <div className="flex justify-end pt-4 border-t border-gray-100">
+                                            <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                                                {/* ඇඩ්මින්ට විතරක් පේන Approve/Reject බටන් */}
+                                                {isAdmin && order.order_status === 'requested' ? (
+                                                    <div className="flex gap-3">
+                                                        <button 
+                                                            onClick={() => handleStatusUpdate(order.order_id, 'approved')}
+                                                            className="px-6 py-2 rounded-xl bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/20"
+                                                        >
+                                                            Approve Order
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleStatusUpdate(order.order_id, 'rejected')}
+                                                            className="px-6 py-2 rounded-xl bg-red-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-md shadow-red-500/20"
+                                                        >
+                                                            Reject Order
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div /> 
+                                                )}
+
                                                 <button 
-                                                onClick={() => navigate(`/order/${order.order_id}`, { state: { order } })} 
-                                                className="flex items-center gap-2 text-[10px] font-black uppercase text-[#b4a460] hover:text-black hover:tracking-widest transition-all"
+                                                    onClick={() => navigate(`/order/${order.order_id}`, { state: { order } })} 
+                                                    className="flex items-center gap-2 text-[10px] font-black uppercase text-[#b4a460] hover:text-black hover:tracking-widest transition-all"
                                                 >
-                                                Open Full Master File <ArrowRight size={14} />
+                                                    Open Full Master File <ArrowRight size={14} />
                                                 </button>
                                             </div>
                                         </td>
@@ -361,6 +426,44 @@ const ViewOrders = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
+                {/* Pagination Controls */}
+                <div className="flex items-center justify-between px-8 py-5 bg-white border-t border-gray-100 rounded-b-[1.5rem]">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        Showing {indexOfFirstRow + 1} to {Math.min(indexOfLastRow, filtered.length)} of {filtered.length} Entries
+                    </p>
+                    
+                    <div className="flex items-center gap-2">
+                        <button 
+                            disabled={currentPage === 1}
+                            onClick={() => paginate(currentPage - 1)}
+                            className="p-2 rounded-lg border border-gray-100 text-gray-400 hover:text-[#b4a460] disabled:opacity-30 transition-all"
+                        >
+                            <ChevronLeft size={18} />
+                        </button>
+
+                        {[...Array(totalPages)].map((_, i) => (
+                            <button
+                                key={i + 1}
+                                onClick={() => paginate(i + 1)}
+                                className={`w-8 h-8 rounded-lg text-[11px] font-black transition-all ${
+                                    currentPage === i + 1 
+                                    ? "bg-[#b4a460] text-black shadow-md shadow-[#b4a460]/20" 
+                                    : "bg-gray-50 text-gray-400 hover:bg-gray-100"
+                                }`}
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+
+                        <button 
+                            disabled={currentPage === totalPages}
+                            onClick={() => paginate(currentPage + 1)}
+                            className="p-2 rounded-lg border border-gray-100 text-gray-400 hover:text-[#b4a460] disabled:opacity-30 transition-all"
+                        >
+                            <ChevronRight size={18} />
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
