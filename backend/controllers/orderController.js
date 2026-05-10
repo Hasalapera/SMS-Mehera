@@ -15,7 +15,8 @@ const placeOrder = async (req, res) => {
       discount_percentage,   // % 
       discount_amount,       
       total_amount,          // final total after discount
-      items 
+      items,
+      payment_method         // 'cash' or 'credit' 
     } = req.body;
 
     const newOrder = await Order.create({
@@ -26,8 +27,9 @@ const placeOrder = async (req, res) => {
       subtotal: subtotal || 0,                    // store sub total
       discount_percentage: discount_percentage || 0, // % store 
       discount_amount: discount_amount || 0,      // store discount amount
-      total_amount: total_amount || 0,            // store final payable amount
-      order_status: 'pending',
+      total_amount: total_amount || 0, 
+      payment_method: payment_method || 'cash',   // store payment method
+     order_status: 'requested',
       created_by: req.user.user_id,
       order_type: 'offline'
     }, { transaction });
@@ -78,7 +80,7 @@ const placeOnlineOrder = async (req, res) => {
       discount_percentage: discount_percentage || 0,
       discount_amount: discount_amount || 0,
       total_amount: total_amount || 0,
-      order_status: 'pending',
+      order_status: 'requested',
       created_by: req.user.user_id,
       order_type: 'online' 
     }, { transaction });

@@ -327,6 +327,8 @@ const AddOrder = () => {
   const [isSearching, setIsSearching] = useState(false);
   const { token } = useAuth();
   const [discount, setDiscount] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState('cash'); 
+  
 
   // --- දත්ත කියවීමේ ප්‍රධාන FUNCTION එක ---
   const loadCartData = () => {
@@ -440,6 +442,7 @@ const AddOrder = () => {
         discount_percentage: discountPercentage, // % එක
         discount_amount: discountAmount, // LKR amount එක
         total_amount: finalAmount, // අවසාන payable එක
+        payment_method: paymentMethod, // 'cash' or 'credit'
 
         items: cart.map((item) => ({
           product_id: item.product_id,
@@ -696,6 +699,29 @@ const AddOrder = () => {
                 </span>
               </div>
             </div>
+
+            {/* --- PAYMENT METHOD SELECTION --- */}
+<div className="p-4 bg-white rounded-2xl border border-[#b4a460]/30 shadow-sm mb-4 mt-4">
+  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-3">
+    Settlement Mode
+  </label>
+  <div className="flex gap-2">
+    {['cash', 'credit'].map((mode) => (
+      <button
+        key={mode}
+        type="button"
+        onClick={() => setPaymentMethod(mode)}
+        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border ${
+          paymentMethod === mode
+            ? 'bg-[#b4a460] border-[#b4a460] text-white shadow-lg shadow-[#b4a460]/20'
+            : 'bg-white border-gray-100 text-gray-400 hover:border-[#b4a460]/30'
+        }`}
+      >
+        {mode}
+      </button>
+    ))}
+  </div>
+</div>
 
             {/* 04. Final Payable (Calculation Updated for %) */}
             <div className="py-2 text-right">
