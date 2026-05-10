@@ -10,9 +10,18 @@ import { useAuth } from '../../context/AuthContext';
 import { toast, Toaster } from 'react-hot-toast';
 
 const statusBadge = {
-    pending:   { bg: "bg-[#b4a460]/10", text: "text-[#8a7b42]", border: "border-[#b4a460]/20" },
-    completed: { bg: "bg-black/5",      text: "text-black",      border: "border-black/10" },
-    cancelled: { bg: "bg-red-50",       text: "text-red-500",    border: "border-red-100" },
+    // pending:   { bg: "bg-[#b4a460]/10", text: "text-[#8a7b42]", border: "border-[#b4a460]/20" },
+    // completed: { bg: "bg-black/5",      text: "text-black",      border: "border-black/10" },
+    // cancelled: { bg: "bg-red-50",       text: "text-red-500",    border: "border-red-100" },
+    
+    requested:  { label: "Requested", bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-200" },
+    approved:   { label: "Approved", bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-200" },
+    rejected:   { label: "Rejected", bg: "bg-red-50", text: "text-red-500", border: "border-red-200" },
+    processing: { label: "Processing", bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-200" },
+    shipped:    { label: "Shipped", bg: "bg-purple-50", text: "text-purple-600", border: "border-purple-200" },
+    delivered:  { label: "Delivered", bg: "bg-gray-900", text: "text-white", border: "border-gray-900" },
+    cancelled:  { label: "Cancelled", bg: "bg-gray-100", text: "text-gray-500", border: "border-gray-300" },
+
 };
 
 const ViewOrders = () => {
@@ -96,12 +105,12 @@ const ViewOrders = () => {
                 <div className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm overflow-hidden">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-gray-50/50 border-b border-gray-100">
-                                {["Reference", "Client", "Placed By", "Order Date", "Value (LKR)", "Status", "Actions"].map((h) => (
-                                    <th key={h} className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>
-                                ))}
-                            </tr>
-                        </thead>
+    <tr className="bg-gray-50/50 border-b border-gray-100">
+        {["Reference", "Client", "Placed By", "Order Date", "Value (LKR)", "Status", "Payment Status", "Actions"].map((h) => (
+            <th key={h} className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">{h}</th>
+        ))}
+    </tr>
+</thead>
                         <tbody className="divide-y divide-gray-50">
                             {loading ? (
                                 <tr><td colSpan={6} className="py-20 text-center font-black uppercase text-[10px] tracking-widest text-gray-400">Syncing with Registry...</td></tr>
@@ -149,6 +158,18 @@ const ViewOrders = () => {
                                                 {order.order_status}
                                             </span>
                                         </td>
+
+                                        <td className="px-6 py-8">
+                                        <span className={`text-[9px] font-black px-3 py-1.5 rounded-lg border uppercase tracking-widest ${
+                                        order.payment_method?.toLowerCase() === 'credit' 
+                                        ? 'bg-amber-50 border-amber-100 text-amber-600' 
+                                         : 'bg-emerald-50 border-emerald-100 text-emerald-600'
+                                    }`}>
+                                         {order.payment_method || 'Cash'}
+                                        </span>
+                                        </td>
+
+
                                         <td className="px-6 py-8 text-right relative">
                                             <div className="flex items-center justify-end gap-3">
                                                 <button className="p-2 text-gray-400 hover:text-black"><ClipboardList size={18} /></button>
@@ -179,6 +200,8 @@ const ViewOrders = () => {
                                                     </p>
                                                 </div>
 
+
+
                                                 {/* Logistics Info */}
                                                 <div className="space-y-4">
                                                     <h4 className="text-[10px] font-black uppercase text-[#b4a460] flex items-center gap-2 tracking-[0.2em]">
@@ -196,6 +219,9 @@ const ViewOrders = () => {
                                                     </div>
                                                 </div>
                                             </div>
+
+                                                                                            {/* Payment Method Badge */}
+
 
                                             {/* --- Row 02: Items Manifest (Full Width) --- */}
                                             <div className="space-y-4 mb-8">
@@ -266,6 +292,30 @@ const ViewOrders = () => {
                                                     </table>
                                                 </div>
                                             </div>
+
+                                            <div className="flex flex-col gap-2">
+                                                {/* Settlement Mode Label with Gold Icon */}
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-1 h-3 bg-[#b4a460] rounded-full"></div> {/* Gold indicator line */}
+                                                    <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-1.5">
+                                                    Settlement Mode
+                                                    </p>
+                                                </div>
+
+                                                {/* Payment Method Badge - Highly Visible */}
+                                                <div>
+                                                    <span className={`px-4 py-2 rounded-xl text-[11px] font-extrabold uppercase tracking-[0.1em] border-2 shadow-sm transition-all flex items-center w-fit gap-2 ${
+                                                    order.payment_method === 'credit' 
+                                                        ? 'bg-amber-50 text-amber-700 border-amber-200 shadow-amber-100/50' 
+                                                        : 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-emerald-100/50'
+                                                    }`}>
+                                                    {/* Icon based on method */}
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${order.payment_method === 'credit' ? 'bg-amber-600' : 'bg-emerald-600'}`}></div>
+                                                    {order.payment_method}
+                                                    </span>
+                                                </div>
+                                                </div>
+                                                
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 border-t border-gray-100 pt-8">
                                             {/* Subtotal Card */}
                                             <div className="bg-white p-5 rounded-2xl border border-gray-50 shadow-sm flex flex-col justify-center">

@@ -80,10 +80,29 @@ const Order = sequelize.define('Order', {
     type: DataTypes.STRING, 
     allowNull: true 
   },
-  order_status: { 
-    type: DataTypes.STRING, 
-    defaultValue: 'pending' 
+
+  payment_method: { 
+    type: DataTypes.ENUM('cash', 'credit'), 
+    allowNull: false,
+    defaultValue: 'cash',
+    comment: 'Payment method: cash or credit'
   },
+
+  order_status: {
+  type: DataTypes.ENUM(
+    'requested', 
+    'approved', 
+    'rejected', 
+    'processing', 
+    'shipped', 
+    'delivered', 
+    'cancelled'
+  ),
+  defaultValue: 'requested',
+  allowNull: false
+},
+
+
   created_by: {
   type: DataTypes.UUID,
   allowNull: true, 
