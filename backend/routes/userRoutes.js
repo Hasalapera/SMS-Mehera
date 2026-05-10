@@ -1,7 +1,7 @@
 const userController = require('../controllers/userController'); 
 const express = require('express');
 const router = express.Router();
-const { addUserByAdmin,resetToDefaultPassword, updatePassword, getAllUsers, softDeleteUser } = require('../controllers/userController');
+const { addUserByAdmin,resetToDefaultPassword, updatePassword, getAllUsers, softDeleteUser, addUserArea, removeUserArea } = require('../controllers/userController');
 const { isAdmin, isAdminOrManager, verifyToken } = require('../middlewares/authMiddleware');
 const { loginUser, refreshAccessToken, logoutUser } = require('../controllers/authController');
 
@@ -19,13 +19,16 @@ router.put('/change-password', userController.changePassword);
 
 router.put('/update-profile', verifyToken, upload.single('image'), userController.updateProfile);
 router.get('/profile/:id', userController.getUserProfile);
+router.put('/add-area/:id', verifyToken, isAdmin, addUserArea);
+router.put('/remove-area/:id', verifyToken, isAdmin, removeUserArea);
 
 
-router.post('/addUser', addUserByAdmin);
+router.post('/addUser', verifyToken, isAdmin, addUserByAdmin);
 
 // router.put('/activate-user/:id', authMiddleware, userController.activateUser);
 router.get('/all-users', isAdminOrManager, userController.getAllUsers);
 router.put('/delete-user/:id', isAdmin, softDeleteUser);
 router.put('/restore-user/:id', isAdmin, userController.restoreUser);
+router.get('/sales-reps', verifyToken, isAdmin, userController.getSalesReps);
 
 module.exports = router;

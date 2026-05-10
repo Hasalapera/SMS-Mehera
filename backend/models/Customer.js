@@ -61,6 +61,14 @@ const Customer = sequelize.define('Customer', {
         allowNull: true,
         field: 'additional_note'
     },
+    sales_rep_id: {
+        type: DataTypes.UUID,
+        allowNull: true, 
+        references: {
+            model: 'users',
+            key: 'user_id'
+        }
+    },
     status: {
         type: DataTypes.ENUM('active', 'inactive'),
         defaultValue: 'active'

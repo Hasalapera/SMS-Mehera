@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Tag, FileText, PlusCircle, LayoutGrid, Loader2, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
-import { toast, Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
 const AddCategory = () => {
@@ -52,7 +52,6 @@ const AddCategory = () => {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 animate-in fade-in duration-500">
-      <Toaster position="top-right" />
       
       {/* Header Section */}
       <div className="flex items-center justify-between mb-10">

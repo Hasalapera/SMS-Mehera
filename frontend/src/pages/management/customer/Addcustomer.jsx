@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   UserPlus, Phone, MapPin, Building2, UserCircle, 
   Loader2, ArrowLeft, RefreshCcw, CheckCircle2, Info
 } from 'lucide-react';
 import axios from 'axios';
-import { toast, Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 
 const AddCustomer = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [customerCount, setCustomerCount] = useState(0);
   const [errors, setErrors] = useState({});
+
+  const isFromAssignUser = location.state?.from === '/assign-user';
 
   const initialFormState = {
     type: 'Saloon',
@@ -92,10 +95,16 @@ const AddCustomer = () => {
       await axios.post('http://localhost:5001/api/customers/add', submissionData);
       toast.success("Customer Registered Successfully!");
 
-      // ✅ මෙන්න මෙතන තමයි වෙනස වෙන්නේ:
-      setFormData(initialFormState); // ෆෝම් එක හිස් කරනවා
-      setErrors({}); // Error highlights අයින් කරනවා
-      fetchCustomerCount(); // අලුත් කවුන්ට් එක අරන් ඊළඟ ID එක (CUS-XXXX) හදනවා
+      if (isFromAssignUser) {
+        // තත්පර 1.5ක් වගේ පොඩි වෙලාවක් දීලා redirect කරනවා (ටෝස්ට් එක පේන්න ඕනේ නිසා)
+        setTimeout(() => {
+          navigate('/assign-user');
+        }, 1500);
+      } else {
+        setFormData(initialFormState);
+        setErrors({});
+        fetchCustomerCount();
+      }
 
     } catch (err) {
       toast.error(err.response?.data?.message || "Registration failed");
@@ -104,9 +113,16 @@ const AddCustomer = () => {
 
   return (
     <div className="min-h-screen bg-[#fcfcfc] py-10 px-4 md:px-8 font-sans">
-      <Toaster position="top-right" />
       
       <div className="max-w-6xl mx-auto">
+        {isFromAssignUser && (
+          <button 
+            onClick={() => navigate('/assign-user')}
+            className="mb-6 flex items-center gap-2 text-gray-400 hover:text-black font-black text-[10px] uppercase tracking-widest transition-all"
+          >
+            <ArrowLeft size={16} /> Back to Assign User Section
+          </button>
+        )}
         <div className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.03)] border border-gray-100 overflow-hidden">
           
 

@@ -1,29 +1,36 @@
 import React, { useState } from 'react';
-import { UserPlus, Mail, Phone, Calendar, ShieldCheck, IdCard, MapPin, Loader2 } from 'lucide-react';
+import { UserPlus, Mail, Phone, Calendar, ShieldCheck, IdCard, MapPin, Loader2, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
-import { toast, Toaster } from 'react-hot-toast'; 
+import { toast } from 'react-hot-toast'; 
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const AddUser = () => {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isFromAssignUser = location.state?.from === '/assign-user'; // Check if navigated from AssignUser page
+  const defaultRole = location.state?.defaultRole || 'sales_rep'; // Get default role from navigation state
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'sales_rep',
+    role: defaultRole,
     contact_no: '',
     dob: '',
     nic_no: '', 
     selectedDistricts: [] 
-  });
+});
 
-  const districts = [
-    "Colombo", "Gampaha", "Kalutara", "Kandy", "Matale", "Nuwara Eliya", 
-    "Galle", "Matara", "Hambantota", "Jaffna", "Kilinochchi", "Mannar", 
-    "Vavuniya", "Mullaitivu", "Batticaloa", "Ampara", "Trincomalee", 
-    "Kurunegala", "Puttalam", "Anuradhapura", "Polonnaruwa", "Badulla", 
-    "Moneragala", "Ratnapura", "Kegalle"
-  ];
+const districts = [
+  "Colombo", "Gampaha", "Kalutara", "Kandy", "Matale", "Nuwara Eliya", 
+  "Galle", "Matara", "Hambantota", "Jaffna", "Kilinochchi", "Mannar", 
+  "Vavuniya", "Mullaitivu", "Batticaloa", "Ampara", "Trincomalee", 
+  "Kurunegala", "Puttalam", "Anuradhapura", "Polonnaruwa", "Badulla", 
+  "Moneragala", "Ratnapura", "Kegalle"
+];
 
-  const getBirthdayFromNIC = (nic) => {
+const getBirthdayFromNIC = (nic) => {
   let year, days;
 
   if (nic.length === 10) {
@@ -62,109 +69,113 @@ const AddUser = () => {
   //   setFormData({ ...formData, [e.target.name]: e.target.value });
   // };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    let updatedData = { ...formData, [name]: value };
+const handleChange = (e) => {
+  const { name, value } = e.target;
+  let updatedData = { ...formData, [name]: value };
 
-    // 🔴 මෙතන තමයි වැඩේ වෙන්නේ:
-    // යූසර් NIC එක ටයිප් කරනකොට ඒක 10ක් හෝ 12ක් වුණ ගමන් DOB එක හදමු
-    if (name === 'nic_no') {
-      const extractedDob = getBirthdayFromNIC(value);
-      if (extractedDob) {
-        updatedData.dob = extractedDob; // Calendar එකට ඔටෝම සෙට් වෙනවා
-      }
+  // 🔴 මෙතන තමයි වැඩේ වෙන්නේ:
+  // යූසර් NIC එක ටයිප් කරනකොට ඒක 10ක් හෝ 12ක් වුණ ගමන් DOB එක හදමු
+  if (name === 'nic_no') {
+    const extractedDob = getBirthdayFromNIC(value);
+    if (extractedDob) {
+      updatedData.dob = extractedDob; // Calendar එකට ඔටෝම සෙට් වෙනවා
     }
+  }
 
-    setFormData(updatedData);
-  };
+  setFormData(updatedData);
+};
 
-  const handleDistrictChange = (district) => {
-    const updated = formData.selectedDistricts.includes(district)
-      ? formData.selectedDistricts.filter(d => d !== district)
-      : [...formData.selectedDistricts, district];
-    setFormData({ ...formData, selectedDistricts: updated });
-  };
+const handleDistrictChange = (district) => {
+  const updated = formData.selectedDistricts.includes(district)
+    ? formData.selectedDistricts.filter(d => d !== district)
+    : [...formData.selectedDistricts, district];
+  setFormData({ ...formData, selectedDistricts: updated });
+};
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const { nic_no, dob, email, contact_no, name, role, selectedDistricts } = formData;
+  const { nic_no, dob, email, contact_no, name, role, selectedDistricts } = formData;
 
-    // 1. Email Validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast.error("Please enter a valid email address!");
+  // 1. Email Validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    toast.error("Please enter a valid email address!");
+    return;
+  }
+
+  // 2. Contact Number Validation (Must be exactly 10 digits)
+  const phoneRegex = /^[0-9]{10}$/;
+  if (!phoneRegex.test(contact_no)) {
+    toast.error("Contact number must be exactly 10 digits!");
+    return;
+  }
+
+  // 3. NIC & Birthday Correlation Validation
+  const nicRegex = /^([0-9]{9}[xXvV]|[0-9]{12})$/;
+  if (!nicRegex.test(nic_no)) {
+    toast.error("Invalid NIC format!");
+    return;
+  }
+
+  const dobYear = new Date(dob).getFullYear().toString(); // e.g., "1998" or "2001"
+  
+  if (nic_no.length === 10) {
+    // Old NIC: Check if first 2 digits match last 2 digits of DOB year
+    const nicYearPart = nic_no.substring(0, 2); // e.g., "98"
+    const dobYearLastTwo = dobYear.substring(2, 4); // e.g., "98"
+
+    if (nicYearPart !== dobYearLastTwo) {
+      toast.error(`NIC (Old) doesn't match with Birth Year ${dobYear}!`);
       return;
     }
+  } else if (nic_no.length === 12) {
+    // New NIC: Check if first 4 digits match full DOB year
+    const nicYearPart = nic_no.substring(0, 4); // e.g., "2001"
 
-    // 2. Contact Number Validation (Must be exactly 10 digits)
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(contact_no)) {
-      toast.error("Contact number must be exactly 10 digits!");
+    if (nicYearPart !== dobYear) {
+      toast.error(`NIC (New) doesn't match with Birth Year ${dobYear}!`);
       return;
     }
+  }
 
-    // 3. NIC & Birthday Correlation Validation
-    const nicRegex = /^([0-9]{9}[xXvV]|[0-9]{12})$/;
-    if (!nicRegex.test(nic_no)) {
-      toast.error("Invalid NIC format!");
-      return;
-    }
+  // 4. District check for Sales Rep
+  if (role === 'sales_rep' && selectedDistricts.length === 0) {
+    toast.error("Please select at least one district for Sales Rep.");
+    return;
+  }
+  
+  setLoading(true);
+  const token = localStorage.getItem('accessToken'); 
 
-    const dobYear = new Date(dob).getFullYear().toString(); // e.g., "1998" or "2001"
+  try {
+    const response = await axios.post(
+      'http://localhost:5001/api/users/addUser', 
+      formData, 
+      { headers: { 'Authorization': `Bearer ${token}` } }
+    );
     
-    if (nic_no.length === 10) {
-      // Old NIC: Check if first 2 digits match last 2 digits of DOB year
-      const nicYearPart = nic_no.substring(0, 2); // e.g., "98"
-      const dobYearLastTwo = dobYear.substring(2, 4); // e.g., "98"
-
-      if (nicYearPart !== dobYearLastTwo) {
-        toast.error(`NIC (Old) doesn't match with Birth Year ${dobYear}!`);
-        return;
-      }
-    } else if (nic_no.length === 12) {
-      // New NIC: Check if first 4 digits match full DOB year
-      const nicYearPart = nic_no.substring(0, 4); // e.g., "2001"
-
-      if (nicYearPart !== dobYear) {
-        toast.error(`NIC (New) doesn't match with Birth Year ${dobYear}!`);
-        return;
+    if (response.status === 201) {
+      toast.success(`User ${name} added successfully!`);
+      // setFormData({ 
+      //   name: '', email: '', role: 'sales_rep', contact_no: '', 
+      //   dob: '', nic_no: '', selectedDistricts: [] 
+      // });
+      if (isFromAssignUser) {
+          navigate('/assign-user');
+      } else {
+          setFormData({ name: '', email: '', role: 'sales_rep', contact_no: '', dob: '', nic_no: '', selectedDistricts: [] });
       }
     }
-
-    // 4. District check for Sales Rep
-    if (role === 'sales_rep' && selectedDistricts.length === 0) {
-      toast.error("Please select at least one district for Sales Rep.");
-      return;
-    }
-    
-    setLoading(true);
-    const token = localStorage.getItem('accessToken'); 
-
-    try {
-      const response = await axios.post(
-        'http://localhost:5001/api/users/addUser', 
-        formData, 
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
-      
-      if (response.status === 201) {
-        toast.success(`User ${name} added successfully!`);
-        setFormData({ 
-          name: '', email: '', role: 'sales_rep', contact_no: '', 
-          dob: '', nic_no: '', selectedDistricts: [] 
-        });
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to add user");
-    } finally {
-      setLoading(false);
-    }
-  };
+  } catch (err) {
+    toast.error(err.response?.data?.message || err.message || "Failed to add user");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="w-full max-w-4xl mx-auto animate-in fade-in duration-500 pb-10">
-      <Toaster position="top-right" />
       
       {/* Header */}
       <div className="mb-8">
@@ -178,10 +189,21 @@ const AddUser = () => {
           Add a new member to Mehera International. An automated password will be sent via email.
         </p>
       </div>
+      <div className="mb-6">
+        {isFromAssignUser && (
+            <button 
+              type="button"
+              onClick={() => navigate('/assign-user')}
+              className="mb-6 flex items-center gap-2 text-gray-400 hover:text-black font-black text-[10px] uppercase tracking-widest transition-all"
+            >
+              <ArrowLeft size={16} /> Back to Assign User Section
+            </button>
+          )}
+      </div>
 
       <form onSubmit={handleSubmit} className="bg-white border border-gray-100 rounded-[2rem] shadow-sm p-8 md:p-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          
+
           {/* Full Name */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-400 uppercase ml-1">Full Name</label>
@@ -242,12 +264,13 @@ const AddUser = () => {
             <label className="text-xs font-bold text-gray-400 uppercase ml-1">System Role</label>
             <div className="relative group">
               <select 
-                name="role" value={formData.role} onChange={handleChange}
+                name="role" value={formData.role} onChange={handleChange} disabled={isFromAssignUser} 
                 className="w-full bg-gray-50 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] appearance-none transition-all"
               >
                 <option value="sales_rep">Sales Representative</option>
                 <option value="manager">Manager</option>
-                <option value="online_store_keeper">Store Keeper</option>
+                <option value="online_store_keeper">Online Store Keeper (Sales)</option>
+                <option value="logistics_officer">Logistics Officer (Dispatch)</option>
                 <option value="admin">Administrator</option>
               </select>
               <ShieldCheck className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-[#b4a460]" size={18} />

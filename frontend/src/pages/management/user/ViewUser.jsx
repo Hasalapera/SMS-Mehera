@@ -5,7 +5,8 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Swal from 'sweetalert2';
+import {MySwal} from '../../utils/swalConfig';
+import toast from 'react-hot-toast';
 
 const ViewUser = () => {
   const [users, setUsers] = useState([]);
@@ -55,7 +56,8 @@ const ViewUser = () => {
   const filteredUsers = users.filter((user) => {
     const name = user.full_name || user.name || "";
     const email = user.email || "";
-    const isDeleted = user.deleted_at !== null;
+
+    const isDeactivated = user.deleted_at !== null || user.is_active === false;
 
     const matchesSearch =
       name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -64,91 +66,61 @@ const ViewUser = () => {
     let matchesRole = false;
 
     if (selectedRole === "all") {
-      matchesRole = !isDeleted; // only active users
+      matchesRole = !isDeactivated; // only active users
     } else if (selectedRole === "deleted") {
-      matchesRole = isDeleted; // only deleted users
+      matchesRole = isDeactivated; // only deleted users
     } else {
-      matchesRole = user.role === selectedRole && !isDeleted;
+      matchesRole = user.role === selectedRole && !isDeactivated;
     }
 
     return matchesSearch && matchesRole;
   });
 
 const handleRestore = async (userId, userName) => {
-  // 1. Confirmation Dialog
-  const result = await Swal.fire({
+  const result = await MySwal.fire({
     title: 'Restore Account?',
     text: `Do you want to restore ${userName}'s account?`,
     icon: 'question',
-    showCancelButton: true,
-    confirmButtonColor: '#b4a460',
-    cancelButtonColor: '#000000',
     confirmButtonText: 'Yes, restore it!',
-    background: '#ffffff',
-    customClass: {
-      popup: 'rounded-[2rem]',
-    }
   });
 
   if (result.isConfirmed) {
-    // 2. Admin password prompt
-    const { value: adminPassword } = await Swal.fire({
+    const { value: adminPassword } = await MySwal.fire({
       title: 'Verify Authority',
       input: 'password',
       inputLabel: 'Enter Admin Password to confirm',
       inputPlaceholder: 'Enter your password',
-      confirmButtonColor: '#b4a460',
-      background: '#ffffff',
-      customClass: {
-        popup: 'rounded-[2rem]',
-      },
       inputAttributes: {
+        autocomplete: 'new-password', // 👈 Autofill එක නවත්වන මැජික් එක
         autocapitalize: 'off',
-        autocorrect: 'off'
+        name: 'admin_password_verify'
       }
     });
 
     if (adminPassword) {
       try {
         const token = localStorage.getItem('accessToken');
+        await axios.put(`http://localhost:5001/api/users/restore-user/${userId}`, { adminPassword }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
-        const response = await axios.put(
-          `http://localhost:5001/api/users/restore-user/${userId}`,
-          { adminPassword },
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
+        // ✅ Success Alert එකෙත් MySwal පාවිච්චි කරලා Cancel button එක අයින් කරන්න
+        // MySwal.fire({
+        //   title: 'Account Restored!',
+        //   text: `${userName}'s account is active again.`,
+        //   icon: 'success',
+        //   showCancelButton: false, // Success එකේදී cancel button එක වැඩක් නෑනේ
+        //   confirmButtonText: 'Great!'
+        // });
+        toast.success(`${userName}'s account has been restored!`);
 
-        if (response.status === 200) {
-          // Success alert
-          Swal.fire({
-            title: 'Account Restored!',
-            text: `${userName}'s account has been restored successfully.`,
-            icon: 'success',
-            confirmButtonColor: '#b4a460',
-            background: '#ffffff',
-            customClass: {
-              popup: 'rounded-[2rem]',
-            }
-          });
-
-          fetchUsers();
-        }
+        fetchUsers();
       } catch (err) {
-        console.error("Error restoring user:", err.response?.data || err.message);
-
-        Swal.fire({
+        MySwal.fire({
           title: 'Security Error',
-          text:
-            err.response?.data?.message ||
-            'Failed to restore user. Please check your password and try again.',
+          text: err.response?.data?.message || 'Verification failed.',
           icon: 'error',
-          confirmButtonColor: '#b4a460',
-          background: '#ffffff',
-          customClass: {
-            popup: 'rounded-[2rem]',
-          }
+          showCancelButton: false
         });
       }
     }
@@ -156,62 +128,47 @@ const handleRestore = async (userId, userName) => {
 };
 
 const handleResetPassword = async (userId, userName) => {
-  // 🛡️ 1. Confirmation Dialog එක
-  const result = await Swal.fire({
-    title: 'Are you sure?',
-    text: `Do you want to reset the password for ${userName}?`,
+  const result = await MySwal.fire({
+    title: 'Reset Password?',
+    text: `Send new credentials to ${userName}?`,
     icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#b4a460', // ඔයාගේ Gold Color එක
-    cancelButtonColor: '#000000',  // Black
     confirmButtonText: 'Yes, reset it!',
-    background: '#ffffff',
-    customClass: {
-      popup: 'rounded-[2rem]', // ඔයාගේ UI එකේ වගේම curve එක
-    }
   });
 
   if (result.isConfirmed) {
-    // 🔑 2. Admin Password එක ඉල්ලන Prompt එක
-    const { value: adminPassword } = await Swal.fire({
+    const { value: adminPassword } = await MySwal.fire({
       title: 'Verify Authority',
       input: 'password',
-      inputLabel: 'Enter Admin Password to confirm',
-      inputPlaceholder: 'Enter your password',
-      confirmButtonColor: '#b4a460',
+      inputLabel: 'Admin password required',
       inputAttributes: {
-        autocapitalize: 'off',
-        autocorrect: 'off'
+        autocomplete: 'new-password'
       }
     });
 
     if (adminPassword) {
       try {
         const token = localStorage.getItem('accessToken');
-        const response = await axios.put(
-          'http://localhost:5001/api/users/reset-password',
+        await axios.put('http://localhost:5001/api/users/reset-password', 
           { user_id: userId, adminPassword: adminPassword },
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
-        if (response.status === 200) {
-          // ✅ Success Alert
-          Swal.fire({
-            title: 'Registry Sync Success!',
-            text: `New credentials sent to ${userName} via email.`,
-            icon: 'success',
-            confirmButtonColor: '#b4a460'
-          });
-          fetchUsers();
-        }
+        toast.success(`New credentials sent to ${userName}!`);
+        // MySwal.fire({
+        //   title: 'Registry Updated!',
+        //   text: `New credentials sent to ${userName}.`,
+        //   icon: 'success',
+        //   showCancelButton: false
+        // });
+        fetchUsers();
       } catch (err) {
-        // ❌ Error Alert
-        Swal.fire({
-          title: 'Security Error',
-          text: err.response?.data?.error || "Verification failed.",
-          icon: 'error',
-          confirmButtonColor: '#b4a460'
-        });
+        toast.error("Failed to reset password.");
+        // MySwal.fire({
+        //   title: 'Security Error',
+        //   text: err.response?.data?.error || "Verification failed.",
+        //   icon: 'error',
+        //   showCancelButton: false
+        // });
       }
     }
   }
@@ -249,6 +206,8 @@ const handleResetPassword = async (userId, userName) => {
           </div>
           <input 
             type="text"
+            name='search_query_no_fill'
+            autoComplete="off"
             placeholder="Search by name or email..."
             className="w-full bg-gray-50 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460]/20 outline-none transition-all"
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -295,10 +254,10 @@ const handleResetPassword = async (userId, userName) => {
                   <td colSpan="4" className="px-6 py-20 text-center text-gray-400 italic">Synchronizing with server...</td>
                 </tr>
               ) : filteredUsers.map((emp) => {
-                const isDeleted = emp.deleted_at !== null;
+                const isDeactivated = emp.deleted_at !== null || emp.is_active === false;
                 return (
-                  <tr key={emp.user_id} className={`group ${isDeleted ? 'bg-gray-50/40' : 'hover:bg-gray-50/80 transition-colors'}`}>
-                    <td className={`px-6 py-4 transition-all ${isDeleted ? 'opacity-30 grayscale' : ''}`}>
+                  <tr key={emp.user_id} className={`group ${isDeactivated ? 'bg-gray-50/40' : 'hover:bg-gray-50/80 transition-colors'}`}>
+                    <td className={`px-6 py-4 transition-all ${isDeactivated ? 'opacity-30 grayscale' : ''}`}>
                       <div className="flex items-center gap-3 ">
                         <img 
                           src={emp.picture_url || `https://ui-avatars.com/api/?name=${emp.name}&background=b4a460&color=fff`} 
@@ -319,7 +278,7 @@ const handleResetPassword = async (userId, userName) => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      {isDeleted ? (
+                      {isDeactivated ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-500 uppercase"><UserX size={12} /> Deactivated</span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-600 uppercase"><Shield size={12} /> Active</span>
@@ -329,7 +288,7 @@ const handleResetPassword = async (userId, userName) => {
                     <div className="flex justify-end items-center gap-2">
                       
                       {/* 1. ප්‍රධාන බටන් එක (View Profile) - හැමෝටම පේනවා */}
-                      {!isDeleted && (
+                      {(user?.role === 'admin' || isDeactivated) && (
                         <button 
                           onClick={() => navigate(`/profile/${emp.user_id}`)}
                           className="p-2 text-gray-400 hover:text-[#b4a460] hover:bg-[#b4a460]/10 rounded-lg transition-all"
@@ -350,7 +309,7 @@ const handleResetPassword = async (userId, userName) => {
                           <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-50 py-2">
                             
                             {/* Reset Password Option */}
-                            {!isDeleted && emp.user_id !== user.user_id && (
+                            {!isDeactivated && emp.user_id !== user.user_id && (
                               <button
                                 onClick={() => {
                                   if (emp.is_default_password) {
@@ -367,7 +326,7 @@ const handleResetPassword = async (userId, userName) => {
                             )}
 
                             {/* Restore Option */}
-                            {isDeleted && (
+                            {isDeactivated && (
                               <button
                                 onClick={() => handleRestore(emp.user_id, emp.name)}
                                 className="w-full text-left px-4 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-50 flex items-center gap-2 transition-colors rounded-xl"
@@ -381,7 +340,7 @@ const handleResetPassword = async (userId, userName) => {
                     </div>
                   </td>
                     {/* <td className="px-6 py-4 text-right">
-                      {isDeleted && (
+                      {isDeactivated && (
                         <button 
                           onClick={() => handleRestore(emp.user_id)}
                           className='bg-red-500/20 text-white-500 border border-red-500/50 px-3 py-1 rounded-lg hover:bg-amber-200 hover:text-red-600 transition-all text-xs font-bold'

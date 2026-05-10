@@ -2,237 +2,301 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { 
-  User, Mail, Phone, CreditCard, MapPin, 
-  Shield, Calendar, Camera, Edit2, Save, X, Lock, KeyRound, RefreshCw, Loader2, Eye, EyeOff, Clock
+  User, Mail, Phone, CreditCard, MapPin, Users, ExternalLink, ArrowLeft,
+  Shield, Calendar, Camera, Edit2, Save, X, Lock, KeyRound, RefreshCw, Loader2, Eye, EyeOff, Clock, XCircle,
 } from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom'; // navigate එකත් ගත්තා
-import toast, { Toaster } from 'react-hot-toast'; // Toaster එකත් දාන්න ඕනේ
+import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast'; 
 
 const UserProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { token, logout, login } = useAuth(); // ✅ මෙතන ලස්සනට ඔක්කොම එකවර ගත්තා (පරණ double declaration එක අයින් කළා)
+  const { token, logout, login } = useAuth();
   
   const [isEditing, setIsEditing] = useState(false);
   const [showPassModal, setShowPassModal] = useState(false);
   const [user, setUser] = useState(null);
+  const [customers, setCustomers] = useState([]);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false); 
-
-  const [passData, setPassData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [userAreas, setUserAreas] = useState([]);
+  const [isEditingAreas, setIsEditingAreas] = useState(false);
+  const districtsList = ["Colombo", "Gampaha", "Kalutara", "Kandy", "Matale", "Nuwara Eliya", "Galle", "Matara", "Hambantota", "Jaffna", "Kilinochchi", "Mannar", "Vavuniya", "Mullaitivu", "Batticaloa", "Ampara", "Trincomalee", "Kurunegala", "Puttalam", "Anuradhapura", "Polonnaruwa", "Badulla", "Moneragala", "Ratnapura", "Kegalle"];
   
+  const loggedInUser = JSON.parse(localStorage.getItem('user'));
+  const isAdmin = loggedInUser?.role === 'admin';
+  const isOwnProfile = !id || id === loggedInUser?.user_id;
+  const showBackButton = isAdmin && !isOwnProfile;
+
+  const [passData, setPassData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
   const fallbackAvatar = "https://i.pravatar.cc/150?u=hasala";
 
-  const [formData, setFormData] = useState({
-    full_name: '',
-    contact_no: '',
-    dob: '',
-    nic_no: '',
-    picture_url: fallbackAvatar
-  });
+  const [formData, setFormData] = useState({ full_name: '', contact_no: '', dob: '', nic_no: '', picture_url: fallbackAvatar });
 
   useEffect(() => {
-    if(!token) { navigate('/'); return; } // Token නැත්නම් එළියට
+    if(!token) { navigate('/'); return; }
 
     const fetchLatestData = async () => {
       try {
-        const storedUser = JSON.parse(localStorage.getItem('user'));
-        const targetId = id || storedUser?.user_id;
-        if (!targetId) return;
-
-        // ✅ මචං මෙතන Header එක නැති නිසයි මුලින් ඩේටා ලෝඩ් වෙන්නේ නැත්තේ
+        const targetId = id || loggedInUser?.user_id;
         const config = { headers: { Authorization: `Bearer ${token}` } };
         const response = await axios.get(`http://localhost:5001/api/users/profile/${targetId}`, config);
         const fetchedUser = response.data.user;
 
-        if (!id || id === storedUser?.user_id) {
-          localStorage.setItem('user', JSON.stringify(fetchedUser));
-        }
-        
         setUser(fetchedUser);
+        setUserAreas(fetchedUser.areas || []);
         setFormData({
           full_name: fetchedUser.name || fetchedUser.full_name || '',
-          contact_no: fetchedUser.contact_no || '',
+          contact_no: fetchedUser.contact_no || '', 
           dob: fetchedUser.dob ? fetchedUser.dob.split('T')[0] : '', 
           nic_no: fetchedUser.nic_no || '',
           picture_url: fetchedUser.profile_image || fetchedUser.picture_url || fallbackAvatar
         });
-      } catch (err) {
-        if (err.response?.status === 401) logout();
-        console.error("Sync error:", err);
-      }
-    };
 
+        if (fetchedUser.role === 'sales_rep') {
+            setLoadingCustomers(true);
+            try {
+                const custRes = await axios.get(`http://localhost:5001/api/customers/by-rep/${targetId}`, config);
+                setCustomers(custRes.data.customers || []);
+            } catch (custErr) { console.error(custErr); } finally { setLoadingCustomers(false); }
+        }
+      } catch (err) { console.error(err); }
+    };
     fetchLatestData();
   }, [id, token]);
 
-  const handlePasswordUpdate = async () => {
-    if (passData.newPassword !== passData.confirmPassword) {
-      toast.error("New security keys do not match!");
-      return;
-    }
-    setIsUpdating(true);
-    try {
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.put('http://localhost:5001/api/users/change-password', {
-        userId: user.user_id,
-        oldPassword: passData.currentPassword,
-        newPassword: passData.newPassword
-      }, config);
+  const handlePasswordChange = (e) => setPassData({ ...passData, [e.target.name]: e.target.value });
 
-      toast.success("Security key updated successfully!");
-      setShowPassModal(false);
-      setPassData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Password update failed.");
-    } finally {
-      setIsUpdating(false);
-    }
+  const handleAddArea = async (district) => {
+    try {
+      await axios.put(`http://localhost:5001/api/users/add-area/${user.user_id}`, { district }, { headers: { Authorization: `Bearer ${token}` } });
+      setUserAreas([...userAreas, { district_name: district }]);
+      toast.success(`${district} added!`);
+    } catch (err) { toast.error("Failed to add area"); }
+  };
+
+  const handleRemoveArea = async (district) => {
+    try {
+      await axios.put(`http://localhost:5001/api/users/remove-area/${user.user_id}`, { district }, { headers: { Authorization: `Bearer ${token}` } });
+      setUserAreas(userAreas.filter(a => a.district_name !== district));
+      toast.success(`${district} removed!`);
+    } catch (err) { toast.error("Failed to remove area"); }
   };
 
   const handleUpdateProfile = async () => {
     setIsUpdating(true);
     const uploadData = new FormData();
     uploadData.append("user_id", user.user_id);
-    if(formData.full_name) uploadData.append("name", formData.full_name);
-    uploadData.append("contact_no", formData.contact_no);
+    uploadData.append("name", formData.full_name);
+    uploadData.append("phone1", formData.contact_no);
     uploadData.append("dob", formData.dob);
     uploadData.append("nic_no", formData.nic_no);
-    
-    if (fileInputRef.current?.files[0]) {
-      uploadData.append("image", fileInputRef.current.files[0]);
-    }
+    if (fileInputRef.current?.files[0]) uploadData.append("image", fileInputRef.current.files[0]);
 
     try {
-        const config = { 
-            headers: { 
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'multipart/form-data'
-            } 
-        };
-        const response = await axios.put('http://localhost:5001/api/users/update-profile', uploadData, config);
-
+        const response = await axios.put('http://localhost:5001/api/users/update-profile', uploadData, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } });
         if (response.status === 200) {
-            const updatedUser = response.data.user;
-            localStorage.setItem('user', JSON.stringify(updatedUser));
-            login(updatedUser, token, localStorage.getItem('refreshToken'), localStorage.getItem('expiresAt'));
-            setUser(updatedUser);
-            window.dispatchEvent(new Event('storage')); 
-            
+            login(response.data.user, token, localStorage.getItem('refreshToken'), localStorage.getItem('expiresAt'));
+            setUser(response.data.user);
             setIsEditing(false); 
-            toast.success("Profile synchronized successfully!");
+            toast.success("Profile updated!");
         }
-    } catch (err) {
-        toast.error("System synchronization failed.");
-    } finally {
-        setIsUpdating(false);
-    }
+    } catch (err) { toast.error("Update failed."); } finally { setIsUpdating(false); }
   };
 
-  // --- Helpers ---
-  const handleImageSelect = (file) => { if (!file) return; const reader = new FileReader(); reader.onload = (e) => setFormData(prev => ({ ...prev, picture_url: e.target.result })); reader.readAsDataURL(file); };
-  const startCamera = async () => { setIsCapturing(true); try { const stream = await navigator.mediaDevices.getUserMedia({ video: true }); if (videoRef.current) videoRef.current.srcObject = stream; } catch (err) { setIsCapturing(false); } };
-  const capturePhoto = () => { const canvas = canvasRef.current; const video = videoRef.current; if (canvas && video) { canvas.width = video.videoWidth; canvas.height = video.videoHeight; canvas.getContext('2d').drawImage(video, 0, 0); canvas.toBlob((blob) => { const file = new File([blob], `cap.jpg`, { type: "image/jpeg" }); const dt = new DataTransfer(); dt.items.add(file); fileInputRef.current.files = dt.files; setFormData(prev => ({ ...prev, picture_url: URL.createObjectURL(file) })); video.srcObject.getTracks().forEach(track => track.stop()); setIsCapturing(false); }, 'image/jpeg', 0.6); } };
+  const handlePasswordUpdate = async () => {
+    if (passData.newPassword !== passData.confirmPassword) return toast.error("Mismatch!");
+    setIsUpdating(true);
+    try {
+      await axios.put('http://localhost:5001/api/users/change-password', { userId: user.user_id, oldPassword: passData.currentPassword, newPassword: passData.newPassword }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success("Key updated!");
+      setShowPassModal(false);
+    } catch (err) { toast.error("Error updating key."); } finally { setIsUpdating(false); }
+  };
 
-  if (!user) return <div className="p-10 text-center font-bold italic text-[#b4a460] tracking-widest">Initialising Registry...</div>;
+  if (!user) return <div className="p-10 text-center font-bold italic text-[#b4a460] tracking-widest">Initialising...</div>;
 
-  // ✅ Created At ලෙඩේට විසඳුම:
+  const isSalesRepProfile = user?.role === 'sales_rep';
   const joinDate = user.createdAt || user.created_at;
 
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto animate-in fade-in duration-500 text-left bg-gray-50/20 min-h-screen">
-      <Toaster position="top-right" />
+
+      {showBackButton && (
+        <button 
+          onClick={() => navigate('/all-users')} // ඔයාගේ Employee Directory එකේ route එක මෙතනට දාන්න
+          className="mb-6 flex items-center gap-2 text-gray-400 hover:text-black transition-all font-black text-[10px] uppercase tracking-[0.2em] group"
+        >
+          <div className="p-2 bg-white rounded-xl shadow-sm border border-gray-100 group-hover:border-[#b4a460] transition-all">
+            <ArrowLeft size={16} className="group-hover:text-[#b4a460]" />
+          </div>
+          Back to User List
+        </button>
+      )}
       
-      {/* Profile Header Card */}
+      {/* Header Card */}
       <div className="flex flex-col md:flex-row items-center gap-8 mb-10 bg-white p-8 rounded-[2rem] shadow-sm border border-gray-50">
         <div className="relative group">
           <div className="w-32 h-32 rounded-3xl overflow-hidden ring-4 ring-[#b4a460]/20 shadow-xl bg-gray-100">
-            {isCapturing ? <video ref={videoRef} autoPlay className="w-full h-full object-cover scale-x-[-1]" /> : <img src={formData.picture_url} alt="User" className="w-full h-full object-cover" />}
+            <img src={formData.picture_url} alt="User" className="w-full h-full object-cover" />
           </div>
-          <div className="absolute -bottom-2 -right-2 flex gap-1">
-            {isEditing && (
-              <>
-                <button onClick={isCapturing ? capturePhoto : () => fileInputRef.current.click()} className="p-2 bg-black text-white rounded-xl shadow-lg hover:bg-[#b4a460] transition-colors">{isCapturing ? <Save size={16} /> : <Camera size={16} />}</button>
-                {!isCapturing && <button onClick={startCamera} className="p-2 bg-black text-white rounded-xl shadow-lg hover:bg-[#b4a460]"><RefreshCw size={16} /></button>}
-              </>
-            )}
-          </div>
-          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageSelect(e.target.files[0])} />
-          <canvas ref={canvasRef} className="hidden" />
+          {isEditing && (
+            <button onClick={() => fileInputRef.current.click()} className="absolute -bottom-2 -right-2 p-2 bg-black text-white rounded-xl shadow-lg hover:bg-[#b4a460] transition-colors"><Camera size={16} /></button>
+          )}
+          <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => { const file = e.target.files[0]; if(file){ const reader = new FileReader(); reader.onload=(ev)=>setFormData({...formData, picture_url: ev.target.result}); reader.readAsDataURL(file); }}} />
         </div>
-        
         <div className="text-center md:text-left flex-1">
-          {isEditing ? <input name="full_name" value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} className="text-2xl font-serif text-black border-b-2 border-[#b4a460] focus:outline-none mb-2 bg-transparent w-full max-w-md px-1" /> : <h1 className="text-3xl font-serif text-black mb-1">{formData.full_name || "User Name"}</h1>}
+          {isEditing ? <input value={formData.full_name} onChange={(e) => setFormData({...formData, full_name: e.target.value})} className="text-2xl font-serif text-black border-b-2 border-[#b4a460] outline-none bg-transparent w-full max-w-md" /> : <h1 className="text-3xl font-serif text-black mb-1">{formData.full_name}</h1>}
           <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-2">
-            <span className="px-3 py-1 bg-[#b4a460]/10 text-[#8a7b42] rounded-full text-[10px] font-bold uppercase tracking-widest border border-[#b4a460]/20">{user.role}</span>
-            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all duration-300 ${user.is_active ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>{user.is_active ? 'Active Node' : 'Inactive'}</span>
+            <span className="px-3 py-1 bg-[#b4a460]/10 text-[#8a7b42] rounded-full text-[10px] font-bold uppercase border border-[#b4a460]/20">{user.role}</span>
+            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase border ${user.is_active ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>{user.is_active ? 'Active' : 'Inactive'}</span>
           </div>
         </div>
-
-        {(!id || id === JSON.parse(localStorage.getItem('user'))?.user_id) && (
+        {isOwnProfile && (
           <div className="flex flex-col sm:flex-row md:flex-col gap-2">
-            <button onClick={() => setIsEditing(!isEditing)} className={`flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all shadow-lg min-w-[160px] ${isEditing ? 'bg-gray-100 text-gray-400' : 'bg-[#b4a460] text-black hover:bg-black hover:text-white'}`}>
-              {isEditing ? <><X size={16} /> Cancel</> : <><Edit2 size={16} /> Edit Profile</>}
+            <button onClick={() => setIsEditing(!isEditing)} className={`px-6 py-3 rounded-2xl font-bold text-sm shadow-lg min-w-[160px] ${isEditing ? 'bg-gray-100 text-gray-400' : 'bg-[#b4a460] text-black hover:bg-black hover:text-white transition-all'}`}>
+              {isEditing ? <><X size={16} className="inline mr-2"/> Cancel</> : <><Edit2 size={16} className="inline mr-2"/> Edit Profile</>}
             </button>
-            {!isEditing && <button onClick={() => setShowPassModal(true)} className="flex items-center justify-center gap-2 px-6 py-3 bg-white text-black border border-gray-200 rounded-2xl font-bold text-sm shadow-md min-w-[160px] hover:bg-gray-50"><KeyRound size={16} /> Security</button>}
+            {!isEditing && <button onClick={() => setShowPassModal(true)} className="px-6 py-3 bg-white text-black border border-gray-200 rounded-2xl font-bold text-sm shadow-md min-w-[160px] hover:bg-gray-50"><KeyRound size={16} className="inline mr-2"/> Security</button>}
           </div>              
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-100">
-            <h2 className="text-xl font-serif mb-8 flex items-center gap-3 text-black"><div className="p-2 bg-[#b4a460]/10 rounded-lg text-[#b4a460]"><User size={22} /></div>Identity Registry</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-8">
-              <InfoItem icon={Mail} label="Registry Email" value={user.email} />
-              <InfoItem name="contact_no" icon={Phone} label="Contact No" value={formData.contact_no} isEditable={isEditing} onChange={(e) => setFormData({...formData, contact_no: e.target.value})} />
-              <InfoItem name="nic_no" icon={CreditCard} label="NIC" value={formData.nic_no} isEditable={isEditing} onChange={(e) => setFormData({...formData, nic_no: e.target.value})} />
-              <InfoItem name="dob" icon={Calendar} label="Date of Birth" value={isEditing ? formData.dob : new Date(formData.dob).toLocaleDateString('en-GB')} isEditable={isEditing} onChange={(e) => setFormData({...formData, dob: e.target.value})} type="date" />
+      {/* Main Grid: Identity Registry (with Audit Logs) vs Operational Districts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        
+        {/* Left Column (lg:col-span-2) */}
+        <div className="lg:col-span-2">
+          <section className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+            {/* Identity Part */}
+            <div className="p-10 border-b border-gray-50">
+              <h2 className="text-xl font-serif mb-8 flex items-center gap-3 text-black"><div className="p-2 bg-[#b4a460]/10 rounded-lg text-[#b4a460]"><User size={22} /></div>Identity Registry</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-8">
+                <InfoItem icon={Mail} label="Registry Email" value={user.email} />
+                <InfoItem name="contact_no" icon={Phone} label="Contact No" value={formData.contact_no} isEditable={isEditing} onChange={(e) => setFormData({...formData, contact_no: e.target.value})} />
+                <InfoItem name="nic_no" icon={CreditCard} label="NIC" value={formData.nic_no} isEditable={isEditing} onChange={(e) => setFormData({...formData, nic_no: e.target.value})} />
+                <InfoItem name="dob" icon={Calendar} label="Date of Birth" value={isEditing ? formData.dob : new Date(formData.dob).toLocaleDateString('en-GB')} isEditable={isEditing} onChange={(e) => setFormData({...formData, dob: e.target.value})} type="date" />
+              </div>
+              {isEditing && (
+                <button onClick={handleUpdateProfile} disabled={isUpdating} className="mt-8 px-10 py-4 bg-black text-white font-bold rounded-2xl hover:bg-[#b4a460] transition-all flex items-center gap-3">
+                  {isUpdating ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />} Commit Changes
+                </button>
+              )}
             </div>
-          </section>
 
-          {isEditing && (
-            <div className="flex justify-end pt-4">
-              <button onClick={handleUpdateProfile} disabled={isUpdating} className="w-full sm:w-auto px-12 py-4 bg-black text-white font-bold rounded-[1.5rem] shadow-2xl hover:bg-[#b4a460] transition-all flex items-center justify-center gap-3 text-base">
-                {isUpdating ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />} Commit Changes
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-8">
-          <section className="bg-white p-10 rounded-[2.5rem] shadow-xl border-2 border-[#b4a460]/10 relative overflow-hidden">
-            <h2 className="text-lg font-serif mb-8 flex items-center gap-3 text-black"><Shield size={20} /> Audit Logs</h2>
-            <div className="space-y-6 relative z-10 text-left">
-              <div className="flex gap-4">
-                <div className="p-3 bg-gray-50 rounded-2xl text-[#b4a460]"><Clock size={20} /></div>
-                <div>
-                  <p className="text-[10px] uppercase text-gray-500 font-bold tracking-[0.2em] mb-1">Registry Joined</p>
-                  <p className="text-sm font-bold text-gray-900">
-                    {joinDate ? new Date(joinDate).toDateString() : "Live Record"}
-                  </p>
+            {/* 📍 Audit Logs - Nested inside the same Registry container */}
+            <div className="p-10 bg-gray-50/30">
+              <h2 className="text-lg font-serif mb-6 flex items-center gap-3 text-black"><Shield size={20} className="text-[#b4a460]" /> Audit Logs</h2>
+              <div className="flex flex-col sm:flex-row gap-8">
+                <div className="flex gap-4 items-center">
+                  <div className="p-3 bg-white rounded-2xl shadow-sm text-[#b4a460]"><Clock size={20} /></div>
+                  <div>
+                    <p className="text-[9px] uppercase text-gray-400 font-bold tracking-[0.1em]">Joined Registry</p>
+                    <p className="text-sm font-bold text-gray-800">{joinDate ? new Date(joinDate).toDateString() : "Live Record"}</p>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <p className="text-[9px] uppercase text-gray-400 font-bold tracking-[0.1em] mb-1">Node UUID</p>
+                  <code className="text-[10px] text-gray-400 font-mono bg-white px-3 py-1 rounded-lg border border-gray-100">{user.user_id}</code>
                 </div>
               </div>
-              <div className="pt-6 border-t border-gray-50">
-                <p className="text-[10px] uppercase text-gray-300 font-black mb-2">Node UUID</p>
-                <code className="text-[9px] text-gray-400 block break-all font-mono bg-gray-50 p-4 rounded-xl">{user.user_id}</code>
-              </div>
             </div>
           </section>
         </div>
+
+        {/* Right Column (lg:col-span-1) - Operational Districts */}
+        <div className="lg:col-span-1">
+          {isSalesRepProfile && (
+            <section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-100 h-full">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-lg font-serif flex items-center gap-3 text-black"><MapPin size={20} className="text-[#b4a460]" /> Operational Areas</h2>
+                {isAdmin && (
+                  <button onClick={() => setIsEditingAreas(!isEditingAreas)} className={`text-[9px] font-black uppercase px-4 py-2 rounded-xl transition-all ${isEditingAreas ? 'bg-black text-white' : 'bg-gray-100 text-gray-400'}`}>
+                    {isEditingAreas ? 'Lock' : 'Edit'}
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2 mb-6">
+                {userAreas.length > 0 ? userAreas.map((area, idx) => (
+                  <div key={idx} className="flex items-center gap-2 bg-gray-50 border border-gray-100 px-4 py-2 rounded-xl">
+                    <span className="text-[10px] font-black text-gray-500 uppercase">{area.district_name}</span>
+                    {isAdmin && isEditingAreas && <button onClick={() => handleRemoveArea(area.district_name)} className="text-red-400"><XCircle size={14} /></button>}
+                  </div>
+                )) : <p className="text-xs font-bold text-gray-300 italic">No assigned areas.</p>}
+              </div>
+
+              {isAdmin && isEditingAreas && (
+                <div className="mt-8 pt-8 border-t border-gray-50">
+                  <p className="text-[9px] font-black text-[#b4a460] uppercase mb-4 tracking-widest">Add New Area</p>
+                  <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                    {districtsList.filter(d => !userAreas.some(ua => ua.district_name === d)).map(d => (
+                      <button key={d} onClick={() => handleAddArea(d)} className="text-[9px] font-bold py-2 border border-gray-50 rounded-lg hover:border-[#b4a460] hover:bg-[#b4a460]/5 text-gray-400">+ {d}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+        </div>
       </div>
+
+      {/* Spacing Gap before Portfolio */}
+      <div className="my-10" />
+
+      {/* Customer Portfolio Table */}
+      {isSalesRepProfile && (isAdmin || isOwnProfile) && (
+        <section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-100 animate-in fade-in duration-700">
+            <div className="flex items-center justify-between mb-8">
+                <h2 className="text-xl font-serif flex items-center gap-3 text-black"><Users size={24} className="text-[#b4a460]" /> Customer Portfolio</h2>
+                <div className="flex items-center gap-4">
+                    <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Total Clients: {customers.length}</span>
+                    <button onClick={() => navigate('/customers')} className="p-2 bg-gray-50 text-[#b4a460] rounded-xl hover:bg-black hover:text-white transition-all"><ExternalLink size={18}/></button>
+                </div>
+            </div>
+
+            <div className="overflow-x-auto">
+                <table className="w-full text-left border-separate border-spacing-y-2">
+                    <thead>
+                        <tr className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                            <th className="px-6 py-4">Client / Saloon</th>
+                            <th className="px-6 py-4">District</th>
+                            <th className="px-6 py-4">Contact</th>
+                            <th className="px-6 py-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {loadingCustomers ? (
+                            <tr><td colSpan="4" className="text-center py-20"><Loader2 className="animate-spin mx-auto text-[#b4a460]" size={30} /></td></tr>
+                        ) : customers.length > 0 ? customers.map((cust) => (
+                            <tr key={cust.customer_id} className="group hover:translate-x-1 transition-all">
+                                <td className="px-6 py-5 bg-gray-50/50 rounded-l-2xl border-y border-l border-gray-50">
+                                    <p className="text-sm font-bold text-gray-900">{cust.saloon_name}</p>
+                                    <p className="text-[10px] text-gray-400">{cust.owner_name}</p>
+                                </td>
+                                <td className="px-6 py-5 bg-gray-50/50 border-y border-gray-50 text-[10px] font-bold text-gray-500 uppercase">{cust.district}</td>
+                                <td className="px-6 py-5 bg-gray-50/50 border-y border-gray-50 text-xs font-bold">{cust.phone1 || cust.phone2 || "N/A"}</td>
+                                <td className="px-6 py-5 bg-gray-50/50 rounded-r-2xl border-y border-r border-gray-50 text-right">
+                                    <span className="text-[10px] font-black uppercase text-green-500 bg-green-50 px-3 py-1 rounded-lg border border-green-100">Mapped</span>
+                                </td>
+                            </tr>
+                        )) : (
+                            <tr><td colSpan="4" className="text-center py-10 text-gray-300 font-bold uppercase text-xs italic">No portfolio data.</td></tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+      )}
 
       {/* Password Modal */}
       {showPassModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in duration-300">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in">
             <div className="flex justify-between items-center mb-10">
               <h2 className="text-2xl font-serif text-black flex items-center gap-3"><Lock size={24} className="text-[#b4a460]" /> Security</h2>
               <button onClick={() => setShowPassModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={24} className="text-gray-400" /></button>
@@ -241,7 +305,7 @@ const UserProfile = () => {
               <PasswordInput label="Current Key" name="currentPassword" value={passData.currentPassword} onChange={handlePasswordChange} />
               <PasswordInput label="New Key" name="newPassword" value={passData.newPassword} onChange={handlePasswordChange} />
               <PasswordInput label="Verify New Key" name="confirmPassword" value={passData.confirmPassword} onChange={handlePasswordChange} />
-              <button onClick={handlePasswordUpdate} disabled={isUpdating} className="w-full py-4 bg-black text-white font-bold rounded-2xl mt-6 hover:bg-[#b4a460] transition-all flex items-center justify-center gap-2 text-sm">
+              <button onClick={handlePasswordUpdate} disabled={isUpdating} className="w-full py-4 bg-black text-white font-bold rounded-2xl hover:bg-[#b4a460] transition-all flex items-center justify-center gap-2 text-sm">
                 {isUpdating && <Loader2 className="animate-spin" size={18} />} Update Key
               </button>
             </div>
@@ -252,11 +316,10 @@ const UserProfile = () => {
   );
 };
 
-// ... Sub Components ...
 const InfoItem = ({ icon: Icon, label, value, isEditable, onChange, type = "text" }) => (
   <div className="space-y-2">
-    <p className="text-[10px] uppercase text-gray-400 font-bold tracking-[0.15em] flex items-center gap-2"><Icon size={14} className="text-[#b4a460]" /> {label}</p>
-    {isEditable ? <input type={type} value={value || ''} onChange={onChange} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#b4a460]/20 focus:border-[#b4a460] transition-all" /> : <p className="text-sm font-bold text-gray-800 px-1">{value || "Not Recorded"}</p>}
+    <p className="text-[10px] uppercase text-gray-400 font-bold tracking-[0.1em] flex items-center gap-2"><Icon size={14} className="text-[#b4a460]" /> {label}</p>
+    {isEditable ? <input type={type} value={value || ''} onChange={onChange} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#b4a460]/20 focus:border-[#b4a460] transition-all" /> : <p className="text-sm font-bold text-gray-800 px-1">{value || "Not Recorded"}</p>}
   </div>
 );
 

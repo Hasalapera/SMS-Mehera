@@ -16,6 +16,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const contactRoutes = require('./routes/contactRoutes');
 const errorHandler = require('./middlewares/errorMiddleware');
+const settingRoutes = require('./routes/settingRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -64,6 +65,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/ask-ai', aiRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/settings', settingRoutes); 
 
 app.use(errorHandler);
 
