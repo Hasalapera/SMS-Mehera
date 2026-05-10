@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* --- Custom Scrollbar --- */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
@@ -12,4 +13,34 @@
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #b4a460;
+}
+
+/* --- Theme Variables --- */
+:root {
+  /* Light Mode Colors */
+  --color-primary: #b4a460;
+  --color-bg: #ffffff;
+  --color-sidebar: #f8f9fa;
+  --color-card: #ffffff;
+  --color-text: #1a1a1a;
+  --color-border: #e5e7eb;
+}
+
+/* 🛡️ Tailwind darkMode: 'class' එකට ගැලපෙන විදිහට .dark පාවිච්චි කරමු */
+.dark {
+  /* Dark Mode Colors */
+  --color-primary: #d4c480;
+  --color-bg: #121212;
+  --color-sidebar: #1a1a1a;
+  --color-card: #242424;
+  --color-text: #f9fafb;
+  --color-border: #333333;
+}
+
+/* --- Global Styles --- */
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: 'Inter', sans-serif; /* උඹ කැමති font එකක් මෙතනට දාපන් */
 }

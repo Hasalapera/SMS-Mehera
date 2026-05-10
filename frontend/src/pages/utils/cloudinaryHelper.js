@@ -1,15 +1,20 @@
 const CLOUDINARY_BASE_URL = "https://res.cloudinary.com/dgnzuhsco/image/upload/";
 
 /**
- * Cloudinary assets (logos, icons, etc.) වල URL එක ලබා ගැනීමට
- * @param {string} fileName - පින්තූරයේ නම (e.g., 'main-logo')
- * @returns {string} - සම්පූර්ණ Cloudinary URL එක
+ * Cloudinary assets (static logos, icons) සහ Dynamic URLs දෙකම හැඬල් කිරීමට
+ * @param {string} input - පින්තූරයේ නම හෝ සම්පූර්ණ URL එක
+ * @param {string} extension - ෆයිල් format එක (default 'png')
+ * @returns {string} - නිවැරදි Cloudinary URL එක
  */
-export const getAssetUrl = (fileName, extension = 'png') => {
-    if (!fileName) return '';
-    
-    // බ්‍රවුසර් එක පරණ පින්තූරයම පෙන්වන එක (Caching) වැළැක්වීමට timestamp එකක් එක් කරයි
+export const getAssetUrl = (input, extension = 'png') => {
+    if (!input) return '';
+
+    // 1. input එක දැනටමත් සම්පූර්ණ URL එකක් නම් (http වලින් පටන් ගනී නම්) ඒකම රිටර්න් කරනවා
+    if (input.startsWith('http://') || input.startsWith('https://')) {
+        return input;
+    }
+
+    // 2. input එක ෆයිල් නමක් විතරක් නම් (Static Asset), පරණ විදිහට URL එක හදනවා
     const timestamp = new Date().getTime();
-    
-    return `${CLOUDINARY_BASE_URL}${fileName}.${extension}?t=${timestamp}`;
+    return `${CLOUDINARY_BASE_URL}${input}.${extension}?t=${timestamp}`;
 };

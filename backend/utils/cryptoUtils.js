@@ -1,8 +1,8 @@
 const crypto = require('crypto');
 const algorithm = 'aes-256-cbc';
 // .env එකේ ENCRYPTION_KEY එක අකුරු 32ක් වෙන්න ඕනේ
-const key = Buffer.from(process.env.ENCRYPTION_KEY || 'your-secret-key-32-characters-!!').slice(0, 32);
-const iv = Buffer.from(process.env.ENCRYPTION_KEY || 'your-secret-key-32-characters-!!').slice(0, 16);
+const key = Buffer.from(process.env.ENCRYPTION_KEY || 'mehera_intl_secret_key_32chars!!' ).slice(0, 32);
+const iv = Buffer.from(process.env.ENCRYPTION_KEY || 'mehera_intl_secret_key_16chars!!' ).slice(0, 16);
 
 const encrypt = (text) => {
     if (!text) return text;
@@ -21,7 +21,8 @@ const decrypt = (text) => {
         decrypted = Buffer.concat([decrypted, decipher.final()]);
         return decrypted.toString();
     } catch (err) {
-        return text; // මොකක් හරි අවුලක් වුණොත් (උදා: පරණ plain text ඩේටා) පරණ විදිහටම දෙනවා
+        console.error("Decryption Error:", err.message); 
+        return text; 
     }
 };
 

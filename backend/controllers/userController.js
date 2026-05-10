@@ -1,4 +1,4 @@
-const { User, UserArea, sequelize } = require('../models');
+const { User, UserArea, Customer, sequelize } = require('../models');
 const bcrypt = require('bcrypt');
 const { sendWelcomeEmail } = require('../utils/emailSender');
 const { encrypt, decrypt } = require('../utils/cryptoUtils');
@@ -9,39 +9,43 @@ const addUserByAdmin = async (req, res) => {
     try {
         const { name, email, role, dob, contact_no, nic_no, selectedDistricts } = req.body;
 
-        // Start a transaction
+        if (!name || !email || !role) {
+            return res.status(400).json({ message: "Name, email and role are required." });
+        }
+
+        if (role === 'sales_rep' && (!selectedDistricts || selectedDistricts.length === 0)) {
+            return res.status(400).json({ message: "Sales rep must have at least one district." });
+        }
+
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) {
+            return res.status(409).json({ message: "A user with this email already exists." });
+        }
+
         const transaction = await sequelize.transaction();
 
         try {
-            // Get count of users with this role
-            const count = await User.count({ 
-                where: { role },
-                transaction 
-            });
-            
+            const count = await User.count({ where: { role }, transaction });
             const nextNumber = count + 1;
             const defaultPassword = `${role}${nextNumber}@user`;
 
-            // Hash password
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(defaultPassword, salt);
 
-            // Create user
             const user = await User.create({
                 name,
                 email,
                 password: hashedPassword,
                 role,
                 dob,
-                contact_no: encrypt(contact_no), // Encrypt contact number before saving
+                contact_no: encrypt(contact_no),
                 nic_no,
                 is_active: true,
                 is_default_password: true,
                 default_password: defaultPassword
             }, { transaction });
 
-            // Assign districts if sales_rep
-            if (role === 'sales_rep' && selectedDistricts && selectedDistricts.length > 0) {
+            if (role === 'sales_rep' && selectedDistricts?.length > 0) {
                 const areaRecords = selectedDistricts.map(district => ({
                     user_id: user.user_id,
                     district_name: district
@@ -49,25 +53,32 @@ const addUserByAdmin = async (req, res) => {
                 await UserArea.bulkCreate(areaRecords, { transaction });
             }
 
-            // Send welcome email
-            await sendWelcomeEmail(email, name, defaultPassword, role);
-
-            // Commit transaction
             await transaction.commit();
 
-            res.status(201).json({
-                message: "User and assigned areas added successfully!",
+            let emailSent = true;
+            try {
+                await sendWelcomeEmail(email, name, defaultPassword, role);
+            } catch (mailErr) {
+                emailSent = false;
+                console.error("Welcome email failed:", mailErr);
+            }
+
+            return res.status(201).json({
+                message: emailSent
+                    ? "User and assigned areas added successfully!"
+                    : "User created, but welcome email could not be sent.",
                 userId: user.user_id
             });
 
         } catch (err) {
             await transaction.rollback();
-            throw err;
+            console.error("Add User Inner Error:", err);
+            return res.status(500).json({ message: err.message || "Failed to add user." });
         }
 
     } catch (err) {
-        console.error("Add User Error:", err.message);
-        res.status(500).json({ error: err.message });
+        console.error("Add User Error:", err);
+        return res.status(500).json({ message: err.message || "Internal server error." });
     }
 };
 
@@ -146,6 +157,8 @@ const softDeleteUser = async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
+        await user.update({ is_active: false });
+
         // Soft delete using Sequelize (sets deleted_at)
         await user.destroy();
 
@@ -170,6 +183,9 @@ const restoreUser = async (req, res) => {
 
         // Restore soft-deleted user
         await user.restore();
+
+        // Reactivate the user by setting is_active to true
+        await user.update({ is_active: true });
 
         res.status(200).json({ message: "User restored successfully" });
 
@@ -228,54 +244,83 @@ const changePassword = async (req, res) => {
 
 const getUserProfile = async (req, res) => {
     try {
-        // Get user ID from request parameters
         const { id } = req.params;
-        // Validate that the ID is a valid UUID format to prevent unnecessary database queries
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-        // If the ID is not valid, return a 400 Bad Request response
-        if (!id || !uuidRegex.test(id)) {
-            return res.status(400).json({ error: "Invalid user id format" });
-        }
-
-        // Fetch user profile along with assigned areas, excluding password fields
-        const baseAttributes = { exclude: ['password', 'default_password'] };
-
-        // Use paranoid: false to include soft-deleted users in the search, so that we can return a proper message if the user is deleted
         const user = await User.findOne({
             where: { user_id: id },
-            include: [{
-                model: UserArea,
-                as: 'areas',
-                attributes: ['district_name']
-            }],
-            attributes: baseAttributes
+            include: [{ model: UserArea, as: 'areas', attributes: ['district_name'] }],
+            attributes: { exclude: ['password', 'default_password'] },
+            paranoid: false // 👈 අයින් කරපු අයවත් පේන්න මේක ඕනේ
         });
 
-        // If user not found, return 404
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
-        }
+        if (!user) return res.status(404).json({ error: "User not found" });
 
-        // Convert user instance to JSON and format districts for frontend
         const userData = user.toJSON();
-
-        // Decrypt contact number before sending to frontend
-        if (userData.contact_no) {
-            userData.contact_no = decrypt(userData.contact_no);
-        }
-        // Create a districts array based on the associated areas for easier frontend consumption
-        userData.districts = userData.areas ? userData.areas.map(a => a.district_name) : [];
-
-        res.status(200).json({
-            message: "User profile retrieved",
-            user: userData
-        });
-
+        if (userData.contact_no) userData.contact_no = decrypt(userData.contact_no);
+        
+        res.status(200).json({ user: userData });
     } catch (err) {
-        console.error("Sequelize Profile Fetch Error:", err.message);
         res.status(500).json({ error: "Internal Server Error" });
     }
+};
+
+// 💡 2. අලුත් ඒරියා එකක් ඇඩ් කිරීම
+const addUserArea = async (req, res) => {
+  try {
+    const { id } = req.params; // URL එකෙන් ID එක ගන්නවා (:id)
+    const { district } = req.body; // Body එකෙන් district එක ගන්නවා
+
+    const existing = await UserArea.findOne({ where: { user_id: id, district_name: district } });
+    if (existing) return res.status(400).json({ error: "District already assigned" });
+
+    await UserArea.create({ user_id: id, district_name: district });
+    res.status(201).json({ message: "District added successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const removeUserArea = async (req, res) => {
+  // 💡 Transaction එකක් පාවිච්චි කරමු වැඩ දෙකම එකවර වෙන්න ඕන නිසා
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const { id } = req.params; // සේල්ස් රෙප්ගේ ID එක
+    const { district } = req.body; // අයින් කරන දිස්ත්‍රික්කය
+
+    if (!district) {
+      return res.status(400).json({ error: "District name is required" });
+    }
+
+    // 1. සේල්ස් රෙප්ගෙන් ඒ දිස්ත්‍රික්කය ඉවත් කරනවා
+    await UserArea.destroy({
+      where: { user_id: id, district_name: district },
+      transaction
+    });
+
+    // 2. 🛡️ වැදගත්ම කොටස: 
+    // මේ සේල්ස් රෙප්ට අයිති, මේ දිස්ත්‍රික්කයේ ඉන්න කස්ටමර්ස්ලාව නිදහස් කරනවා (Unassign)
+    // මෙතනදී කස්ටමර්ගේ දිස්ත්‍රික්කය වෙනස් වෙන්නේ නැහැ!
+    await Customer.update(
+      { sales_rep_id: null }, 
+      { 
+        where: { 
+          sales_rep_id: id, 
+          district: district 
+        },
+        transaction 
+      }
+    );
+
+    await transaction.commit();
+    res.status(200).json({ 
+      message: `District ${district} removed. Customers are now unassigned and ready for reassignment.` 
+    });
+
+  } catch (err) {
+    await transaction.rollback();
+    console.error("Remove Area Error:", err.message);
+    res.status(500).json({ error: "Internal Server Error", details: err.message });
+  }
 };
 
 const updateProfile = async (req, res) => {
@@ -391,13 +436,31 @@ const verifySession = async (req, res) => {
             attributes: { exclude: ['password'] }
         });
         
-        if (!user) {
+        if (!user || !user.is_active || user.deleted_at) {
             return res.status(401).json({ message: "User not found" });
         }
 
         res.status(200).json(user);
     } catch (err) {
         console.error("Verify Session Error:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const getSalesReps = async (req, res) => {
+    try {
+        const salesReps = await User.findAll({
+            where: { role: 'sales_rep', is_active: true },
+            attributes: ['user_id', 'name', 'email'],
+            include: {
+                model: UserArea,
+                as: 'areas',
+                attributes: ['district_name']
+            }
+        });
+        res.status(200).json({ users: salesReps });
+    } catch (err) {
+        console.error("Get Sales Reps Error:", err.message);
         res.status(500).json({ error: err.message });
     }
 };
@@ -412,5 +475,8 @@ module.exports = {
     changePassword,
     getUserProfile,
     updateProfile,
-    verifySession
+    getSalesReps,
+    verifySession,
+    addUserArea,
+    removeUserArea
 };

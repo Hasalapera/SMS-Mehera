@@ -5,7 +5,7 @@ import {
     Phone, MapPin, ArrowRight, Users, Loader2, RefreshCw
 } from 'lucide-react';
 import axios from 'axios';
-import { toast, Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 
 // Type badge colors
@@ -69,7 +69,6 @@ export default function ViewCustomer() {
 
   return (
     <div className="w-full min-h-screen bg-[#fcfcfc] animate-in fade-in duration-500">
-            <Toaster position="top-right" />
  
       {/* Top Header Bar */}
         <div className="bg-[#f8f8f8] px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b border-gray-100">

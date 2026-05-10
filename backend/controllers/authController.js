@@ -2,6 +2,7 @@ require('dotenv').config();
 const { User } = require('../models');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const { decrypt } = require('../utils/cryptoUtils');
 
 const loginUser = async (req, res) => {
     try {
@@ -16,10 +17,27 @@ const loginUser = async (req, res) => {
             });
         }
 
-        if (user.deleted_at) {
-            return res.status(401).json({ 
+        if (user.deleted_at || !user.is_active) {
+            const admin = await User.findOne({ where: { role: 'admin' } });
+            let displayContact = 'N/A';
+            if (admin) {
+                // ඩේටාබේස් එකේ තියෙන නම අනුව (contact_no හෝ phone1) වෙනස් කරගන්න
+                const rawContact = admin.contact_no || admin.phone1;
+
+                if (rawContact) {
+                    try {
+                        // 🔐 Decrypt කරන්න ට්‍රයි කරනවා
+                        displayContact = decrypt(rawContact);
+                    } catch (e) {
+                        // 📝 Decrypt කරන්න බැරි නම් plain text එකම ගන්නවා
+                        displayContact = rawContact;
+                    }
+                }
+            }
+            return res.status(403).json({ 
                 success: false,
-                message: "Account deleted" 
+                message: `Account deactivated. Please contact Administrator at ${displayContact}`,
+                adminContact: displayContact
             });
         }
 

@@ -5,7 +5,7 @@ import {
   Loader2, ArrowLeft, RefreshCw, Trash2, CheckCircle2, ClipboardList, Undo2, Sparkles
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Toaster, toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 
 const AddStock = () => {
@@ -219,7 +219,6 @@ const AddStock = () => {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6 animate-in fade-in duration-500">
-      <Toaster position="top-right" />
 
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4">

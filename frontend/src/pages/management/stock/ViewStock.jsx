@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Search, Loader2, ArrowLeft, RefreshCw, Package } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast, Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import StockCard from '../../../components/StockCard';
 
@@ -101,7 +101,6 @@ const ViewStock = () => {
 
   return (
     <div className="w-full min-h-screen bg-[#fcfcfc] animate-in fade-in duration-500">
-      <Toaster position="top-right" />
 
       {/* Header */}
       <div className=" px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b-4 border-[#b4a460]">

@@ -1,5 +1,5 @@
 
-const { Customer, CustomerNote } = require('../models'); // Take Sequelize models
+const { Customer, CustomerNote, User, UserArea, sequelize } = require('../models'); // Take Sequelize models
 const { Op } = require('sequelize'); // 👈 Sequelize Operators
 const { encrypt, decrypt } = require('../utils/cryptoUtils'); // For encrypting/decrypting contact numbers
 
@@ -170,5 +170,224 @@ const searchCustomers = async (req, res) => {
     }
 };
 
-module.exports = { createCustomer, getAllCustomers, getCustomer, addNote, deleteNote, getCustomerCount, searchCustomers };
+//assign sales rep to customer
+const assignSalesRep = async (req, res) => {
+    try {
+        const { customer_id, sales_rep_id } = req.body; // customer_id එක දැන් Array එකක් වෙන්න පුළුවන්
 
+        // 1. Array එකක්ද නැද්ද කියලා බලලා Normalize කරගමු
+        const customerIds = Array.isArray(customer_id) ? customer_id : [customer_id];
+
+        if (!customerIds.length || !sales_rep_id) {
+            return res.status(400).json({ error: "Missing required fields." });
+        }
+
+        // 2. සේල්ස් රෙප් සහ එයාගේ දිස්ත්‍රික්ක ටික ගමු
+        const salesRep = await User.findByPk(sales_rep_id, {
+            include: [{ model: UserArea, as: 'areas' }]
+        });
+
+        if (!salesRep || salesRep.role !== 'sales_rep') {
+            return res.status(400).json({ error: "Invalid Sales Representative selection" });
+        }
+
+        const allowedDistricts = salesRep.areas.map(area => area.district_name);
+
+        // 3. මේ කස්ටමර්ස්ලා ඔක්කොම රෙප්ගේ දිස්ත්‍රික්කවලට අදාළද කියලා බලමු
+        const customersToAssign = await Customer.findAll({
+            where: { customer_id: { [Op.in]: customerIds } }
+        });
+
+        const invalidCustomers = customersToAssign.filter(c => !allowedDistricts.includes(c.district));
+
+        if (invalidCustomers.length > 0) {
+            const invalidNames = invalidCustomers.map(c => c.saloon_name).join(', ');
+            return res.status(403).json({ 
+                error: `Validation Failed: ${salesRep.name} cannot handle these districts: ${invalidNames}` 
+            });
+        }
+
+        // 4. ඔක්කොම හරි නම් Update කරනවා (Bulk Update)
+        await Customer.update(
+            { sales_rep_id: sales_rep_id },
+            { where: { customer_id: { [Op.in]: customerIds } } }
+        );
+
+        res.status(200).json({ 
+            message: `Successfully assigned ${customerIds.length} customers to ${salesRep.name}!` 
+        });
+
+    } catch (err) {
+        console.error("Assign Error:", err.message);
+        res.status(500).json({ error: "Internal Server Error", details: err.message });
+    }
+};
+
+// 2. Bulk Reassign (With District Validation for each customer)
+const reassignCustomers = async (req, res) => {
+    const { fromRepId, toRepId } = req.body;
+    const transaction = await sequelize.transaction();
+
+    try {
+        // අලුත් සේල්ස් රෙප්ගේ දිස්ත්‍රික්ක ටික ගමු
+        const toRep = await User.findByPk(toRepId, {
+            include: [{ model: UserArea, as: 'areas' }],
+            transaction
+        });
+
+        if (!toRep) throw new Error("Target Sales Rep not found");
+        const allowedDistricts = toRep.areas.map(area => area.district_name);
+
+        // 💡 පරණ රෙප්ගෙන් මාරු කරන්න පුළුවන් වෙන්නේ අලුත් රෙප්ගේ දිස්ත්‍රික්කවල ඉන්න කස්ටමර්ස්ලාව විතරයි
+        const [updatedCount] = await Customer.update(
+            { sales_rep_id: toRepId },
+            { 
+                where: { 
+                    sales_rep_id: fromRepId,
+                    district: { [Op.in]: allowedDistricts } // දිස්ත්‍රික්කය මැච් වෙන අය විතරයි
+                },
+                transaction 
+            }
+        );
+
+        await transaction.commit();
+        res.status(200).json({ 
+            message: `Successfully reassigned ${updatedCount} customers to ${toRep.name}.`,
+            note: "Customers in other districts were not moved."
+        });
+    } catch (err) {
+        await transaction.rollback();
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// 3. Get Customers By Rep (පරණ විදිහටම)
+const getCustomersByRep = async (req, res) => {
+    try {
+        const { repId } = req.params;
+        const customers = await Customer.findAll({ where: { sales_rep_id: repId } });
+
+        const decryptedCustomers = customers.map(c => {
+            const customer = c.toJSON();
+            customer.phone1 = customer.phone1 ? decrypt(customer.phone1) : null;
+            customer.phone2 = customer.phone2 ? decrypt(customer.phone2) : null;
+            return customer;
+        });
+
+        res.status(200).json({ customers: decryptedCustomers });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// 4. අලුත් එකක්: Get Eligible Customers for a Rep
+// (රෙප් කෙනෙක්ගේ දිස්ත්‍රික්කවල ඉන්න, තාම කාටවත් Assign කරලා නැති අයව ගන්න)
+const getEligibleCustomersForRep = async (req, res) => {
+    try {
+        const { repId } = req.params;
+        const rep = await User.findByPk(repId, { include: [{ model: UserArea, as: 'areas' }] });
+        
+        if (!rep) return res.status(404).json({ error: "Rep not found" });
+        const allowedDistricts = rep.areas.map(a => a.district_name);
+
+        const customers = await Customer.findAll({
+            where: {
+                sales_rep_id: null,
+                district: { [Op.in]: allowedDistricts }
+            }
+        });
+
+        res.status(200).json({ customers });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const getUnassignedCustomers = async (req, res) => {
+    try {
+        const customers = await Customer.findAll({
+            where: { sales_rep_id: null }
+        });
+
+        const decryptedCustomers = customers.map(c => {
+            const customer = c.toJSON();
+            customer.phone1 = customer.phone1 ? decrypt(customer.phone1) : null;
+            customer.phone2 = customer.phone2 ? decrypt(customer.phone2) : null;
+            return customer;
+        });
+
+        res.status(200).json({ customers: decryptedCustomers });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// --- get soft deleted sales reps for potential reassignment ---
+const getDeletedSalesReps = async (req, res) => {
+    try {
+        const deletedReps = await User.findAll({
+            where: { 
+                role: 'sales_rep',
+                deleted_at: { [Op.ne]: null } 
+            },
+            attributes: ['user_id', 'name', 'email', 'deleted_at'],
+            paranoid: false,
+            // 💡 මෙන්න මෙතන තමයි මැජික් එක:
+            include: [{
+                model: Customer,
+                as: 'assignedCustomers', // මේක උඹේ Model එකේ association එකට දීපු නම (බොහෝ විට customers)
+                attributes: [], // කස්ටමර් ඩේටා අපිට ඕනෙ නැහැ, ඉන්නවද කියලා බැලුවම ඇති
+                required: true  // INNER JOIN: මේකෙන් වෙන්නේ කස්ටමර්ස්ලා නැති අයව ඔටෝම හැලෙන එක
+            }],
+            group: ['User.user_id'] // Group කරමු duplications නොවෙන්න
+        });
+        res.status(200).json(deletedReps);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// --- get replacement candidates for a deleted sales rep ---
+const getReplacementCandidates = async (req, res) => {
+    try {
+        const { deletedRepId } = req.params;
+
+        // අයින් කරපු රෙප්ගේ දිස්ත්‍රික්ක ටික ගමු
+        const deletedRepAreas = await UserArea.findAll({ 
+            where: { user_id: deletedRepId } 
+        });
+        const districtNames = deletedRepAreas.map(a => a.district_name);
+
+        // ඒ දිස්ත්‍රික්ක වල දැනට වැඩ කරන, ඇක්ටිව් රෙප්ලා ටික ගමු
+        const candidates = await User.findAll({
+            where: { 
+                role: 'sales_rep',
+                is_active: true
+            },
+            include: [{
+                model: UserArea,
+                as: 'areas',
+                where: { district_name: { [Op.in]: districtNames } }
+            }]
+        });
+
+        res.status(200).json(candidates);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+module.exports = {  createCustomer, 
+                    getAllCustomers, 
+                    getCustomer, 
+                    addNote, 
+                    deleteNote, 
+                    getCustomerCount, 
+                    searchCustomers, 
+                    assignSalesRep, 
+                    reassignCustomers, 
+                    getEligibleCustomersForRep, 
+                    getCustomersByRep, 
+                    getUnassignedCustomers,
+                    getDeletedSalesReps,
+                    getReplacementCandidates };
