@@ -98,7 +98,7 @@ const Navbar = () => {
     };
 
     return (
-        <nav className="bg-card transition-all duration-500 ease-in-out text-textMain shadow-sm relative z-[100] border-b border-border">
+        <nav className="bg-card/80 backdrop-blur-md transition-all duration-500 ease-in-out text-textMain shadow-sm sticky top-0 z-[100] border-b border-border">
             <div className="max-w-full mx-auto px-10 py-4 flex justify-between items-center h-20">
                 
                 <div className="flex flex-col text-left cursor-pointer" onClick={() => navigate('/home')}>
