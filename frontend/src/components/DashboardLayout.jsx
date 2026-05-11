@@ -22,8 +22,8 @@ const DashboardLayout = () => {
 
   if(loading) {
     return(
-      <div className="min-h-screen flex items-center justify-center bg-[#F9F9F9]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#b4a460]"></div>
+      <div className="min-h-screen flex items-center justify-center bg-background transition-all duration-500 ease-in-out">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -38,7 +38,7 @@ const DashboardLayout = () => {
   //   <Navigate to="/login" />;
 
   return (
-    <div className="flex-1 min-h-screen bg-[#F9F9F9]">
+    <div className="flex-1 min-h-screen bg-background transition-all duration-500 ease-in-out">
       {isSidebarRole ? (
         // Sidebar Layout (Admin / Manager)
         <>
@@ -47,7 +47,7 @@ const DashboardLayout = () => {
               isSidebarCollapsed={isSidebarCollapsed} 
               setIsSidebarCollapsed={setIsSidebarCollapsed}
           />
-          <main className={`flex-1 transition-all duration-300 ease-in-out ${
+          <main className={`flex-1 transition-all duration-500 ease-in-out ${
             isSidebarCollapsed ? 'ml-20' : 'ml-64'
           }`}>
             {/* Mobile Screen එකකදී Sidebar එක content එක වහන්නේ නැති වෙන්න මේ padding එක උදව් වෙනවා */}

@@ -11,8 +11,12 @@ const logoStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'mehera-international/system_branding',
-    allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'svg'],
-    transformation: [{ width: 1000, height: 1000, crop: 'limit' }]
+    allowed_formats: ['png', 'svg', 'webp'],
+    transformation: [
+      { width: 1000, height: 1000, crop: 'limit' },
+      { quality: 'auto:best' },
+      { fetch_format: 'png' } // Transparency රැක ගැනීමට PNG අනිවාර්යයි
+    ]
   },
 });
 

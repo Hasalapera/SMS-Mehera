@@ -7,6 +7,9 @@ const { logoStorage } = require('../config/cloudinary');
 // 👈 3. upload කියන variable එක මෙතනදී define කරනවා
 const upload = multer({ storage: logoStorage });
 
+// Settings ලබාගැනීම (Public access for login page)
+router.get('/public', getSettings);
+
 // Settings ලබාගැනීම (හැමෝටම පුළුවන්)
 router.get('/', verifyToken, getSettings);
 

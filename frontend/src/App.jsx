@@ -108,14 +108,15 @@ function App() {
         toastOptions={{
           // 💡 Global styling (සෑම ටෝස්ට් එකකටම පොදුවේ)
           style: {
-            background: '#ffffff', // සුදු පසුබිම
-            color: '#000000',      // කළු අකුරු
+            background: 'var(--color-card)', // සුදු පසුබිම
+            color: 'var(--color-text)',      // කළු අකුරු
             borderRadius: '16px',  // වටකුරු ගතිය
             padding: '16px 24px',
             fontSize: '14px',
             fontWeight: '600',
-            border: '1px solid #f0f0f0',
+            border: '1px solid var(--color-border)',
             boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            transition: 'background-color 0.5s ease-in-out, color 0.5s ease-in-out, border-color 0.5s ease-in-out',
           },
 
           // ✅ සාර්ථක වුණාම (Success Toast)

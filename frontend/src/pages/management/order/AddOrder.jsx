@@ -174,15 +174,15 @@ const AddOrder = () => {
     <div className="w-full max-w-6xl mx-auto p-6 md:p-10 animate-in fade-in duration-500 pb-20">
 
       <div className="space-y-6">
-        <h1 className="text-2xl font-black text-black tracking-tight uppercase">
-          Create <span className="text-[#b4a460]">New Order</span>
+        <h1 className="text-2xl font-black text-textMain transition-colors duration-300 tracking-tight uppercase">
+          Create <span className="text-primary transition-all duration-300">New Order</span>
         </h1>
 
         {/* STEP 1: PARTNER DETAILS */}
-        <div className="bg-[#f8f8f8] p-6 rounded-[2rem] border border-gray-100 relative">
+        <div className="bg-background transition-all duration-300 p-6 rounded-[2rem] border border-border transition-colors duration-300 relative">
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-1.5 h-5 bg-[#b4a460] rounded-full"></div>
-            <h2 className="text-[10px] font-black uppercase text-black tracking-[0.2em]">
+            <div className="w-1.5 h-5 bg-primary transition-all duration-300 rounded-full"></div>
+            <h2 className="text-[10px] font-black uppercase text-textMain transition-colors duration-300 tracking-[0.2em]">
               01. Partner Details
             </h2>
           </div>
@@ -190,14 +190,14 @@ const AddOrder = () => {
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
               <Search
-                className="text-gray-300 group-focus-within:text-[#b4a460] transition-colors"
+                className="text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300"
                 size={18}
               />
             </div>
             <input
               type="text"
               placeholder="Search Saloon or Owner..."
-              className="w-full pl-14 pr-6 py-4 bg-white border-none rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all shadow-sm"
+              className="w-full pl-14 pr-6 py-4 bg-card transition-colors duration-300 border-none rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all shadow-sm"
               value={cusSearch}
               onChange={(e) => handleCustomerSearch(e.target.value)}
             />
@@ -205,11 +205,11 @@ const AddOrder = () => {
 
           {/* Suggestions Dropdown */}
           {suggestions.length > 0 && !selectedCustomer && (
-            <div className="absolute z-50 left-6 right-6 bg-white shadow-2xl rounded-2xl mt-2 border border-gray-100 overflow-hidden divide-y divide-gray-50">
+            <div className="absolute z-50 left-6 right-6 bg-card transition-colors duration-300 shadow-2xl rounded-2xl mt-2 border border-border transition-colors duration-300 overflow-hidden divide-y divide-gray-50">
               {suggestions.map((c) => (
                 <div
                   key={c.customer_id}
-                  className="px-6 py-4 hover:bg-[#faf8f0] cursor-pointer transition-colors flex justify-between items-center group"
+                  className="px-6 py-4 hover:bg-primary/10 transition-all duration-300 cursor-pointer flex justify-between items-center group"
                   onClick={() => {
                     setSelectedCustomer(c);
                     setCusSearch(c.saloon_name);
@@ -217,16 +217,16 @@ const AddOrder = () => {
                   }}
                 >
                   <div>
-                    <p className="font-black text-xs uppercase text-black group-hover:text-[#b4a460] transition-colors">
+                    <p className="font-black text-xs uppercase text-textMain transition-colors duration-300 group-hover:text-primary transition-all duration-300">
                       {c.saloon_name}
                     </p>
-                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">
+                    <p className="text-[9px] text-textMain/50 transition-colors duration-300 font-bold uppercase tracking-widest">
                       {c.owner_name} • {c.phone1}
                     </p>
                   </div>
                   <ArrowRight
                     size={14}
-                    className="text-gray-300 group-hover:text-[#b4a460] transition-all"
+                    className="text-textMain/50 transition-colors duration-300 group-hover:text-primary transition-all duration-300 transition-all"
                   />
                 </div>
               ))}
@@ -235,16 +235,16 @@ const AddOrder = () => {
 
           {/* Selected Customer Card */}
           {selectedCustomer && (
-            <div className="mt-5 p-5 bg-white rounded-2xl border-2 border-[#b4a460]/10 flex justify-between items-center shadow-sm animate-in zoom-in-95">
+            <div className="mt-5 p-5 bg-card transition-colors duration-300 rounded-2xl border-2 border-primary/10 transition-all duration-300 flex justify-between items-center shadow-sm animate-in zoom-in-95">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center text-[#b4a460]">
+                <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center text-primary transition-all duration-300">
                   <UserCheck size={20} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-black text-black uppercase">
+                  <p className="text-[11px] font-black text-textMain transition-colors duration-300 uppercase">
                     {selectedCustomer.saloon_name}
                   </p>
-                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">
+                  <p className="text-[9px] text-textMain/50 transition-colors duration-300 font-bold uppercase tracking-widest">
                     {selectedCustomer.district} • {selectedCustomer.phone1}
                   </p>
                 </div>
@@ -263,15 +263,15 @@ const AddOrder = () => {
         </div>
 
         {/* STEP 2: QUEUE SELECTION */}
-        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 min-h-[300px]">
+        <div className="bg-card transition-colors duration-300 p-6 rounded-[2rem] border border-border transition-colors duration-300 min-h-[300px]">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-5 bg-black rounded-full"></div>
-              <h2 className="text-[10px] font-black uppercase text-black tracking-[0.2em]">
+              <h2 className="text-[10px] font-black uppercase text-textMain transition-colors duration-300 tracking-[0.2em]">
                 02. Order Queue
               </h2>
             </div>
-            <span className="text-[9px] font-black bg-gray-100 px-3 py-1 rounded-full text-gray-400 uppercase">
+            <span className="text-[9px] font-black bg-gray-100 px-3 py-1 rounded-full text-textMain/50 transition-colors duration-300 uppercase">
               {cart.length} Items
             </span>
           </div>
@@ -282,25 +282,25 @@ const AddOrder = () => {
                 <div
                   //key={item.product_id} // can't use this because we need to differentiate variants of the same product
                   key={item.cartItemId} 
-                  className="p-4 bg-white rounded-2xl border border-gray-100 flex justify-between items-center group hover:border-[#b4a460]/30 transition-all"
+                  className="p-4 bg-card transition-colors duration-300 rounded-2xl border border-border transition-colors duration-300 flex justify-between items-center group hover:border-primary/30 transition-all duration-300 transition-all"
                 >
                   <div className="flex-1 min-w-0 mr-4">
-                    <p className="font-black text-[11px] uppercase text-black truncate group-hover:text-[#b4a460] transition-colors">
+                    <p className="font-black text-[11px] uppercase text-textMain transition-colors duration-300 truncate group-hover:text-primary transition-all duration-300">
                       {item.name}
                     </p>
                     {item.variant_name && item.variant_name !== "Standard" && (
-                      <p className="text-[9px] text-[#b4a460] font-black uppercase mt-0.5">
+                      <p className="text-[9px] text-primary transition-all duration-300 font-black uppercase mt-0.5">
                         {item.variant_name}
                       </p>
                     )}
-                    <p className="text-[10px] font-bold text-gray-400 mt-0.5">
+                    <p className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 mt-0.5">
                       LKR {(Number(item.price) || 0).toLocaleString()}
                     </p>
                   </div>
 
                   <div className="flex items-center gap-3"> {/* ✅ මේ parent div එකෙන් තමයි දෙක අතර gap එක හදන්නේ */}
                     {/* Quantity Controls Div */}
-                    <div className="flex items-center gap-2.5 bg-gray-50 rounded-xl p-1 border border-gray-100">
+                    <div className="flex items-center gap-2.5 bg-card transition-colors duration-300 rounded-xl p-1 border border-border transition-colors duration-300">
                       <button 
                         onClick={() => decreaseQty(item.cartItemId)}
                         className="hover:bg-gray-200 rounded-lg p-1 transition-colors"
@@ -331,9 +331,9 @@ const AddOrder = () => {
                 </div>
               ))
             ) : (
-              <div className="py-20 text-center border-2 border-dashed border-gray-50 rounded-[2rem] flex flex-col items-center justify-center">
+              <div className="py-20 text-center border-2 border-dashed border-border rounded-[2rem] flex flex-col items-center justify-center">
                 <Package size={32} className="text-gray-100 mb-3" />
-                <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">
+                <p className="text-[9px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-[0.2em]">
                   Queue is empty
                 </p>
               </div>
@@ -342,41 +342,41 @@ const AddOrder = () => {
         </div>
 
         {/* --- UPDATED LIGHT THEME SUMMARY SECTION --- */}
-        <div className="bg-white p-6 rounded-[2.5rem] border-2 border-[#b4a460]/10 shadow-xl shadow-[#b4a460]/5 relative overflow-hidden sticky top-6">
+        <div className="bg-card transition-colors duration-300 p-6 rounded-[2.5rem] border-2 border-primary/10 transition-all duration-300 shadow-xl shadow-[#b4a460]/5 relative overflow-hidden sticky top-6">
           {/* Background Decoration */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#b4a460]/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 transition-all duration-300 rounded-full -mr-16 -mt-16 blur-3xl"></div>
 
           <div className="relative z-10 flex flex-col space-y-5">
             {/* 01. Header */}
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <ClipboardList size={16} className="text-[#b4a460]" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#b4a460]">
+                <ClipboardList size={16} className="text-primary transition-all duration-300" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary transition-all duration-300">
                   Order Finalization
                 </span>
               </div>
-              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">
+              <p className="text-[9px] text-textMain/50 transition-colors duration-300 font-bold uppercase tracking-widest">
                 Pricing Analysis
               </p>
             </div>
 
             {/* 02. Subtotal Display */}
-            <div className="flex justify-between items-center px-1 pt-2 border-b border-gray-50 pb-4">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            <div className="flex justify-between items-center px-1 pt-2 border-b border-border pb-4">
+              <span className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">
                 Gross Subtotal
               </span>
-              <span className="text-sm font-black text-black">
+              <span className="text-sm font-black text-textMain transition-colors duration-300">
                 Rs. {totalAmount.toLocaleString()}
               </span>
             </div>
 
             {/* 03. Discount Percentage Input */}
-            <div className="p-4 bg-[#f8f8f8] rounded-2xl border border-dashed border-gray-200">
+            <div className="p-4 bg-background transition-all duration-300 rounded-2xl border border-dashed border-border transition-colors duration-300">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                <span className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">
                   Discount Rate
                 </span>
-                <span className="text-[10px] font-black text-[#b4a460]">
+                <span className="text-[10px] font-black text-primary transition-all duration-300">
                   % Percentage
                 </span>
               </div>
@@ -388,17 +388,17 @@ const AddOrder = () => {
                     setDiscount(Math.min(100, Math.max(0, e.target.value)))
                   } // 0-100 අතර තියාගන්නවා
                   placeholder="0"
-                  className="w-full bg-white border-none rounded-xl py-3 pl-4 pr-10 text-sm font-black outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all text-right shadow-sm"
+                  className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 pl-4 pr-10 text-sm font-black outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all text-right shadow-sm"
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-[#b4a460] text-sm">
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-primary transition-all duration-300 text-sm">
                   %
                 </span>
               </div>
             </div>
 
             {/* --- PAYMENT METHOD SELECTION --- */}
-<div className="p-4 bg-white rounded-2xl border border-[#b4a460]/30 shadow-sm mb-4 mt-4">
-  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-3">
+<div className="p-4 bg-card transition-colors duration-300 rounded-2xl border border-primary/30 transition-all duration-300 shadow-sm mb-4 mt-4">
+  <label className="text-[10px] font-black uppercase tracking-widest text-textMain/50 transition-colors duration-300 block mb-3">
     Settlement Mode
   </label>
   <div className="flex gap-2">
@@ -409,8 +409,8 @@ const AddOrder = () => {
         onClick={() => setPaymentMethod(mode)}
         className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border ${
           paymentMethod === mode
-            ? 'bg-[#b4a460] border-[#b4a460] text-white shadow-lg shadow-[#b4a460]/20'
-            : 'bg-white border-gray-100 text-gray-400 hover:border-[#b4a460]/30'
+            ? 'bg-primary transition-all duration-300 border-primary transition-all duration-300 text-white shadow-lg shadow-[#b4a460]/20'
+            : 'bg-card transition-colors duration-300 border-border transition-colors duration-300 text-textMain/50 transition-colors duration-300 hover:border-primary/30 transition-all duration-300'
         }`}
       >
         {mode}
@@ -421,14 +421,14 @@ const AddOrder = () => {
 
             {/* 04. Final Payable (Calculation Updated for %) */}
             <div className="py-2 text-right">
-              <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-1">
+              <p className="text-[9px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest mb-1">
                 Final Payable
               </p>
               <div className="flex items-baseline justify-end gap-1">
-                <span className="text-[10px] font-black text-[#b4a460]">
+                <span className="text-[10px] font-black text-primary transition-all duration-300">
                   Rs.
                 </span>
-                <span className="text-4xl font-black text-black tracking-tighter leading-none">
+                <span className="text-4xl font-black text-textMain transition-colors duration-300 tracking-tighter leading-none">
                   {Math.max(
                     0,
                     totalAmount - (totalAmount * (Number(discount) || 0)) / 100,
@@ -436,8 +436,8 @@ const AddOrder = () => {
                 </span>
               </div>
               {discount > 0 && (
-                <div className="inline-block mt-2 px-3 py-1 bg-[#b4a460]/10 rounded-lg">
-                  <p className="text-[9px] text-[#b4a460] font-black uppercase italic tracking-tighter">
+                <div className="inline-block mt-2 px-3 py-1 bg-primary/10 transition-all duration-300 rounded-lg">
+                  <p className="text-[9px] text-primary transition-all duration-300 font-black uppercase italic tracking-tighter">
                     {discount}% OFF Applied (-Rs.{" "}
                     {((totalAmount * discount) / 100).toLocaleString()})
                   </p>
@@ -450,7 +450,7 @@ const AddOrder = () => {
               <button
                 onClick={handlePlaceOrder}
                 disabled={cart.length === 0 || !selectedCustomer}
-                className="w-full py-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.3em] transition-all duration-300 flex items-center justify-center gap-3 shadow-xl group bg-black text-[#b4a460] border border-black shadow-black/10 hover:bg-[#b4a460] hover:text-white hover:border-[#b4a460] hover:scale-[1.02] active:scale-95 disabled:bg-gray-100 disabled:text-gray-300 disabled:border-gray-100 disabled:shadow-none disabled:scale-100 disabled:cursor-not-allowed"
+                className="w-full py-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.3em] transition-all duration-300 flex items-center justify-center gap-3 shadow-xl group bg-black text-primary transition-all duration-300 border border-black shadow-black/10 hover:bg-primary transition-all duration-300 hover:text-white hover:border-primary transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:bg-gray-100 disabled:text-textMain/50 transition-colors duration-300 disabled:border-border transition-colors duration-300 disabled:shadow-none disabled:scale-100 disabled:cursor-not-allowed"
               >
                 <CheckCircle2
                   size={18}
@@ -464,7 +464,7 @@ const AddOrder = () => {
             {/* 06. Footer Branding */}
             <div className="flex items-center justify-center gap-3 opacity-20 pt-2">
               <div className="h-[1px] flex-1 bg-gray-400"></div>
-              <p className="text-[7px] text-gray-500 font-black uppercase tracking-[0.4em]">
+              <p className="text-[7px] text-textMain/50 transition-colors duration-300 font-black uppercase tracking-[0.4em]">
                 Mehera Registry
               </p>
               <div className="h-[1px] flex-1 bg-gray-400"></div>

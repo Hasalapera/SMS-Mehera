@@ -93,12 +93,12 @@ const Home = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#f8f9fa] text-black overflow-x-hidden text-left" onClick={() => setIsDropdownOpen(false)}>
+    <div className="w-full min-h-screen bg-background transition-all duration-300 text-textMain transition-colors duration-300 overflow-x-hidden text-left" onClick={() => setIsDropdownOpen(false)}>
       
       <div className="w-full px-6 pt-10 pb-4">
-          <h1 className="text-4xl font-black text-black uppercase tracking-tight">Inventory Catalog</h1>
-          <p className="text-gray-400 text-xs font-bold uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
-              <span className="w-8 h-[2px] bg-[#b4a460]"></span>
+          <h1 className="text-4xl font-black text-textMain transition-colors duration-300 uppercase tracking-tight">Inventory Catalog</h1>
+          <p className="text-textMain/50 transition-colors duration-300 text-xs font-bold uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
+              <span className="w-8 h-[2px] bg-primary transition-all duration-300"></span>
               Search by product name or shade number
           </p>
       </div>
@@ -108,23 +108,23 @@ const Home = () => {
           <input 
             type="text" 
             placeholder="Search products or shade numbers (e.g. 72, Gold)..." 
-            className="w-full bg-white border border-gray-200 text-black px-12 py-4 rounded-3xl outline-none font-bold placeholder-gray-400 focus:ring-2 focus:ring-[#b4a460] transition-all shadow-sm"
+            className="w-full bg-card transition-colors duration-300 border border-border transition-colors duration-300 text-textMain transition-colors duration-300 px-12 py-4 rounded-3xl outline-none font-bold placeholder-gray-400 focus:ring-2 focus:ring-[#b4a460] transition-all shadow-sm"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300" size={20} />
         </div>
 
         <div className="relative w-full md:w-auto" onClick={(e) => e.stopPropagation()}>
           <button 
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="bg-black text-[#b4a460] px-8 py-4 rounded-3xl font-bold flex items-center gap-2 min-w-[220px] justify-between shadow-xl active:scale-95 transition-all"
+            className="bg-black text-primary transition-all duration-300 px-8 py-4 rounded-3xl font-bold flex items-center gap-2 min-w-[220px] justify-between shadow-xl active:scale-95 transition-all"
           >
             <span className="truncate uppercase text-[11px] tracking-widest">{selectedCategory}</span>
             <ChevronDown size={18} className={`transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {isDropdownOpen && (
-            <div className="absolute top-full mt-3 w-full bg-white rounded-2xl shadow-2xl border border-gray-100 py-3 z-[110] animate-in fade-in slide-in-from-top-2">
+            <div className="absolute top-full mt-3 w-full bg-card transition-colors duration-300 rounded-2xl shadow-2xl border border-border transition-colors duration-300 py-3 z-[110] animate-in fade-in slide-in-from-top-2">
               {categories.map((cat) => (
                 <button
                   key={cat}
@@ -132,10 +132,10 @@ const Home = () => {
                     setSelectedCategory(cat);
                     setIsDropdownOpen(false);
                   }}
-                  className="w-full text-left px-6 py-3 text-[11px] font-black uppercase tracking-widest hover:bg-[#b4a460]/10 hover:text-[#b4a460] flex items-center justify-between transition-colors"
+                  className="w-full text-left px-6 py-3 text-[11px] font-black uppercase tracking-widest hover:bg-primary/10 transition-all duration-300 hover:text-primary transition-all duration-300 flex items-center justify-between transition-colors"
                 >
                   {cat}
-                  {selectedCategory === cat && <Check size={14} className="text-[#b4a460]" />}
+                  {selectedCategory === cat && <Check size={14} className="text-primary transition-all duration-300" />}
                 </button>
               ))}
             </div>
@@ -146,8 +146,8 @@ const Home = () => {
       <div className="max-w-full px-6 p-6">
         {loading ? (
           <div className="h-64 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="animate-spin text-[#b4a460]" size={42} />
-            <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Updating Catalog...</p>
+            <Loader2 className="animate-spin text-primary transition-all duration-300" size={42} />
+            <p className="text-textMain/50 transition-colors duration-300 font-bold uppercase text-[10px] tracking-widest">Updating Catalog...</p>
           </div>
         ) : filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
@@ -160,7 +160,7 @@ const Home = () => {
             ))}
           </div>
         ) : (
-          <div className="h-64 flex flex-col items-center justify-center text-gray-300">
+          <div className="h-64 flex flex-col items-center justify-center text-textMain/50 transition-colors duration-300">
              <PackageSearch size={64} strokeWidth={1} />
              <p className="mt-4 font-bold uppercase text-xs tracking-widest">No match found</p>
           </div>
@@ -169,31 +169,31 @@ const Home = () => {
 
       {selectedProduct && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-md p-4">
-          <div className="bg-white rounded-[3rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in duration-300">
+          <div className="bg-card transition-colors duration-300 rounded-[3rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in duration-300">
             <div className="p-10 space-y-8 text-left">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-3xl font-serif italic text-black leading-tight">{selectedProduct.product_name}</h3>
+                  <h3 className="text-3xl font-serif italic text-textMain transition-colors duration-300 leading-tight">{selectedProduct.product_name}</h3>
                   <div className="flex items-center gap-2 mt-2">
-                    <div className="w-8 h-[2px] bg-[#b4a460]"></div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Available Shades</p>
+                    <div className="w-8 h-[2px] bg-primary transition-all duration-300"></div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-textMain/50 transition-colors duration-300">Available Shades</p>
                   </div>
                 </div>
                 <button onClick={() => setSelectedProduct(null)} className="p-3 hover:bg-gray-100 rounded-full transition-all">
-                  <X size={20} className="text-gray-400" />
+                  <X size={20} className="text-textMain/50 transition-colors duration-300" />
                 </button>
               </div>
 
               <div className="grid grid-cols-1 gap-4 max-h-[400px] overflow-y-auto pr-3 custom-scrollbar">
                 {selectedProduct.variants.map((v) => (
-                  <button key={v.variant_id} onClick={() => handleAddToCart(selectedProduct, v)} className="flex justify-between items-center p-6 bg-gray-50 hover:bg-[#b4a460]/10 border border-gray-100 rounded-3xl group transition-all">
+                  <button key={v.variant_id} onClick={() => handleAddToCart(selectedProduct, v)} className="flex justify-between items-center p-6 bg-card transition-colors duration-300 hover:bg-primary/10 transition-all duration-300 border border-border transition-colors duration-300 rounded-3xl group transition-all">
                     <div className="flex flex-col">
-                      <span className="font-black text-[12px] uppercase tracking-wider text-black group-hover:text-[#b4a460]">{v.variant_name}</span>
-                      <span className="text-[10px] text-gray-400 font-bold mt-1 uppercase">Stock: {v.stock_count || 0}</span>
+                      <span className="font-black text-[12px] uppercase tracking-wider text-textMain transition-colors duration-300 group-hover:text-primary transition-all duration-300">{v.variant_name}</span>
+                      <span className="text-[10px] text-textMain/50 transition-colors duration-300 font-bold mt-1 uppercase">Stock: {v.stock_count || 0}</span>
                     </div>
                     <div className="flex items-center gap-6">
                       <span className="font-serif italic text-xl">Rs. {Number(v.price).toLocaleString()}</span>
-                      <div className="p-3 bg-white rounded-xl shadow-sm group-hover:bg-black group-hover:text-[#b4a460] transition-all">
+                      <div className="p-3 bg-card transition-colors duration-300 rounded-xl shadow-sm group-hover:bg-black group-hover:text-primary transition-all duration-300 transition-all">
                         <PlusCircle size={20} />
                       </div>
                     </div>

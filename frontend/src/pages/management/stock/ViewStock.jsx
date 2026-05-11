@@ -91,41 +91,41 @@ const ViewStock = () => {
 
   if (loading) {
     return (
-      <div className="w-full min-h-screen bg-[#fcfcfc] flex items-center justify-center">
-        <div className="flex items-center gap-3 text-gray-500 font-medium">
-          <Loader2 className="animate-spin text-[#b4a460]" size={24} /> Loading inventory...
+      <div className="w-full min-h-screen bg-background transition-colors duration-300 flex items-center justify-center">
+        <div className="flex items-center gap-3 text-textMain/50 transition-colors duration-300 font-medium">
+          <Loader2 className="animate-spin text-primary transition-all duration-300" size={24} /> Loading inventory...
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#fcfcfc] animate-in fade-in duration-500">
+    <div className="w-full min-h-screen bg-background transition-colors duration-300 animate-in fade-in duration-500">
 
       {/* Header */}
-      <div className=" px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b-4 border-[#b4a460]">
+      <div className=" px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b-4 border-primary transition-all duration-300">
         <div className="flex items-center gap-5">
-          <div className="p-3 bg-[#b4a460] rounded-2xl text-black">
+          <div className="p-3 bg-primary transition-all duration-300 rounded-2xl text-textMain transition-colors duration-300">
             <Package size={26} strokeWidth={2.5} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">
+            <p className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 uppercase tracking-widest mb-0.5">
               Inventory Management
             </p>
-            <h1 className="text-2xl font-black text-black uppercase tracking-tight">View Stock Levels</h1>
+            <h1 className="text-2xl font-black text-textMain transition-colors duration-300 uppercase tracking-tight">View Stock Levels</h1>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
           <button 
             onClick={() => { setLoading(true); fetchProducts().then(() => setLoading(false)); }}
-            className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-black hover:shadow-md transition-all active:scale-90"
+            className="p-3 bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-xl text-textMain/50 transition-colors duration-300 hover:text-textMain transition-colors duration-300 hover:shadow-md transition-all active:scale-90"
           >
             <RefreshCw size={20} />
           </button>
           <button 
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors font-bold text-sm px-2"
+            className="flex items-center gap-2 text-textMain/50 transition-colors duration-300 hover:text-white transition-colors font-bold text-sm px-2"
           >
             <ArrowLeft size={18} /> Back
           </button>
@@ -134,13 +134,13 @@ const ViewStock = () => {
 
       <div className="p-6 md:p-8">
         {/* Search Bar */}
-        <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-sm p-6 mb-8">
+        <div className="bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-[2.5rem] shadow-sm p-6 mb-8">
           <div className="flex items-center gap-4">
-            <Search size={20} className="text-gray-300" />
+            <Search size={20} className="text-textMain/50 transition-colors duration-300" />
             <input 
               type="text"
               placeholder="Search by product name or category..."
-              className="flex-1 bg-transparent outline-none text-black font-semibold text-sm placeholder-gray-300"
+              className="flex-1 bg-transparent outline-none text-textMain transition-colors duration-300 font-semibold text-sm placeholder-gray-300"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -160,10 +160,10 @@ const ViewStock = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-[1.5rem] border border-dashed border-gray-200 py-24 text-center">
-            <Package className="mx-auto text-gray-300 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-gray-500">No Products Found</h3>
-            <p className="text-sm text-gray-400 mt-2">Try adjusting your search terms.</p>
+          <div className="bg-card transition-colors duration-300 rounded-[1.5rem] border border-dashed border-border transition-colors duration-300 py-24 text-center">
+            <Package className="mx-auto text-textMain/50 transition-colors duration-300 mb-4" size={48} />
+            <h3 className="text-lg font-bold text-textMain/50 transition-colors duration-300">No Products Found</h3>
+            <p className="text-sm text-textMain/50 transition-colors duration-300 mt-2">Try adjusting your search terms.</p>
           </div>
         )}
       </div>

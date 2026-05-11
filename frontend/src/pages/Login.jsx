@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../pages/context/AuthContext'; 
@@ -11,7 +11,27 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [systemSettings, setSystemSettings] = useState(null);
+  const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleThemeChange = () => setIsDark(document.documentElement.classList.contains('dark'));
+    window.addEventListener('themeChange', handleThemeChange);
+    return () => window.removeEventListener('themeChange', handleThemeChange);
+  }, []);
+
+  useEffect(() => {
+    const fetchBranding = async () => {
+      try {
+        const res = await axios.get('http://localhost:5001/api/settings/public');
+        setSystemSettings(res.data);
+      } catch (err) {
+        console.error("Login branding fetch failed:", err);
+      }
+    };
+    fetchBranding();
+  }, []);
 
   const images = [
     "https://i.postimg.cc/gj1x07Pm/Beauty-Routines-vol-2-Model-3b-768x960.webp",
@@ -70,37 +90,46 @@ const Login = () => {
     }
   };
 
+  const getDynamicLogo = () => {
+    const dbLogo = isDark ? systemSettings?.dark_logo_url : systemSettings?.light_logo_url;
+    return dbLogo || (isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/nzwPbHWj/mehera-logo.png");
+  };
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6 font-sans text-white">
-      {/* ... ඉතිරි UI කොටස වෙනසක් නැත ... */}
+    <div className="min-h-screen bg-background transition-colors duration-300 flex items-center justify-center p-6 font-sans text-textMain transition-colors duration-300">
       <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div className="w-full max-w-md mx-auto lg:mx-0">
-          <div className="mb-12">
-            <div className="flex flex-col text-left cursor-pointer">
+          <div className="mb-12 flex items-center justify-between">
+            <div className="cursor-pointer" onClick={() => navigate('/')}>
               <img
-                src="https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png"
+                src={getDynamicLogo()}
                 alt="Mehera International Logo"
-                className="h-8 md:h-10 w-auto object-contain"
+                className="h-8 md:h-10 w-auto object-contain transition-opacity duration-500 ease-in-out will-change-opacity"
+                onError={(e) => { e.target.src = isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/nzwPbHWj/mehera-logo.png" }}
               />
             </div>
+            <button onClick={() => navigate('/')} className="flex items-center gap-2 text-textMain/50 hover:text-primary transition-all duration-300 font-bold text-[10px] uppercase tracking-widest group">
+              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+              Back to Home
+            </button>
           </div>
-          <h1 className="text-4xl font-medium mb-6 leading-tight">Welcome back to <span className="text-[#b4a460]">Mehera International</span>!</h1>
+          <h1 className="text-4xl font-medium mb-6 leading-tight">Welcome back to <span className="text-primary transition-all duration-300 uppercase font-black">Mehera International</span>!</h1>
           {error && <div className="bg-red-900/20 border border-red-500/50 text-red-500 text-xs p-3 rounded-lg mb-6">{error}</div>}
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-200">Email address</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#1a1a1a] border border-gray-800 rounded-lg p-3.5 focus:outline-none focus:border-[#b4a460] text-sm" required />
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-2 text-textMain/50">Email address</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-card border border-border transition-colors duration-300 rounded-lg p-3.5 focus:outline-none focus:border-primary transition-all duration-300 text-sm text-textMain" required />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-200">Password</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-2 text-textMain/50">Password</label>
               <div className="relative">
-                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#1a1a1a] border border-gray-800 rounded-lg p-3.5 focus:outline-none focus:border-[#b4a460] text-sm" required />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#b4a460]">
+                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-card border border-border transition-colors duration-300 rounded-lg p-3.5 focus:outline-none focus:border-primary transition-all duration-300 text-sm text-textMain" required />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300">
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
-            <button type="submit" className="w-full bg-[#b4a460] hover:bg-[#9a8b50] text-black font-bold py-3.5 rounded-lg transition-all shadow-lg active:scale-[0.98]">Sign in</button>
+            <button type="submit" className="w-full bg-primary transition-all duration-300 hover:bg-[#9a8b50] text-textMain transition-colors duration-300 font-bold py-3.5 rounded-lg transition-all shadow-lg active:scale-[0.98]">Sign in</button>
           </form>
         </div>
         <div className="hidden lg:block">

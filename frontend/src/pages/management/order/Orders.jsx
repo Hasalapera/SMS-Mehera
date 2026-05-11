@@ -98,20 +98,20 @@ const Orders = () => {
       {/* HEADER SECTION */}
       <div className="max-w-[1600px] mx-auto mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
-            <h1 className="text-3xl font-serif text-black uppercase tracking-tight">
-                Order <span className="italic text-[#b4a460]">Console</span>
+            <h1 className="text-3xl font-serif text-textMain transition-colors duration-300 uppercase tracking-tight">
+                Order <span className="italic text-primary transition-all duration-300">Console</span>
             </h1>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mt-2 italic">Official Mehera International Registry</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-textMain/50 transition-colors duration-300 mt-2 italic">Official Mehera International Registry</p>
         </div>
 
         {/* TABS */}
-        <div className="flex gap-2 bg-gray-100/50 p-1.5 rounded-2xl border border-gray-100 overflow-x-auto w-full md:w-auto shadow-sm">
+        <div className="flex gap-2 bg-gray-100/50 p-1.5 rounded-2xl border border-border transition-colors duration-300 overflow-x-auto w-full md:w-auto shadow-sm">
           {tabs.map((tab) => tab.show && (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-6 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-xl whitespace-nowrap ${
-                activeTab === tab.id ? 'bg-black text-white shadow-lg shadow-black/20' : 'text-gray-400 hover:text-black'
+                activeTab === tab.id ? 'bg-black text-white shadow-lg shadow-black/20' : 'text-textMain/50 transition-colors duration-300 hover:text-textMain transition-colors duration-300'
               }`}
             >
               <tab.icon size={14} /> {tab.label}
@@ -126,31 +126,31 @@ const Orders = () => {
             
             {/* ⬅️ LEFT PANEL: LIVE INVENTORY */}
             <div className="xl:w-[55%] flex flex-col h-[850px]"> 
-              <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col h-full overflow-hidden">
+              <div className="bg-card transition-colors duration-300 rounded-[2.5rem] border border-border transition-colors duration-300 shadow-sm flex flex-col h-full overflow-hidden">
                 
-                <div className="p-6 pb-4 border-b border-gray-50 bg-white">
+                <div className="p-6 pb-4 border-b border-border bg-card transition-colors duration-300">
                   <div className="flex justify-between items-center mb-4 text-left">
                     <div className="flex items-center gap-3">
-                      <Package className="text-[#b4a460]" size={20} />
-                      <h2 className="text-[11px] font-black uppercase tracking-widest text-black">Live Inventory</h2>
+                      <Package className="text-primary transition-all duration-300" size={20} />
+                      <h2 className="text-[11px] font-black uppercase tracking-widest text-textMain transition-colors duration-300">Live Inventory</h2>
                     </div>
-                    <div className="bg-[#b4a460]/10 px-3 py-1 rounded-full">
+                    <div className="bg-primary/10 transition-all duration-300 px-3 py-1 rounded-full">
                         <span className="text-[9px] font-black text-[#8a7b42] uppercase">{products.length} Items Syncing</span>
                     </div>
                   </div>
 
                   <div className="relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={14} />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300" size={14} />
                     <input 
                       type="text" 
                       placeholder="Search cosmetics, shades or hair care..." 
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border-none rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all font-bold"
+                      className="w-full pl-10 pr-4 py-3 bg-card transition-colors duration-300 border-none rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all font-bold"
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 pt-4 custom-scrollbar bg-[#fcfcfc]">
+                <div className="flex-1 overflow-y-auto p-6 pt-4 custom-scrollbar bg-background transition-colors duration-300">
                   <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4">
                     {products
                       .filter(p => p.product_name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -174,7 +174,7 @@ const Orders = () => {
             </div>
 
             {/* ➡️ RIGHT PANEL: ROLE-BASED CONSOLE */}
-            <div className="xl:w-[45%] h-[850px] overflow-y-auto custom-scrollbar bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-4">
+            <div className="xl:w-[45%] h-[850px] overflow-y-auto custom-scrollbar bg-card transition-colors duration-300 rounded-[2.5rem] border border-border transition-colors duration-300 shadow-sm p-4">
               {userRole === 'sales_rep' ? (
                 <AddOrder />
               ) : userRole === 'online_store_keeper' ? (
@@ -182,7 +182,7 @@ const Orders = () => {
               ) : (userRole === 'admin' || userRole === 'manager') ? (
                 <AddOrder />
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400 p-10 text-center space-y-4">
+                <div className="flex flex-col items-center justify-center h-full text-textMain/50 transition-colors duration-300 p-10 text-center space-y-4">
                   <ShoppingCart size={48} className="opacity-10" />
                   <p className="text-xs font-black uppercase tracking-widest">Unauthorized Registry Access</p>
                 </div>
@@ -191,7 +191,7 @@ const Orders = () => {
 
           </div>
         ) : (
-          <div className="bg-white rounded-[3rem] border border-gray-50 shadow-sm p-4 animate-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-card transition-colors duration-300 rounded-[3rem] border border-border shadow-sm p-4 animate-in slide-in-from-bottom-4 duration-500">
             {activeTab === 'history' && <ViewOrders />}
           </div>
         )}
@@ -200,17 +200,17 @@ const Orders = () => {
       {/* --- VARIATION SELECTION MODAL --- */}
       {selectedProduct && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-md p-4">
-          <div className="bg-white rounded-[3rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in duration-300">
+          <div className="bg-card transition-colors duration-300 rounded-[3rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in duration-300">
             <div className="p-10 space-y-8 text-left">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-3xl font-serif italic text-black leading-tight">{selectedProduct.product_name}</h3>
+                  <h3 className="text-3xl font-serif italic text-textMain transition-colors duration-300 leading-tight">{selectedProduct.product_name}</h3>
                   <div className="flex items-center gap-2 mt-2">
-                    <div className="w-8 h-[2px] bg-[#b4a460]"></div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Available Shades / Variants</p>
+                    <div className="w-8 h-[2px] bg-primary transition-all duration-300"></div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-textMain/50 transition-colors duration-300">Available Shades / Variants</p>
                   </div>
                 </div>
-                <button onClick={() => setSelectedProduct(null)} className="p-3 hover:bg-gray-100 rounded-full transition-all text-gray-400 hover:text-black">
+                <button onClick={() => setSelectedProduct(null)} className="p-3 hover:bg-gray-100 rounded-full transition-all text-textMain/50 transition-colors duration-300 hover:text-textMain transition-colors duration-300">
                   <X size={20} />
                 </button>
               </div>
@@ -220,22 +220,22 @@ const Orders = () => {
                   <button
                     key={variant.variant_id}
                     onClick={() => handleAddToCart(selectedProduct, variant)}
-                    className="flex justify-between items-center p-6 bg-gray-50 hover:bg-[#b4a460]/10 border border-gray-100 hover:border-[#b4a460]/30 rounded-3xl transition-all group w-full"
+                    className="flex justify-between items-center p-6 bg-card transition-colors duration-300 hover:bg-primary/10 transition-all duration-300 border border-border transition-colors duration-300 hover:border-primary/30 transition-all duration-300 rounded-3xl transition-all group w-full"
                   >
                     <div className="flex flex-col">
-                      <span className="font-black text-[12px] uppercase tracking-wider text-black group-hover:text-[#b4a460] transition-colors">
+                      <span className="font-black text-[12px] uppercase tracking-wider text-textMain transition-colors duration-300 group-hover:text-primary transition-all duration-300">
                         {variant.variant_name}
                       </span>
-                      <span className="text-[10px] text-gray-400 font-bold mt-1">
+                      <span className="text-[10px] text-textMain/50 transition-colors duration-300 font-bold mt-1">
                         INSTOCK: {variant.stock_count || 'Check Sync'}
                       </span>
                     </div>
                     
                     <div className="flex items-center gap-6">
-                      <span className="font-serif italic text-xl text-black">
+                      <span className="font-serif italic text-xl text-textMain transition-colors duration-300">
                         Rs. {Number(variant.price).toLocaleString()}
                       </span>
-                      <div className="p-3 bg-white rounded-xl shadow-sm group-hover:bg-black group-hover:text-[#b4a460] transition-all transform group-hover:scale-110">
+                      <div className="p-3 bg-card transition-colors duration-300 rounded-xl shadow-sm group-hover:bg-black group-hover:text-primary transition-all duration-300 transition-all transform group-hover:scale-110">
                         <PlusCircle size={20} />
                       </div>
                     </div>
@@ -245,7 +245,7 @@ const Orders = () => {
               
               <button 
                 onClick={() => setSelectedProduct(null)}
-                className="w-full py-4 text-[9px] font-black uppercase tracking-[0.4em] text-gray-300 hover:text-red-500 transition-colors"
+                className="w-full py-4 text-[9px] font-black uppercase tracking-[0.4em] text-textMain/50 transition-colors duration-300 hover:text-red-500 transition-colors"
               >
                 Close Selection
               </button>
