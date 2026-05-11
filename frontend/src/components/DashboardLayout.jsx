@@ -1,14 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate, NavLink, replace } from 'react-router-dom';
-import { LayoutDashboard, Users, LogOut, Package, Inbox } from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, Package, Inbox, Menu } from 'lucide-react';
 import SideBar from './SideBar';
 import Navbar from './Navbar';
 import { useAuth } from '../pages/context/AuthContext';
 
 const DashboardLayout = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
+
+  useEffect(() => {
+    const handleThemeChange = () => setIsDark(document.documentElement.classList.contains('dark'));
+    window.addEventListener('themeChange', handleThemeChange);
+    return () => window.removeEventListener('themeChange', handleThemeChange);
+  }, []);
 
   useEffect(() => {
     if (!loading) {
@@ -30,6 +38,11 @@ const DashboardLayout = () => {
   
   const userRole = user?.role;
 
+  const getDynamicLogo = () => {
+    // This is a simplified version. A more robust solution would involve a shared context for settings.
+    return isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/nzwPbHWj/mehera-logo.png";
+  };
+
   if (!user) return null;
   // 1. Sidebar පෙන්විය යුතු Roles (Admin සහ Manager)
   const isSidebarRole = ['admin', 'manager'].includes(userRole);
@@ -42,20 +55,30 @@ const DashboardLayout = () => {
       {isSidebarRole ? (
         // Sidebar Layout (Admin / Manager)
         <>
-          <div className="flex">
-            <SideBar
-              isSidebarCollapsed={isSidebarCollapsed} 
-              setIsSidebarCollapsed={setIsSidebarCollapsed}
-          />
-          <main className={`flex-1 transition-all duration-500 ease-in-out ${
-            isSidebarCollapsed ? 'ml-20' : 'ml-64'
+          {/* Mobile Header for Admin/Manager */}
+          <div className="md:hidden fixed top-0 left-0 right-0 bg-card/80 backdrop-blur-md border-b border-border z-40 flex items-center justify-between px-6 h-20">
+            <div onClick={() => navigate('/home')} className="cursor-pointer">
+                <img src={getDynamicLogo()} alt="Logo" className="h-8"/>
+            </div>
+            <button onClick={() => setIsMobileSidebarOpen(true)} className="p-2 text-textMain">
+              <Menu size={28} />
+            </button>
+          </div>
+
+          <SideBar
+            isSidebarCollapsed={isSidebarCollapsed} 
+            setIsSidebarCollapsed={setIsSidebarCollapsed}
+            isMobileOpen={isMobileSidebarOpen}
+            setIsMobileOpen={setIsMobileSidebarOpen}
+        />
+          <main className={`transition-all duration-300 ease-in-out pt-20 md:pt-0 ${
+            isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'
           }`}>
             {/* Mobile Screen එකකදී Sidebar එක content එක වහන්නේ නැති වෙන්න මේ padding එක උදව් වෙනවා */}
             <div className="p-4 md:p-10 max-w-[1600px] mx-auto w-full">
               <Outlet />
             </div>
           </main>
-        </div>
         </>
       ) : (
         // Horizontal Layout (Sales Rep / Store Keeper)

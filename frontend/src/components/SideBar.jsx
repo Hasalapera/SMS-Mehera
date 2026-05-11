@@ -6,10 +6,10 @@ import {
   BarChart2, Settings, HelpCircle, LogOut, ChevronDown, 
   ChevronRight, Menu, Inbox, SlidersHorizontal, PlusCircle, 
   ChevronLeft, UserPlus, UserMinus, UserCog, List, FileText, 
-  Download, History, PackageX, ShoppingBasket, ReceiptText, Tag, Boxes,
+  Download, History, PackageX, ShoppingBasket, ReceiptText, Tag, Boxes, X,
   PackagePlus, PackageSearch, SquarePen, Sun, Moon
 } from 'lucide-react';
-import { useNavigate, NavLink } from 'react-router-dom';
+import { useNavigate, NavLink, useLocation } from 'react-router-dom';
 import ViewOrders from '../pages/management/order/ViewOrders';
 import axios from 'axios';
 
@@ -69,7 +69,7 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed, badge, onClick, isOpen })
   return <button onClick={onClick} className={`${commonClasses} text-textMain/50 transition-colors duration-300 hover:bg-card transition-colors duration-300 hover:text-primary transition-all duration-300`}>{renderContent()}</button>;
 };
 
-const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
+const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setIsMobileOpen }) => {
   const [openSubMenu, setOpenSubMenu] = useState(''); 
   const navigate = useNavigate();
   const {logout} = useAuth(); // useAuth() hook එකෙන් logOut function එක ගන්නවා
@@ -85,6 +85,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
   const userRole = loggedUser?.role || 'sales_rep';
   const permissions = menuConfig[userRole] || menuConfig.sales_rep;
   const profileImg = loggedUser?.profile_image || loggedUser?.picture_url;
+  const location = useLocation();
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -100,6 +101,13 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
         window.removeEventListener('themeChange', handleThemeChange);
     };
   }, []);
+
+  // Close mobile sidebar on navigation
+  useEffect(() => {
+    if (isMobileOpen) {
+      setIsMobileOpen(false);
+    }
+  }, [location]);
 
   const toggleTheme = () => {
     if (isDark) {
@@ -165,10 +173,21 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
   };
 
   return (
-    <aside className={`bg-sidebar text-textMain flex flex-col p-5 transition-all duration-300 fixed h-full z-50 border-r border-border ${isSidebarCollapsed ? 'w-20' : 'w-64'} overflow-visible shadow-sm`}>
+    <>
+      {/* Overlay for Mobile */}
+      {isMobileOpen && (
+        <div
+          onClick={() => setIsMobileOpen(false)}
+          className="fixed inset-0 bg-black/60 z-40 md:hidden"
+        />
+      )}
+
+      <aside className={`bg-sidebar text-textMain flex flex-col p-5 fixed h-full z-50 border-r border-border shadow-lg md:shadow-sm w-64 transition-transform duration-300 ease-in-out
+        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} 
+        md:translate-x-0 md:transition-all ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'}`}>
       
       {/* --- Brand Logo Section --- */}
-      <div className={`mb-8 flex items-center ${isSidebarCollapsed ? 'flex-col gap-4' : 'justify-between'} px-1`}>
+      <div className={`mb-8 flex items-center ${isSidebarCollapsed ? 'md:flex-col md:gap-4 md:justify-center' : 'justify-between'} px-1`}>
           <div 
               className="flex items-center gap-3 cursor-pointer" 
               onClick={() => !isSidebarCollapsed && navigate('/home')}
@@ -177,7 +196,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                   src={getDynamicLogo()} 
                   alt="Mehera Logo" 
                   className={`transition-all duration-500 ease-in-out object-contain will-change-[opacity,transform] ${
-                      isSidebarCollapsed 
+                      isSidebarCollapsed
                           ? 'w-10 h-10 rounded-lg p-1' // 🤏 සයිඩ් බාර් එක පුංචි වෙලාවට (Icon එකක් වගේ)
                           : 'w-32 h-10'                // ↔️ සයිඩ් බාර් එක ලොකු වෙලාවට
                   }`}
@@ -185,7 +204,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
               />
           </div>
 
-          <div className={`flex items-center ${isSidebarCollapsed ? 'flex-col gap-2' : 'gap-2'}`}>
+          <div className={`flex items-center ${isSidebarCollapsed ? 'md:flex-col md:gap-2' : 'gap-2'}`}>
               <button 
                   onClick={toggleTheme} 
                   className="text-textMain/50 transition-colors duration-300 hover:text-primary p-2.5 rounded-lg hover:bg-card/10 transition-all"
@@ -194,9 +213,12 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
               </button>
               <button 
                   onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
-                  className="text-textMain/50 transition-colors duration-300 hover:text-primary p-2.5 rounded-lg hover:bg-card/10 transition-colors duration-300 transition-all"
+                  className="hidden md:block text-textMain/50 transition-colors duration-300 hover:text-primary p-2.5 rounded-lg hover:bg-card/10 transition-colors duration-300 transition-all"
               >
                   {isSidebarCollapsed ? <Menu size={18} /> : <ChevronLeft size={18} />}
+              </button>
+              <button onClick={() => setIsMobileOpen(false)} className="md:hidden text-textMain/50 p-2.5">
+                  <X size={20} />
               </button>
           </div>
       </div>
@@ -368,7 +390,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
       {/* Profile Section */}
       <div 
         onClick={() => navigate(`/profile/${loggedUser.user_id}`)} 
-        className={`mt-auto pt-6 border-t border-border transition-colors duration-300 cursor-pointer ${isSidebarCollapsed ? 'flex flex-col items-center' : ''}`}
+        className={`mt-auto pt-6 border-t border-border transition-colors duration-300 cursor-pointer ${isSidebarCollapsed ? 'md:flex md:flex-col md:items-center' : ''}`}
         >
         {!isSidebarCollapsed ? (
           <div className="flex items-center gap-3 p-2 bg-card transition-colors duration-300 rounded-xl border border-border transition-colors duration-300 mb-4 text-left hover:bg-primary/5 transition-all duration-300 transition-all">
@@ -419,12 +441,13 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
           e.stopPropagation(); 
           handleLogout(); 
         }} 
-        className={`flex items-center gap-3 w-full p-2 text-[11px] font-bold text-textMain/50 transition-colors duration-300 hover:text-red-500 transition-colors ${isSidebarCollapsed ? 'justify-center' : ''}`}
+        className={`flex items-center gap-3 w-full p-2 text-[11px] font-bold text-textMain/50 transition-colors duration-300 hover:text-red-500 transition-colors ${isSidebarCollapsed ? 'md:justify-center' : ''}`}
       >
         <LogOut size={16} /> 
         {!isSidebarCollapsed && "Logout"}
       </button>
     </aside>
+    </>
   );
 };
 

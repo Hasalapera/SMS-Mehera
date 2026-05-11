@@ -27,6 +27,15 @@ const ViewUser = () => {
     { id: 'deleted', name: 'Deleted Users' } 
   ];
 
+  const getInitials = (name) => {
+    if (!name) return "??";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
   const fetchUsers = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');

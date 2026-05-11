@@ -104,6 +104,9 @@ function App() {
       <Toaster
         position="top-right"
         reverseOrder={false}
+        containerStyle={{
+          zIndex: 99999, // zIndex එක වැඩි කරලා අනිත් හැමදේටම උඩින් පේන්න සලස්වනවා
+        }}
         gutter={8}
         toastOptions={{
           // 💡 Global styling (සෑම ටෝස්ට් එකකටම පොදුවේ)

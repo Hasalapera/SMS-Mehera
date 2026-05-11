@@ -4,7 +4,7 @@ import axios from 'axios';
 import { 
     Calendar, User, Hash, Filter, ShoppingBag, RefreshCw, 
     Loader2, Search, ArrowRight, ClipboardList, ChevronDown, ChevronLeft, ChevronRight,
-    Trash2, MapPin, Truck, ShoppingCart 
+    Trash2, MapPin, Truck, ShoppingCart, Phone
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -39,9 +39,9 @@ const ViewOrders = () => {
     const rowsPerPage = 10;
 
 
-    const fetchOrders = async () => {
+    const fetchOrders = async (showLoader = true) => {
         if (!token) return;
-        setLoading(true);
+        if (showLoader) setLoading(true);
         try {
             const res = await axios.get('http://localhost:5001/api/orders/all', {
                 headers: { Authorization: `Bearer ${token}` }
@@ -52,11 +52,11 @@ const ViewOrders = () => {
             console.error("Error fetching orders", err);
             toast.error('Failed to load orders');
         } finally {
-            setLoading(false);
+            if (showLoader) setLoading(false);
         }
     };
 
-    useEffect(() => { fetchOrders(); }, [token]);
+    useEffect(() => { fetchOrders(true); }, [token]);
 
     const toggleRow = (orderId) => {
         setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
@@ -89,7 +89,6 @@ const ViewOrders = () => {
         });
 
         if (result.isConfirmed) {
-            setLoading(true);
             try {
                 // 💡 මෙන්න මේ Backend route එක උඹේ තිබිය යුතුයි. 
                 // නැත්නම් එකක් හදාගන්න (router.put('/update-order-status/:id', ...))
@@ -99,12 +98,10 @@ const ViewOrders = () => {
                 );
 
                 toast.success(`Order ${newStatus} successfully!`);
-                fetchOrders(); 
+                fetchOrders(false); 
             } catch (err) {
                 console.error("Status Update Error:", err);
                 toast.error("Failed to update status.");
-            } finally {
-                setLoading(false);
             }
         }
     };
@@ -128,7 +125,7 @@ const ViewOrders = () => {
                         <span className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">Total Orders</span>
                         <span className="text-lg font-black text-primary transition-all duration-300">{orders.length}</span>
                     </div>
-                    <button onClick={fetchOrders} className="p-3 bg-card transition-colors duration-300 text-textMain/50 transition-colors duration-300 rounded-xl border border-border transition-colors duration-300"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button>
+                    <button onClick={() => fetchOrders(true)} className="p-3 bg-card transition-colors duration-300 text-textMain/50 transition-colors duration-300 rounded-xl border border-border transition-colors duration-300"><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button>
                 </div>
             </div>
 
@@ -139,19 +136,27 @@ const ViewOrders = () => {
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Search className="text-textMain/50 transition-colors duration-300" size={18} /></div>
                         <input type="text" placeholder="Search orders..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full bg-card/50 transition-colors duration-300 rounded-xl py-3 pl-11 pr-4 text-sm outline-none" />
                     </div>
-                    <div className="flex items-center gap-2">
-                        {["All", "Pending", "Completed", "Cancelled"].map((s) => (
-                            <button key={s} onClick={() => setStatusFilter(s)} className={`px-4 py-2 rounded-lg text-[11px] font-black border uppercase ${statusFilter === s ? "bg-primary transition-all duration-300 text-textMain transition-colors duration-300" : "bg-card transition-colors duration-300 text-textMain/50 transition-colors duration-300"}`}>{s}</button>
+                    {/* Desktop Filters */}
+                    <div className="hidden lg:flex items-center gap-2">
+                        {["All", "Requested", "Approved", "Shipped", "Delivered", "Cancelled"].map((s) => (
+                            <button key={s} onClick={() => setStatusFilter(s)} className={`px-4 py-2 rounded-lg text-[11px] font-black border uppercase whitespace-nowrap ${statusFilter === s ? "bg-primary transition-all duration-300 text-textMain transition-colors duration-300" : "bg-card transition-colors duration-300 text-textMain/50 transition-colors duration-300"}`}>{s}</button>
                         ))}
+                    </div>
+                    {/* Mobile Filter */}
+                    <div className="lg:hidden relative flex-1">
+                        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full appearance-none bg-background border border-border rounded-xl py-3.5 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none">
+                            {["All", "Requested", "Approved", "Shipped", "Delivered", "Cancelled"].map((s) => (<option key={s} value={s}>{s === 'All' ? 'All Order Statuses' : s}</option>))}
+                        </select>
+                        <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-textMain/50" />
                     </div>
                 </div>
 
                 {/* Orders Table */}
-                <div className="bg-card transition-colors duration-300 rounded-[1.5rem] border border-border transition-colors duration-300 shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto w-full custom-scrollbar"> 
-                    <table className="w-full text-left border-collapse">
+                <div className="bg-card transition-colors duration-300 rounded-[1.5rem] border border-border transition-colors duration-300 shadow-sm overflow-hidden hidden md:block">
+                    <div className="overflow-x-auto w-full custom-scrollbar">
+                    <table className="min-w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-card/50 transition-colors duration-300 border-b border-border transition-colors duration-300">
+                            <tr className="bg-card/50 transition-colors duration-300 border-b border-border transition-colors duration-300 ">
                                 {["Reference", "Client", "Placed By", "Order Date", "Value (LKR)", "Order Status", "Payment Status", "Actions"].map((h) => (
                                     <th key={h} className="px-6 py-4 text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">{h}</th>
                                 ))}
@@ -159,7 +164,7 @@ const ViewOrders = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {loading ? (
-                                <tr><td colSpan={8} className="py-20 text-center font-black uppercase text-[10px] tracking-widest text-textMain/50 transition-colors duration-300">Syncing with Registry...</td></tr>
+                                <tr><td colSpan="8" className="py-20 text-center font-black uppercase text-[10px] tracking-widest text-textMain/50 transition-colors duration-300">Syncing with Registry...</td></tr>
                             ) : currentRows.map((order) => (
                                 <React.Fragment key={order.order_id}>
                                     <tr className="group hover:bg-primary/10 transition-all duration-300 relative">
@@ -232,7 +237,7 @@ const ViewOrders = () => {
                                     {/* Expanded Detail Panel */}
                                     {expandedOrderId === order.order_id && (
                                         <tr className="bg-background transition-all duration-300 animate-in slide-in-from-top-2 duration-300 ">
-                                        <td colSpan={8} className="px-10 py-10 border-l-4 border-primary transition-all duration-300">
+                                        <td colSpan="8" className="px-10 py-10 border-l-4 border-primary transition-all duration-300">
                                             
                                             {/* --- Row 01: Shipping & Logistics (50/50 split) --- */}
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
@@ -429,9 +434,135 @@ const ViewOrders = () => {
                     </table>
                     </div>
                 </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4">
+                    {loading ? (
+                        <div className="py-20 text-center font-black uppercase text-[10px] tracking-widest text-textMain/50 transition-colors duration-300">Syncing with Registry...</div>
+                    ) : currentRows.map((order) => (
+                        <div key={order.order_id} className="bg-card rounded-2xl p-4 border border-border shadow-sm">
+                            {/* Top part: ID and Status */}
+                            <div className="flex justify-between items-start mb-4 pb-4 border-b border-border">
+                                <div>
+                                    <p className="text-[9px] font-black text-textMain/50 uppercase tracking-widest">Order Ref</p>
+                                    <p className="font-mono font-black text-primary text-sm">#{order.order_id.substring(0, 8).toUpperCase()}</p>
+                                </div>
+                                <span className={`text-[9px] font-black px-3 py-1.5 rounded-lg border uppercase tracking-widest ${statusBadge[order.order_status?.toLowerCase()]?.bg || 'bg-card'} ${statusBadge[order.order_status?.toLowerCase()]?.text || 'text-textMain/50'} ${statusBadge[order.order_status?.toLowerCase()]?.border || 'border-border'}`}>
+                                    {order.order_status}
+                                </span>
+                            </div>
+
+                            {/* Middle part: Details */}
+                            <div className="space-y-4 mb-4">
+                                <div className="text-sm">
+                                    <p className="font-black text-textMain uppercase">{order.customer_name}</p>
+                                    <p className="text-[10px] text-textMain/50 font-bold flex items-center gap-1.5 mt-1"><Phone size={12} /> {order.phone}</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 text-xs">
+                                    <div>
+                                        <p className="text-[9px] font-bold text-textMain/50 uppercase">Placed By</p>
+                                        <p className="font-bold text-textMain text-sm">{order.creator?.name || 'Registry Admin'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-bold text-textMain/50 uppercase">Date</p>
+                                        <p className="font-bold text-textMain text-sm">{new Date(order.created_at).toLocaleDateString('en-GB')}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right border-t border-border pt-3">
+                                    <p className="text-[9px] font-bold text-textMain/50 uppercase">Net Value</p>
+                                    <p className="text-lg font-black text-primary">LKR {Number(order.total_amount).toLocaleString()}</p>
+                                </div>
+                            </div>
+
+                            {/* Bottom part: Actions */}
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => toggleRow(order.order_id)} className="flex-1 flex items-center justify-center gap-2 bg-background border border-border text-textMain/70 hover:text-primary hover:border-primary text-[10px] font-black uppercase py-3 rounded-xl transition-all">
+                                    {expandedOrderId === order.order_id ? 'Close' : 'Details'} <ChevronDown size={14} className={`transition-transform ${expandedOrderId === order.order_id ? 'rotate-180' : ''}`} />
+                                </button>
+                                <button onClick={() => navigate(`/order/${order.order_id}`, { state: { order } })} className="p-3 bg-black text-primary rounded-xl"><ClipboardList size={16} /></button>
+                            </div>
+
+                            {/* Expanded View for Mobile */}
+                            {expandedOrderId === order.order_id && (
+                                <div className="mt-4 p-4 bg-background rounded-xl border border-border animate-in fade-in duration-300">
+                                    <div className="space-y-6">
+                                        {/* Shipping Info */}
+                                        <div className="space-y-2">
+                                            <h4 className="text-[10px] font-black uppercase text-primary flex items-center gap-2 tracking-[0.2em]"><MapPin size={14} /> Shipping</h4>
+                                            <p className="text-xs font-bold text-textMain/60 bg-card p-3 rounded-lg border border-border italic">
+                                                {order.shipping_address}
+                                            </p>
+                                        </div>
+
+                                        {/* Itemized Manifest */}
+                                        <div className="space-y-2">
+                                            <h4 className="text-[10px] font-black uppercase text-primary flex items-center gap-2 tracking-[0.2em]"><ShoppingCart size={14} /> Manifest</h4>
+                                            <div className="bg-card rounded-lg border border-border overflow-hidden">
+                                                <table className="w-full text-left text-[10px]">
+                                                    <thead className="bg-card/50 border-b border-border">
+                                                        <tr className="text-textMain/50 font-black uppercase">
+                                                            <th className="px-3 py-2">Item</th>
+                                                            <th className="px-3 py-2 text-center">Qty</th>
+                                                            <th className="px-3 py-2 text-right">Total</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-border">
+                                                        {(order.OrderItems || order.items || []).map((item, idx) => {
+                                                            const variant = item.variant || item.Variant || item.ProductVariant;
+                                                            const product = variant?.product || variant?.Product;
+                                                            const pName = product?.product_name || "Registry Item";
+                                                            const vName = variant?.variant_name || "Standard Edition";
+                                                            return (
+                                                                <tr key={idx}>
+                                                                    <td className="px-3 py-3">
+                                                                        <p className="font-bold text-textMain uppercase leading-tight">{pName}</p>
+                                                                        <p className="text-textMain/60 font-bold italic">{vName}</p>
+                                                                    </td>
+                                                                    <td className="px-3 py-3 text-center font-black">{item.qty}</td>
+                                                                    <td className="px-3 py-3 text-right font-bold tabular-nums">{(Number(item.qty) * Number(item.price)).toLocaleString()}</td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        {/* Final Action Row */}
+                                        <div className="flex flex-col gap-3 pt-4 border-t border-border">
+                                            {isAdmin && order.order_status === 'requested' && (
+                                                <div className="flex gap-2">
+                                                    <button 
+                                                        onClick={() => handleStatusUpdate(order.order_id, 'approved')}
+                                                        className="flex-1 py-2 rounded-lg bg-emerald-500 text-white text-[10px] font-black uppercase"
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleStatusUpdate(order.order_id, 'rejected')}
+                                                        className="flex-1 py-2 rounded-lg bg-red-500 text-white text-[10px] font-black uppercase"
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                </div>
+                                            )}
+                                            <button 
+                                                onClick={() => navigate(`/order/${order.order_id}`, { state: { order } })} 
+                                                className="w-full flex items-center justify-center gap-2 text-[10px] font-black uppercase text-primary hover:text-textMain"
+                                            >
+                                                Open Full Master File <ArrowRight size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
                 {/* Pagination Controls */}
-                <div className="flex items-center justify-between px-8 py-5 bg-card transition-colors duration-300 border-t border-border transition-colors duration-300 rounded-b-[1.5rem]">
-                    <p className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-6 py-4 bg-card transition-colors duration-300 border-t border-border transition-colors duration-300 rounded-b-[1.5rem]">
+                    <p className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest text-center md:text-left">
                         Showing {indexOfFirstRow + 1} to {Math.min(indexOfLastRow, filtered.length)} of {filtered.length} Entries
                     </p>
                     
