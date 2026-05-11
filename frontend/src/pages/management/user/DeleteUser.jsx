@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, AlertTriangle, UserX, Search, ShieldCheck, Loader2 } from 'lucide-react';
 import axios from 'axios';
-import { toast, Toaster } from 'react-hot-toast';
-import Swal from 'sweetalert2';
+import { toast } from 'react-hot-toast';
+import {MySwal} from '../../utils/swalConfig';
 
 const DeleteUser = () => {
   const [users, setUsers] = useState([]);
@@ -38,34 +38,26 @@ const DeleteUser = () => {
   useEffect(() => { fetchUsers(); }, []);
 
   const handleSoftDelete = async (userId, userName) => {
-    const result = await Swal.fire({
+    // 1. 🛡️ Confirmation Prompt (SweetAlert පාවිච්චි කරනවා)
+    const result = await MySwal.fire({
       title: 'Archive Account?',
       text: `Do you want to archive ${userName}? This will disable system access.`,
       icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#b4a460',
-      cancelButtonColor: '#000000',
       confirmButtonText: 'Yes, archive it!',
-      background: '#ffffff',
-      customClass: {
-        popup: 'rounded-[2rem]',
-      }
     });
 
     if (result.isConfirmed) {
-      const { value: adminPassword } = await Swal.fire({
+      // 2. 🔑 Password Prompt (SweetAlert පාවිච්චි කරනවා)
+      const { value: adminPassword } = await MySwal.fire({
         title: 'Verify Authority',
         input: 'password',
-        inputLabel: 'Enter Admin Password to confirm',
+        inputLabel: 'Admin password required to confirm',
         inputPlaceholder: 'Enter your password',
-        confirmButtonColor: '#b4a460',
-        background: '#ffffff',
-        customClass: {
-          popup: 'rounded-[2rem]',
-        },
         inputAttributes: {
+          autocomplete: 'new-password', // Autofill fix එක
           autocapitalize: 'off',
-          autocorrect: 'off'
+          autocorrect: 'off',
+          name: 'admin_security_verify'
         }
       });
 
@@ -76,50 +68,21 @@ const DeleteUser = () => {
           await axios.put(
             `http://localhost:5001/api/users/delete-user/${userId}`,
             { adminPassword },
-            {
-              headers: { Authorization: `Bearer ${token}` }
-            }
+            { headers: { Authorization: `Bearer ${token}` } }
           );
 
-          await Swal.fire({
-            title: 'Archived Successfully!',
-            text: `${userName} has been archived successfully.`,
-            icon: 'success',
-            confirmButtonColor: '#b4a460',
-            background: '#ffffff',
-            customClass: {
-              popup: 'rounded-[2rem]',
-            }
-          });
-
+          // ✅ සාර්ථකයි නම් SweetAlert වෙනුවට Toast එකක් දානවා
+          toast.success(`${userName} archived successfully!`);
           fetchUsers();
-        } catch (err) {
-          console.error("Error archiving user:", err.response?.data || err.message);
 
-          Swal.fire({
-            title: 'Security Error',
-            text:
-              err.response?.data?.message ||
-              'Failed to archive user. Please check your password and try again.',
-            icon: 'error',
-            confirmButtonColor: '#b4a460',
-            background: '#ffffff',
-            customClass: {
-              popup: 'rounded-[2rem]',
-            }
-          });
+        } catch (err) {
+          // ❌ Error එකත් Toast එකෙන්ම පෙන්වනවා
+          const errMsg = err.response?.data?.message || 'Failed to archive user.';
+          toast.error(errMsg);
         }
       } else {
-        Swal.fire({
-          title: 'Cancelled',
-          text: 'Admin password is required.',
-          icon: 'info',
-          confirmButtonColor: '#b4a460',
-          background: '#ffffff',
-          customClass: {
-            popup: 'rounded-[2rem]',
-          }
-        });
+        // 🚫 Password එක ගැහුවේ නැත්නම් (Cancel කළොත්)
+        toast.error("Action cancelled. Password required.");
       }
     }
   };
@@ -128,7 +91,6 @@ const DeleteUser = () => {
 
   return (
     <div className="p-6 animate-in fade-in duration-500">
-      <Toaster position="top-right" />
       <div className="mb-10">
         <h2 className="text-2xl font-bold text-black flex items-center gap-2">
           <UserX className="text-red-500" size={28} /> Terminate Employee Access
@@ -144,6 +106,8 @@ const DeleteUser = () => {
             </div>
             <input 
             type="text"
+            name='search_query_no_fill'
+            autoComplete="off" 
             placeholder="Search by name or email..."
             className="w-full bg-gray-50 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460]/20 outline-none transition-all"
             onChange={(e) => setSearchTerm(e.target.value)}

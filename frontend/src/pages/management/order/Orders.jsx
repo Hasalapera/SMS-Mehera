@@ -4,7 +4,7 @@ import {
   Truck, Search, Package, ShoppingCart, X 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { Toaster, toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
 // පවතින Components
@@ -36,11 +36,8 @@ const Orders = () => {
     if (activeTab === 'create') fetchProducts();
   }, [activeTab]);
 
-  // --- ADD TO CART LOGIC (Luxury Style & Fixes) ---
   const handleAddToCart = (product, variant = null) => {
-    // 1. පරණ පේජ් වල හිරවුණු notifications ඔක්කොම dismiss කරනවා
     toast.dismiss();
-
     const savedCart = JSON.parse(localStorage.getItem("active_order_cart") || "[]");
     
     const unitPrice = variant ? Number(variant.price) : Number(product.price);
@@ -68,9 +65,8 @@ const Orders = () => {
     localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
     window.dispatchEvent(new Event('focus'));
 
-    // 2. 🔥 Mehera Luxury Style Toast Notification
     toast.success(`${variantName} added to order!`, {
-      id: cartItemId, // එකම අයිතමය දිගටම ඇඩ් කරද්දී ස්පෑම් නොවී එකම මැසේජ් එක අප්ඩේට් වෙයි
+      id: cartItemId,
       style: {
         borderRadius: '1.5rem',
         background: '#141414',
@@ -83,12 +79,8 @@ const Orders = () => {
         border: '1px solid rgba(180, 164, 96, 0.2)',
         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
       },
-      iconTheme: {
-        primary: '#b4a460',
-        secondary: '#141414',
-      },
+      iconTheme: { primary: '#b4a460', secondary: '#141414' },
     });
-
     setSelectedProduct(null); 
   };
 
@@ -99,10 +91,11 @@ const Orders = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#fdfdfb] p-4 md:p-8 text-left">
-      <Toaster position="top-right" />
+    /* 🛡️ මෙන්න මේ පේළිය වෙනස් කළා: md:pl-72 ඇඩ් කරලා තියෙන්නේ */
+    <div className="w-full mx-auto animate-in fade-in duration-500 pb-10">
+      {/* <div className="p-6 animate-in fade-in duration-500"></div> */}
       
-      {/* HEADER */}
+      {/* HEADER SECTION */}
       <div className="max-w-[1600px] mx-auto mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
             <h1 className="text-3xl font-serif text-black uppercase tracking-tight">
@@ -112,13 +105,13 @@ const Orders = () => {
         </div>
 
         {/* TABS */}
-        <div className="flex gap-2 bg-gray-100/50 p-1.5 rounded-2xl border border-gray-100 overflow-x-auto w-full md:w-auto">
+        <div className="flex gap-2 bg-gray-100/50 p-1.5 rounded-2xl border border-gray-100 overflow-x-auto w-full md:w-auto shadow-sm">
           {tabs.map((tab) => tab.show && (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-6 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-xl whitespace-nowrap ${
-                activeTab === tab.id ? 'bg-black text-white shadow-lg' : 'text-gray-400 hover:text-black'
+                activeTab === tab.id ? 'bg-black text-white shadow-lg shadow-black/20' : 'text-gray-400 hover:text-black'
               }`}
             >
               <tab.icon size={14} /> {tab.label}
@@ -162,7 +155,7 @@ const Orders = () => {
                     {products
                       .filter(p => p.product_name.toLowerCase().includes(searchTerm.toLowerCase()))
                       .map(product => (
-                        <div key={product.product_id} className="transform scale-[0.95] origin-top-left">
+                        <div key={product.product_id} className="transform scale-[0.95] origin-top-left transition-transform hover:scale-100">
                           <ProductCard 
                             product={product} 
                             onAddToCart={() => {
@@ -181,7 +174,7 @@ const Orders = () => {
             </div>
 
             {/* ➡️ RIGHT PANEL: ROLE-BASED CONSOLE */}
-            <div className="xl:w-[45%] h-[850px] overflow-y-auto no-scrollbar bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-2">
+            <div className="xl:w-[45%] h-[850px] overflow-y-auto custom-scrollbar bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-4">
               {userRole === 'sales_rep' ? (
                 <AddOrder />
               ) : userRole === 'online_store_keeper' ? (
@@ -198,7 +191,7 @@ const Orders = () => {
 
           </div>
         ) : (
-          <div className="bg-white rounded-[3rem] border border-gray-50 shadow-sm p-2 animate-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white rounded-[3rem] border border-gray-50 shadow-sm p-4 animate-in slide-in-from-bottom-4 duration-500">
             {activeTab === 'history' && <ViewOrders />}
           </div>
         )}
@@ -217,8 +210,8 @@ const Orders = () => {
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Available Shades / Variants</p>
                   </div>
                 </div>
-                <button onClick={() => setSelectedProduct(null)} className="p-3 hover:bg-gray-100 rounded-full transition-all">
-                  <X size={20} className="text-gray-400" />
+                <button onClick={() => setSelectedProduct(null)} className="p-3 hover:bg-gray-100 rounded-full transition-all text-gray-400 hover:text-black">
+                  <X size={20} />
                 </button>
               </div>
 
@@ -234,7 +227,7 @@ const Orders = () => {
                         {variant.variant_name}
                       </span>
                       <span className="text-[10px] text-gray-400 font-bold mt-1">
-                        INSTOCK: {variant.stock_qty || 'Check Sync'}
+                        INSTOCK: {variant.stock_count || 'Check Sync'}
                       </span>
                     </div>
                     

@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./pages/context/AuthContext";
 import DashboardLayout from "./components/DashboardLayout";
+import { useEffect } from "react";
+import axios from "axios";
 
 //sales management
 import Customer from "./pages/management/customer/Customer";
@@ -36,6 +38,7 @@ import Home from "./pages/roles/Home";
 import AddUser from "./pages/management/user/AddUser";
 import ViewUsers from "./pages/management/user/ViewUser";
 import DeleteUser from "./pages/management/user/DeleteUser";
+import AssignUser from "./pages/management/user/AssignUser";
 
 // Brand Management (Now in management/brand folder)
 import AddBrand from "./pages/management/brand/AddBrand";
@@ -59,7 +62,7 @@ import Quotation from "./pages/shared/Quotation";
 
 
 //Settings
-// import SettingsPage from './pages/SettingsPage';
+import SettingsPage from './pages/SettingsPage';
 
 
 import AddOnlineOrder from "./pages/management/order/AddOnlineOrder";
@@ -86,13 +89,58 @@ function App() {
   const isFirstLogin =
     user?.is_first_login === 1 || user?.mustChangePassword === true;
 
+  useEffect(() => {
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    
+    if (currentTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
   return (
     <> 
-      <Toaster 
-        position="top-right" 
-        reverseOrder={false} 
+      <Toaster
+        position="top-right"
+        reverseOrder={false}
+        gutter={8}
         toastOptions={{
-          duration: 3000, 
+          // 💡 Global styling (සෑම ටෝස්ට් එකකටම පොදුවේ)
+          style: {
+            background: '#ffffff', // සුදු පසුබිම
+            color: '#000000',      // කළු අකුරු
+            borderRadius: '16px',  // වටකුරු ගතිය
+            padding: '16px 24px',
+            fontSize: '14px',
+            fontWeight: '600',
+            border: '1px solid #f0f0f0',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          },
+
+          // ✅ සාර්ථක වුණාම (Success Toast)
+          success: {
+            duration: 2000,
+            iconTheme: {
+              primary: '#b4a460', // උඹේ Gold color එක
+              secondary: '#fff',
+            },
+            style: {
+              borderLeft: '5px solid #b4a460', // වම් පැත්තේ ලස්සන ඉරක්
+            },
+          },
+
+          // ❌ වැරදුණාම (Error Toast)
+          error: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#ef4444', // රතු පාට
+              secondary: '#fff',
+            },
+            style: {
+              borderLeft: '5px solid #ef4444',
+            },
+          },
         }}
       />
       <Routes>
@@ -100,6 +148,7 @@ function App() {
         <Route path='/login' element={<Login />} />
         <Route path='/change-password' element={user ? <ChangePassword /> : <Navigate to="/login" />} />
         <Route path="/under-construction" element={<UnderConstruction />} />
+        
 
         {/* Gihaaaaan Testing */}
         
@@ -117,7 +166,6 @@ function App() {
           <Route path="/profile/:id" element={<UserProfile />} />
           <Route path="/support" element={<Support />} />
 
-          
           <Route path="/order/:id" element={["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? <Quotation /> : <Navigate to="/home" />} />
 
           {/* --- අලුතින් එකතු කළ STOCK ROUTE --- */}
@@ -223,7 +271,7 @@ function App() {
             element={
               isFirstLogin ? (
                 <Navigate to="/change-password" />
-              ) : ["sales_rep", "online_store_keeper"].includes(userRole) ? (
+              ) : ["sales_rep", "online_store_keeper", "logistics_officer"].includes(userRole) ? (
                 <Home />
               ) : (
                 <Navigate to="/dashboard" />
@@ -246,6 +294,16 @@ function App() {
                 <Navigate to="/dashboard" />
               )
             }
+          />
+          <Route 
+            path="/assign-user"
+            element={
+              ["admin"].includes(userRole) ? (
+                <AssignUser />
+              ) : (
+              <Navigate to="/home" />
+              )
+            } 
           />
           <Route
           path="/delete-user"
@@ -277,6 +335,9 @@ function App() {
         <Route path='/addStock' element={userRole === 'admin' ? <AddStock /> : <Navigate to="/dashboard" />} />
         <Route path='/editStock' element={userRole === 'admin' ? <EditStock /> : <Navigate to="/dashboard" />} />
         <Route path='/viewStock' element={['admin', 'manager', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ViewStock /> : <Navigate to="/dashboard" />} />
+
+        {/* settings page - can change logo for admin other can do anyone */}
+        <Route path="/settingsPage" element={["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? <SettingsPage /> : <Navigate to="/home" />} />
 
 
 </Route>

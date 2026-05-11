@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Tag, FileText, Upload, X, Loader2, PlusCircle, Image as ImageIcon } from 'lucide-react';
 import axios from 'axios';
-import { toast, Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 
 const AddBrand = () => {
   const [loading, setLoading] = useState(false);
@@ -56,7 +56,6 @@ const AddBrand = () => {
 
   return (
     <div className="w-full max-w-4xl mx-auto animate-in fade-in duration-500 pb-10 px-4">
-      <Toaster position="top-right" />
       
       {/* Header */}
       <div className="mb-8">

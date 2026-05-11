@@ -1,4 +1,5 @@
 const sequelize = require('../db/db');
+const { DataTypes } = require('sequelize');
 const User = require('./User');
 const UserArea = require('./UserArea');
 const Product = require('./Product');
@@ -9,6 +10,8 @@ const Customer = require('./Customer');
 const CustomerNote = require('./CustomerNote');
 const Order = require('./Order');
 const OrderItem = require('./OrderItem');
+const SettingModel = require('./Setting');
+const Setting = SettingModel(sequelize, DataTypes);
 
 // 1. User Associations
 User.hasMany(UserArea, { foreignKey: 'user_id', as: 'areas', onDelete: 'CASCADE' });
@@ -42,6 +45,10 @@ ProductVariant.hasMany(OrderItem, { foreignKey: 'variant_id' });
 Order.belongsTo(User, { as: 'creator', foreignKey: 'created_by' });
 User.hasMany(Order, { foreignKey: 'created_by' });
 
+// 8. User and Customer Associations (Sales Rep)
+User.hasMany(Customer, { foreignKey: 'sales_rep_id', as: 'assignedCustomers' });
+Customer.belongsTo(User, { foreignKey: 'sales_rep_id', as: 'salesRep' });
+
 module.exports = {
   sequelize,
   User,
@@ -53,5 +60,6 @@ module.exports = {
   Customer,
   CustomerNote,
   Order,
-  OrderItem
+  OrderItem,
+  Setting
 };

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Tag, FileText, LayoutGrid, Loader2, Search, Package, ChevronRight, Calendar, ArrowUpRight, Trash2 } from 'lucide-react';
 import axios from 'axios';
-import { toast, Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
 const ViewCategories = () => {
@@ -95,7 +95,6 @@ const ViewCategories = () => {
 
     return (
         <div className="w-full max-w-7xl mx-auto animate-in fade-in duration-700 pb-20 px-6">
-        <Toaster position="top-right" />
         
         {/* Header & Search Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 mt-10">

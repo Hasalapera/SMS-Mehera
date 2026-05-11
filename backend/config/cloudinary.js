@@ -7,6 +7,16 @@ cloudinary.config({
     api_secret: process.env.API_SECRET
 });
 
+const logoStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'mehera-international/system_branding',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'svg'],
+    transformation: [{ width: 1000, height: 1000, crop: 'limit' }]
+  },
+});
+
+
 // Dynamic Storage  - product
 const productDynamicStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
@@ -69,4 +79,4 @@ const brandStorage = new CloudinaryStorage({
 // });
 
 
-module.exports = {cloudinary, storage, brandStorage, productDynamicStorage};
+module.exports = {cloudinary, storage, brandStorage, productDynamicStorage, logoStorage};

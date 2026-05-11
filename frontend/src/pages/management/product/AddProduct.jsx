@@ -4,7 +4,7 @@ import {
   Loader2, Upload, X, Image as ImageIcon, AlertTriangle 
 } from 'lucide-react';
 import axios from 'axios';
-import { toast, Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 
 const AddProduct = () => {
   const [loading, setLoading] = useState(false);
@@ -124,7 +124,6 @@ const AddProduct = () => {
 
   return (
     <div className="w-full max-w-6xl mx-auto animate-in fade-in duration-500 pb-10 px-4">
-      <Toaster position="top-right" />
       
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-black flex items-center gap-3">
