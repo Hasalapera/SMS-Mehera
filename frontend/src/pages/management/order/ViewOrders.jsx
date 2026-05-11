@@ -110,7 +110,7 @@ const ViewOrders = () => {
     };
 
     return (
-        <div className="w-full min-h-screen bg-[#fcfcfc] text-left">
+        <div className="w-full mx-auto animate-in fade-in duration-500 pb-10">
 
             {/* Header Section */}
             <div className="bg-[#f8f8f8] px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b border-gray-100">
@@ -148,6 +148,7 @@ const ViewOrders = () => {
 
                 {/* Orders Table */}
                 <div className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto w-full custom-scrollbar"> 
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-gray-50/50 border-b border-gray-100">
@@ -426,6 +427,7 @@ const ViewOrders = () => {
                             ))}
                         </tbody>
                     </table>
+                    </div>
                 </div>
                 {/* Pagination Controls */}
                 <div className="flex items-center justify-between px-8 py-5 bg-white border-t border-gray-100 rounded-b-[1.5rem]">

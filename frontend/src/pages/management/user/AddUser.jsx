@@ -175,7 +175,7 @@ const handleSubmit = async (e) => {
 };
 
   return (
-    <div className="w-full max-w-4xl mx-auto animate-in fade-in duration-500 pb-10">
+    <div className="p-6 animate-in fade-in duration-500">
       
       {/* Header */}
       <div className="mb-8">
