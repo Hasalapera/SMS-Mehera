@@ -210,37 +210,39 @@ const AddStock = () => {
 
   if (loading) {
     return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center bg-linear-to-br from-gray-50 to-white">
-        <Loader2 className="animate-spin text-[#b4a460]" size={48} />
-        <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-6">Loading Inventory</p>
+      <div className="w-full min-h-screen bg-background transition-colors duration-300 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-textMain/50 transition-colors duration-300 font-medium">
+          <Loader2 className="animate-spin text-primary transition-all duration-300" size={32} />
+          <p className="text-[10px] font-bold uppercase tracking-widest">Loading Inventory</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 animate-in fade-in duration-500">
+    <div className="w-full max-w-7xl mx-auto p-6 animate-in fade-in duration-500 transition-colors duration-300">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4">
         <div>
-          <h2 className="text-3xl font-extrabold text-black flex items-center gap-3 tracking-tight">
-            <div className="p-3 bg-black rounded-2xl text-[#b4a460] shadow-xl">
+          <h2 className="text-3xl font-extrabold text-textMain flex items-center gap-3 tracking-tight transition-all duration-300">
+            <div className="p-3 bg-black rounded-2xl text-primary shadow-xl">
               <Package size={24} />
             </div>
             Stock Management
           </h2>
-          <p className="text-gray-400 text-sm mt-2 ml-14 font-medium">Add and manage product stock levels across variants.</p>
+          <p className="text-textMain/50 text-sm mt-2 ml-14 font-medium transition-all duration-300">Add and manage product stock levels across variants.</p>
         </div>
         <div className="flex gap-3">
           <button 
             onClick={() => { setLoading(true); fetchProducts().then(() => setLoading(false)); }}
-            className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-black hover:shadow-md transition-all active:scale-90"
+            className="p-3 bg-card border border-border rounded-xl text-textMain/50 hover:text-textMain hover:shadow-md transition-all active:scale-90 transition-colors duration-300"
           >
             <RefreshCw size={20} />
           </button>
           <button 
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-400 hover:text-black transition-colors font-bold text-sm px-2"
+            className="flex items-center gap-2 text-textMain/50 hover:text-textMain font-bold text-sm px-2 transition-colors duration-300"
           >
             <ArrowLeft size={18} /> Back
           </button>
@@ -248,13 +250,13 @@ const AddStock = () => {
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-sm p-6 mb-8">
+      <div className="bg-card border border-border rounded-[2.5rem] shadow-sm p-6 mb-8 transition-colors duration-300">
         <div className="flex items-center gap-4">
-          <Search size={20} className="text-gray-300" />
+          <Search size={20} className="text-textMain/50 transition-colors duration-300" />
           <input 
             type="text"
             placeholder="Search by product name..."
-            className="flex-1 bg-transparent outline-none text-black font-semibold text-sm placeholder-gray-300"
+            className="flex-1 bg-transparent outline-none text-textMain font-semibold text-sm placeholder:text-textMain/40 transition-colors duration-300"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -262,21 +264,21 @@ const AddStock = () => {
       </div>
 
       {lastAppliedSummary && (
-        <div className="mb-8 bg-white border border-[#b4a460]/30 rounded-3xl p-5 shadow-sm">
+        <div className="mb-8 bg-card border border-primary/30 rounded-3xl p-5 shadow-sm transition-colors duration-300">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-[#b4a460] flex items-center gap-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
                 <Sparkles size={12} /> Last Apply Summary
               </p>
-              <p className="text-sm font-bold text-black mt-1">
+              <p className="text-sm font-bold text-textMain mt-1 transition-colors duration-300">
                 {lastAppliedSummary.updatedVariants} variants updated, {lastAppliedSummary.totalUnits} units added
               </p>
-              <p className="text-[11px] text-gray-400 mt-1">Applied at {lastAppliedSummary.appliedAt}</p>
+              <p className="text-[11px] text-textMain/50 mt-1 transition-colors duration-300">Applied at {lastAppliedSummary.appliedAt}</p>
             </div>
             <button
               onClick={handleUndoLastApply}
               disabled={isUndoing}
-              className="px-5 py-3 bg-black text-[#b4a460] rounded-xl font-black text-[10px] uppercase tracking-widest hover:shadow-lg hover:shadow-[#b4a460]/30 transition-all disabled:opacity-50"
+              className="px-5 py-3 bg-black text-primary rounded-xl font-black text-[10px] uppercase tracking-widest hover:shadow-lg hover:shadow-primary/30 transition-all disabled:opacity-50"
             >
               <span className="inline-flex items-center gap-2">
                 <Undo2 size={14} /> {isUndoing ? 'Undoing...' : 'Undo Last Apply'}
@@ -288,29 +290,29 @@ const AddStock = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7">
-          <div className="bg-white border border-gray-100 rounded-4xl shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-              <h3 className="font-black text-[11px] uppercase tracking-widest text-gray-400">Product Rows</h3>
-              <span className="text-[10px] font-black text-[#b4a460] uppercase tracking-widest">Click Product To Queue</span>
+          <div className="bg-card border border-border rounded-4xl shadow-sm overflow-hidden transition-colors duration-300">
+            <div className="p-5 border-b border-border bg-card/50 flex items-center justify-between transition-colors duration-300">
+              <h3 className="font-black text-[11px] uppercase tracking-widest text-textMain/50 transition-colors duration-300">Product Rows</h3>
+              <span className="text-[10px] font-black text-primary uppercase tracking-widest">Click Product To Queue</span>
             </div>
 
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-border">
               {filteredProducts.map((product) => (
                 <button
                   key={product.product_id}
                   onClick={() => addProductToQueue(product)}
-                  className="w-full p-5 text-left hover:bg-gray-50 transition-colors"
+                  className="w-full p-5 text-left hover:bg-background transition-colors duration-300"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div>
-                      <p className="text-sm font-black text-black uppercase tracking-tight">{product.product_name}</p>
-                      <p className="text-[11px] text-gray-400 font-semibold mt-1">
+                      <p className="text-sm font-black text-textMain uppercase tracking-tight transition-colors duration-300">{product.product_name}</p>
+                      <p className="text-[11px] text-textMain/50 font-semibold mt-1 transition-colors duration-300">
                         Category: {product.category?.category_name || 'N/A'}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Variants</p>
-                      <p className="text-lg font-black text-[#b4a460]">{product.variants?.length || 0}</p>
+                      <p className="text-[10px] text-textMain/50 font-black uppercase tracking-widest transition-all duration-300">Variants</p>
+                      <p className="text-lg font-black text-primary">{product.variants?.length || 0}</p>
                     </div>
                   </div>
                 </button>
@@ -320,16 +322,16 @@ const AddStock = () => {
         </div>
 
         <div className="lg:col-span-5">
-          <div className="bg-white rounded-4xl shadow-xl border border-gray-100 overflow-hidden sticky top-6">
-            <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-              <h3 className="font-black text-[11px] uppercase tracking-widest text-gray-400 flex items-center gap-2">
+          <div className="bg-card rounded-4xl shadow-xl border border-border overflow-hidden sticky top-6 transition-colors duration-300">
+            <div className="p-5 border-b border-border bg-card/50 flex items-center justify-between transition-colors duration-300">
+              <h3 className="font-black text-[11px] uppercase tracking-widest text-textMain/50 flex items-center gap-2 transition-colors duration-300">
                 <ClipboardList size={16} /> Stock Queue
               </h3>
               <div className="flex items-center gap-3">
-                <span className="text-[10px] font-black text-[#b4a460] uppercase tracking-widest">{selectedProducts.length} Product(s)</span>
+                <span className="text-[10px] font-black text-primary uppercase tracking-widest">{selectedProducts.length} Product(s)</span>
                 <button
                   onClick={clearAllQueue}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-colors"
+                  className="px-3 py-1.5 rounded-lg border border-border text-[10px] font-black uppercase tracking-widest text-textMain/50 hover:text-red-600 hover:border-red-500/20 hover:bg-red-500/10 transition-colors duration-300"
                   title="Clear all queued products"
                 >
                   Clear All
@@ -339,21 +341,21 @@ const AddStock = () => {
 
             <div className="max-h-[560px] overflow-y-auto p-4 space-y-4">
               {selectedProducts.length === 0 ? (
-                <div className="py-16 text-center border-2 border-dashed border-gray-100 rounded-3xl">
-                  <Package size={34} className="mx-auto text-gray-200 mb-3" />
-                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">No Products In Queue</p>
+                <div className="py-16 text-center border-2 border-dashed border-border rounded-3xl">
+                  <Package size={34} className="mx-auto text-textMain/20 mb-3 transition-colors duration-300" />
+                  <p className="text-[11px] font-black text-textMain/50 uppercase tracking-widest transition-colors duration-300">No Products In Queue</p>
                 </div>
               ) : (
                 selectedProducts.map((product) => (
-                  <div key={product.product_id} className="border border-gray-100 rounded-3xl overflow-hidden">
-                    <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between gap-3">
+                  <div key={product.product_id} className="border border-border rounded-3xl overflow-hidden bg-background">
+                    <div className="p-4 bg-card/50 border-b border-border flex items-center justify-between gap-3 transition-colors duration-300">
                       <div>
-                        <p className="text-sm font-black text-black uppercase">{product.product_name}</p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{product.category_name}</p>
+                        <p className="text-sm font-black text-textMain uppercase transition-colors duration-300">{product.product_name}</p>
+                        <p className="text-[10px] font-bold text-textMain/50 uppercase tracking-widest transition-colors duration-300">{product.category_name}</p>
                       </div>
                       <button
                         onClick={() => removeProductFromQueue(product.product_id)}
-                        className="p-2 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        className="p-2 rounded-lg text-textMain/50 hover:text-red-500 hover:bg-red-500/10 transition-colors duration-300"
                         title="Remove product"
                       >
                         <Trash2 size={14} />
@@ -364,8 +366,8 @@ const AddStock = () => {
                       {product.variants.map((variant) => (
                         <div key={variant.variant_id} className="grid grid-cols-[1fr_auto] gap-3 items-center">
                           <div>
-                            <p className="text-[12px] font-bold text-black">{variant.variant_name || 'Variant'}</p>
-                            <p className="text-[10px] text-gray-400 font-semibold">{variant.stock_count} units • Rs. {variant.price.toLocaleString()} each</p>
+                            <p className="text-[12px] font-bold text-textMain transition-colors duration-300">{variant.variant_name || 'Variant'}</p>
+                            <p className="text-[10px] text-textMain/50 font-semibold transition-colors duration-300">{variant.stock_count} units • Rs. {variant.price.toLocaleString()} each</p>
                           </div>
                           <input
                             type="number"
@@ -373,23 +375,23 @@ const AddStock = () => {
                             value={variant.qtyToAdd}
                             onChange={(e) => handleVariantQtyChange(product.product_id, variant.variant_id, e.target.value)}
                             placeholder="Qty"
-                            className="w-20 px-3 py-2 rounded-lg border border-gray-200 text-sm font-semibold outline-none focus:border-[#b4a460] focus:ring-2 focus:ring-[#b4a460]/20"
+                            className="w-20 px-3 py-2 rounded-lg border border-border text-sm font-semibold outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-card text-textMain"
                           />
                         </div>
                       ))}
 
-                      <div className="pt-3 border-t border-gray-100 flex items-center gap-2">
+                      <div className="pt-3 border-t border-border flex items-center gap-2">
                         <input
                           type="number"
                           min="1"
                           value={product.bulkQty}
                           onChange={(e) => handleBulkQtyInput(product.product_id, e.target.value)}
                           placeholder="Bulk qty"
-                          className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm font-semibold outline-none focus:border-[#b4a460] focus:ring-2 focus:ring-[#b4a460]/20"
+                          className="flex-1 px-3 py-2 rounded-lg border border-border text-sm font-semibold outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-card text-textMain"
                         />
                         <button
                           onClick={() => applyBulkToProduct(product.product_id)}
-                          className="px-3 py-2 bg-[#b4a460] text-black rounded-lg text-[10px] font-black uppercase tracking-widest"
+                          className="px-3 py-2 bg-primary text-black rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300"
                         >
                           Fill All
                         </button>
@@ -400,11 +402,11 @@ const AddStock = () => {
               )}
             </div>
 
-            <div className="p-4 border-t border-gray-100 bg-white">
+            <div className="p-4 border-t border-border bg-card transition-colors duration-300">
               <button
                 onClick={handleApplyAllStock}
                 disabled={isApplying}
-                className="w-full py-3 bg-black text-[#b4a460] rounded-xl font-black uppercase text-[11px] tracking-widest hover:shadow-lg hover:shadow-[#b4a460]/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 bg-black text-primary rounded-xl font-black uppercase text-[11px] tracking-widest hover:shadow-lg hover:shadow-primary/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <CheckCircle2 size={16} /> {isApplying ? 'Applying...' : 'Apply Stock Updates'}
               </button>
@@ -415,12 +417,12 @@ const AddStock = () => {
 
       {/* Empty State */}
       {filteredProducts.length === 0 && (
-        <div className="bg-white border border-dashed border-gray-200 rounded-[3rem] py-24 text-center">
-          <div className="bg-gray-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Package className="text-gray-200" size={48} />
+        <div className="bg-card border border-dashed border-border rounded-[3rem] py-24 text-center transition-colors duration-300">
+          <div className="bg-background w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Package className="text-textMain/20" size={48} />
           </div>
-          <h3 className="text-2xl font-black text-black">No Products Found</h3>
-          <p className="text-gray-400 text-sm mt-2 font-medium">Try adjusting your search terms.</p>
+          <h3 className="text-2xl font-black text-textMain">No Products Found</h3>
+          <p className="text-textMain/50 text-sm mt-2 font-medium">Try adjusting your search terms.</p>
         </div>
       )}
     </div>

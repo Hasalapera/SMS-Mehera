@@ -126,8 +126,8 @@ const AddProduct = () => {
     <div className="w-full max-w-6xl mx-auto animate-in fade-in duration-500 pb-10 px-4">
       
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-black flex items-center gap-3">
-          <div className="p-2 bg-[#b4a460] rounded-lg text-black"><Package size={24} /></div>
+        <h2 className="text-2xl font-bold text-textMain transition-colors duration-300 flex items-center gap-3">
+          <div className="p-2 bg-primary transition-all duration-300 rounded-lg text-textMain transition-colors duration-300"><Package size={24} /></div>
           New Inventory Item
         </h2>
       </div>
@@ -135,8 +135,8 @@ const AddProduct = () => {
       <form onSubmit={handleSubmit} className="space-y-8">
         
         {/* SECTION 1: Main Details */}
-        <div className="bg-white border border-gray-100 rounded-[2rem] shadow-sm p-8 md:p-10 grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-3xl p-6 hover:border-[#b4a460] transition-colors relative h-64 lg:h-full">
+        <div className="bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-[2rem] shadow-sm p-8 md:p-10 grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="flex flex-col items-center justify-center border-2 border-dashed border-border transition-colors duration-300 rounded-3xl p-6 hover:border-primary transition-all duration-300 relative h-64 lg:h-full">
             {mainImagePreview ? (
               <div className="relative w-full h-full">
                 <img src={mainImagePreview} className="w-full h-full object-contain rounded-2xl" alt="Preview" />
@@ -144,8 +144,8 @@ const AddProduct = () => {
               </div>
             ) : (
               <label className="cursor-pointer flex flex-col items-center">
-                <Upload className="text-gray-300 mb-2" size={40} />
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-tight">Upload Main Image</span>
+                <Upload className="text-textMain/50 transition-colors duration-300 mb-2" size={40} />
+                <span className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase tracking-tight">Upload Main Image</span>
                 <input type="file" className="hidden" onChange={handleMainImageChange} accept="image/*" />
               </label>
             )}
@@ -153,13 +153,13 @@ const AddProduct = () => {
 
           <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase ml-1">Product Name</label>
-                <input type="text" name="product_name" required value={formData.product_name} onChange={handleChange} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460]" />
+                <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">Product Name</label>
+                <input type="text" name="product_name" required value={formData.product_name} onChange={handleChange} className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460]" />
             </div>
 
             <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase ml-1">Brand</label>
-                <select name="brand_id" required value={formData.brand_id} onChange={handleChange} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460]">
+                <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">Brand</label>
+                <select name="brand_id" required value={formData.brand_id} onChange={handleChange} className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460]">
                   <option value="">Select Brand</option>
                   {Array.isArray(brands) && brands.length > 0 ? brands.map(b => (
                     <option key={b.brand_id} value={b.brand_id}>{b.brand_name}</option>
@@ -168,8 +168,8 @@ const AddProduct = () => {
             </div>
 
             <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase ml-1">Category</label>
-                <select name="category_id" required value={formData.category_id} onChange={handleChange} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460]">
+                <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">Category</label>
+                <select name="category_id" required value={formData.category_id} onChange={handleChange} className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460]">
                 <option value="">Select Category</option>
                 {Array.isArray(categories) && categories.length > 0 ? categories.map(c => (
                   <option key={c.category_id} value={c.category_id}>{c.category_name}</option>
@@ -178,33 +178,33 @@ const AddProduct = () => {
             </div>
 
             <div className="md:col-span-2 space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase ml-1">Description</label>
-                <textarea name="description" rows="3" value={formData.description} onChange={handleChange} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460] resize-none" />
+                <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">Description</label>
+                <textarea name="description" rows="3" value={formData.description} onChange={handleChange} className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460] resize-none" />
             </div>
           </div>
         </div>
 
         {/* SECTION 2: Variants */}
-        <div className="bg-white border border-gray-100 rounded-[2rem] shadow-sm p-8 md:p-10">
+        <div className="bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-[2rem] shadow-sm p-8 md:p-10">
           <div className="flex justify-between items-center mb-8">
-            <h3 className="text-sm font-bold text-[#b4a460] uppercase tracking-widest flex items-center gap-2">
+            <h3 className="text-sm font-bold text-primary transition-all duration-300 uppercase tracking-widest flex items-center gap-2">
               <Layers size={18} /> Variants Configuration
             </h3>
-            <button type="button" onClick={addVariantField} className="bg-black text-[#b4a460] px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-gray-800 transition-all">
+            <button type="button" onClick={addVariantField} className="bg-black text-primary transition-all duration-300 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-gray-800 transition-all">
               <PlusCircle size={16} /> Add Another Variant
             </button>
           </div>
 
           <div className="space-y-6">
             {formData.variants.map((variant, index) => (
-              <div key={index} className="flex flex-col md:flex-row gap-6 p-6 bg-gray-50 rounded-[1.5rem] border border-gray-100 relative group animate-in slide-in-from-right-5">
+              <div key={index} className="flex flex-col md:flex-row gap-6 p-6 bg-card transition-colors duration-300 rounded-[1.5rem] border border-border transition-colors duration-300 relative group animate-in slide-in-from-right-5">
                 
-                <div className="w-24 h-24 shrink-0 bg-white border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center overflow-hidden relative">
+                <div className="w-24 h-24 shrink-0 bg-card transition-colors duration-300 border-2 border-dashed border-border transition-colors duration-300 rounded-2xl flex items-center justify-center overflow-hidden relative">
                   {variant.preview ? (
                     <img src={variant.preview} className="w-full h-full object-cover" alt="Variant" />
                   ) : (
                     <label className="cursor-pointer">
-                      <ImageIcon size={20} className="text-gray-300" />
+                      <ImageIcon size={20} className="text-textMain/50 transition-colors duration-300" />
                       <input type="file" className="hidden" onChange={(e) => handleVariantImageChange(index, e)} />
                     </label>
                   )}
@@ -212,20 +212,20 @@ const AddProduct = () => {
 
                 <div className="flex-1 grid grid-cols-2 lg:grid-cols-5 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">SKU</label>
-                    <input type="text" name="sku" required value={variant.sku} onChange={(e) => handleVariantChange(index, e)} className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs focus:ring-1 focus:ring-[#b4a460]" />
+                    <label className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 uppercase">SKU</label>
+                    <input type="text" name="sku" required value={variant.sku} onChange={(e) => handleVariantChange(index, e)} className="w-full bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-lg py-2 px-3 text-xs focus:ring-1 focus:ring-[#b4a460]" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">Variant Name</label>
-                    <input type="text" name="variant_name" required value={variant.variant_name} onChange={(e) => handleVariantChange(index, e)} className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs focus:ring-1 focus:ring-[#b4a460]" />
+                    <label className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 uppercase">Variant Name</label>
+                    <input type="text" name="variant_name" required value={variant.variant_name} onChange={(e) => handleVariantChange(index, e)} className="w-full bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-lg py-2 px-3 text-xs focus:ring-1 focus:ring-[#b4a460]" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">Price</label>
-                    <input type="number" name="price" required value={variant.price} onChange={(e) => handleVariantChange(index, e)} className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs focus:ring-1 focus:ring-[#b4a460]" />
+                    <label className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 uppercase">Price</label>
+                    <input type="number" name="price" required value={variant.price} onChange={(e) => handleVariantChange(index, e)} className="w-full bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-lg py-2 px-3 text-xs focus:ring-1 focus:ring-[#b4a460]" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">Stock</label>
-                    <input type="number" name="stock_count" required value={variant.stock_count} onChange={(e) => handleVariantChange(index, e)} className="w-full bg-white border border-gray-200 rounded-lg py-2 px-3 text-xs focus:ring-1 focus:ring-[#b4a460]" />
+                    <label className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 uppercase">Stock</label>
+                    <input type="number" name="stock_count" required value={variant.stock_count} onChange={(e) => handleVariantChange(index, e)} className="w-full bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-lg py-2 px-3 text-xs focus:ring-1 focus:ring-[#b4a460]" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-red-400 uppercase flex items-center gap-1">
@@ -235,7 +235,7 @@ const AddProduct = () => {
                   </div>
                 </div>
 
-                <button type="button" onClick={() => removeVariantField(index)} className="self-center p-2 text-gray-300 hover:text-red-500 transition-colors">
+                <button type="button" onClick={() => removeVariantField(index)} className="self-center p-2 text-textMain/50 transition-colors duration-300 hover:text-red-500 transition-colors">
                   <Trash2 size={18} />
                 </button>
               </div>
@@ -244,7 +244,7 @@ const AddProduct = () => {
         </div>
 
         <div className="flex justify-end pr-4">
-          <button type="submit" disabled={loading} className="bg-[#b4a460] text-black px-12 py-4 rounded-2xl font-bold shadow-xl shadow-[#b4a460]/20 hover:scale-105 transition-all flex items-center gap-3">
+          <button type="submit" disabled={loading} className="bg-primary transition-all duration-300 text-textMain transition-colors duration-300 px-12 py-4 rounded-2xl font-bold shadow-xl shadow-[#b4a460]/20 hover:scale-105 transition-all flex items-center gap-3">
             {loading ? <Loader2 className="animate-spin" /> : <Package />}
             {loading ? 'Saving Listing...' : 'Save Product Listing'}
           </button>

@@ -6,10 +6,10 @@ import {
   BarChart2, Settings, HelpCircle, LogOut, ChevronDown, 
   ChevronRight, Menu, Inbox, SlidersHorizontal, PlusCircle, 
   ChevronLeft, UserPlus, UserMinus, UserCog, List, FileText, 
-  Download, History, PackageX, ShoppingBasket, ReceiptText, Tag, Boxes,
-  PackagePlus, PackageSearch, SquarePen
+  Download, History, PackageX, ShoppingBasket, ReceiptText, Tag, Boxes, X,
+  PackagePlus, PackageSearch, SquarePen, Sun, Moon
 } from 'lucide-react';
-import { useNavigate, NavLink } from 'react-router-dom';
+import { useNavigate, NavLink, useLocation } from 'react-router-dom';
 import ViewOrders from '../pages/management/order/ViewOrders';
 import axios from 'axios';
 
@@ -48,10 +48,10 @@ const menuConfig = {
 };
 
 const NavItem = ({ to, icon: Icon, label, isCollapsed, badge, onClick, isOpen }) => {
-  const commonClasses = `flex items-center justify-between w-full p-2.5 rounded-lg transition-all duration-200 group relative hover:z-[1000]`;
+  const commonClasses = `flex items-center justify-between w-full p-2.5 rounded-xl transition-all duration-300 group relative hover:z-[1000]`;
   const activeClasses = ({ isActive }) => `
     ${commonClasses}
-    ${isActive ? 'bg-[#b4a460] text-white font-semibold shadow-lg shadow-[#b4a460]/20' : 'text-gray-500 hover:bg-gray-50 hover:text-[#b4a460]'}
+    ${isActive ? 'bg-primary/15 text-primary border border-primary/20 font-bold shadow-[0_0_15px_rgba(180,164,96,0.1)]' : 'text-textMain/50 hover:bg-primary/5 hover:text-primary'}
   `;
 
   const renderContent = () => (
@@ -60,21 +60,22 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed, badge, onClick, isOpen })
         <Icon size={18} className="shrink-0" />
         {!isCollapsed && <span className="text-sm">{label}</span>}
       </div>
-      {badge && !isCollapsed && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#b4a460]/10 text-[#8a7b42]">{badge}</span>}
+      {badge && !isCollapsed && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 transition-all duration-300 text-[#8a7b42]">{badge}</span>}
       {!isCollapsed && onClick && (isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
     </>
   );
 
   if (to) return <NavLink to={to} className={activeClasses}>{renderContent()}</NavLink>;
-  return <button onClick={onClick} className={`${commonClasses} text-gray-500 hover:bg-gray-50 hover:text-[#b4a460]`}>{renderContent()}</button>;
+  return <button onClick={onClick} className={`${commonClasses} text-textMain/50 transition-colors duration-300 hover:bg-card transition-colors duration-300 hover:text-primary transition-all duration-300`}>{renderContent()}</button>;
 };
 
-const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
+const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setIsMobileOpen }) => {
   const [openSubMenu, setOpenSubMenu] = useState(''); 
   const navigate = useNavigate();
   const {logout} = useAuth(); // useAuth() hook එකෙන් logOut function එක ගන්නවා
   const [systemSettings, setSystemSettings] = useState(null);
   const currentTheme = localStorage.getItem('theme') || 'light';
+  const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
   
   const [loggedUser, setLoggedUser] = useState(() => {
     const stored = localStorage.getItem('user');
@@ -84,15 +85,42 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
   const userRole = loggedUser?.role || 'sales_rep';
   const permissions = menuConfig[userRole] || menuConfig.sales_rep;
   const profileImg = loggedUser?.profile_image || loggedUser?.picture_url;
+  const location = useLocation();
 
   useEffect(() => {
     const handleStorageChange = () => {
       const updatedUser = JSON.parse(localStorage.getItem('user'));
       if (updatedUser) setLoggedUser(updatedUser);
     };
+    const handleThemeChange = () => setIsDark(document.documentElement.classList.contains('dark'));
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('themeChange', handleThemeChange);
+    return () => {
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('themeChange', handleThemeChange);
+    };
   }, []);
+
+  // Close mobile sidebar on navigation
+  useEffect(() => {
+    if (isMobileOpen) {
+      setIsMobileOpen(false);
+    }
+  }, [location]);
+
+  const toggleTheme = () => {
+    if (isDark) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+        setIsDark(false);
+    } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        setIsDark(true);
+    }
+    window.dispatchEvent(new Event('themeChange'));
+  };
 
   const handleToggleSubMenu = (menu) => {
     if (isSidebarCollapsed) {
@@ -119,19 +147,13 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
   useEffect(() => {
     const fetchBranding = async () => {
       try {
-        const token = localStorage.getItem('accessToken'); // 👈 නම accessToken ම විය යුතුයි
+        const token = localStorage.getItem('accessToken');
+        const url = token ? 'http://localhost:5001/api/settings' : 'http://localhost:5001/api/settings/public';
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         
-        if (!token) return; // ටෝකන් එක නැත්නම් රික්වෙස්ට් එක යවන්න එපා
-
-        const res = await axios.get('http://localhost:5001/api/settings', {
-          headers: {
-            'Authorization': `Bearer ${token}` // 👈 මෙන්න මේ Header එක අනිවාර්යයි
-          }
-        });
-        
+        const res = await axios.get(url, { headers });
         setSystemSettings(res.data);
       } catch (err) {
-        // 🛠️ ලෙඩේ මොකක්ද කියලා හරියටම දැනගන්න log එක මෙහෙම දාන්න
         console.error("Sidebar branding fetch failed:", err.response?.data || err.message);
       }
     };
@@ -141,20 +163,31 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
 
   const getDynamicLogo = () => {
     // 1. තේමාව අනුව DB එකේ URL එකක් තියෙනවාද බලනවා
-    const dbLogo = currentTheme === 'dark' 
+    const dbLogo = isDark 
         ? systemSettings?.dark_logo_url 
         : systemSettings?.light_logo_url;
 
     // 2. DB එකේ URL එකක් තිබුණොත් ඒක ගන්නවා, නැත්නම් Static 'main-logo' එක ගන්නවා
     // සයිඩ් බාර් එක Collapse වුණත් මේ image එකම පාවිච්චි වෙනවා
-    return dbLogo || getAssetUrl('main-logo');
+    return dbLogo || (isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/nzwPbHWj/mehera-logo.png");
   };
 
   return (
-    <aside className={`bg-sidebar text-textMain flex flex-col p-5 transition-all duration-300 fixed h-full z-50 border-r border-border ${isSidebarCollapsed ? 'w-20' : 'w-64'} overflow-visible shadow-sm`}>
+    <>
+      {/* Overlay for Mobile */}
+      {isMobileOpen && (
+        <div
+          onClick={() => setIsMobileOpen(false)}
+          className="fixed inset-0 bg-black/60 z-40 md:hidden"
+        />
+      )}
+
+      <aside className={`bg-sidebar text-textMain flex flex-col p-5 fixed h-full z-50 border-r border-border shadow-lg md:shadow-sm w-64 transition-transform duration-300 ease-in-out
+        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} 
+        md:translate-x-0 md:transition-all ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'}`}>
       
       {/* --- Brand Logo Section --- */}
-      <div className={`mb-8 flex items-center ${isSidebarCollapsed ? 'flex-col gap-4' : 'justify-between'} px-1`}>
+      <div className={`mb-8 flex items-center ${isSidebarCollapsed ? 'md:flex-col md:gap-4 md:justify-center' : 'justify-between'} px-1`}>
           <div 
               className="flex items-center gap-3 cursor-pointer" 
               onClick={() => !isSidebarCollapsed && navigate('/home')}
@@ -162,9 +195,8 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
               <img 
                   src={getDynamicLogo()} 
                   alt="Mehera Logo" 
-                  // 💡 මෙන්න මෙතන තමයි සයිඩ් බාර් එක පුංචි වුණාම image එකේ size එක පාලනය කරන්නේ
-                  className={`transition-all duration-300 object-contain ${
-                      isSidebarCollapsed 
+                  className={`transition-all duration-500 ease-in-out object-contain will-change-[opacity,transform] ${
+                      isSidebarCollapsed
                           ? 'w-10 h-10 rounded-lg p-1' // 🤏 සයිඩ් බාර් එක පුංචි වෙලාවට (Icon එකක් වගේ)
                           : 'w-32 h-10'                // ↔️ සයිඩ් බාර් එක ලොකු වෙලාවට
                   }`}
@@ -172,18 +204,29 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
               />
           </div>
 
-          <button 
-              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
-              className="text-gray-400 hover:text-primary p-2.5 rounded-lg hover:bg-gray-50/10 transition-all"
-          >
-              {isSidebarCollapsed ? <Menu size={18} /> : <ChevronLeft size={18} />}
-          </button>
+          <div className={`flex items-center ${isSidebarCollapsed ? 'md:flex-col md:gap-2' : 'gap-2'}`}>
+              <button 
+                  onClick={toggleTheme} 
+                  className="text-textMain/50 transition-colors duration-300 hover:text-primary p-2.5 rounded-lg hover:bg-card/10 transition-all"
+              >
+                  {isDark ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+              <button 
+                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+                  className="hidden md:block text-textMain/50 transition-colors duration-300 hover:text-primary p-2.5 rounded-lg hover:bg-card/10 transition-colors duration-300 transition-all"
+              >
+                  {isSidebarCollapsed ? <Menu size={18} /> : <ChevronLeft size={18} />}
+              </button>
+              <button onClick={() => setIsMobileOpen(false)} className="md:hidden text-textMain/50 p-2.5">
+                  <X size={20} />
+              </button>
+          </div>
       </div>
 
       <nav className="flex-1 space-y-6 overflow-y-auto custom-scrollbar pr-1 text-left">
         {/* Menu Section */}
         <div className="space-y-1">
-          {!isSidebarCollapsed && <p className="text-[10px] uppercase text-gray-400 font-black mb-2 ml-2 tracking-widest">Menu</p>}
+          {!isSidebarCollapsed && <p className="text-[10px] uppercase text-textMain/50 transition-colors duration-300 font-black mb-2 ml-2 tracking-widest">Menu</p>}
           <NavItem 
             to={`/dashboard`} 
             icon={LayoutDashboard} 
@@ -195,20 +238,20 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
 
         {/* Management Section */}
         <div className="space-y-1">
-          {!isSidebarCollapsed && <p className="text-[10px] uppercase text-gray-400 font-black mb-2 ml-2 tracking-widest">Management</p>}
+          {!isSidebarCollapsed && <p className="text-[10px] uppercase text-textMain/50 transition-colors duration-300 font-black mb-2 ml-2 tracking-widest">Management</p>}
           
           {/* Order */}
           {permissions.canViewOrders && (
             <>
               <NavItem icon={ReceiptText} label="Orders" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('orders')} isOpen={openSubMenu === 'orders'} />
               {!isSidebarCollapsed && openSubMenu === 'orders' && (
-                <div className="ml-9 space-y-1 border-l border-gray-100 pl-2">
+                <div className="ml-9 space-y-1 border-l border-border transition-colors duration-300 pl-2">
                   {permissions.canFullManageUsers && (
                     <>
-                      <NavLink to="/orders?add-order" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><ShoppingBasket size={14} /> Add Order</NavLink>
+                      <NavLink to="/orders?add-order" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><ShoppingBasket size={14} /> Add Order</NavLink>
                     </>
                   )}
-                  <NavLink to="/view-orders" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><History size={14} /> Order List </NavLink>
+                  <NavLink to="/view-orders" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><History size={14} /> Order List </NavLink>
                 </div>
               )}
             </>
@@ -225,16 +268,16 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                 isOpen={openSubMenu === 'customers'} 
               />
               {!isSidebarCollapsed && openSubMenu === 'customers' && (
-                <div className="ml-9 space-y-1 border-l border-gray-100 pl-2">
+                <div className="ml-9 space-y-1 border-l border-border transition-colors duration-300 pl-2">
                   {permissions.canAddCustomers && (
-                    <NavLink to="/add-customer" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><UserPlus size={14} /> Add Customer</NavLink>
+                    <NavLink to="/add-customer" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><UserPlus size={14} /> Add Customer</NavLink>
                   )}
 
                   <NavLink 
                     to="/customers" 
                     className={({ isActive }) => 
                       `flex items-center gap-2 p-2 text-[11px] transition-colors ${
-                        isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'
+                        isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'
                       }`
                     }
                   >
@@ -250,9 +293,9 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
             <>
               <NavItem icon={BarChart2} label="Reports" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('reports')} isOpen={openSubMenu === 'reports'} />
               {!isSidebarCollapsed && openSubMenu === 'reports' && (
-                <div className="ml-9 space-y-1 border-l border-gray-100 pl-2">
-                  <NavLink to="/reports/daily-summary" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><FileText size={14} /> Daily Summary</NavLink>
-                  <NavLink to="/reports/qb-export" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><Download size={14} /> QB Export</NavLink>
+                <div className="ml-9 space-y-1 border-l border-border transition-colors duration-300 pl-2">
+                  <NavLink to="/reports/daily-summary" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><FileText size={14} /> Daily Summary</NavLink>
+                  <NavLink to="/reports/qb-export" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><Download size={14} /> QB Export</NavLink>
                 </div>
               )}
             </>
@@ -263,15 +306,15 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
             <>
               <NavItem icon={UserCog} label="Users" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('user')} isOpen={openSubMenu === 'user'} />
               {!isSidebarCollapsed && openSubMenu === 'user' && (
-                <div className="ml-9 space-y-1 border-l border-gray-100 pl-2">
+                <div className="ml-9 space-y-1 border-l border-border transition-colors duration-300 pl-2">
                   {permissions.canFullManageUsers && (
                     <>
-                      <NavLink to="/addUser" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><UserPlus size={14} /> Add User</NavLink>
-                      <NavLink to="/delete-user" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><UserMinus size={14} /> Delete User</NavLink>
-                      <NavLink to="/assign-user" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><UserMinus size={14} /> Assign User</NavLink>
+                      <NavLink to="/addUser" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><UserPlus size={14} /> Add User</NavLink>
+                      <NavLink to="/delete-user" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><UserMinus size={14} /> Delete User</NavLink>
+                      <NavLink to="/assign-user" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><UserMinus size={14} /> Assign User</NavLink>
                     </>
                   )}
-                  <NavLink to="/all-users" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><List size={14} /> User List </NavLink>
+                  <NavLink to="/all-users" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><List size={14} /> User List </NavLink>
                 </div>
               )}
             </>
@@ -282,9 +325,9 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
             <>
               <NavItem icon={Tag} label="Brands" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('brand')} isOpen={openSubMenu === 'brand'} />
               {!isSidebarCollapsed && openSubMenu === 'brand' && (
-                <div className="ml-9 space-y-1 border-l border-gray-100 pl-2">
-                  <NavLink to="/getBrands" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><SlidersHorizontal size={14} /> Brands</NavLink>
-                  <NavLink to="/addBrand" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><PlusCircle size={14} /> Add Brand</NavLink>
+                <div className="ml-9 space-y-1 border-l border-border transition-colors duration-300 pl-2">
+                  <NavLink to="/getBrands" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><SlidersHorizontal size={14} /> Brands</NavLink>
+                  <NavLink to="/addBrand" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><PlusCircle size={14} /> Add Brand</NavLink>
                 </div>
               )}
             </>
@@ -295,9 +338,9 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
             <>
               <NavItem icon={List} label="Categories" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('category')} isOpen={openSubMenu === 'category'} />
               {!isSidebarCollapsed && openSubMenu === 'category' && (
-                <div className="ml-9 space-y-1 border-l border-gray-100 pl-2">
-                  <NavLink to="/getCategories" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><List size={14} /> Categories</NavLink>
-                  <NavLink to="/addCategory" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><PlusCircle size={14} /> Add Category</NavLink>
+                <div className="ml-9 space-y-1 border-l border-border transition-colors duration-300 pl-2">
+                  <NavLink to="/getCategories" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><List size={14} /> Categories</NavLink>
+                  <NavLink to="/addCategory" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><PlusCircle size={14} /> Add Category</NavLink>
                 </div>
               )}
             </>
@@ -308,10 +351,10 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
             <>
               <NavItem icon={Package} label="Products" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('product')} isOpen={openSubMenu === 'product'} />
               {!isSidebarCollapsed && openSubMenu === 'product' && (
-                <div className="ml-9 space-y-1 border-l border-gray-100 pl-2">
-                  <NavLink to="/inventory" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><SlidersHorizontal size={14} /> Inventory</NavLink>
+                <div className="ml-9 space-y-1 border-l border-border transition-colors duration-300 pl-2">
+                  <NavLink to="/inventory" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><SlidersHorizontal size={14} /> Inventory</NavLink>
                   {userRole === 'admin' && (
-                    <NavLink to="/addProduct" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><PlusCircle size={14} /> Add Product</NavLink>
+                    <NavLink to="/addProduct" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><PlusCircle size={14} /> Add Product</NavLink>
                   )}
                 </div>
               )}
@@ -323,14 +366,14 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
             <>
               <NavItem icon={Boxes} label="Stocks" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('stock')} isOpen={openSubMenu === 'stock'} />
               {!isSidebarCollapsed && openSubMenu === 'stock' && (
-                <div className="ml-9 space-y-1 border-l border-gray-100 pl-2">
+                <div className="ml-9 space-y-1 border-l border-border transition-colors duration-300 pl-2">
                   {permissions.canManageStocks && (
                     <>
-                      <NavLink to="/addStock" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><PackagePlus size={14} /> Add Stocks</NavLink>
-                      <NavLink to="/editStock" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><SquarePen size={14} /> Edit Stocks</NavLink>
+                      <NavLink to="/addStock" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><PackagePlus size={14} /> Add Stocks</NavLink>
+                      <NavLink to="/editStock" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><SquarePen size={14} /> Edit Stocks</NavLink>
                     </>
                   )}
-                  <NavLink to="/viewStock" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-gray-400 hover:text-[#b4a460]'}`}><PackageSearch size={14} /> View Stocks </NavLink>
+                  <NavLink to="/viewStock" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><PackageSearch size={14} /> View Stocks </NavLink>
                 </div>
               )}
             </>
@@ -338,7 +381,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
         </div>
 
         <div className="space-y-1">
-          {!isSidebarCollapsed && <p className="text-[10px] uppercase text-gray-400 font-black mt-4 mb-2 ml-2 tracking-widest">Help</p>}
+          {!isSidebarCollapsed && <p className="text-[10px] uppercase text-textMain/50 transition-colors duration-300 font-black mt-4 mb-2 ml-2 tracking-widest">Help</p>}
           <NavItem to="/settingsPage" icon={Settings} label="Settings" isCollapsed={isSidebarCollapsed} />
           <NavItem to="/support" icon={HelpCircle} label="Support" isCollapsed={isSidebarCollapsed} />
         </div>
@@ -347,10 +390,10 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
       {/* Profile Section */}
       <div 
         onClick={() => navigate(`/profile/${loggedUser.user_id}`)} 
-        className={`mt-auto pt-6 border-t border-gray-100 cursor-pointer ${isSidebarCollapsed ? 'flex flex-col items-center' : ''}`}
+        className={`mt-auto pt-6 border-t border-border transition-colors duration-300 cursor-pointer ${isSidebarCollapsed ? 'md:flex md:flex-col md:items-center' : ''}`}
         >
         {!isSidebarCollapsed ? (
-          <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl border border-gray-100 mb-4 text-left hover:bg-[#b4a460]/5 transition-all">
+          <div className="flex items-center gap-3 p-2 bg-card transition-colors duration-300 rounded-xl border border-border transition-colors duration-300 mb-4 text-left hover:bg-primary/5 transition-all duration-300 transition-all">
             
             {profileImg ? (
               <img 
@@ -359,18 +402,18 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
                 alt="profile" 
               />
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-[#b4a460] flex items-center justify-center text-white font-bold text-[10px] shrink-0 uppercase shadow-sm">
+              <div className="w-8 h-8 rounded-lg bg-primary transition-all duration-300 flex items-center justify-center text-white font-bold text-[10px] shrink-0 uppercase shadow-sm">
                 {getInitials(loggedUser?.name || loggedUser?.full_name)}
               </div>
             )}
 
             <div className="overflow-hidden">
-              {/* <p className="text-[11px] font-black truncate text-gray-900"> */}
+              {/* <p className="text-[11px] font-black truncate text-textMain transition-colors duration-300"> */}
               {/* testing dark theme */}
               <p className="text-[11px] font-black truncate text-textMain">
                 {loggedUser?.name || 'User'}
               </p>
-              <p className="text-[9px] text-[#b4a460] font-bold uppercase tracking-wider">
+              <p className="text-[9px] text-primary transition-all duration-300 font-bold uppercase tracking-wider">
                 {loggedUser?.role?.replace('_', ' ') || 'Sales Rep'}
               </p>
             </div>
@@ -381,11 +424,11 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
             {profileImg ? (
               <img 
                 src={profileImg} 
-                className="w-8 h-8 rounded-lg object-cover border border-gray-100 shadow-sm" 
+                className="w-8 h-8 rounded-lg object-cover border border-border transition-colors duration-300 shadow-sm" 
                 alt="profile" 
               />
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-[#b4a460] flex items-center justify-center text-white font-bold text-[10px] border border-white uppercase shadow-sm">
+              <div className="w-8 h-8 rounded-lg bg-primary transition-all duration-300 flex items-center justify-center text-white font-bold text-[10px] border border-white uppercase shadow-sm">
                 {getInitials(loggedUser?.name || loggedUser?.full_name)}
               </div>
             )}
@@ -398,12 +441,13 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed }) => {
           e.stopPropagation(); 
           handleLogout(); 
         }} 
-        className={`flex items-center gap-3 w-full p-2 text-[11px] font-bold text-gray-400 hover:text-red-500 transition-colors ${isSidebarCollapsed ? 'justify-center' : ''}`}
+        className={`flex items-center gap-3 w-full p-2 text-[11px] font-bold text-textMain/50 transition-colors duration-300 hover:text-red-500 transition-colors ${isSidebarCollapsed ? 'md:justify-center' : ''}`}
       >
         <LogOut size={16} /> 
         {!isSidebarCollapsed && "Logout"}
       </button>
     </aside>
+    </>
   );
 };
 

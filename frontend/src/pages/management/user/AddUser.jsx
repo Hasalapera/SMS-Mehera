@@ -179,13 +179,13 @@ const handleSubmit = async (e) => {
       
       {/* Header */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-black flex items-center gap-3">
-          <div className="p-2 bg-[#b4a460] rounded-lg text-black">
+        <h2 className="text-2xl font-bold text-textMain transition-colors duration-300 flex items-center gap-3">
+          <div className="p-2 bg-primary transition-all duration-300 rounded-lg text-textMain transition-colors duration-300">
             <UserPlus size={24} />
           </div>
           Register New Employee
         </h2>
-        <p className="text-gray-500 text-sm mt-1 ml-12">
+        <p className="text-textMain/50 transition-colors duration-300 text-sm mt-1 ml-12">
           Add a new member to Mehera International. An automated password will be sent via email.
         </p>
       </div>
@@ -194,31 +194,31 @@ const handleSubmit = async (e) => {
             <button 
               type="button"
               onClick={() => navigate('/assign-user')}
-              className="mb-6 flex items-center gap-2 text-gray-400 hover:text-black font-black text-[10px] uppercase tracking-widest transition-all"
+              className="mb-6 flex items-center gap-2 text-textMain/50 transition-colors duration-300 hover:text-textMain transition-colors duration-300 font-black text-[10px] uppercase tracking-widest transition-all"
             >
               <ArrowLeft size={16} /> Back to Assign User Section
             </button>
           )}
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white border border-gray-100 rounded-[2rem] shadow-sm p-8 md:p-12">
+      <form onSubmit={handleSubmit} className="bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-[2rem] shadow-sm p-8 md:p-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
           {/* Full Name */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-400 uppercase ml-1">Full Name</label>
+            <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">Full Name</label>
             <div className="relative group">
               <input 
                 type="text" name="name" required value={formData.name} onChange={handleChange}
-                className="w-full bg-gray-50 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] transition-all"
+                className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] transition-all"
               />
-              <UserPlus className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-[#b4a460]" size={18} />
+              <UserPlus className="absolute left-4 top-3.5 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={18} />
             </div>
           </div>
 
           {/* NIC Number */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-400 uppercase ml-1">NIC Number</label>
+            <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">NIC Number</label>
             <div className="relative group">
               <input 
                 type="text" 
@@ -229,7 +229,7 @@ const handleSubmit = async (e) => {
                 maxLength={12} 
                 title="Enter 12 digits for new NIC or 9 digits followed by 'V' for old NIC" 
                 placeholder="e.g. 199912345678 or 991234567V"
-                className={`w-full bg-gray-50 border rounded-xl py-3 pl-11 pr-4 text-sm transition-all focus:ring-2 
+                className={`w-full bg-card transition-colors duration-300 border rounded-xl py-3 pl-11 pr-4 text-sm transition-all focus:ring-2 
                   ${formData.nic_no && !/^([0-9]{9}[xXvV]|[0-9]{12})$/.test(formData.nic_no) 
                     ? 'border-red-500 focus:ring-red-200' 
                     : 'border-transparent focus:ring-[#b4a460]'}`}
@@ -237,7 +237,7 @@ const handleSubmit = async (e) => {
               <IdCard className={`absolute left-4 top-3.5 transition-colors 
                 ${formData.nic_no && !/^([0-9]{9}[xXvV]|[0-9]{12})$/.test(formData.nic_no) 
                   ? 'text-red-500' 
-                  : 'text-gray-400 group-focus-within:text-[#b4a460]'}`} size={18} />
+                  : 'text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300'}`} size={18} />
             </div>
             
             {formData.nic_no && !/^([0-9]{9}[xXvV]|[0-9]{12})$/.test(formData.nic_no) && (
@@ -249,23 +249,23 @@ const handleSubmit = async (e) => {
 
           {/* Email Address */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-400 uppercase ml-1">Email Address</label>
+            <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">Email Address</label>
             <div className="relative group">
               <input 
                 type="email" name="email" required value={formData.email} onChange={handleChange}
-                className="w-full bg-gray-50 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] transition-all"
+                className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] transition-all"
               />
-              <Mail className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-[#b4a460]" size={18} />
+              <Mail className="absolute left-4 top-3.5 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={18} />
             </div>
           </div>
 
           {/* User Role */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-400 uppercase ml-1">System Role</label>
+            <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">System Role</label>
             <div className="relative group">
               <select 
                 name="role" value={formData.role} onChange={handleChange} disabled={isFromAssignUser} 
-                className="w-full bg-gray-50 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] appearance-none transition-all"
+                className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] appearance-none transition-all"
               >
                 <option value="sales_rep">Sales Representative</option>
                 <option value="manager">Manager</option>
@@ -273,47 +273,47 @@ const handleSubmit = async (e) => {
                 <option value="logistics_officer">Logistics Officer (Dispatch)</option>
                 <option value="admin">Administrator</option>
               </select>
-              <ShieldCheck className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-[#b4a460]" size={18} />
+              <ShieldCheck className="absolute left-4 top-3.5 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={18} />
             </div>
           </div>
 
           {/* Contact Number */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-400 uppercase ml-1">Contact No</label>
+            <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">Contact No</label>
             <div className="relative group">
               <input 
                 type="text" name="contact_no" required value={formData.contact_no} onChange={handleChange}
-                className="w-full bg-gray-50 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] transition-all"
+                className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] transition-all"
               />
-              <Phone className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-[#b4a460]" size={18} />
+              <Phone className="absolute left-4 top-3.5 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={18} />
             </div>
           </div>
 
           {/* Date of Birth */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-400 uppercase ml-1">Date of Birth</label>
+            <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">Date of Birth</label>
             <div className="relative group">
               <input 
                 type="date" name="dob" required value={formData.dob} onChange={handleChange}
-                className="w-full bg-gray-50 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] transition-all"
+                className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] transition-all"
               />
-              <Calendar className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-[#b4a460]" size={18} />
+              <Calendar className="absolute left-4 top-3.5 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={18} />
             </div>
           </div>
 
           {/* District Selection (Only for Sales Rep) */}
           {formData.role === 'sales_rep' && (
-            <div className="col-span-1 md:col-span-2 space-y-4 bg-gray-50 p-6 rounded-2xl border border-gray-100">
+            <div className="col-span-1 md:col-span-2 space-y-4 bg-card transition-colors duration-300 p-6 rounded-2xl border border-border transition-colors duration-300">
               <div className="flex items-center gap-2">
-                <MapPin className="text-[#b4a460]" size={18} />
-                <label className="text-xs font-bold text-gray-500 uppercase">Assign Working Districts</label>
+                <MapPin className="text-primary transition-all duration-300" size={18} />
+                <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase">Assign Working Districts</label>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 {districts.map(dist => (
-                  <label key={dist} className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer hover:text-black">
+                  <label key={dist} className="flex items-center gap-2 text-xs text-textMain/50 transition-colors duration-300 cursor-pointer hover:text-textMain transition-colors duration-300">
                     <input 
                       type="checkbox" 
-                      className="rounded border-gray-300 text-[#b4a460] focus:ring-[#b4a460]"
+                      className="rounded border-border transition-colors duration-300 text-primary transition-all duration-300 focus:ring-[#b4a460]"
                       checked={formData.selectedDistricts.includes(dist)}
                       onChange={() => handleDistrictChange(dist)}
                     />
@@ -330,7 +330,7 @@ const handleSubmit = async (e) => {
           <button 
             type="submit" 
             disabled={loading}
-            className="bg-[#b4a460] text-black px-10 py-3 rounded-xl font-bold text-sm shadow-lg shadow-[#b4a460]/20 hover:bg-[#9a8b50] hover:scale-105 transition-all flex items-center gap-2"
+            className="bg-primary transition-all duration-300 text-textMain transition-colors duration-300 px-10 py-3 rounded-xl font-bold text-sm shadow-lg shadow-[#b4a460]/20 hover:bg-[#9a8b50] hover:scale-105 transition-all flex items-center gap-2"
           >
             {loading ? <Loader2 className="animate-spin" size={18} /> : <UserPlus size={18} />}
             {loading ? 'Adding User...' : 'Complete Registration'}

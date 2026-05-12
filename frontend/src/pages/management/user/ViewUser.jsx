@@ -27,6 +27,15 @@ const ViewUser = () => {
     { id: 'deleted', name: 'Deleted Users' } 
   ];
 
+  const getInitials = (name) => {
+    if (!name) return "??";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
   const fetchUsers = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -180,17 +189,17 @@ const handleResetPassword = async (userId, userName) => {
       {/* Top Action Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
-          <h2 className="text-2xl font-bold text-black flex items-center gap-2">
-            <UserCog className="text-[#b4a460]" size={28} /> Employee Directory
+          <h2 className="text-2xl font-bold text-textMain transition-colors duration-500 flex items-center gap-2">
+            <UserCog className="text-primary" size={28} /> Employee Directory
           </h2>
-          <p className="text-gray-500 text-sm">Manage Mehera International corporate accounts.</p>
+          <p className="text-textMain/50 transition-colors duration-500 text-sm">Manage Mehera International corporate accounts.</p>
         </div>
 
         {/* Add User Button - Redirects to /add-user */}
         {user?.role === 'admin' && (
           <button 
             onClick={() => navigate('/addUser')}
-            className="flex items-center gap-2 bg-[#b4a460] hover:bg-[#9a8b50] text-black px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-[#b4a460]/20 transition-all active:scale-95"
+            className="flex items-center gap-2 bg-primary transition-all duration-500 hover:bg-[#9a8b50] text-textMain px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-[#b4a460]/20 active:scale-95"
           >
             <UserPlus size={18} /> Add New Employee
           </button>
@@ -198,35 +207,35 @@ const handleResetPassword = async (userId, userName) => {
       </div>
 
       {/* Filters & Search Section */}
-      <div className="bg-white border border-gray-100 rounded-[1.5rem] p-4 mb-8 shadow-sm flex flex-col lg:flex-row gap-4">
+      <div className="bg-card transition-all duration-500 border border-border rounded-[1.5rem] p-4 mb-8 shadow-sm flex flex-col lg:flex-row gap-4">
         {/* Search Bar */}
         <div className="relative group flex-1">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className="text-gray-400 group-focus-within:text-[#b4a460]" size={18} />
+            <Search className="text-textMain/50 transition-colors duration-500 group-focus-within:text-primary" size={18} />
           </div>
           <input 
             type="text"
             name='search_query_no_fill'
             autoComplete="off"
             placeholder="Search by name or email..."
-            className="w-full bg-gray-50 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460]/20 outline-none transition-all"
+            className="w-full bg-background transition-all duration-500 border-none rounded-xl py-3.5 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460]/20 outline-none text-textMain"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
         {/* Role Filters */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 no-scrollbar">
-          <div className="flex items-center gap-1.5 px-3 border-r border-gray-100 mr-2 text-gray-400">
+          <div className="flex items-center gap-1.5 px-3 border-r border-border transition-colors duration-500 mr-2 text-textMain/50">
             <Filter size={14} /> <span className="text-[10px] font-bold uppercase">Filter:</span>
           </div>
           {roles.map((role) => (
             <button
               key={role.id}
               onClick={() => setSelectedRole(role.id)}
-              className={`px-4 py-2 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all border ${
+              className={`px-4 py-2 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all duration-500 border ${
                 selectedRole === role.id 
-                ? 'bg-[#b4a460] border-[#b4a460] text-black shadow-md' 
-                : 'bg-white border-gray-200 text-gray-500 hover:border-[#b4a460]'
+                ? 'bg-primary border-primary text-textMain shadow-md' 
+                : 'bg-card border-border text-textMain/50 hover:border-primary'
               }`}
             >
               {role.name}
@@ -236,44 +245,49 @@ const handleResetPassword = async (userId, userName) => {
       </div>
 
       {/* List Table Section */}
-      <div className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm overflow-visible">
+      <div className="bg-card transition-all duration-500 rounded-[1.5rem] border border-border shadow-sm overflow-visible">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50/50 border-b border-gray-100">
-                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase">Employee Details</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase">System Role</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase text-center">Status</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase text-right">Actions</th>
-                {/* <th className="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase text-right">Restore</th> */}
+              <tr className="bg-card/50 border-b border-border transition-colors duration-500">
+                <th className="px-6 py-4 text-[11px] font-bold text-textMain/50 transition-colors duration-500 uppercase">Employee Details</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-textMain/50 transition-colors duration-500 uppercase">System Role</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-textMain/50 transition-colors duration-500 uppercase text-center">Status</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-textMain/50 transition-colors duration-500 uppercase text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-border transition-colors duration-500">
               {loading ? (
                 <tr>
-                  <td colSpan="4" className="px-6 py-20 text-center text-gray-400 italic">Synchronizing with server...</td>
+                  <td colSpan="4" className="px-6 py-20 text-center text-textMain/50 transition-colors duration-500 italic">Synchronizing with server...</td>
                 </tr>
               ) : filteredUsers.map((emp) => {
                 const isDeactivated = emp.deleted_at !== null || emp.is_active === false;
                 return (
-                  <tr key={emp.user_id} className={`group ${isDeactivated ? 'bg-gray-50/40' : 'hover:bg-gray-50/80 transition-colors'}`}>
+                  <tr key={emp.user_id} className={`group ${isDeactivated ? 'bg-card/40' : 'hover:bg-primary/5'} transition-all duration-500`}>
                     <td className={`px-6 py-4 transition-all ${isDeactivated ? 'opacity-30 grayscale' : ''}`}>
                       <div className="flex items-center gap-3 ">
-                        <img 
-                          src={emp.picture_url || `https://ui-avatars.com/api/?name=${emp.name}&background=b4a460&color=fff`} 
-                          className="w-10 h-10 rounded-xl object-cover" 
-                          alt="" 
-                        />
+                        {emp.picture_url ? (
+                          <img 
+                            src={emp.picture_url} 
+                            className="w-10 h-10 rounded-xl object-cover border border-border transition-all duration-500" 
+                            alt="" 
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center font-bold text-primary group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all duration-500 ease-in-out shrink-0">
+                            <span className="text-xs font-black uppercase">{getInitials(emp.name)}</span>
+                          </div>
+                        )}
                         <div>
-                          <p className="text-sm font-bold text-gray-900">{emp.name}</p>
-                          <p className="text-xs text-gray-400 flex items-center gap-1">
+                          <p className="text-sm font-bold text-textMain transition-colors duration-500">{emp.name}</p>
+                          <p className="text-xs text-textMain/50 transition-colors duration-500 flex items-center gap-1">
                             <Mail size={12} /> {emp.email}
                           </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-[10px] font-bold px-2 py-1 bg-[#b4a460]/10 text-[#8a7b42] rounded-md border border-[#b4a460]/20 uppercase">
+                      <span className="text-[10px] font-bold px-3 py-1 bg-primary/10 transition-all duration-500 text-[#8a7b42] rounded-md border border-primary/20 uppercase">
                         {emp.role.replace('_', ' ')}
                       </span>
                     </td>
@@ -291,7 +305,7 @@ const handleResetPassword = async (userId, userName) => {
                       {(user?.role === 'admin' || isDeactivated) && (
                         <button 
                           onClick={() => navigate(`/profile/${emp.user_id}`)}
-                          className="p-2 text-gray-400 hover:text-[#b4a460] hover:bg-[#b4a460]/10 rounded-lg transition-all"
+                          className="p-2 text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300 hover:bg-primary/10 transition-all duration-300 rounded-lg transition-all"
                           title="View Profile"
                         >
                           <Eye size={18} />
@@ -301,12 +315,12 @@ const handleResetPassword = async (userId, userName) => {
                       {/* 2. අනිත් සේරම වැඩ කෑලි ටික මේ Dropdown එක ඇතුළට */}
                       {user?.role === 'admin' && (
                         <div className="relative group/menu">
-                          <button className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition-all">
+                          <button className="p-2 text-textMain/50 transition-colors duration-300 hover:text-textMain transition-colors duration-300 hover:bg-gray-100 rounded-lg transition-all">
                             <MoreVertical size={18} />
                           </button>
 
                           {/* Dropdown Menu - Hover කරද්දී පේන විදිහට (නැත්නම් State එකකින් හදන්නත් පුළුවන්) */}
-                          <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-50 py-2">
+                          <div className="absolute right-0 mt-2 w-48 bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-2xl shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-50 py-2">
                             
                             {/* Reset Password Option */}
                             {!isDeactivated && emp.user_id !== user.user_id && (
@@ -318,7 +332,7 @@ const handleResetPassword = async (userId, userName) => {
                                     handleResetPassword(emp.user_id, emp.name);
                                   }
                                 }}
-                                className={`w-full text-left px-4 py-2.5 text-xs font-bold flex items-center gap-2 ${emp.is_default_password ? 'text-gray-300 cursor-not-allowed' : 'text-red-500 hover:bg-red-50'}`}
+                                className={`w-full text-left px-4 py-2.5 text-xs font-bold flex items-center gap-2 ${emp.is_default_password ? 'text-textMain/50 transition-colors duration-300 cursor-not-allowed' : 'text-red-500 hover:bg-red-50'}`}
                               >
                                 <RefreshCw size={14} /> 
                                 {emp.is_default_password ? "Already Reset" : "Reset Password"}

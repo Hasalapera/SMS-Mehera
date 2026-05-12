@@ -166,10 +166,10 @@ const AssignUser = () => {
 
         customClass: {
         // මෙතනින් තමයි "Floating Card" ලුක් එක දෙන්නේ
-        popup: '!rounded-[2rem] border border-gray-100 shadow-[0_10px_40px_rgba(0,0,0,0.08)] p-6 mr-4 mt-4',
-        title: 'text-sm font-black text-black uppercase tracking-widest text-left',
-        input: '!rounded-xl border-gray-100 bg-gray-50 text-xs py-2 px-3 font-bold',
-        confirmButton: 'bg-black text-white px-6 py-2.5 !rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-[#b4a460] transition-all w-full mt-2',
+        popup: '!rounded-[2rem] border border-border transition-colors duration-300 shadow-[0_10px_40px_rgba(0,0,0,0.08)] p-6 mr-4 mt-4',
+        title: 'text-sm font-black text-textMain transition-colors duration-300 uppercase tracking-widest text-left',
+        input: '!rounded-xl border-border transition-colors duration-300 bg-card transition-colors duration-300 text-xs py-2 px-3 font-bold',
+        confirmButton: 'bg-black text-white px-6 py-2.5 !rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-primary transition-all duration-300 transition-all w-full mt-2',
         actions: 'w-full', // Button එක full width ගන්න
         },
         
@@ -248,15 +248,15 @@ const AssignUser = () => {
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
       
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card transition-colors duration-300 p-8 rounded-[2rem] border border-border transition-colors duration-300 shadow-sm">
         <div>
-          <h1 className="text-2xl font-black text-black flex items-center gap-3 italic">
-            <ArrowRightLeft className="text-[#b4a460]" size={28} /> Asign Customers to Sales Reps
+          <h1 className="text-2xl font-black text-textMain transition-colors duration-300 flex items-center gap-3 italic">
+            <ArrowRightLeft className="text-primary transition-all duration-300" size={28} /> Asign Customers to Sales Reps
           </h1>
-          <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1 ml-1">Mehera International Operations</p>
+          <p className="text-textMain/50 transition-colors duration-300 text-[10px] font-black uppercase tracking-[0.2em] mt-1 ml-1">Mehera International Operations</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => navigate("/addUser", { state: { defaultRole: "sales_rep", from: "/assign-user" } })} className="bg-[#b4a460] text-black px-6 py-3 rounded-2xl font-black text-[10px] uppercase flex items-center gap-2 hover:scale-105 transition-all shadow-lg shadow-[#b4a460]/10">
+          <button onClick={() => navigate("/addUser", { state: { defaultRole: "sales_rep", from: "/assign-user" } })} className="bg-primary transition-all duration-300 text-textMain transition-colors duration-300 px-6 py-3 rounded-2xl font-black text-[10px] uppercase flex items-center gap-2 hover:scale-105 transition-all shadow-lg shadow-[#b4a460]/10">
             <UserPlus size={16} /> Add New Rep
           </button>
           <button onClick={() => navigate("/add-customer", { state: { from: "/assign-user" } })} className="bg-black text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase flex items-center gap-2 hover:scale-105 transition-all">
@@ -270,20 +270,20 @@ const AssignUser = () => {
         {/* --- Left Pane: Active Sales Team --- */}
         <div className="lg:col-span-4 space-y-4">
         <div className="flex items-center gap-2 px-2">
-            <CheckCircle2 className="text-[#b4a460]" size={14} />
-            <h3 className="font-black text-[10px] uppercase tracking-widest text-gray-400">Active Representatives</h3>
+            <CheckCircle2 className="text-primary transition-all duration-300" size={14} />
+            <h3 className="font-black text-[10px] uppercase tracking-widest text-textMain/50 transition-colors duration-300">Active Representatives</h3>
         </div>
         <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-2 custom-scrollbar">
             {salesReps.map((rep) => (
-            <div key={rep.user_id} className={`rounded-[2rem] border transition-all duration-300 ${selectedRep?.user_id === rep.user_id ? "border-[#b4a460] shadow-2xl shadow-[#b4a460]/10 bg-white" : "border-gray-100 bg-white/50 hover:bg-white"}`}>
+            <div key={rep.user_id} className={`rounded-[2rem] border transition-all duration-300 ${selectedRep?.user_id === rep.user_id ? "border-primary transition-all duration-300 shadow-2xl shadow-[#b4a460]/10 bg-card transition-colors duration-300" : "border-border transition-colors duration-300 bg-card/50 transition-colors duration-300 hover:bg-card transition-colors duration-300"}`}>
                 
                 {/* Header Section */}
-                <div className={`p-6 flex items-center justify-between ${selectedRep?.user_id === rep.user_id ? "bg-[#b4a460]/5 rounded-t-[2rem]" : ""}`}>
+                <div className={`p-6 flex items-center justify-between ${selectedRep?.user_id === rep.user_id ? "bg-primary/5 transition-all duration-300 rounded-t-[2rem]" : ""}`}>
                 <div onClick={() => handleRepClick(rep)} className="flex-1 cursor-pointer">
-                    <p className="font-black text-sm text-black">{rep.name}</p>
+                    <p className="font-black text-sm text-textMain transition-colors duration-300">{rep.name}</p>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                     {rep.areas.map((a) => (
-                        <span key={a.district_name} className="text-[8px] font-black bg-gray-100 text-gray-400 px-2.5 py-1 rounded-full uppercase">{a.district_name}</span>
+                        <span key={a.district_name} className="text-[8px] font-black bg-card border border-border text-textMain/50 transition-colors duration-300 px-2.5 py-1 rounded-full uppercase">{a.district_name}</span>
                     ))}
                     </div>
                 </div>
@@ -298,8 +298,8 @@ const AssignUser = () => {
                         }}
                         className={`p-2 rounded-xl transition-all shadow-sm border ${
                         activePopover === rep.user_id 
-                        ? "bg-black text-[#b4a460] border-black" 
-                        : "text-gray-400 hover:text-[#b4a460] hover:bg-white border-transparent hover:border-gray-100"
+                        ? "bg-black text-primary transition-all duration-300 border-black" 
+                        : "text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300 hover:bg-card transition-colors duration-300 border-transparent hover:border-border transition-colors duration-300"
                         }`}
                     >
                         <UserPlus size={16} />
@@ -307,8 +307,8 @@ const AssignUser = () => {
 
                     {/* 📍 මෙන්න බටන් එක ගාවින්ම එන අලුත් Quick Popover එක */}
                     {activePopover === rep.user_id && (
-                        <div className="absolute right-0 top-12 w-56 bg-white border border-gray-100 shadow-[0_10px_30px_rgba(0,0,0,0.1)] rounded-2xl z-[100] p-4 animate-in zoom-in duration-200 origin-top-right">
-                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Quick Assign Area</p>
+                        <div className="absolute right-0 top-12 w-56 bg-card transition-colors duration-300 border border-border transition-colors duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.1)] rounded-2xl z-[100] p-4 animate-in zoom-in duration-200 origin-top-right">
+                        <p className="text-[9px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest mb-3">Quick Assign Area</p>
                         
                         <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                             {districtsList
@@ -321,10 +321,10 @@ const AssignUser = () => {
                                     await handleDirectAdd(rep.user_id, district, rep.name);
                                     setActivePopover(null); // වැඩේ ඉවර වුණාම වහන්න
                                 }}
-                                className="w-full text-left px-3 py-2 text-[11px] font-bold text-gray-600 hover:bg-[#b4a460]/10 hover:text-black rounded-lg transition-colors flex items-center justify-between group"
+                                className="w-full text-left px-3 py-2 text-[11px] font-bold text-textMain/50 transition-colors duration-300 hover:bg-primary/10 transition-all duration-300 hover:text-textMain transition-colors duration-300 rounded-lg transition-colors flex items-center justify-between group"
                                 >
                                 {district}
-                                <Plus size={12} className="opacity-0 group-hover:opacity-100 text-[#b4a460]" />
+                                <Plus size={12} className="opacity-0 group-hover:opacity-100 text-primary transition-all duration-300" />
                                 </button>
                             ))}
                         </div>
@@ -332,21 +332,21 @@ const AssignUser = () => {
                     )}
 
                     <div onClick={() => handleRepClick(rep)} className="cursor-pointer">
-                        {selectedRep?.user_id === rep.user_id ? <ChevronUp size={20} className="text-[#b4a460]" /> : <ChevronDown size={20} className="text-gray-200" />}
+                        {selectedRep?.user_id === rep.user_id ? <ChevronUp size={20} className="text-primary transition-all duration-300" /> : <ChevronDown size={20} className="text-gray-200" />}
                     </div>
                 </div>
                 </div>
 
                 {/* Portfolio Section - පෝර්ට්ෆෝලියෝ එක පෙන්නන කොටස */}
                 {selectedRep?.user_id === rep.user_id && (
-                <div className="bg-white p-5 border-t border-gray-50 animate-in slide-in-from-top duration-300">
-                    <p className="text-[9px] font-black text-gray-300 uppercase mb-4 tracking-tighter">Current Portfolio ({assignedCustomers.length})</p>
+                <div className="bg-card transition-colors duration-300 p-5 border-t border-border animate-in slide-in-from-top duration-300">
+                    <p className="text-[9px] font-black text-textMain/50 transition-colors duration-300 uppercase mb-4 tracking-tighter">Current Portfolio ({assignedCustomers.length})</p>
                     <div className="space-y-2">
-                    {loading ? <Loader2 className="animate-spin mx-auto text-[#b4a460] my-4" /> : 
+                    {loading ? <Loader2 className="animate-spin mx-auto text-primary transition-all duration-300 my-4" /> : 
                         assignedCustomers.map((ac) => (
-                        <div key={ac.customer_id} className="flex items-center justify-between p-3.5 bg-gray-50/50 rounded-2xl border border-gray-50">
-                            <p className="text-[11px] font-bold text-gray-700">{ac.saloon_name}</p>
-                            <span className="text-[8px] font-black text-[#b4a460] bg-white px-2 py-1 rounded-lg border border-gray-100">{ac.customer_display_id}</span>
+                        <div key={ac.customer_id} className="flex items-center justify-between p-3.5 bg-card/50 transition-colors duration-300 rounded-2xl border border-border">
+                            <p className="text-[11px] font-bold text-textMain/70 transition-colors duration-300">{ac.saloon_name}</p>
+                            <span className="text-[8px] font-black text-primary transition-all duration-300 bg-card transition-colors duration-300 px-2 py-1 rounded-lg border border-border transition-colors duration-300">{ac.customer_display_id}</span>
                         </div>
                         ))
                     }
@@ -359,12 +359,12 @@ const AssignUser = () => {
         </div>
 
         {/* --- Right Pane: Management Hub --- */}
-        <div className="lg:col-span-8 bg-white rounded-[2.5rem] border border-gray-100 shadow-sm h-fit sticky top-6 overflow-hidden">
-          <div className="flex border-b border-gray-50">
-            <button onClick={() => setActiveTab("individual")} className={`flex-1 py-6 font-black text-[10px] uppercase tracking-[0.2em] transition-all ${activeTab === "individual" ? "text-black bg-white border-b-2 border-[#b4a460]" : "text-gray-300 bg-gray-50/30 hover:text-gray-500"}`}>
+        <div className="lg:col-span-8 bg-card transition-colors duration-300 rounded-[2.5rem] border border-border transition-colors duration-300 shadow-sm h-fit sticky top-6 overflow-hidden">
+          <div className="flex border-b border-border">
+            <button onClick={() => setActiveTab("individual")} className={`flex-1 py-6 font-black text-[10px] uppercase tracking-[0.2em] transition-all ${activeTab === "individual" ? "text-textMain transition-colors duration-300 bg-card transition-colors duration-300 border-b-2 border-primary transition-all duration-300" : "text-textMain/50 transition-colors duration-300 bg-card/30 transition-colors duration-300 hover:text-textMain/50 transition-colors duration-300"}`}>
               <Users size={16} className="inline-block mr-2 mb-0.5" /> Individual Assign
             </button>
-            <button onClick={() => setActiveTab("transfer")} className={`flex-1 py-6 font-black text-[10px] uppercase tracking-[0.2em] transition-all ${activeTab === "transfer" ? "text-black bg-white border-b-2 border-[#b4a460]" : "text-gray-300 bg-gray-50/30 hover:text-gray-500"}`}>
+            <button onClick={() => setActiveTab("transfer")} className={`flex-1 py-6 font-black text-[10px] uppercase tracking-[0.2em] transition-all ${activeTab === "transfer" ? "text-textMain transition-colors duration-300 bg-card transition-colors duration-300 border-b-2 border-primary transition-all duration-300" : "text-textMain/50 transition-colors duration-300 bg-card/30 transition-colors duration-300 hover:text-textMain/50 transition-colors duration-300"}`}>
               <RefreshCw size={16} className="inline-block mr-2 mb-0.5" /> Portfolio Transfer
             </button>
           </div>
@@ -374,28 +374,28 @@ const AssignUser = () => {
               <div className="space-y-8 animate-in fade-in duration-500">
                 <div className="flex justify-between items-end">
                   <div>
-                    <h2 className="text-2xl font-black text-black">Map Customers</h2>
-                    <p className="text-[10px] text-[#b4a460] font-black uppercase tracking-widest mt-1">{selectedRep ? `Step 2: Selection for ${selectedRep.name}` : "Step 1: Select a rep from the left"}</p>
+                    <h2 className="text-2xl font-black text-textMain transition-colors duration-300">Map Customers</h2>
+                    <p className="text-[10px] text-primary transition-all duration-300 font-black uppercase tracking-widest mt-1">{selectedRep ? `Step 2: Selection for ${selectedRep.name}` : "Step 1: Select a rep from the left"}</p>
                   </div>
                 </div>
                 {selectedRep ? (
                   <div className="space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[450px] overflow-y-auto pr-3 custom-scrollbar">
                       {eligibleCustomers.length > 0 ? eligibleCustomers.map((cust) => (
-                        <div key={cust.customer_id} onClick={() => toggleCustomerSelection(cust)} className={`p-5 rounded-3xl border transition-all duration-300 cursor-pointer flex justify-between items-center group ${tempSelected.find((s) => s.customer_id === cust.customer_id) ? "border-[#b4a460] bg-[#b4a460]/5" : "border-gray-100 bg-white hover:border-[#b4a460]/30"}`}>
+                        <div key={cust.customer_id} onClick={() => toggleCustomerSelection(cust)} className={`p-5 rounded-3xl border transition-all duration-300 cursor-pointer flex justify-between items-center group ${tempSelected.find((s) => s.customer_id === cust.customer_id) ? "border-primary transition-all duration-300 bg-primary/5 transition-all duration-300" : "border-border transition-colors duration-300 bg-card transition-colors duration-300 hover:border-primary/30 transition-all duration-300"}`}>
                           <div>
-                            <p className="font-black text-xs text-black">{cust.saloon_name}</p>
-                            <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">{cust.district}</p>
+                            <p className="font-black text-xs text-textMain transition-colors duration-300">{cust.saloon_name}</p>
+                            <p className="text-[9px] text-textMain/50 transition-colors duration-300 font-bold uppercase mt-1">{cust.district}</p>
                           </div>
-                          {tempSelected.find((s) => s.customer_id === cust.customer_id) ? <CheckCircle2 className="text-[#b4a460]" size={22} /> : <div className="w-5 h-5 rounded-full border-2 border-gray-100 group-hover:border-[#b4a460]/30 transition-all" />}
+                          {tempSelected.find((s) => s.customer_id === cust.customer_id) ? <CheckCircle2 className="text-primary transition-all duration-300" size={22} /> : <div className="w-5 h-5 rounded-full border-2 border-border transition-colors duration-300 group-hover:border-primary/30 transition-all duration-300 transition-all" />}
                         </div>
-                      )) : <div className="col-span-2 text-center py-20 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200 italic text-gray-300 text-xs uppercase">No unassigned customers in this area</div>}
+                      )) : <div className="col-span-2 text-center py-20 bg-card transition-colors duration-300 rounded-[2rem] border border-dashed border-border transition-colors duration-300 italic text-textMain/50 transition-colors duration-300 text-xs uppercase">No unassigned customers in this area</div>}
                     </div>
                     {tempSelected.length > 0 && (
-                      <div className="pt-8 border-t border-gray-100 space-y-6">
-                        <div className="flex items-center justify-between"><p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Selected Entities ({tempSelected.length})</p><button onClick={() => { setTempSelected([]); localStorage.removeItem("pendingAssignments"); }} className="text-[9px] font-black text-red-500 uppercase hover:underline">Discard All</button></div>
-                        <div className="flex flex-wrap gap-2">{tempSelected.map((c) => (<span key={c.customer_id} className="bg-black text-white text-[9px] font-black px-4 py-2 rounded-full flex items-center gap-2 animate-in zoom-in">{c.saloon_name}<XCircle size={14} className="cursor-pointer text-[#b4a460] hover:text-white" onClick={(e) => { e.stopPropagation(); toggleCustomerSelection(c); }} /></span>))}</div>
-                        <button onClick={handleConfirmAssignment} className="w-full bg-black text-white py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-[#b4a460] hover:text-black transition-all shadow-2xl">Finalize Mapping</button>
+                      <div className="pt-8 border-t border-border transition-colors duration-300 space-y-6">
+                        <div className="flex items-center justify-between"><p className="text-[10px] font-black uppercase text-textMain/50 transition-colors duration-300 tracking-widest">Selected Entities ({tempSelected.length})</p><button onClick={() => { setTempSelected([]); localStorage.removeItem("pendingAssignments"); }} className="text-[9px] font-black text-red-500 uppercase hover:underline">Discard All</button></div>
+                        <div className="flex flex-wrap gap-2">{tempSelected.map((c) => (<span key={c.customer_id} className="bg-black text-white text-[9px] font-black px-4 py-2 rounded-full flex items-center gap-2 animate-in zoom-in">{c.saloon_name}<XCircle size={14} className="cursor-pointer text-primary transition-all duration-300 hover:text-white" onClick={(e) => { e.stopPropagation(); toggleCustomerSelection(c); }} /></span>))}</div>
+                        <button onClick={handleConfirmAssignment} className="w-full bg-black text-white py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-primary transition-all duration-300 hover:text-textMain transition-colors duration-300 transition-all shadow-2xl">Finalize Mapping</button>
                       </div>
                     )}
                   </div>
@@ -405,14 +405,14 @@ const AssignUser = () => {
               /* --- 🔄 Re-imagined Portfolio Transfer UI --- */
               <div className="space-y-8 animate-in slide-in-from-right duration-500">
                 <div>
-                  <h2 className="text-2xl font-black text-black italic">Succession Planning</h2>
+                  <h2 className="text-2xl font-black text-textMain transition-colors duration-300 italic">Succession Planning</h2>
                   <p className="text-[10px] text-red-500 font-black uppercase tracking-widest mt-1 italic">* Reassigning portfolio of soft-deleted representatives</p>
                 </div>
 
                 <div className="space-y-6">
-                  <div className="p-6 bg-gray-50/50 rounded-[2rem] border border-gray-100 space-y-4">
-                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2"><AlertTriangle size={14} className="text-red-500" /> Select Inactive Source</label>
-                    <select value={transferFromId} onChange={(e) => handleFromRepChange(e.target.value)} className="w-full bg-white border-none rounded-2xl py-4 px-5 text-sm font-bold shadow-sm outline-none ring-1 ring-gray-100">
+                  <div className="p-6 bg-card/50 transition-colors duration-300 rounded-[2rem] border border-border transition-colors duration-300 space-y-4">
+                    <label className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest flex items-center gap-2"><AlertTriangle size={14} className="text-red-500" /> Select Inactive Source</label>
+                    <select value={transferFromId} onChange={(e) => handleFromRepChange(e.target.value)} className="w-full bg-card transition-colors duration-300 border-none rounded-2xl py-4 px-5 text-sm font-bold shadow-sm outline-none ring-1 ring-gray-100">
                       <option value="">Choose a deleted representative...</option>
                       {deletedReps.map((rep) => <option key={rep.user_id} value={rep.user_id}>{rep.name} (Deleted on {new Date(rep.deleted_at).toLocaleDateString()})</option>)}
                     </select>
@@ -420,7 +420,7 @@ const AssignUser = () => {
 
                   {transferFromId && (
                     <div className="space-y-4 animate-in fade-in duration-500">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">Orphaned Customers ({inactiveRepCustomers.length})</p>
+                      <p className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-[0.2em] ml-2">Orphaned Customers ({inactiveRepCustomers.length})</p>
                       
                       <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                         {inactiveRepCustomers.map((cust) => {
@@ -430,10 +430,10 @@ const AssignUser = () => {
                           );
 
                           return (
-                            <div key={cust.customer_id} className="bg-white border border-gray-100 p-5 rounded-[1.5rem] flex flex-col md:flex-row md:items-center justify-between gap-4 group hover:border-[#b4a460]/30 transition-all">
+                            <div key={cust.customer_id} className="bg-card transition-colors duration-300 border border-border transition-colors duration-300 p-5 rounded-[1.5rem] flex flex-col md:flex-row md:items-center justify-between gap-4 group hover:border-primary/30 transition-all duration-300 transition-all">
                               <div className="flex-1">
-                                <p className="text-sm font-black text-black">{cust.saloon_name}</p>
-                                <span className="inline-flex items-center gap-1.5 mt-1 text-[9px] font-black text-[#b4a460] bg-[#b4a460]/5 px-2.5 py-1 rounded-lg uppercase italic border border-[#b4a460]/10">
+                                <p className="text-sm font-black text-textMain transition-colors duration-300">{cust.saloon_name}</p>
+                                <span className="inline-flex items-center gap-1.5 mt-1 text-[9px] font-black text-primary transition-all duration-300 bg-primary/5 transition-all duration-300 px-2.5 py-1 rounded-lg uppercase italic border border-primary/10 transition-all duration-300">
                                   <MapPin size={10} /> {cust.district}
                                 </span>
                               </div>
@@ -441,7 +441,7 @@ const AssignUser = () => {
                               <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
                                 <select 
                                   id={`successor-${cust.customer_id}`}
-                                  className="w-full sm:w-56 bg-gray-50 border-none rounded-xl py-3 px-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-[#b4a460]"
+                                  className="w-full sm:w-56 bg-card transition-colors duration-300 border-none rounded-xl py-3 px-4 text-[11px] font-bold outline-none focus:ring-1 focus:ring-[#b4a460]"
                                 >
                                   <option value="">Select Successor...</option>
                                   {eligibleSuccessors.map(rep => <option key={rep.user_id} value={rep.user_id}>{rep.name}</option>)}
@@ -452,7 +452,7 @@ const AssignUser = () => {
                                     const targetId = document.getElementById(`successor-${cust.customer_id}`).value;
                                     handleIndividualTransfer(cust.customer_id, targetId, cust.saloon_name);
                                   }}
-                                  className="w-full sm:w-auto bg-black text-white px-5 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#b4a460] hover:text-black transition-all"
+                                  className="w-full sm:w-auto bg-black text-white px-5 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary transition-all duration-300 hover:text-textMain transition-colors duration-300 transition-all"
                                 >
                                   <UserCheck size={14} /> Assign
                                 </button>
