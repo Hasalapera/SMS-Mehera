@@ -82,7 +82,7 @@ const LandingPage = () => {
             <h3 className="font-bold text-lg">Sales Portal</h3>
             <p className="text-sm text-textMain/50 transition-colors duration-300 italic">Real-time order tracking and operational excellence.</p>
           </div>
-          <div className="p-8 bg-card transition-all duration-500 ease-in-out text-white rounded-[2rem] space-y-4">
+          <div className="p-8 bg-card transition-all duration-500 ease-in-out rounded-[2rem] space-y-4">
             <ShieldCheck className="text-primary transition-all duration-300" size={32} />
             <h3 className="font-bold text-lg">Secure Access</h3>
             <p className="text-sm text-textMain/50 transition-colors duration-300 italic">Enterprise-grade security for your business data and assets.</p>
@@ -159,13 +159,13 @@ const LandingPage = () => {
       </section>
 
       {/* --- About & Workshops Section --- */}
-      <section id="about-section" className="py-24 px-8 bg-[#fafaf9]">
+      <section id="about-section" className="py-24 px-8 bg-background transition-all duration-300">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-20 items-center text-left">
           <div className="space-y-8">
             <div className="space-y-4">
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary transition-all duration-300">Est. 1998</span>
               <h2 className="text-5xl md:text-6xl font-serif leading-tight text-textMain transition-colors duration-300">
-                The Art of <br /> <span className="italic text-primary transition-all duration-300">Professional</span> Beauty.
+                The Art of <br /> <span className="italic text-primary transition-all duration-300">Professional</span> <span className="italic text-primary transition-all duration-300">Beauty.</span>
               </h2>
               <p className="text-textMain/50 transition-colors duration-300 text-lg leading-relaxed font-sans italic max-w-md">
                 Mehera International is a leading force in the beauty industry, bringing the world's most sophisticated formulations to Sri Lanka.

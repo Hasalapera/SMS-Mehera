@@ -1,10 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import {
   Instagram, Facebook, Twitter, Mail, MapPin,
   Phone, Heart, Leaf, Star, Sparkles
 } from 'lucide-react';
 
 const Footer = () => {
+  const navigate = useNavigate();
+  const [systemSettings, setSystemSettings] = useState(null);
+  const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
+
+  useEffect(() => {
+    const fetchBranding = async () => {
+      try {
+        const res = await axios.get('http://localhost:5001/api/settings/public');
+        setSystemSettings(res.data);
+      } catch (err) {
+        console.error("Footer branding fetch failed:", err);
+      }
+    };
+    fetchBranding();
+
+    const handleThemeChange = () => setIsDark(document.documentElement.classList.contains('dark'));
+    window.addEventListener('themeChange', handleThemeChange);
+    return () => window.removeEventListener('themeChange', handleThemeChange);
+  }, []);
+
+  const handleNavigation = (path) => {
+    navigate(path);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const getDynamicLogo = () => {
+    const dbLogo = isDark ? systemSettings?.dark_logo_url : systemSettings?.light_logo_url;
+    return dbLogo || (isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/nzwPbHWj/mehera-logo.png");
+  };
+
   return (
     <footer className="w-full bg-background transition-all duration-300 border-t border-border transition-colors duration-300 pt-16 pb-8 px-10 mt-auto">
       <div className="max-w-7xl mx-auto">
@@ -43,9 +75,9 @@ const Footer = () => {
               onClick={() => handleNavigation('/')}
             >
               <img
-                src="https://i.postimg.cc/nzwPbHWj/mehera-logo.png"
+                src={getDynamicLogo()}
                 alt="Mehera International Logo"
-                className="h-8 md:h-10 w-auto object-contain"
+                className="h-8 md:h-10 w-auto object-contain transition-opacity duration-500 ease-in-out will-change-opacity"
               />
             </div>
             <p className="text-textMain/50 transition-colors duration-300 text-xs leading-relaxed font-medium">
