@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 // import { 
 //   Bell, Package, User, Users, ShoppingCart, Trash2, Check, CheckAll,
@@ -16,9 +16,9 @@ import {
   AlertCircle,
   TrendingDown,
   UserPlus,
-  Zap
+  Zap,
 } from 'lucide-react';
-import { toast, Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { useAuth } from "../context/AuthContext";
 
 const Inbox = () => {
@@ -27,6 +27,8 @@ const Inbox = () => {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
   const [unreadCounts, setUnreadCounts] = useState({});
+  const [fontScale, setFontScale] = useState(1);
+  const wrapperRef = useRef(null);
 
   useEffect(() => {
     if (!token) return;
@@ -35,6 +37,26 @@ const Inbox = () => {
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, [token]);
+
+  useEffect(() => {
+    const handleScaling = () => {
+      if (wrapperRef.current) {
+        const availableWidth = wrapperRef.current.offsetWidth;
+        const designWidth = 800; // Original Design Base
+
+        if (availableWidth < designWidth) {
+          const ratio = availableWidth / designWidth;
+          setFontScale(ratio);
+        } else {
+          setFontScale(1);
+        }
+      }
+    };
+
+    handleScaling();
+    window.addEventListener("resize", handleScaling);
+    return () => window.removeEventListener("resize", handleScaling);
+  }, []);
 
   const fetchNotifications = async () => {
     try {
@@ -129,31 +151,39 @@ const Inbox = () => {
   }
 
   return (
-    <div className="w-full min-h-screen bg-background">
-      <Toaster position="top-right" />
+    <div ref={wrapperRef} className="w-full min-h-screen bg-background overflow-x-hidden">
 
       {/* Black Header */}
-      <div className="bg-black px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b-4 border-primary dark:border-b-4">
-        <div className="flex items-center gap-5">
-          <div className="p-3 bg-primary rounded-2xl text-black dark:text-black">
-            <Bell size={26} strokeWidth={2.5} />
+      <div className="bg-card px-[2em] py-[1.75em] flex flex-col md:flex-row items-center justify-between gap-[1.25em] border-b border-border transition-all duration-500">
+        <div className="flex items-center gap-[1.25em]">
+          {/* 🔔 Icon Box - මේක branding නිසා primary පාටටම තියෙන එක ලස්සනයි */}
+          <div className="p-[0.75em] bg-primary rounded-[1.25em] text-black">
+            <Bell size={26 * fontScale} strokeWidth={2.5} />
           </div>
+          
           <div>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">
+            <p className="text-[0.625em] font-bold text-textMain/50 uppercase tracking-widest mb-[0.1em]">
               Communication Center
             </p>
-            <h1 className="text-2xl font-black text-white uppercase tracking-tight">Notification Inbox</h1>
+            <h1 className="text-[1.5em] font-black text-textMain uppercase tracking-tight leading-none">
+              Notification Inbox
+            </h1>
           </div>
         </div>
 
         {unreadCount > 0 && (
-          <div className="flex items-center gap-4">
-            <div className="px-4 py-2.5 bg-primary/20 rounded-2xl flex items-center gap-2">
-              <span className="text-sm font-black text-primary">{unreadCount} Unread</span>
+          <div className="flex items-center gap-[1em]">
+            {/* 🏷️ Unread Badge */}
+            <div className="px-[1em] py-[0.6em] bg-primary/10 rounded-[1em] flex items-center gap-[0.5em]">
+              <span className="text-[0.875em] font-black text-primary italic">
+                {unreadCount} Unread
+              </span>
             </div>
+            
+            {/* 🔘 Mark All Read Button */}
             <button
               onClick={handleMarkAllAsRead}
-              className="px-4 py-2.5 bg-white text-black rounded-lg text-[9px] font-black uppercase tracking-widest hover:shadow-lg transition-all"
+              className="px-[1em] py-[0.6em] bg-background text-textMain border border-border rounded-[0.5em] text-[0.5625em] font-black uppercase tracking-widest hover:bg-primary hover:text-black transition-all shadow-sm focus:outline-none"
             >
               Mark All Read
             </button>
@@ -174,10 +204,10 @@ const Inbox = () => {
             <button
               key={tab.key}
               onClick={() => setActiveFilter(tab.key)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap focus:outline-none ${
                 activeFilter === tab.key
                   ? 'bg-black text-primary dark:bg-primary dark:text-black shadow-lg'
-                  : 'bg-card text-textMain border border-border dark:border-gray-700 hover:border-primary/30'
+                  : 'bg-card text-textMain border border-border hover:border-primary/30'
               }`}
             >
               <tab.icon size={14} />
@@ -203,7 +233,7 @@ const Inbox = () => {
                   key={notification.notification_id}
                   className={`p-5 rounded-[1.5rem] border transition-all ${
                     notification.is_read
-                      ? `bg-card border-border dark:border-gray-700 opacity-75`
+                      ? `bg-card border-border opacity-75`
                       : `${config.bgColor} border-primary/20 ring-1 ring-primary/10`
                   }`}
                 >
@@ -248,7 +278,7 @@ const Inbox = () => {
                       {!notification.is_read && (
                         <button
                           onClick={() => handleMarkAsRead(notification.notification_id)}
-                          className="p-2 hover:bg-primary/20 rounded-lg transition-all text-primary"
+                          className="p-2 hover:bg-primary/20 rounded-lg transition-all text-primary focus:outline-none"
                           title="Mark as read"
                         >
                           <Check size={16} />
@@ -256,7 +286,7 @@ const Inbox = () => {
                       )}
                       <button
                         onClick={() => handleDelete(notification.notification_id)}
-                        className="p-2 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-all text-gray-400 hover:text-red-600"
+                        className="p-2 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-all text-gray-400 hover:text-red-600 focus:outline-none"
                         title="Delete"
                       >
                         <Trash2 size={16} />
@@ -273,7 +303,7 @@ const Inbox = () => {
             <h3 className="text-lg font-black text-textMain uppercase">No Notifications</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
               {activeFilter === 'all'
-                ? "You're all caught up! 🎉"
+                ? "You're all caught up!"
                 : `No ${activeFilter} notifications yet`}
             </p>
           </div>

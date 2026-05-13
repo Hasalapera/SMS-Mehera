@@ -281,7 +281,7 @@ const getCustomersByRep = async (req, res) => {
 };
 
 // 4. අලුත් එකක්: Get Eligible Customers for a Rep
-// (රෙප් කෙනෙක්ගේ දිස්ත්‍රික්කවල ඉන්න, තාම කාටවත් Assign කරලා නැති අයව ගන්න)
+// (Take people who are in a rep's district and haven't been assigned to anyone yet.)
 const getEligibleCustomersForRep = async (req, res) => {
     try {
         const { repId } = req.params;
@@ -332,14 +332,13 @@ const getDeletedSalesReps = async (req, res) => {
             },
             attributes: ['user_id', 'name', 'email', 'deleted_at'],
             paranoid: false,
-            // 💡 මෙන්න මෙතන තමයි මැජික් එක:
             include: [{
                 model: Customer,
-                as: 'assignedCustomers', // මේක උඹේ Model එකේ association එකට දීපු නම (බොහෝ විට customers)
-                attributes: [], // කස්ටමර් ඩේටා අපිට ඕනෙ නැහැ, ඉන්නවද කියලා බැලුවම ඇති
-                required: true  // INNER JOIN: මේකෙන් වෙන්නේ කස්ටමර්ස්ලා නැති අයව ඔටෝම හැලෙන එක
+                as: 'assignedCustomers', // given name for model association
+                attributes: [], // no need customer data here, just want to check if there are assigned customers
+                required: true  // INNER JOIN: only get sales reps who have assigned customers (even if they are deleted)
             }],
-            group: ['User.user_id'] // Group කරමු duplications නොවෙන්න
+            group: ['User.user_id'] // group by user_id to avoid duplicates due to join with customers
         });
         res.status(200).json(deletedReps);
     } catch (err) {
@@ -352,13 +351,13 @@ const getReplacementCandidates = async (req, res) => {
     try {
         const { deletedRepId } = req.params;
 
-        // අයින් කරපු රෙප්ගේ දිස්ත්‍රික්ක ටික ගමු
+        // get the districts of the deleted sales rep
         const deletedRepAreas = await UserArea.findAll({ 
             where: { user_id: deletedRepId } 
         });
         const districtNames = deletedRepAreas.map(a => a.district_name);
 
-        // ඒ දිස්ත්‍රික්ක වල දැනට වැඩ කරන, ඇක්ටිව් රෙප්ලා ටික ගමු
+        // get active sales reps who can cover those districts
         const candidates = await User.findAll({
             where: { 
                 role: 'sales_rep',
