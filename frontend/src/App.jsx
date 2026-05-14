@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./pages/context/AuthContext";
+import { NotificationProvider } from "./pages/context/NotificationContext";
 import DashboardLayout from "./components/DashboardLayout";
 import { useEffect } from "react";
 import axios from "axios";
@@ -100,6 +101,7 @@ function App() {
   }, []);
 
   return (
+    <NotificationProvider>
     <> 
       <Toaster
         position="top-right"
@@ -354,7 +356,8 @@ function App() {
      
       <FloatingPopup /> 
 
-    </> 
+    </>
+    </NotificationProvider> 
   );
 }
 
