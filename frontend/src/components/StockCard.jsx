@@ -5,6 +5,7 @@ import { Eye, TrendingDown } from 'lucide-react';
 const StockCard = ({ product }) => {
   const navigate = useNavigate();
 
+  // Get all variants of the product (empty array if none)
   const variants = product?.variants || [];
   const totalStock = variants.reduce((sum, item) => sum + Number(item.stock_count || 0), 0);
 
@@ -14,6 +15,7 @@ const StockCard = ({ product }) => {
     .filter(Boolean)
     .map((d) => new Date(d));
 
+  // Find recent updaeted varient
   const latestVariantDate = variantDates.length
     ? new Date(Math.max(...variantDates.map((dt) => dt.getTime())))
     : null;
@@ -103,9 +105,9 @@ const StockCard = ({ product }) => {
           </div>
         </div>
         <div className="text-right min-w-[110px]">
-  <p className="text-[9px] font-bold text-textMain/50 transition-colors duration-300 uppercase tracking-widest mb-0.5">Updated</p>
-  <p className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 text-right">{lastUpdated}</p>
-</div>
+          <p className="text-[9px] font-bold text-textMain/50 transition-colors duration-300 uppercase tracking-widest mb-0.5">Updated</p>
+          <p className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 text-right">{lastUpdated}</p>
+        </div>
       </div>
 
       {/* -- Variants List (Scrollable) -- */}
@@ -132,7 +134,7 @@ const StockCard = ({ product }) => {
                     />
                   </div>
 
-                  {/* Variant Info */}
+                  {/* Variant name, stock count */}
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-black text-textMain transition-colors duration-300 truncate">{v.variant_name || v.sku || 'Variant'}</p>
                     <p className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 mt-0.5">

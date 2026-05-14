@@ -1,13 +1,16 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 
+// Create notification context
 const NotificationContext = createContext();
 
+// Provider component
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
 
+  // Add new notification to the top
   const addNotification = useCallback((notification) => {
     const newNotif = {
-      notification_id: Date.now().toString(),
+      notification_id: Date.now().toString(), // Temporary ID
       is_read: false,
       read_at: null,
       created_at: new Date(),
@@ -17,6 +20,7 @@ export const NotificationProvider = ({ children }) => {
     return newNotif;
   }, []);
 
+  // Mark single notification as read
   const markAsRead = useCallback((id) => {
     setNotifications(prev =>
       prev.map(n =>
@@ -27,16 +31,19 @@ export const NotificationProvider = ({ children }) => {
     );
   }, []);
 
+  // Mark all notifications as read
   const markAllAsRead = useCallback(() => {
     setNotifications(prev =>
       prev.map(n => ({ ...n, is_read: true, read_at: new Date() }))
     );
   }, []);
 
+  // Delete notification
   const deleteNotification = useCallback((id) => {
     setNotifications(prev => prev.filter(n => n.notification_id !== id));
   }, []);
 
+  // Get unread count by type
   const getUnreadByType = useCallback(() => {
     const counts = {};
     notifications.forEach(notif => {
@@ -63,6 +70,7 @@ export const NotificationProvider = ({ children }) => {
   );
 };
 
+// Custom hook to use notifications anywhere
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {

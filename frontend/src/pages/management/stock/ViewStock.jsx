@@ -10,10 +10,12 @@ const ViewStock = () => {
   const { token, logout } = useAuth();
   const navigate = useNavigate();
 
+  // State: list of all products from backend
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
+  //check if user is logged in
   useEffect(() => {
     if (!token) {
       navigate('/');
@@ -60,7 +62,7 @@ const ViewStock = () => {
 
   return (
     <div className="w-full min-h-screen bg-background transition-colors duration-300 animate-in fade-in duration-500">
-
+      {/* Page Header */}
       <div className=" px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b-4 border-primary transition-all duration-300">
         <div className="flex items-center gap-5">
           <div className="p-3 bg-primary transition-all duration-300 rounded-2xl text-textMain transition-colors duration-300">
@@ -91,6 +93,7 @@ const ViewStock = () => {
       </div>
 
       <div className="p-6 md:p-8">
+        {/* Search Bar */}
         <div className="bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-[2.5rem] shadow-sm p-6 mb-8">
           <div className="flex items-center gap-4">
             <Search size={20} className="text-textMain/50 transition-colors duration-300" />
@@ -102,8 +105,9 @@ const ViewStock = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-        </div>
-
+        </div>   
+        
+         {/* Product Grid or Empty State */}
         {filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (

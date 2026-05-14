@@ -54,6 +54,7 @@ const AddStock = () => {
       return;
     }
 
+    // Create a temporary stock queue object for a selected product
     const queueProduct = {
       product_id: product.product_id,
       product_name: product.product_name,
