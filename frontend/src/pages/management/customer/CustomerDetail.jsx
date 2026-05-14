@@ -119,7 +119,9 @@ export default function CustomerDetail() {
         setNotes((current) => [addedNote, ...current]);
         setNoteText('');
         setSelectedTag('general');
-        toast.success('Note added successfully', { duration: 1200 });
+        const successToastId = toast.success('Note added successfully', { duration: 1200 });
+        // Force dismiss after 1200ms to ensure it disappears on mobile
+        setTimeout(() => toast.dismiss(successToastId), 1200);
       }
     } catch (err) {
       console.error('Failed to add note:', err);
@@ -171,7 +173,9 @@ export default function CustomerDetail() {
         }
       );
       setNotes((current) => current.filter((note) => note.note_id !== noteId));
-      toast.success('Note deleted successfully', { duration: 1200 });
+       const successToastId = toast.success('Note deleted successfully', { duration: 1200 });
+      // Force dismiss after 600ms to ensure it disappears on mobile
+      setTimeout(() => toast.dismiss(successToastId), 1200);
     } catch (err) {
       console.error('Failed to delete note:', err);
       if (err.response?.status === 401) {
@@ -295,7 +299,7 @@ export default function CustomerDetail() {
                   className="w-full bg-card transition-colors duration-300 border border-border transition-colors duration-300 focus:border-primary transition-all duration-300 focus:ring-2 focus:ring-[#b4a460]/10 rounded-xl py-3 px-4 text-sm text-textMain outline-none resize-none transition-all mb-4"
                 />
 
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest flex items-center gap-1">
                       <Tag size={11} /> Tag:
