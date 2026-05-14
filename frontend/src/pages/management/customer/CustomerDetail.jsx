@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import {
   ArrowLeft, Building2, UserCircle, Phone,
@@ -118,6 +119,7 @@ export default function CustomerDetail() {
         setNotes((current) => [addedNote, ...current]);
         setNoteText('');
         setSelectedTag('general');
+        toast.success('Note added successfully', { duration: 1200 });
       }
     } catch (err) {
       console.error('Failed to add note:', err);
@@ -125,15 +127,42 @@ export default function CustomerDetail() {
         logout();
         return;
       }
-      alert(err.response?.data?.error || 'Failed to save note. Please try again.');
+      toast.error(err.response?.data?.error || 'Failed to save note. Please try again.');
     } finally {
       setSavingNote(false);
     }
   };
 
   const handleDeleteNote = async (noteId) => {
-    if (!window.confirm('Delete this note?')) return;
+    // Show confirmation toast with theme colors
+    toast((t) => (
+      <div className="flex min-w-65 flex-col gap-3 rounded-xl border border-border bg-card p-3 shadow-md">
+        <p className="font-medium text-textMain">Delete this note?</p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              toast.remove(t.id);
+              confirmDelete(noteId);
+            }}
+            className="px-3 py-1 bg-red-500 text-white rounded text-sm font-medium hover:bg-red-600 transition-colors"
+          >
+            Delete
+          </button>
+          <button
+            onClick={() => {
+              toast.dismiss(t.id);
+              toast('Deletion cancelled', { duration: 1500 });
+            }}
+            className="px-3 py-1 bg-primary text-textMain rounded text-sm font-medium hover:opacity-90 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    ), { duration: 10000 });
+  };
 
+  const confirmDelete = async (noteId) => {
     try {
       await axios.delete(
         `http://localhost:5001/api/customers/${id}/notes/${noteId}`,
@@ -142,13 +171,14 @@ export default function CustomerDetail() {
         }
       );
       setNotes((current) => current.filter((note) => note.note_id !== noteId));
+      toast.success('Note deleted successfully', { duration: 1200 });
     } catch (err) {
       console.error('Failed to delete note:', err);
       if (err.response?.status === 401) {
         logout();
         return;
       }
-      alert(err.response?.data?.error || 'Failed to delete note. Please try again.');
+      toast.error(err.response?.data?.error || 'Failed to delete note. Please try again.', { duration: 2000 });
     }
   };
 
