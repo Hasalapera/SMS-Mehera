@@ -45,19 +45,19 @@ const getBirthdayFromNIC = (nic) => {
 
   if (days > 500) days -= 500;
 
-  // 🔴 වැදගත්: ලංකාවේ NIC වල පෙබරවාරි 29 හැම අවුරුද්දකම තියෙනවා කියලා සලකනවා.
-  // ඒ නිසා අධික අවුරුද්දක් නොවන වසරකදී දවස් 60 හෝ ඊට වැඩි නම්, 
-  // JavaScript වල දවසක් ඉදිරියට යන නිසා එකක් අඩු කරන්න ඕනේ.
+  // Important: Sri Lankan NICs consider February 29th to be every year.
+// So if there are 60 or more days in a non-leap year, 
+// JavaScript advances one day, so one must be subtracted.
   const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
   if (!isLeap && days >= 60) {
     days -= 1;
   }
 
-  // 🔴 Timezone අවුල නැති කරන්න මෙහෙම හදමු
+  //prevent Timezone problem
   const dob = new Date(year, 0); 
   dob.setDate(days);
 
-  // ISO string වෙනුවට දවස පස්සට නොයන විදිහට YYYY-MM-DD format එක ගමු
+  // instead of ISO string get YYYY-MM-DD format 
   const y = dob.getFullYear();
   const m = String(dob.getMonth() + 1).padStart(2, '0');
   const d = String(dob.getDate()).padStart(2, '0');
@@ -73,12 +73,11 @@ const handleChange = (e) => {
   const { name, value } = e.target;
   let updatedData = { ...formData, [name]: value };
 
-  // 🔴 මෙතන තමයි වැඩේ වෙන්නේ:
-  // යූසර් NIC එක ටයිප් කරනකොට ඒක 10ක් හෝ 12ක් වුණ ගමන් DOB එක හදමු
+  //dob generate wenna 
   if (name === 'nic_no') {
     const extractedDob = getBirthdayFromNIC(value);
     if (extractedDob) {
-      updatedData.dob = extractedDob; // Calendar එකට ඔටෝම සෙට් වෙනවා
+      updatedData.dob = extractedDob; // set automatically to calender
     }
   }
 

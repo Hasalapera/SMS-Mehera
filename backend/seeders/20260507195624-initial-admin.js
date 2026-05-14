@@ -9,7 +9,7 @@ module.exports = {
     const adminPassword = process.env.INITIAL_ADMIN_PASSWORD;
 
     if (!adminEmail || !adminPassword) {
-      console.error("❌ Skipping Seed: Credentials missing in .env");
+      console.error("Skipping Seed: Credentials missing in .env");
       return;
     }
 
