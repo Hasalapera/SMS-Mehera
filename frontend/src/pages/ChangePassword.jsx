@@ -81,7 +81,7 @@ const ChangePassword = () => {
           {/* New Password */}
           <div className="relative">
             <input 
-              type={showNewPassword ? "text" : "password"} // 👈 Type එක state එක අනුව මාරු වෙනවා
+              type={showNewPassword ? "text" : "password"} //The type changes depending on the state.
               placeholder="New Password" 
               className="w-full bg-black border border-border p-4 rounded-2xl focus:border-primary transition-all duration-300 outline-none transition-all pr-12 text-sm"
               onChange={(e) => setNewPassword(e.target.value)}

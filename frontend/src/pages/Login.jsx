@@ -58,10 +58,10 @@ const Login = () => {
           password
       });
 
-      // 1. Backend එකෙන් එන දත්ත ටික Destructure කරගමු
+      // 1. destructure the data coming from the backend.
       const { user, accessToken, refreshToken, expiresAt, mustChangePassword, user_id, role } = response.data;
 
-      // 2. Case 01: Password වෙනස් කළ යුතු නම්
+      // 2. Case 01: Password eka wenas karanna oninam
       if (mustChangePassword === true) {
           const tempUser = { 
               user_id: user_id, 
@@ -69,16 +69,16 @@ const Login = () => {
               role: role || 'user' 
           };
 
-          // 🔴 වැදගත්: පරාමිති 4ම නියමිත පිළිවෙලට යවන්න
+          //parameters 4ma hari piliwelata yawanawa
           login(tempUser, accessToken, refreshToken, expiresAt); 
           
           navigate('/change-password', { state: { userId: user_id } });
           return;
       }
       
-      // 3. Case 02: සාමාන්‍ය Login වීම
+      // 3. Case 02: normal login
       else {
-          // 🔴 වැදගත්: මෙතනත් පරාමිති 4ම නිවැරදි පිළිවෙලට
+          //4 parameters hari piliwelata
           login(user, accessToken, refreshToken, expiresAt); 
           
           navigate(user.redirectPath || '/dashboard');

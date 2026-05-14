@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sun, Moon, Monitor } from 'lucide-react';
 
 const ThemeSettings = () => {
-  // බ්‍රවුසරයේ කලින් සේව් කරපු theme එක ගන්නවා, නැත්නම් default 'light'
+  // The browser will take the previously saved theme, or the default 'light'.
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
   useEffect(() => {

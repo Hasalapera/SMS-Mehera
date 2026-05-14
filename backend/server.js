@@ -82,8 +82,6 @@ const startServer = async () => {
     console.log('✓ Database connection successful');
 
     // 👈 REMOVE sync completely! Only authenticate
-    // එක වෙලාවට ඔයා හදලා තිබුණු සෙට් අප් එක දැනටමත් උසස්:
-    // සර්වර් එක NEVER sync කරන්න development වලත්!
     
     console.log('✓ Database ready');
 

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import axios from 'axios'; // 👈 axios import කරන්න අමතක කරන්න එපා
+import axios from 'axios'; 
 import { Phone, Mail, Clock, MapPin, Facebook, Instagram, Send } from 'lucide-react';
 import StatNavBar from '../components/StatNavBar';
 import Footer from '../components/Footer';
@@ -7,13 +7,13 @@ import Swal from 'sweetalert2';
 
 const Contact = () => {
   const form = useRef();
-  const [loading, setLoading] = useState(false); // 👈 loading state එකක් එකතු කළා
+  const [loading, setLoading] = useState(false); 
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  // --- Nodemailer හරහා Backend එකට Data යවන Function එක ---
+  // --- Nodemailer through Backend ekata Data  Function  ---
   const sendEmail = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -163,7 +163,7 @@ const Contact = () => {
 
               <button 
                 type="submit" 
-                disabled={loading} // 👈 load වෙන වෙලාවට button එක disable කරනවා
+                disabled={loading} //Disable the button when loading
                 className={`w-full py-5 bg-black text-primary transition-all duration-300 rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 shadow-xl ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-card transition-all duration-300'}`}
               >
                 {loading ? "Sending..." : "Send Message"} <Send size={16} />

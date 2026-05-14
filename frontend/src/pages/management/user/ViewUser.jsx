@@ -14,7 +14,7 @@ const ViewUser = () => {
   const [selectedRole, setSelectedRole] = useState("all"); // Filter එක සඳහා
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState("all"); // "all", "active", "deleted" වගේ values තියෙන state එකක්
+  const [statusFilter, setStatusFilter] = useState("all"); // "all", "active", "deleted" 
 
   const user = JSON.parse(localStorage.getItem('user')); 
 
@@ -46,7 +46,7 @@ const ViewUser = () => {
       if (response.data && Array.isArray(response.data.users)) {
         setUsers(response.data.users);
       } else {
-        setUsers([]); // දත්ත නැත්නම් හිස් array එකක්
+        setUsers([]); //if not data -> empty array
       }
       // setUsers(response.data);
     } catch (err) {
@@ -61,7 +61,7 @@ const ViewUser = () => {
     fetchUsers();
   }, []);
 
-  // Filter Logic: Search term සහ Selected Role දෙකම අනුව
+  // Filter Logic: Search term and Selected Role 
   const filteredUsers = users.filter((user) => {
     const name = user.full_name || user.name || "";
     const email = user.email || "";
@@ -100,7 +100,7 @@ const handleRestore = async (userId, userName) => {
       inputLabel: 'Enter Admin Password to confirm',
       inputPlaceholder: 'Enter your password',
       inputAttributes: {
-        autocomplete: 'new-password', // 👈 Autofill එක නවත්වන මැජික් එක
+        autocomplete: 'new-password', 
         autocapitalize: 'off',
         name: 'admin_password_verify'
       }
@@ -112,15 +112,6 @@ const handleRestore = async (userId, userName) => {
         await axios.put(`http://localhost:5001/api/users/restore-user/${userId}`, { adminPassword }, {
           headers: { Authorization: `Bearer ${token}` }
         });
-
-        // ✅ Success Alert එකෙත් MySwal පාවිච්චි කරලා Cancel button එක අයින් කරන්න
-        // MySwal.fire({
-        //   title: 'Account Restored!',
-        //   text: `${userName}'s account is active again.`,
-        //   icon: 'success',
-        //   showCancelButton: false, // Success එකේදී cancel button එක වැඩක් නෑනේ
-        //   confirmButtonText: 'Great!'
-        // });
         toast.success(`${userName}'s account has been restored!`);
 
         fetchUsers();
@@ -163,21 +154,9 @@ const handleResetPassword = async (userId, userName) => {
         );
 
         toast.success(`New credentials sent to ${userName}!`);
-        // MySwal.fire({
-        //   title: 'Registry Updated!',
-        //   text: `New credentials sent to ${userName}.`,
-        //   icon: 'success',
-        //   showCancelButton: false
-        // });
         fetchUsers();
       } catch (err) {
         toast.error("Failed to reset password.");
-        // MySwal.fire({
-        //   title: 'Security Error',
-        //   text: err.response?.data?.error || "Verification failed.",
-        //   icon: 'error',
-        //   showCancelButton: false
-        // });
       }
     }
   }
@@ -301,7 +280,7 @@ const handleResetPassword = async (userId, userName) => {
                     <td className="px-6 py-4 text-right">
                     <div className="flex justify-end items-center gap-2">
                       
-                      {/* 1. ප්‍රධාන බටන් එක (View Profile) - හැමෝටම පේනවා */}
+                      {/* 1. main button (View Profile) show anyone */}
                       {(user?.role === 'admin' || isDeactivated) && (
                         <button 
                           onClick={() => navigate(`/profile/${emp.user_id}`)}
@@ -312,14 +291,13 @@ const handleResetPassword = async (userId, userName) => {
                         </button>
                       )}
 
-                      {/* 2. අනිත් සේරම වැඩ කෑලි ටික මේ Dropdown එක ඇතුළට */}
                       {user?.role === 'admin' && (
                         <div className="relative group/menu">
                           <button className="p-2 text-textMain/50 transition-colors duration-300 hover:text-textMain transition-colors duration-300 hover:bg-gray-100 rounded-lg transition-all">
                             <MoreVertical size={18} />
                           </button>
 
-                          {/* Dropdown Menu - Hover කරද්දී පේන විදිහට (නැත්නම් State එකකින් හදන්නත් පුළුවන්) */}
+                          {/* Dropdown Menu */}
                           <div className="absolute right-0 mt-2 w-48 bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-2xl shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-50 py-2">
                             
                             {/* Reset Password Option */}

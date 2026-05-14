@@ -109,7 +109,7 @@ const Navbar = () => {
                     />
                 </div>
 
-                {/* --- Desktop Menu (මෙහි navLinks වෙනුවට filteredLinks පාවිච්චි කරන්න) --- */}
+                {/* --- Desktop Menu (use filteredLinks ) --- */}
                 <div className="hidden lg:flex gap-4 text-[11px] font-bold uppercase tracking-widest">
                     {filteredLinks.map((link) => (
                         <NavLink 
@@ -149,7 +149,7 @@ const Navbar = () => {
                 </div>
             </div>
 
-            {/* --- Mobile Menu (මෙහිත් filteredLinks පාවිච්චි කරන්න) --- */}
+            {/* --- Mobile Menu (use filteredLinks ) --- */}
             <div className={`lg:hidden overflow-hidden transition-all duration-500 bg-card transition-colors duration-300 border-t border-border transition-colors duration-300 ${isOpen ? 'max-h-[100vh] opacity-100' : 'max-h-0 opacity-0'}`}>
                 <div className="max-w-full flex flex-col p-6 gap-6">
                     <div className="flex flex-col gap-2">

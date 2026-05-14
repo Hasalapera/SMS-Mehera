@@ -82,8 +82,7 @@ export const AuthProvider = ({ children }) => {
             setRefreshToken(null);
             setIsTokenExpiring(false);
             
-            // 🔴 මෙතනයි උඹේ logic එක: 
-            // manual logout එකේදී '/' එකට යනවා, expiry එකේදී '/login' එකට යනවා
+            // During manual logout, go to '/', during expiry, go to '/login'
             window.location.href = target;
         }
     };
@@ -102,7 +101,7 @@ export const AuthProvider = ({ children }) => {
         } else if (secondsLeft <= 0) {
             console.warn('⏰ Token expired!');
             
-            // 🔴 සෙෂන් එක ඉවර වුණොත් විතරක් බලෙන් Login එකට යවන්න
+            //Force login only if the session ends.
             logout('/login'); 
         }
     };

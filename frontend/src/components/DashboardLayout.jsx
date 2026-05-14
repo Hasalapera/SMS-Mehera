@@ -44,11 +44,8 @@ const DashboardLayout = () => {
   };
 
   if (!user) return null;
-  // 1. Sidebar පෙන්විය යුතු Roles (Admin සහ Manager)
+  // 1. roles should show side bar (admin, manager)
   const isSidebarRole = ['admin', 'manager'].includes(userRole);
-
-  // // User ලොග් වෙලා නැත්නම් Login එකට යවනවා
-  //   <Navigate to="/login" />;
 
   return (
     <div className="flex-1 min-h-screen bg-background transition-all duration-500 ease-in-out">
@@ -74,7 +71,7 @@ const DashboardLayout = () => {
           <main className={`transition-all duration-300 ease-in-out pt-20 md:pt-0 ${
             isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'
           }`}>
-            {/* Mobile Screen එකකදී Sidebar එක content එක වහන්නේ නැති වෙන්න මේ padding එක උදව් වෙනවා */}
+            {/* helps to prevent the sidebar from covering the content on a mobile screen. */}
             <div className="p-4 md:p-10 max-w-[1600px] mx-auto w-full">
               <Outlet />
             </div>
@@ -83,7 +80,6 @@ const DashboardLayout = () => {
       ) : (
         // Horizontal Layout (Sales Rep / Store Keeper)
         <div className="flex flex-col">
-          {/* මෙතනට ඔයාගේ අලුත් Navbar එක දාන්න */}
           <Navbar /> 
           <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full">
             <Outlet />

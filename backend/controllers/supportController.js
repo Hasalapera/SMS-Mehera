@@ -3,7 +3,7 @@ const pool = require('../db/db');
 const crypto = require('crypto');
 const {User, sequelize} = require('../models');
 
-// Support Controller - Handles support email sending and admin contact retrieval
+// Support Controller - Handles support email sending and admin contact retrieval (AES-256-CBC)
 const decryptContact = (text) => {
     // If text is empty or doesn't contain ':', return it as is (not encrypted)
     if (!text) return "";

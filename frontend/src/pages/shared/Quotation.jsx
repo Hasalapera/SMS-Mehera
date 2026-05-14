@@ -103,7 +103,7 @@ const Quotation = () => {
 
   const itemsList = orderData.OrderItems || orderData.items || [];
 
-  // 💰 Backend එකෙන් එන අගයන් කෙළින්ම ගමු (නැතිනම් පමණක් calculate කරමු)
+  //get values directly from backend
   const subTotal = Number(orderData.subtotal) || itemsList.reduce((sum, item) => sum + (Number(item.qty) * Number(item.price)), 0);
   const discountVal = Number(orderData.discount_amount) || 0;
   const discountPercentage = Number(orderData.discount_percentage) || 0;
@@ -127,14 +127,14 @@ const Quotation = () => {
         </button>
       </div>
 
-      {/* Printable Quotation Wrapper - Mobile එකේදී scroll වෙන්න */}
+      {/* Printable Quotation Wrapper -scroll when Mobile */}
       <div ref={wrapperRef} className="w-full max-w-4xl mx-auto flex justify-center print:!block print:!h-auto">
         <div
           ref={componentRef}
           className="quotation-container w-[800px] bg-card text-textMain shadow-2xl overflow-hidden print:shadow-none print:m-0 origin-top print:!transform-none print:!bg-white print:!text-black"
           style={{ 
-            fontSize: `${fontScale * 16}px`, // 16px කියන්නේ Standard size එක. ඒක scale එකෙන් වැඩි කරනවා.
-            width: '50em', // 800px වෙනුවට 50em පාවිච්චි කරන්න (16 * 50 = 800)
+            fontSize: `${fontScale * 16}px`, 
+            width: '50em', 
           }}
         >
         {/* Header Section */}
@@ -256,7 +256,7 @@ const Quotation = () => {
             </thead>
             <tbody className="divide-y divide-border">
               {itemsList.map((item, idx) => {
-                // Backend එකෙන් එන දත්ත වල පිළිවෙළ අනුව name එක තෝරාගන්නවා
+                // select name in order to name from backend
                 const productName =
                   item.variant?.product?.product_name || "Stock Item";
                 const variantName = item.variant?.variant_name || "Standard";
@@ -267,7 +267,7 @@ const Quotation = () => {
                       #{item.product_id?.substring(0, 8)}
                     </td>
                     <td className="py-[1.25em]">
-                      {/* මෙතන තමයි Product Name එක පෙන්වන්නේ */}
+                      {/* show prodcut name */}
                       <p className="text-[0.6875em] font-black text-textMain print:text-black uppercase leading-none mb-1">
                         {productName}
                       </p>
@@ -305,7 +305,7 @@ const Quotation = () => {
             <span>LKR {subTotal.toLocaleString()}</span>
           </div>
 
-          {/* Order එකේදී ඇඩ් කරපු Discount එක පමණක් මෙතන පෙන්වයි */}
+          {/* discount*/}
           {discountVal > 0 && (
             <div className="flex justify-between text-[0.625em] font-bold text-red-500 uppercase">
               <span>Discount ({discountPercentage}%)</span>
@@ -313,7 +313,7 @@ const Quotation = () => {
             </div>
           )}
 
-          {/* අවසාන ගෙවිය යුතු මුදල */}
+          {/* final payable amount */}
           <div className="flex justify-between items-center pt-[0.75em] border-t-2 border-textMain print:border-black">
             <span className="text-[0.6875em] font-black text-textMain print:text-black uppercase">Net Total</span>
             <span className="text-[1.25em] font-black text-textMain print:text-black tabular-nums">Rs. {netTotal.toLocaleString()}</span>
@@ -382,18 +382,16 @@ const Quotation = () => {
           }
           .print\:hidden { display: none !important; }
 
-          /* 🛡️ මෙන්න මෙතන තමයි මැජික් එක වෙන්නේ */
           .quotation-container {
-            font-size: 16px !important; /* මොබයිල් එකේ scale එක reset කරනවා */
-            width: 800px !important;    /* Original desktop width එක force කරනවා */
+            font-size: 16px !important; 
+            width: 800px !important;    
             height: auto !important;
-            transform: none !important; /* මොනවා හරි transform තිබ්බොත් අයින් කරනවා */
+            transform: none !important; 
             margin: 0 auto !important;
             box-shadow: none !important;
             display: block !important;
           }
 
-          /* Table එකේ පේළි පිටු අතර කැඩෙන්නේ නැති වෙන්න */
           tr { page-break-inside: avoid; }
         }
       `,

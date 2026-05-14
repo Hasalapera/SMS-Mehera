@@ -1,7 +1,16 @@
 const { Product, ProductVariant, sequelize, Category, Brand } = require('../models');
 
+
+/**
+ * Handles Product and Variant creation with image uploading.
+ * 1. Creates the main (parent) product first and gets its ID.
+ * 2. Uses that ID to link multiple variants (e.g., sizes/colors) to the product.
+ * 3. Maps each variant to its specific image correctly using an image counter.
+ * 4. Saves all variants in parallel for better performance.
+ */
 const addProduct = async (req, res) => {
     try {
+        // frontend url eken ena wistara tika aragannawa
         const { product_name, brand_id, category_id, description, variants } = req.body;
         
         // 1. get main image URL (if Provided)
@@ -19,18 +28,27 @@ const addProduct = async (req, res) => {
         // 3. handle variants and their images
         const parsedVariants = JSON.parse(variants);
         const variantImages = req.files['variant_images'] || [];
+        // help to map relavant image for relavant variant
         let imageCounter = 0;
 
         // 4. create variants with their respective images
+
+        //Array ekak widihata thiyna variants list eka haraha eka eka loop ekak yanawa. async use karala time eka yanwawanam wait karala thygnnw
         const variantPromises = parsedVariants.map(async (v, index) => {
+            // indefaul null
             let vImgUrl = null;
+            // check karanawa variant ekata image ekak tiyeda kiyala
             if (v.hasImage) {
+                // Variant images liyisthuwe thiyena image counter ekata adalawa thiyena image path eka gannawa. eka vImgUrl ekata assign karanawa.
                 vImgUrl = variantImages[imageCounter] ? variantImages[imageCounter].path : null;
+                // ekak gaththa nisa, imageCounter eka ekakin wadi karanawa (0 thibba nam dan 1 wenawa).
+                // Ethakota ilaga variant ekata yaddi ilaga image eka ganna puluwan.
                 imageCounter++;
             }
 
-            // create variant with the image URL (if it has one)
+            // ProductVariant table eke aluth record ekak hadanawa.
             return await ProductVariant.create({
+                // main product eke ID eka methanadi variant ekata link karanawa.
                 product_id: newProduct.product_id,
                 sku: v.sku,
                 variant_name: v.variant_name,

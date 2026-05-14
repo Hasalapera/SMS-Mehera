@@ -1,6 +1,14 @@
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 
+/**
+ * verifyToken Middleware: Acts as a security guard for protected routes.
+ * 1. Extracts the JWT token from either the Authorization header or cookies.
+ * 2. If no token is found, denies access with a 401 Unauthorized status.
+ * 3. Verifies the token using the secret key.
+ * 4. If valid, attaches the decoded user info to the request object and calls next().
+ * 5. Handles expired or invalid tokens by returning specific error codes.
+ */
 const verifyToken = (req, res, next) => {
     // Authorization header එකෙන් token ගන්න
     const authHeader = req.headers['authorization'];

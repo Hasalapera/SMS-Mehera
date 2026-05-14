@@ -105,15 +105,15 @@ function App() {
         position="top-right"
         reverseOrder={false}
         containerStyle={{
-          zIndex: 99999, // zIndex එක වැඩි කරලා අනිත් හැමදේටම උඩින් පේන්න සලස්වනවා
+          zIndex: 99999, 
         }}
         gutter={8}
         toastOptions={{
-          // 💡 Global styling (සෑම ටෝස්ට් එකකටම පොදුවේ)
+          // 💡 Global styling 
           style: {
-            background: 'var(--color-card)', // සුදු පසුබිම
-            color: 'var(--color-text)',      // කළු අකුරු
-            borderRadius: '16px',  // වටකුරු ගතිය
+            background: 'var(--color-card)', 
+            color: 'var(--color-text)',      
+            borderRadius: '16px',  
             padding: '16px 24px',
             fontSize: '14px',
             fontWeight: '600',
@@ -122,23 +122,22 @@ function App() {
             transition: 'background-color 0.5s ease-in-out, color 0.5s ease-in-out, border-color 0.5s ease-in-out',
           },
 
-          // ✅ සාර්ථක වුණාම (Success Toast)
+          //success toast
           success: {
             duration: 2000,
             iconTheme: {
-              primary: '#b4a460', // උඹේ Gold color එක
+              primary: '#b4a460', 
               secondary: '#fff',
             },
             style: {
-              borderLeft: '5px solid #b4a460', // වම් පැත්තේ ලස්සන ඉරක්
+              borderLeft: '5px solid #b4a460', 
             },
           },
 
-          // ❌ වැරදුණාම (Error Toast)
           error: {
             duration: 3000,
             iconTheme: {
-              primary: '#ef4444', // රතු පාට
+              primary: '#ef4444', 
               secondary: '#fff',
             },
             style: {
@@ -257,7 +256,7 @@ function App() {
             }
           />
 
-          {/* 1. Dashboard එකට යන්න පුළුවන් Admin සහ Manager ට විතරයි */}
+          {/* 1. Dashboard can access Admin and Manager only */}
           <Route
             path="/dashboard"
             element={
@@ -282,7 +281,7 @@ function App() {
               )
             }
           />
-          {/* 3. User Management - Admin ට පමණි */}
+          {/* 3. User Management - Admin only */}
           <Route
             path="/addUser"
             element={

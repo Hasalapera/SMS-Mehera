@@ -58,7 +58,6 @@ export default function ProductDetail() {
 
   // --- ADD TO ORDER LOGIC (Fixed Notification Stalling) ---
   const handleAddToCart = (variant) => {
-    // 1. කලින් තියෙන Toast එක අතින් Dismiss කරලා අලුත් එකකට ඉඩ හදනවා
     toast.dismiss(); 
 
     const savedCart = JSON.parse(localStorage.getItem("active_order_cart") || "[]");
@@ -84,7 +83,7 @@ export default function ProductDetail() {
     localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
     window.dispatchEvent(new Event('focus')); 
 
-    // 2. 🔥 Luxury Style Toast (id එක අයින් කළා හිරවීම වැළැක්වීමට)
+    // 2. 🔥 Luxury Style Toast 
     toast.success(`${variant.variant_name} added to order!`, {
       style: {
         borderRadius: '1.5rem',

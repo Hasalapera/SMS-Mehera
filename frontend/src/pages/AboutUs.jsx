@@ -4,7 +4,6 @@ import StatNavBar from '../components/StatNavBar';
 import Footer from '../components/Footer';
 
 const AboutUs = () => {
-  // පේජ් එක ලෝඩ් වෙද්දී උඩටම ස්ක්‍රෝල් කිරීම
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);

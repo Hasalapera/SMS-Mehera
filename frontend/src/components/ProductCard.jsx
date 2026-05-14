@@ -19,7 +19,7 @@ const ProductCard = ({ product, onAddToCart }) => {
   // const displayStock = firstVariant ? firstVariant.stock_count : 0;
 
   const handleNavigation = () => {
-    // දැන් ලොග් වෙලා හිටියත් නැතත් ඕනෑම කෙනෙකුට පේජ් එක බලන්න පුළුවන් ✅
+    //anyone can show without login
     navigate(`/product/${product.product_id}`);
   };
 

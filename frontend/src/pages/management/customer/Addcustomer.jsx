@@ -96,7 +96,6 @@ const AddCustomer = () => {
       toast.success("Customer Registered Successfully!");
 
       if (isFromAssignUser) {
-        // තත්පර 1.5ක් වගේ පොඩි වෙලාවක් දීලා redirect කරනවා (ටෝස්ට් එක පේන්න ඕනේ නිසා)
         setTimeout(() => {
           navigate('/assign-user');
         }, 1500);
