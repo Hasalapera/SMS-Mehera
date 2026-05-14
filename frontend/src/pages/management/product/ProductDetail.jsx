@@ -144,7 +144,7 @@ export default function ProductDetail() {
             <div className="flex flex-col gap-6">
               <div className="flex items-center justify-center">
                 <div className="bg-background rounded-[2.5rem] w-full h-72 flex items-center justify-center p-6 border border-border shadow-inner">
-                  <img src={product.image_url || "https://placehold.co/400x400/C0B26D/white?text=No+Image"} alt={product.product_name} className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" />
+                  <img src={product.image_url || "https://placehold.co/400x400/C0B26D/white?text=No+Image"} alt={product.product_name} className="w-full h-full object-contain mix-blend-normal" />
                 </div>
               </div>
 
