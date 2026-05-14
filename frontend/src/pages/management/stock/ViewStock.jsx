@@ -40,47 +40,6 @@ const ViewStock = () => {
     }
   };
 
-  const handleAddStock = (product) => {
-    // Add product to AddStock page queue
-    const addStockCart = JSON.parse(localStorage.getItem('addstock_queue') || '[]');
-    const exists = addStockCart.some(p => p.product_id === product.product_id);
-    
-    if (!exists) {
-      addStockCart.push({
-        product_id: product.product_id,
-        product_name: product.product_name,
-        category_name: product.category?.category_name || 'N/A',
-        variants: product.variants || []
-      });
-      localStorage.setItem('addstock_queue', JSON.stringify(addStockCart));
-      toast.success(`${product.product_name} added to stock queue!`);
-      navigate('/add-stock');
-    
-    } else {
-      toast('Product already in queue');
-    }
-  };
-
-
-  const handleEditStock = (product) => {
-    // Add product to EditStock page queue
-    const editStockCart = JSON.parse(localStorage.getItem('editstock_queue') || '[]');
-    const exists = editStockCart.some(p => p.product_id === product.product_id);
-    
-    if (!exists) {
-      editStockCart.push({
-        product_id: product.product_id,
-        product_name: product.product_name,
-        category_name: product.category?.category_name || 'N/A',
-        variants: product.variants || []
-      });
-      localStorage.setItem('editstock_queue', JSON.stringify(editStockCart));
-      toast.success(`${product.product_name} added to edit queue!`);
-      navigate('/edit-stock');
-    } else {
-      toast('Product already in queue');
-    }
-  };
 
   const filteredProducts = products.filter(product => {
     const pName = product.product_name?.toLowerCase() || '';
@@ -102,7 +61,6 @@ const ViewStock = () => {
   return (
     <div className="w-full min-h-screen bg-background transition-colors duration-300 animate-in fade-in duration-500">
 
-      {/* Header */}
       <div className=" px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b-4 border-primary transition-all duration-300">
         <div className="flex items-center gap-5">
           <div className="p-3 bg-primary transition-all duration-300 rounded-2xl text-textMain transition-colors duration-300">
@@ -133,7 +91,6 @@ const ViewStock = () => {
       </div>
 
       <div className="p-6 md:p-8">
-        {/* Search Bar */}
         <div className="bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-[2.5rem] shadow-sm p-6 mb-8">
           <div className="flex items-center gap-4">
             <Search size={20} className="text-textMain/50 transition-colors duration-300" />
@@ -147,15 +104,12 @@ const ViewStock = () => {
           </div>
         </div>
 
-        {/* Stock Cards Grid */}
         {filteredProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
               <StockCard
                 key={product.product_id}
                 product={product}
-                onAddStock={handleAddStock}
-                onEditStock={handleEditStock}
               />
             ))}
           </div>
