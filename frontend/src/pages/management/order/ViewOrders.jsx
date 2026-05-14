@@ -74,7 +74,7 @@ const ViewOrders = () => {
     const currentRows = filtered.slice(indexOfFirstRow, indexOfLastRow);
     const totalPages = Math.ceil(filtered.length / rowsPerPage);
 
-    // පේජ් මාරු කරන ෆන්ක්ෂන් එක
+    // change page function
     const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
     const handleStatusUpdate = async (orderId, newStatus) => {
@@ -90,8 +90,8 @@ const ViewOrders = () => {
 
         if (result.isConfirmed) {
             try {
-                // 💡 මෙන්න මේ Backend route එක උඹේ තිබිය යුතුයි. 
-                // නැත්නම් එකක් හදාගන්න (router.put('/update-order-status/:id', ...))
+                // this Backend route should be here
+                // if elese make the route (router.put('/update-order-status/:id', ...))
                 await axios.put(`http://localhost:5001/api/orders/update-order-status/${orderId}`, 
                     { status: newStatus }, 
                     { headers: { Authorization: `Bearer ${token}` } }
@@ -398,7 +398,7 @@ const ViewOrders = () => {
 
                                             {/* Final Action Row */}
                                             <div className="flex justify-between items-center pt-4 border-t border-border transition-colors duration-300">
-                                                {/* ඇඩ්මින්ට විතරක් පේන Approve/Reject බටන් */}
+                                                {/* reject approve that visisble only to admin */}
                                                 {isAdmin && order.order_status === 'requested' ? (
                                                     <div className="flex gap-3">
                                                         <button 

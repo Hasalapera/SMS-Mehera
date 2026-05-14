@@ -12,22 +12,22 @@ router.post('/add', createCustomer);
 router.get('/search', verifyToken, searchCustomers);
 
 
-// 1. කිසියම් සේල්ස් රෙප් කෙනෙකුට අදාළ කස්ටමර්ස්ලා ලිස්ට් එක ගැනීම
+// 1. take customer that releted to sales rep and get those customers list (Get Customers by Sales Rep)
 router.get('/by-rep/:repId', verifyToken, isAdmin, getCustomersByRep);
 
-// 2. කිසිම රෙප් කෙනෙක්ට බාර දීලා නැති (Unassigned) කස්ටමර්ස්ලා ලිස්ට් එක
+// 2. take unassigned customers list (Get Unassigned Customers) not belong to any sales rep 
 router.get('/unassigned/all', verifyToken, isAdmin, getUnassignedCustomers);
 
-// 3. කස්ටමර් කෙනෙක්ව සේල්ස් රෙප් කෙනෙක්ට පවරන එක (Individual Assign)
+// 3. assign customer to sales rep (Individual Assign)
 router.post('/assign-rep', verifyToken, isAdmin, assignSalesRep);
 
-// 4. සේල්ස් රෙප් කෙනෙක් අයින් වෙද්දී කස්ටමර්ස්ලා ඔක්කලම මාරු කිරීම (Bulk Reassign)
+// 4. change the customer base to another sales rep when sales rep changed (Bulk Reassign)
 router.post('/reassign-bulk', verifyToken, isAdmin, reassignCustomers);
 
-// 5. මකා දුන් සේල්ස් රෙප් කෙනෙක්ට අදාළ කස්ටමර්ස්ලා ගැනීම සහ ඔවුන් වෙනත් රෙප් කෙනෙක්ට පවරන එක (Get Deleted Rep's Customers & Reassign)
+// 5. (Get Deleted Rep's Customers & Reassign)
 router.get('/deleted-reps', verifyToken, isAdmin, getDeletedSalesReps);
 
-// 6. මකා දුන් සේල්ස් රෙප් කෙනෙක්ට අදාළ කස්ටමර්ස්ලා ගැනීම සහ ඔවුන් වෙනත් රෙප් කෙනෙක්ට පවරන එක (Get Replacement Candidates for Deleted Rep)
+// 6.take customers that who for deleted sales rep and reassign to another sales rep (Get Replacement Candidates for Deleted Rep)
 router.get('/replacement-candidates/:deletedRepId', verifyToken, isAdmin, getReplacementCandidates);
 
 // Customer detail with notes
