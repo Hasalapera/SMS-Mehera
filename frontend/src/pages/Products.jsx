@@ -26,13 +26,13 @@ const Products = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white font-sans text-gray-900 pt-24">
+    <div className="min-h-screen bg-background transition-all duration-300 font-sans text-textMain transition-colors duration-300 pt-24">
       <StatNavBar />
 
       {/* --- Section 1: Browse by Category --- */}
       <section className="py-20 px-8">
         <div className="max-w-7xl mx-auto text-center space-y-16">
-          <h2 className="text-5xl font-serif text-black italic">Browse by Category</h2>
+          <h2 className="text-5xl font-serif text-textMain transition-colors duration-300 italic">Browse by Category</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <CategoryCard 
@@ -61,9 +61,9 @@ const Products = () => {
       </section>
 
       {/* --- Section 2: Main Product Grid --- */}
-      <section className="py-20 px-8 bg-[#fafaf9] border-y border-gray-100">
+      <section className="py-20 px-8 bg-background transition-all duration-300 border-y border-border transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-2 text-[#b4a460] mb-12 justify-center">
+          <div className="flex items-center gap-2 text-primary transition-all duration-300 mb-12 justify-center">
             <Sparkles size={20} />
             <h3 className="text-[12px] font-black uppercase tracking-[0.4em]">Our Full Collection</h3>
             <Sparkles size={20} />
@@ -71,8 +71,8 @@ const Products = () => {
 
           {loading ? (
             <div className="h-64 flex flex-col items-center justify-center gap-4">
-              <Loader2 className="animate-spin text-[#b4a460]" size={40} />
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading Portfolio...</p>
+              <Loader2 className="animate-spin text-primary transition-all duration-300" size={40} />
+              <p className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">Loading Portfolio...</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -85,9 +85,9 @@ const Products = () => {
       </section>
 
       {/* --- Section 3: Why Choose Our Products --- */}
-      <section className="py-24 px-8 bg-white">
+      <section className="py-24 px-8 bg-card transition-colors duration-300">
         <div className="max-w-7xl mx-auto text-center space-y-16">
-          <h2 className="text-4xl md:text-5xl font-serif text-black italic">Why Choose Our Products</h2>
+          <h2 className="text-4xl md:text-5xl font-serif text-textMain transition-colors duration-300 italic">Why Choose Our Products</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <ValueCard 
@@ -125,11 +125,11 @@ const CategoryCard = ({ image, title, icon, description, features }) => (
       </div>
     </div>
     <div className="text-left space-y-4 px-2">
-      <p className="text-gray-500 text-sm leading-relaxed">{description}</p>
+      <p className="text-textMain/50 transition-colors duration-300 text-sm leading-relaxed">{description}</p>
       <ul className="space-y-2">
         {features.map((f, i) => (
-          <li key={i} className="text-[11px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-            <span className="w-1 h-1 bg-[#b4a460] rounded-full"></span> {f}
+          <li key={i} className="text-[11px] font-bold text-textMain/50 transition-colors duration-300 uppercase tracking-widest flex items-center gap-2">
+            <span className="w-1 h-1 bg-primary transition-all duration-300 rounded-full"></span> {f}
           </li>
         ))}
       </ul>
@@ -138,9 +138,9 @@ const CategoryCard = ({ image, title, icon, description, features }) => (
 );
 
 const ValueCard = ({ title, description }) => (
-  <div className="p-12 bg-white rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 text-center space-y-6 group hover:-translate-y-2">
-    <h4 className="text-2xl font-serif italic text-black">{title}</h4>
-    <p className="text-gray-500 text-sm leading-relaxed italic">{description}</p>
+  <div className="p-12 bg-card transition-colors duration-300 rounded-[2.5rem] border border-border transition-colors duration-300 shadow-sm hover:shadow-xl transition-all duration-500 text-center space-y-6 group hover:-translate-y-2">
+    <h4 className="text-2xl font-serif italic text-textMain transition-colors duration-300">{title}</h4>
+    <p className="text-textMain/50 transition-colors duration-300 text-sm leading-relaxed italic">{description}</p>
   </div>
 );
 

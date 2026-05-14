@@ -22,6 +22,7 @@ const addUserByAdmin = async (req, res) => {
             return res.status(409).json({ message: "A user with this email already exists." });
         }
 
+        //Start a new transaction to ensure all database operations are treated as a single unit.
         const transaction = await sequelize.transaction();
 
         try {
@@ -45,6 +46,7 @@ const addUserByAdmin = async (req, res) => {
                 default_password: defaultPassword
             }, { transaction });
 
+            // user areas add karana eka waradnoth transactions nisa user add kotasama wenne na
             if (role === 'sales_rep' && selectedDistricts?.length > 0) {
                 const areaRecords = selectedDistricts.map(district => ({
                     user_id: user.user_id,
@@ -114,6 +116,13 @@ const updatePassword = async (req, res) => {
     }
 };
 
+/**
+ * Retrieves all users from the database.
+ * 1. Includes assigned districts (UserArea) for Sales Reps.
+ * 2. Excludes sensitive 'password' field for security.
+ * 3. Uses 'paranoid: false' to include even soft-deleted users in the list.
+ * 4. Decrypts contact numbers before sending the final data to the frontend.
+ */
 const getAllUsers = async (req, res) => {
     try {
         // Fetch all users along with their assigned areas (if any), excluding passwords and including soft-deleted users
@@ -147,6 +156,14 @@ const getAllUsers = async (req, res) => {
     }
 };
 
+
+/**
+ * Performs a soft delete on a user.
+ * 1. Finds the user by their unique ID.
+ * 2. Sets 'is_active' to false to disable the account immediately.
+ * 3. Calls 'destroy()' which sets the 'deleted_at' timestamp (due to paranoid mode).
+ * 4. This keeps the user's data in the DB for record-keeping but hides it from the UI.
+ */
 const softDeleteUser = async (req, res) => {
     try {
         const { id } = req.params;
@@ -170,6 +187,12 @@ const softDeleteUser = async (req, res) => {
     }
 };
 
+/**
+ * Restores a soft-deleted user back to the system.
+ * 1. Uses 'paranoid: false' to find the user in the deleted records.
+ * 2. Calls '.restore()' to clear the 'deleted_at' timestamp.
+ * 3. Updates 'is_active' to true so the user can log in again.
+ */
 const restoreUser = async (req, res) => {
     try {
         const { id } = req.params;
@@ -195,6 +218,13 @@ const restoreUser = async (req, res) => {
     }
 };
 
+/**
+ * Safely changes a user's password.
+ * 1. Validates that all required fields (ID, Old Password, New Password) are provided.
+ * 2. Finds the user and verifies if the 'Old Password' matches the database record using bcrypt.
+ * 3. If matched, hashes the 'New Password' and updates the database.
+ * 4. Ensures 'is_default_password' is set to false.
+ */
 const changePassword = async (req, res) => {
     try {
         // 1. Get user_id, old_password, and new_password from request body
@@ -242,6 +272,13 @@ const changePassword = async (req, res) => {
     }
 };
 
+/**
+ * Retrieves a single user's profile information.
+ * 1. Finds the user by ID and includes their assigned work areas.
+ * 2. Excludes sensitive fields like password and default_password.
+ * 3. Includes soft-deleted users (paranoid: false) for administrative review.
+ * 4. Decrypts the contact number to make it readable for the frontend.
+ */
 const getUserProfile = async (req, res) => {
     try {
         const { id } = req.params;
@@ -263,12 +300,13 @@ const getUserProfile = async (req, res) => {
     }
 };
 
-// 💡 2. අලුත් ඒරියා එකක් ඇඩ් කිරීම
+//add new area 
 const addUserArea = async (req, res) => {
   try {
-    const { id } = req.params; // URL එකෙන් ID එක ගන්නවා (:id)
-    const { district } = req.body; // Body එකෙන් district එක ගන්නවා
+    const { id } = req.params; // URL -> get ID (:id)
+    const { district } = req.body; // Body -> get district 
 
+    // danatamath labadeelada kiyala check karanawa
     const existing = await UserArea.findOne({ where: { user_id: id, district_name: district } });
     if (existing) return res.status(400).json({ error: "District already assigned" });
 
@@ -279,27 +317,33 @@ const addUserArea = async (req, res) => {
   }
 };
 
+/**
+ * removeUserArea: Removes a district from a Sales Rep and unassigns their customers.
+ * 1. Uses a Transaction to ensure both operations succeed or fail together.
+ * 2. Deletes the district record from the UserArea table.
+ * 3. Updates all customers in that district to have no Sales Rep (sales_rep_id = null).
+ * 4. This prevents customers from being linked to an agent who no longer works in that area.
+ */
 const removeUserArea = async (req, res) => {
-  // 💡 Transaction එකක් පාවිච්චි කරමු වැඩ දෙකම එකවර වෙන්න ඕන නිසා
+  // use Transaction for parellel 
   const transaction = await sequelize.transaction();
   
   try {
-    const { id } = req.params; // සේල්ස් රෙප්ගේ ID එක
-    const { district } = req.body; // අයින් කරන දිස්ත්‍රික්කය
+    const { id } = req.params; // sales rep id
+    const { district } = req.body; // unassigned distrct eka
 
     if (!district) {
       return res.status(400).json({ error: "District name is required" });
     }
 
-    // 1. සේල්ස් රෙප්ගෙන් ඒ දිස්ත්‍රික්කය ඉවත් කරනවා
+    // 1.remove district from sales rep
     await UserArea.destroy({
       where: { user_id: id, district_name: district },
       transaction
     });
 
-    // 2. 🛡️ වැදගත්ම කොටස: 
-    // මේ සේල්ස් රෙප්ට අයිති, මේ දිස්ත්‍රික්කයේ ඉන්න කස්ටමර්ස්ලාව නිදහස් කරනවා (Unassign)
-    // මෙතනදී කස්ටමර්ගේ දිස්ත්‍රික්කය වෙනස් වෙන්නේ නැහැ!
+    // 2.remove relevant customers from relavant sales rep  (Unassign)
+    // do not change customers's district
     await Customer.update(
       { sales_rep_id: null }, 
       { 
@@ -323,6 +367,13 @@ const removeUserArea = async (req, res) => {
   }
 };
 
+/**
+ * Updates the user's profile information.
+ * 1. Validates the User ID and checks for the existing user.
+ * 2. Dynamically builds an 'updateData' object to avoid overwriting existing data with nulls.
+ * 3. Encrypts the contact number and handles profile image uploads.
+ * 4. Refetches the updated user, excludes passwords, and decrypts the number for the response.
+ */
 const updateProfile = async (req, res) => {
     try {
         const userId = req.user?.user_id || req.body.user_id;
@@ -373,9 +424,17 @@ const updateProfile = async (req, res) => {
     }
 };
 
+/**
+ * Resets a user's password to the original default password.
+ * 1. Verifies the Admin's password first for authorization.
+ * 2. Fetches the stored 'default_password' for the specific user.
+ * 3. Re-hashes the default password and updates the database.
+ * 4. Resets the 'is_default_password' flag to true.
+ * 5. Sends an email to the user with the reset details.
+ */
 const resetToDefaultPassword = async (req, res) => {
     try {
-        // 1. Get user_id from request body
+        // 1. Get user_id from request body (destructuring)
         const { user_id, adminPassword } = req.body;
         const loggedInAdminId = req.user?.user_id;
 
@@ -413,8 +472,6 @@ const resetToDefaultPassword = async (req, res) => {
             await sendWelcomeEmail(user.email, user.name, defaultPassword, user.role);
         } catch (mailErr) {
             console.error("Email Sending Error:", mailErr.message);
-            // Email එක යැවුණේ නැතත් password එක reset වුණු නිසා success response එකක් යවනවා 
-            // හැබැයි warning එකක් එක්ක
             return res.status(200).json({ 
                 message: "Password reset in DB, but failed to send email.",
                 warning: "Email not sent."
@@ -430,6 +487,12 @@ const resetToDefaultPassword = async (req, res) => {
     }
 };
 
+/**
+ * Verifies if the current user session is still valid and active.
+ * 1. Fetches the user from the database using the ID from the authenticated request.
+ * 2. Ensures the user exists and is not deactivated or soft-deleted.
+ * 3. Returns the user details (excluding password) if valid, otherwise returns 401 Unauthorized.
+ */
 const verifySession = async (req, res) => {
     try {
         const user = await User.findByPk(req.user.user_id, {
@@ -447,6 +510,12 @@ const verifySession = async (req, res) => {
     }
 };
 
+/**
+ * Retrieves a list of all active Sales Representatives.
+ * 1. Filters the User table for 'sales_rep' role and 'is_active' status.
+ * 2. Selects only essential fields: ID, Name, and Email.
+ * 3. Includes the associated 'UserArea' records to show which districts they cover.
+ */
 const getSalesReps = async (req, res) => {
     try {
         const salesReps = await User.findAll({

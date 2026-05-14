@@ -1,26 +1,34 @@
 import Swal from 'sweetalert2';
 
+const onWillOpen = (popup) => {
+  // SweetAlert2 popup එකටත් dark class එක දානවා, එතකොට theme එක හරියටම වැඩ
+  if (document.documentElement.classList.contains('dark')) {
+    popup.classList.add('dark');
+  }
+};
+
 export const MySwal = Swal.mixin({
   customClass: {
-    // 🏢 Popup - දැන් මේක සුපිරියටම Rounded (3rem)
-    popup: '!rounded-[2rem] p-12 border border-gray-50 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.12)] bg-white',
+    //Popup - A professional design that matches the theme
+    popup: '!rounded-[2.5rem] p-8 md:p-12 border border-border shadow-xl bg-card text-textMain transition-all duration-300',
     
-    // 🖋️ Title
-    title: 'text-xl font-bold text-gray-900 tracking-tight leading-none',
+    //Title
+    title: 'text-2xl font-bold text-textMain tracking-tight leading-tight transition-colors duration-300',
     
-    // 📝 HTML Container - ඔයා කලින් කිව්වා වගේම 'normal-case' සහ ලස්සනට පේන්න හැදුවා
-    htmlContainer: 'text-[14px] font-medium text-gray-500 mt-5 leading-relaxed normal-case tracking-tight antialiased px-2',
+    //HTML Container 
+    htmlContainer: 'text-sm font-normal text-textMain/60 mt-4 leading-relaxed normal-case tracking-normal antialiased transition-colors duration-300',
     
-    // 🔘 Confirm Button - මේකත් 'rounded-2xl' කරලා ලස්සන කළා
-    confirmButton: 'bg-black text-white px-10 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-[#b4a460] hover:text-black transition-all duration-500 mx-2 shadow-lg shadow-black/5',
+    //Confirm Button - Gold, professional look 
+    confirmButton: 'bg-primary text-black px-8 py-3.5 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:scale-105 active:scale-100 transition-all duration-200 mx-2 shadow-lg shadow-primary/20',
     
-    // ⚪ Cancel Button
-    cancelButton: 'bg-transparent text-gray-300 px-10 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] hover:text-red-500 transition-all duration-500 mx-2',
+    //Cancel Button - Subtle, secondary look 
+    cancelButton: 'bg-background hover:bg-card border border-border px-8 py-3.5 rounded-xl font-bold text-[10px] uppercase tracking-widest text-textMain/60 hover:text-red-500 transition-all duration-300 mx-2',
     
-    // ⌨️ Input Field
-    input: 'rounded-2xl border-gray-100 bg-gray-50 text-xs py-4 px-6 font-bold tracking-[0.1em] focus:ring-[#b4a460]/20 focus:border-[#b4a460] outline-none transition-all'
+    //Input Field
+    input: 'rounded-xl border-border bg-background text-textMain text-sm py-3 px-4 font-semibold tracking-wide focus:ring-primary/30 focus:border-primary/50 outline-none transition-all duration-300'
   },
   
+  willOpen: onWillOpen, 
   iconColor: '#b4a460',
   buttonsStyling: false,
   showCancelButton: true,

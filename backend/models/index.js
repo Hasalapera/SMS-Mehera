@@ -12,6 +12,8 @@ const Order = require('./Order');
 const OrderItem = require('./OrderItem');
 const SettingModel = require('./Setting');
 const Setting = SettingModel(sequelize, DataTypes);
+const NotificationModel = require('./Notification');
+const Notification = NotificationModel(sequelize, DataTypes);
 
 // 1. User Associations
 User.hasMany(UserArea, { foreignKey: 'user_id', as: 'areas', onDelete: 'CASCADE' });
@@ -61,5 +63,6 @@ module.exports = {
   CustomerNote,
   Order,
   OrderItem,
-  Setting
+  Setting,
+  Notification
 };

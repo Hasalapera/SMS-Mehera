@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sun, Moon, Monitor } from 'lucide-react';
 
 const ThemeSettings = () => {
-  // බ්‍රවුසරයේ කලින් සේව් කරපු theme එක ගන්නවා, නැත්නම් default 'light'
+  // The browser will take the previously saved theme, or the default 'light'.
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
   useEffect(() => {
@@ -23,8 +23,8 @@ const ThemeSettings = () => {
   ];
 
   return (
-    <div className="bg-white dark:bg-[#1A1A1A] p-6 rounded-[2rem] border border-gray-100 dark:border-gray-800 transition-all duration-300">
-      <h3 className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-6">
+    <div className="bg-card transition-colors duration-300 dark:bg-card transition-colors duration-300 p-6 rounded-[2rem] border border-border transition-colors duration-300 dark:border-border transition-all duration-300">
+      <h3 className="text-xs font-black text-textMain/50 transition-colors duration-300 dark:text-textMain/50 transition-colors duration-300 uppercase tracking-[0.2em] mb-6">
         Appearance & Theme
       </h3>
 
@@ -39,8 +39,8 @@ const ThemeSettings = () => {
               onClick={() => setTheme(t.id)}
               className={`flex flex-col items-center justify-center gap-3 p-5 rounded-2xl border-2 transition-all ${
                 isActive 
-                ? 'border-[#b4a460] bg-[#b4a460]/5 text-[#b4a460]' 
-                : 'border-gray-50 dark:border-gray-800 text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'
+                ? 'border-primary transition-all duration-300 bg-primary/5 transition-all duration-300 text-primary transition-all duration-300' 
+                : 'border-border dark:border-border transition-colors duration-300 text-textMain/50 transition-colors duration-300 hover:bg-card transition-colors duration-300 dark:hover:bg-card/5 transition-colors duration-300'
               }`}
             >
               <Icon size={24} />
