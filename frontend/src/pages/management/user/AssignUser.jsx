@@ -139,16 +139,15 @@ const AssignUser = () => {
   };
 
   const handleQuickAddDistrict = async (rep) => {
-    // දැනට තියෙන ඒවා අයින් කරලා ඉතිරි ටික ෆිල්ටර් කරගමු
+    //remove the existing ones and filter out the rest.
     const existingDistricts = rep.areas.map(a => a.district_name);
     const availableDistricts = districtsList.filter(d => !existingDistricts.includes(d));
 
     const { value: district } = await MySwal.fire({
-        // 💡 මෙන්න මෙතන තමයි වැඩේ තියෙන්නේ:
-        position: 'top-end', // දකුණු පැත්තේ උඩට ගත්තා
-        width: '22rem', // පට්ටම Compact පළලක්
+        position: 'top-end', 
+        width: '22rem', 
         showConfirmButton: true,
-        backdrop: false, // පසුබිම කළු වෙන්නේ නැහැ, පේජ් එක පේනවා
+        backdrop: false, 
         timerProgressBar: true,
 
         title: 'Assign New Area',
@@ -156,7 +155,7 @@ const AssignUser = () => {
         inputOptions: availableDistricts.reduce((obj, d) => ({ ...obj, [d]: d }), {}),
         inputPlaceholder: 'Select District',
         
-        // Animation එක Slide-in එකක් විදිහට දෙමු
+        // slide on animation
         showClass: {
         popup: 'animate__animated animate__fadeInRight animate__faster'
         },
@@ -165,12 +164,12 @@ const AssignUser = () => {
         },
 
         customClass: {
-        // මෙතනින් තමයි "Floating Card" ලුක් එක දෙන්නේ
+        // Floating Card
         popup: '!rounded-[2rem] border border-border transition-colors duration-300 shadow-[0_10px_40px_rgba(0,0,0,0.08)] p-6 mr-4 mt-4',
         title: 'text-sm font-black text-textMain transition-colors duration-300 uppercase tracking-widest text-left',
         input: '!rounded-xl border-border transition-colors duration-300 bg-card transition-colors duration-300 text-xs py-2 px-3 font-bold',
         confirmButton: 'bg-black text-white px-6 py-2.5 !rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-primary transition-all duration-300 transition-all w-full mt-2',
-        actions: 'w-full', // Button එක full width ගන්න
+        actions: 'w-full', 
         },
         
         inputAttributes: {
@@ -189,7 +188,7 @@ const AssignUser = () => {
 
         toast.success(`${district} assigned to ${rep.name}`);
         
-        // 💡 UI එක Real-time update කරන්න salesReps state එක update කරමු
+        //update sales rep states for real time ui update
         setSalesReps(prev => prev.map(r => 
             r.user_id === rep.user_id 
             ? { ...r, areas: [...r.areas, { district_name: district }] } 
@@ -222,7 +221,7 @@ const AssignUser = () => {
             }
             });
             
-            // UI එක Refresh කරන්න
+            // refresh the ui
             setSalesReps(prev => prev.map(r => 
             r.user_id === userId 
             ? { ...r, areas: [...r.areas, { district_name: district }] } 
@@ -293,7 +292,6 @@ const AssignUser = () => {
                     <button 
                         onClick={(e) => {
                         e.stopPropagation();
-                        // දැනට ඕපන් එකම නම් වහන්න, නැත්නම් අලුත් එක ඇරපන්
                         setActivePopover(activePopover === rep.user_id ? null : rep.user_id);
                         }}
                         className={`p-2 rounded-xl transition-all shadow-sm border ${
@@ -305,7 +303,6 @@ const AssignUser = () => {
                         <UserPlus size={16} />
                     </button>
 
-                    {/* 📍 මෙන්න බටන් එක ගාවින්ම එන අලුත් Quick Popover එක */}
                     {activePopover === rep.user_id && (
                         <div className="absolute right-0 top-12 w-56 bg-card transition-colors duration-300 border border-border transition-colors duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.1)] rounded-2xl z-[100] p-4 animate-in zoom-in duration-200 origin-top-right">
                         <p className="text-[9px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest mb-3">Quick Assign Area</p>
@@ -319,7 +316,7 @@ const AssignUser = () => {
                                 onClick={async (e) => {
                                     e.stopPropagation();
                                     await handleDirectAdd(rep.user_id, district, rep.name);
-                                    setActivePopover(null); // වැඩේ ඉවර වුණාම වහන්න
+                                    setActivePopover(null); 
                                 }}
                                 className="w-full text-left px-3 py-2 text-[11px] font-bold text-textMain/50 transition-colors duration-300 hover:bg-primary/10 transition-all duration-300 hover:text-textMain transition-colors duration-300 rounded-lg transition-colors flex items-center justify-between group"
                                 >
@@ -337,7 +334,7 @@ const AssignUser = () => {
                 </div>
                 </div>
 
-                {/* Portfolio Section - පෝර්ට්ෆෝලියෝ එක පෙන්නන කොටස */}
+                {/* Portfolio Section */}
                 {selectedRep?.user_id === rep.user_id && (
                 <div className="bg-card transition-colors duration-300 p-5 border-t border-border animate-in slide-in-from-top duration-300">
                     <p className="text-[9px] font-black text-textMain/50 transition-colors duration-300 uppercase mb-4 tracking-tighter">Current Portfolio ({assignedCustomers.length})</p>
@@ -424,7 +421,7 @@ const AssignUser = () => {
                       
                       <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                         {inactiveRepCustomers.map((cust) => {
-                          // 💡 FILTER LOGIC: මේ කස්ටමර්ගේ දිස්ත්‍රික්කයට ගැලපෙන Active Reps ලා විතරක් පෙන්නමු
+                          // 💡 FILTER LOGIC: Show only Active Reps that match this customer's district.
                           const eligibleSuccessors = salesReps.filter(rep => 
                             rep.areas.some(area => area.district_name === cust.district)
                           );

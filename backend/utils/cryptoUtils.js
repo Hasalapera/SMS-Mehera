@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const algorithm = 'aes-256-cbc';
-// .env එකේ ENCRYPTION_KEY එක අකුරු 32ක් වෙන්න ඕනේ
+// .env ENCRYPTION_KEY should 32 chars
 const key = Buffer.from(process.env.ENCRYPTION_KEY || 'mehera_intl_secret_key_32chars!!' ).slice(0, 32);
 const iv = Buffer.from(process.env.ENCRYPTION_KEY || 'mehera_intl_secret_key_16chars!!' ).slice(0, 16);
 

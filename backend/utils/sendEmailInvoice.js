@@ -4,13 +4,13 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
-  secure: true, // SSL පාවිච්චි කිරීම (Port 465 සඳහා)
+  secure: true, // use ssl for port 465
   auth: {
     user: 'info.meheraint@gmail.com', 
-    pass: 'yvfm dfev siyh vuld'     // 👈 ඔයාගේ Google App Password එක
+    pass: 'yvfm dfev siyh vuld'     
   },
   tls: {
-    // Local network වලදී ඇතිවන SSL අවහිරතා මඟහැරීමට මෙය උදවු වේ
+    // This helps to bypass SSL restrictions on local networks.
     rejectUnauthorized: false 
   }
 });

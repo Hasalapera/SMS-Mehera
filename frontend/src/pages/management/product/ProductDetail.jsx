@@ -58,7 +58,6 @@ export default function ProductDetail() {
 
   // --- ADD TO ORDER LOGIC (Fixed Notification Stalling) ---
   const handleAddToCart = (variant) => {
-    // Manually dismissing the previous toast to make a room for the new one.
     toast.dismiss(); 
 
     const savedCart = JSON.parse(localStorage.getItem("active_order_cart") || "[]");
@@ -83,8 +82,6 @@ export default function ProductDetail() {
 
     localStorage.setItem("active_order_cart", JSON.stringify(updatedCart));
     window.dispatchEvent(new Event('focus')); 
-
-    // Luxury Style Toast (removed the id to prevent stalling and allow multiple toasts)
     toast.success(`${variant.variant_name} added to order!`, {
       style: {
         borderRadius: '1.5rem',

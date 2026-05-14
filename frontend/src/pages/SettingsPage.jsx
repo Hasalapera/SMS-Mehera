@@ -114,7 +114,7 @@ const SettingsPage = () => {
   };
 
   const applyTheme = (newTheme) => {
-    setTheme(newTheme); // State එක අප්ඩේට් කරනවා
+    setTheme(newTheme); //update the state
     
     if (newTheme === 'dark') {
         document.documentElement.classList.add('dark');
@@ -122,10 +122,10 @@ const SettingsPage = () => {
         document.documentElement.classList.remove('dark');
     }
     
-    // පේජ් එක රීලෝඩ් නොකරත් දැන්ම පාටවල් මාරු වෙන්න මේක ඕනේ
+    //page eka reload nokarapata maru wenna
     localStorage.setItem('theme', newTheme);
 
-    // අනෙක් components (Navbar, Sidebar) දැනුවත් කිරීමට event එකක් යවමු
+    //anit components inform karanna side bar, navbar
     window.dispatchEvent(new Event('themeChange'));
   };
 

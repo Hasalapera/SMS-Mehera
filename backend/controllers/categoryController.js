@@ -5,7 +5,7 @@ const addCategory = async (req, res) => {
     const { name, description } = req.body;
 
     try {
-        // 1. check if category with the same name already exists (case-insensitive)
+        // 1. check if category with the same name already exists (case-insensitive) - ekama namakin dekak add wenna denne na
         const existingCategory = await Category.findOne({ 
             where: { category_name: name } 
         });
@@ -30,6 +30,7 @@ const addCategory = async (req, res) => {
         console.error('Error adding category:', error);
         
         // If the error is due to unique constraint violation, send a specific message
+        // prevent race condition, same time same creation issue
         if (error.name === 'SequelizeUniqueConstraintError') {
             return res.status(400).json({ error: 'This category name is already in use.' });
         }
@@ -38,8 +39,11 @@ const addCategory = async (req, res) => {
     }
 };
 
+
+// get categories with their products using associations
 const getCategories = async (req, res) => {
     try {
+        // get categories from db
         const categories = await Category.findAll({
             include: [{ 
                 model: Product, 
@@ -54,9 +58,12 @@ const getCategories = async (req, res) => {
     }
 };
 
+// 
 const deleteCategory = async (req, res) => {
     try {
+        // check id comming from frontend 
         const { id } = req.params;
+        // check is this in database using primary key
         const category = await Category.findByPk(id);
 
         if (!category) return res.status(404).json({ error: "Category not found" });

@@ -37,7 +37,7 @@ const UnderConstruction = ({ featureName = "This module" }) => {
       {/* 🔘 Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-4 relative z-20">
         <button 
-          onClick={() => navigate(-1)} // කලින් හිටපු පේජ් එකට යන්න
+          onClick={() => navigate(-1)} // go back
           className="flex items-center justify-center gap-2 px-8 py-3 bg-black text-white rounded-2xl font-bold text-sm hover:bg-primary transition-all duration-300 hover:text-textMain transition-colors duration-300 transition-all shadow-xl active:scale-95"
         >
           <ArrowLeft size={18} /> Go Back

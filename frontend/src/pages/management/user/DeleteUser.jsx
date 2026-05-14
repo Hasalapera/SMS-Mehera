@@ -26,7 +26,7 @@ const DeleteUser = () => {
       } else {
         setUsers([]);
       }
-      // දැනටමත් delete නොවූ අය පමණක් මුලින් පෙන්වීමට
+      // danatamath delete nathi aya pennanne
       // setUsers(response.data.filter(u => u.deleted_at === null));
     } catch (err) {
       toast.error("Failed to load users");
@@ -38,7 +38,7 @@ const DeleteUser = () => {
   useEffect(() => { fetchUsers(); }, []);
 
   const handleSoftDelete = async (userId, userName) => {
-    // 1. 🛡️ Confirmation Prompt (SweetAlert පාවිච්චි කරනවා)
+    // 1. 🛡️ Confirmation Prompt (SweetAlert)
     const result = await MySwal.fire({
       title: 'Archive Account?',
       text: `Do you want to archive ${userName}? This will disable system access.`,
@@ -47,14 +47,14 @@ const DeleteUser = () => {
     });
 
     if (result.isConfirmed) {
-      // 2. 🔑 Password Prompt (SweetAlert පාවිච්චි කරනවා)
+      // 2. 🔑 Password Prompt (SweetAlert)
       const { value: adminPassword } = await MySwal.fire({
         title: 'Verify Authority',
         input: 'password',
         inputLabel: 'Admin password required to confirm',
         inputPlaceholder: 'Enter your password',
         inputAttributes: {
-          autocomplete: 'new-password', // Autofill fix එක
+          autocomplete: 'new-password', 
           autocapitalize: 'off',
           autocorrect: 'off',
           name: 'admin_security_verify'
@@ -71,17 +71,14 @@ const DeleteUser = () => {
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
-          // ✅ සාර්ථකයි නම් SweetAlert වෙනුවට Toast එකක් දානවා
           toast.success(`${userName} archived successfully!`);
           fetchUsers();
 
         } catch (err) {
-          // ❌ Error එකත් Toast එකෙන්ම පෙන්වනවා
           const errMsg = err.response?.data?.message || 'Failed to archive user.';
           toast.error(errMsg);
         }
       } else {
-        // 🚫 Password එක ගැහුවේ නැත්නම් (Cancel කළොත්)
         toast.error("Action cancelled. Password required.");
       }
     }

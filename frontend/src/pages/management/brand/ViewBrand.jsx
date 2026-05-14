@@ -9,7 +9,7 @@ const ViewBrands = () => {
   const [activeTab, setActiveTab] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 1. Brands Fetch කරගැනීම
+  // 1. Brands Fetch 
   useEffect(() => {
     const fetchBrands = async () => {
       try {
@@ -28,7 +28,7 @@ const ViewBrands = () => {
       }
     };
 
-    fetchBrands(); // කෙලින්ම මේ useEffect එක ඇතුළෙම කෝල් කරන්න
+    fetchBrands(); 
   }, []); 
 
   // 🗑️ Delete/Archive Logic
@@ -59,11 +59,10 @@ const ViewBrands = () => {
 
         toast.success(`${brandName} moved to archive`);
         
-        // UI එකෙන් අයින් කරන්න
         const updatedBrands = brands.filter(b => b.brand_id !== brandId);
         setBrands(updatedBrands);
         
-        // ඊළඟට තියෙන Brand එක පෙන්වන්න
+        // show next brand
         if (updatedBrands.length > 0) {
           setActiveTab(updatedBrands[0].brand_id);
         } else {

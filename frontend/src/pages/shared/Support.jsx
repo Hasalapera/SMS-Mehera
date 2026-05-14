@@ -23,10 +23,10 @@ const Support = () => {
             headers: { Authorization: `Bearer ${token}` }
           });
           
-          // නම්බර්ස් ටික විතරක් Array එකකට වෙන් කරගන්නවා
+          //Separate only the numbers into an array.
           const numbers = response.data.admins
             .map(a => a.contact_no)
-            .filter(n => n); // empty numbers අයින් කරනවා
+            .filter(n => n); // remove empty numbers
           
           setAdminWhatsApp(numbers);
         } catch (err) {
@@ -43,15 +43,15 @@ const Support = () => {
       return;
     }
 
-    // තෝරපු ෆයිල් එක image එකක් නම් විතරක් preview එකක් හදනවා
+    //A preview is only created if the selected file is an image.
     if (file.type.startsWith('image/')) {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
 
-      // Memory leak එකක් නොවෙන්න පරණ URL එක අයින් කරනවා
+      //Removing the old URL to avoid a memory leak
       return () => URL.revokeObjectURL(url);
     } else {
-      setPreviewUrl(null); // Image එකක් නෙවෙයි නම් preview එකක් පෙන්වන්නේ නැහැ
+      setPreviewUrl(null); //If it is not an image, a preview will not be shown.
     }
   }, [file]);
 
@@ -84,7 +84,7 @@ const Support = () => {
           showCancelButton: false,
         });
 
-        // ✅ Form එක සම්පූර්ණයෙන්ම Clear කිරීම
+        //clear form entirely
         setFormData({ subject: '', message: '' });
         setFile(null); 
         setPreviewUrl(null);
@@ -113,16 +113,15 @@ const Support = () => {
       rawNumber = adminWhatsApp.length > 0 ? adminWhatsApp[0] : "94765747129";
     }
 
-    // 1. මුලින්ම ඉලක්කම් නොවන සේරම අයින් කරනවා (+, spaces, dashes)
+    // 1.remove all non-digits (+, spaces, dashes)
     let cleanNumber = rawNumber.toString().replace(/\D/g, '');
 
-    // 2. නම්බර් එක '0' කෑල්ලෙන් පටන් ගන්නවා නම්, ඒක අයින් කරලා '94' ඇඩ් කරනවා
+    // 2. If the number starts with a '0', it is removed and '94' is added.
     if (cleanNumber.startsWith('0')) {
       cleanNumber = '94' + cleanNumber.substring(1);
     }
     
-    // 3. යම් හෙයකින් නම්බර් එක 7... විදිහට පටන් ගත්තොත් (94 හෝ 0 නැතුව)
-    // ඒකටත් 94 ඇඩ් කරන එක ආරක්ෂිතයි
+    // 3. If the number somehow starts with 7... (without 94 or 0), It's safe to add 94 to that too.
     else if (cleanNumber.length === 9 && cleanNumber.startsWith('7')) {
       cleanNumber = '94' + cleanNumber;
     }
@@ -138,8 +137,7 @@ const Support = () => {
       `*From:* ${user.name}\n` +
       `*Message:* ${formData.message}`
     );
-    
-    // දැන් ලින්ක් එක හරියටම ජෙනරේට් වෙනවා
+    //generate the link
     window.open(`https://wa.me/${cleanNumber}?text=${text}`, '_blank');
   };
 

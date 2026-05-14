@@ -162,13 +162,11 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
   }, []);
 
   const getDynamicLogo = () => {
-    // 1. තේමාව අනුව DB එකේ URL එකක් තියෙනවාද බලනවා
+    // 1. check if logo url relevant to theme
     const dbLogo = isDark 
         ? systemSettings?.dark_logo_url 
         : systemSettings?.light_logo_url;
 
-    // 2. DB එකේ URL එකක් තිබුණොත් ඒක ගන්නවා, නැත්නම් Static 'main-logo' එක ගන්නවා
-    // සයිඩ් බාර් එක Collapse වුණත් මේ image එකම පාවිච්චි වෙනවා
     return dbLogo || (isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/nzwPbHWj/mehera-logo.png");
   };
 
@@ -197,8 +195,8 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
                   alt="Mehera Logo" 
                   className={`transition-all duration-500 ease-in-out object-contain will-change-[opacity,transform] ${
                       isSidebarCollapsed
-                          ? 'w-10 h-10 rounded-lg p-1' // 🤏 සයිඩ් බාර් එක පුංචි වෙලාවට (Icon එකක් වගේ)
-                          : 'w-32 h-10'                // ↔️ සයිඩ් බාර් එක ලොකු වෙලාවට
+                          ? 'w-10 h-10 rounded-lg p-1' // 🤏 The sidebar is small (like an icon).
+                          : 'w-32 h-10'                // ↔️ The side bar is big time.
                   }`}
                   onError={(e) => { e.target.src = 'https://ui-avatars.com/api/?name=Mehera&background=b4a460&color=fff' }}
               />
