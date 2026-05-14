@@ -110,7 +110,7 @@ const addNote = async (req, res) => {
         });
     } catch (err) {
         console.error('Add Note Error:', err.message);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Failed to add note. Please try again.' });
     }
 };
 
@@ -128,7 +128,7 @@ const deleteNote = async (req, res) => {
         res.status(200).json({ message: 'Note deleted successfully' });
     } catch (err) {
         console.error('Delete Note Error:', err.message);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Failed to delete note. Please try again.' });
     }
 };
 
