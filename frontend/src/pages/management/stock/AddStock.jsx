@@ -226,7 +226,7 @@ const AddStock = () => {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4">
         <div>
           <h2 className="text-3xl font-extrabold text-textMain flex items-center gap-3 tracking-tight transition-all duration-300">
-            <div className="p-3 bg-black rounded-2xl text-primary shadow-xl">
+            <div className="p-3 bg-primary rounded-2xl text-textMain shadow-xl">
               <Package size={24} />
             </div>
             Stock Management
@@ -364,7 +364,7 @@ const AddStock = () => {
 
                     <div className="p-4 space-y-3">
                       {product.variants.map((variant) => (
-                        <div key={variant.variant_id} className="grid grid-cols-[1fr_auto] gap-3 items-center">
+                        <div key={variant.variant_id} className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-center">
                           <div>
                             <p className="text-[12px] font-bold text-textMain transition-colors duration-300">{variant.variant_name || 'Variant'}</p>
                             <p className="text-[10px] text-textMain/50 font-semibold transition-colors duration-300">{variant.stock_count} units • Rs. {variant.price.toLocaleString()} each</p>
@@ -380,7 +380,7 @@ const AddStock = () => {
                         </div>
                       ))}
 
-                      <div className="pt-3 border-t border-border flex items-center gap-2">
+                      <div className="pt-3 border-t border-border flex flex-col sm:flex-row items-center gap-2">
                         <input
                           type="number"
                           min="1"
@@ -391,7 +391,7 @@ const AddStock = () => {
                         />
                         <button
                           onClick={() => applyBulkToProduct(product.product_id)}
-                          className="px-3 py-2 bg-primary text-black rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300"
+                          className="w-full sm:w-auto px-3 py-2 bg-primary text-black rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300"
                         >
                           Fill All
                         </button>
