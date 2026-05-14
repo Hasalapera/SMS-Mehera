@@ -2,7 +2,7 @@ const { Order, OrderItem, ProductVariant, Product, User } = require('../models')
 const sequelize = require('../db/db');
 const { sendEmailInvoice } = require('../utils/sendEmailInvoice'); // 👈 Import එක {} ඇතුළේ තියෙනවාද බලන්න
 
-// --- 1. පවතින සාමාන්‍ය ඕඩර් එක (SALES REP / OFFLINE) ---
+// --- 1. (SALES REP / OFFLINE) ---
 const placeOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
@@ -44,11 +44,11 @@ const placeOrder = async (req, res) => {
 
     await OrderItem.bulkCreate(orderItemsData, { transaction });
     
-    await transaction.commit(); // ✅ කලින්ම Commit කරනවා
+    await transaction.commit(); // ✅ confirm DB operations before sending response
 
     res.status(201).json({ success: true, message: "Order placed successfully!", orderId: newOrder.order_id });
   } catch (error) {
-    // ⚠️ Commit වුණාට පස්සේ rollback කරන්න බැරි නිසා මේ condition එක වැදගත්
+    // if there is error rollback it
     if (transaction && !transaction.finished) await transaction.rollback();
     console.error("Order Error:", error);
     res.status(500).json({ success: false, message: "Failed to place order" });

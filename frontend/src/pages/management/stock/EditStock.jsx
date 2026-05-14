@@ -251,7 +251,7 @@ const EditStock = () => {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4">
         <div>
           <h2 className="text-3xl font-extrabold text-textMain flex items-center gap-3 tracking-tight transition-colors duration-300">
-            <div className="p-3 bg-black rounded-2xl text-primary shadow-xl">
+            <div className="p-3 bg-primary rounded-2xl text-textMain shadow-xl">
               <Edit3 size={24} />
             </div>
             Edit Stock Levels
@@ -397,35 +397,36 @@ const EditStock = () => {
                             <p className="text-[12px] font-bold text-textMain">{variant.variant_name || 'Variant'}</p>
                             <p className="text-[10px] text-textMain/50 font-semibold">Current: {variant.stock_count} | Rs. {variant.price.toLocaleString()}</p>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 px-3 py-2 rounded-lg border border-border bg-card text-sm font-semibold text-textMain/70">
+                          <div className="flex flex-col sm:flex-row items-center gap-2">
+                            <div className="w-full sm:flex-1 px-3 py-2 rounded-lg border border-border bg-card text-sm font-semibold text-textMain/70 text-center sm:text-left">
                               {variant.stock_count}
                             </div>
-                            <span className="text-textMain/50 font-bold">→</span>
+                            <span className="hidden sm:block text-textMain/50 font-bold">→</span>
+                            <span className="sm:hidden text-textMain/50 font-bold text-sm">Set to:</span>
                             <input
                               type="number"
                               min="0"
                               value={variant.newStockQty}
                               onChange={(e) => handleVariantQtyChange(product.product_id, variant.variant_id, e.target.value)}
                               placeholder="New qty"
-                              className="flex-1 px-3 py-2 rounded-lg border border-border text-sm font-semibold outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-card text-textMain"
+                              className="w-full sm:flex-1 px-3 py-2 rounded-lg border border-border text-sm font-semibold outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-card text-textMain"
                             />
                           </div>
                         </div>
                       ))}
 
-                      <div className="pt-3 border-t border-border flex items-center gap-2">
+                      <div className="pt-3 border-t border-border flex flex-col sm:flex-row items-center gap-2">
                         <input
                           type="number"
                           min="0"
                           value={product.bulkQty}
                           onChange={(e) => handleBulkQtyInput(product.product_id, e.target.value)}
                           placeholder="Set all to..."
-                          className="flex-1 px-3 py-2 rounded-lg border border-border text-sm font-semibold outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-card text-textMain"
+                          className="w-full sm:flex-1 px-3 py-2 rounded-lg border border-border text-sm font-semibold outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 bg-card text-textMain"
                         />
                         <button
                           onClick={() => applyBulkToProduct(product.product_id)}
-                          className="px-3 py-2 bg-primary text-black rounded-lg text-[10px] font-black uppercase tracking-widest"
+                          className="w-full sm:w-auto px-3 py-2 bg-primary text-black rounded-lg text-[10px] font-black uppercase tracking-widest"
                         >
                           Fill All
                         </button>

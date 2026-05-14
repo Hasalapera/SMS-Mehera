@@ -59,7 +59,7 @@ const getCustomer = async (req, res) => {
             include: [{ model: CustomerNote, as: 'notes', separate: true, order: [['created_at', 'DESC']] }]
         });
 
-        // මෙතන customerData කියලා නිවැරදි කරන්න
+        // make the cutsomer deatils write
         if (!customerData) { 
             return res.status(404).json({ error: 'Customer not found' });
         }
@@ -110,7 +110,7 @@ const addNote = async (req, res) => {
         });
     } catch (err) {
         console.error('Add Note Error:', err.message);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Failed to add note. Please try again.' });
     }
 };
 
@@ -128,7 +128,7 @@ const deleteNote = async (req, res) => {
         res.status(200).json({ message: 'Note deleted successfully' });
     } catch (err) {
         console.error('Delete Note Error:', err.message);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Failed to delete note. Please try again.' });
     }
 };
 
@@ -146,7 +146,7 @@ const getCustomerCount = async (req, res) => {
 // Customer Search Function
 const searchCustomers = async (req, res) => {
     try {
-        const { q } = req.query; // Frontend එකෙන් එන සර්ච් පදය
+        const { q } = req.query; // the words come from the search bar
 
         if (!q) {
             return res.status(200).json([]);
@@ -160,7 +160,7 @@ const searchCustomers = async (req, res) => {
                     { phone1: { [Op.iLike]: `%${q}%` } }       // Phone number search
                 ]
             },
-            limit: 10 // රිසල්ට් 10කට සීමා කිරීම (Performance සඳහා)
+            limit: 10 // results limit up to 10 shows
         });
 
         res.status(200).json(customers);
@@ -175,14 +175,14 @@ const assignSalesRep = async (req, res) => {
     try {
         const { customer_id, sales_rep_id } = req.body; // customer_id එක දැන් Array එකක් වෙන්න පුළුවන්
 
-        // 1. Array එකක්ද නැද්ද කියලා බලලා Normalize කරගමු
+        // 1. one customer or list convert into array
         const customerIds = Array.isArray(customer_id) ? customer_id : [customer_id];
 
         if (!customerIds.length || !sales_rep_id) {
             return res.status(400).json({ error: "Missing required fields." });
         }
 
-        // 2. සේල්ස් රෙප් සහ එයාගේ දිස්ත්‍රික්ක ටික ගමු
+        // 2. get sales rep and thier district details
         const salesRep = await User.findByPk(sales_rep_id, {
             include: [{ model: UserArea, as: 'areas' }]
         });
@@ -193,7 +193,7 @@ const assignSalesRep = async (req, res) => {
 
         const allowedDistricts = salesRep.areas.map(area => area.district_name);
 
-        // 3. මේ කස්ටමර්ස්ලා ඔක්කොම රෙප්ගේ දිස්ත්‍රික්කවලට අදාළද කියලා බලමු
+        // 3. check that customer valid to that sales rep
         const customersToAssign = await Customer.findAll({
             where: { customer_id: { [Op.in]: customerIds } }
         });
@@ -207,7 +207,7 @@ const assignSalesRep = async (req, res) => {
             });
         }
 
-        // 4. ඔක්කොම හරි නම් Update කරනවා (Bulk Update)
+        // 4. if all details ok then update (Bulk Update)
         await Customer.update(
             { sales_rep_id: sales_rep_id },
             { where: { customer_id: { [Op.in]: customerIds } } }
@@ -226,10 +226,10 @@ const assignSalesRep = async (req, res) => {
 // 2. Bulk Reassign (With District Validation for each customer)
 const reassignCustomers = async (req, res) => {
     const { fromRepId, toRepId } = req.body;
-    const transaction = await sequelize.transaction();
+    const transaction = await sequelize.transaction();//rool back details if there is error
 
     try {
-        // අලුත් සේල්ස් රෙප්ගේ දිස්ත්‍රික්ක ටික ගමු
+        // get districts for the new sales rep
         const toRep = await User.findByPk(toRepId, {
             include: [{ model: UserArea, as: 'areas' }],
             transaction
@@ -238,13 +238,15 @@ const reassignCustomers = async (req, res) => {
         if (!toRep) throw new Error("Target Sales Rep not found");
         const allowedDistricts = toRep.areas.map(area => area.district_name);
 
-        // 💡 පරණ රෙප්ගෙන් මාරු කරන්න පුළුවන් වෙන්නේ අලුත් රෙප්ගේ දිස්ත්‍රික්කවල ඉන්න කස්ටමර්ස්ලාව විතරයි
+        // Select only the customers from the old rep who are 
+        // located in the districts that the new rep is allowed to manage.
+
         const [updatedCount] = await Customer.update(
             { sales_rep_id: toRepId },
             { 
                 where: { 
                     sales_rep_id: fromRepId,
-                    district: { [Op.in]: allowedDistricts } // දිස්ත්‍රික්කය මැච් වෙන අය විතරයි
+                    district: { [Op.in]: allowedDistricts } // if district is only match
                 },
                 transaction 
             }
@@ -261,7 +263,7 @@ const reassignCustomers = async (req, res) => {
     }
 };
 
-// 3. Get Customers By Rep (පරණ විදිහටම)
+// 3. Get Customers By Rep
 const getCustomersByRep = async (req, res) => {
     try {
         const { repId } = req.params;
@@ -280,7 +282,7 @@ const getCustomersByRep = async (req, res) => {
     }
 };
 
-// 4. අලුත් එකක්: Get Eligible Customers for a Rep
+// 4. Get Eligible Customers for a Rep
 // (Take people who are in a rep's district and haven't been assigned to anyone yet.)
 const getEligibleCustomersForRep = async (req, res) => {
     try {

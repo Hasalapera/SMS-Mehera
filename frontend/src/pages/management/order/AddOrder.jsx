@@ -27,7 +27,7 @@ const AddOrder = () => {
   const [paymentMethod, setPaymentMethod] = useState('cash'); 
   
 
-  // --- දත්ත කියවීමේ ප්‍රධාන FUNCTION එක ---
+  // read data FUNCTION
   const loadCartData = () => {
     try {
       const savedData = localStorage.getItem("active_order_cart");
@@ -123,7 +123,7 @@ const AddOrder = () => {
     if (cart.length === 0) return toast.error("Selection queue is empty!");
 
     try {
-      // Discount එක % වලින් නම් calculate කරන්න
+      // Discount calculate by %
       const discountPercentage = Number(discount) || 0;
       const discountAmount = (totalAmount * discountPercentage) / 100;
       const finalAmount = Math.max(0, totalAmount - discountAmount);
@@ -134,11 +134,11 @@ const AddOrder = () => {
         shipping_address: `${selectedCustomer.lane1 || ""}, ${selectedCustomer.district || ""}`,
         phone: selectedCustomer.phone1,
 
-        // 👇 මේවා තමයි database එකට යන්නේ
-        subtotal: totalAmount, // මුලු එකතුව (discount නැතුව)
-        discount_percentage: discountPercentage, // % එක
-        discount_amount: discountAmount, // LKR amount එක
-        total_amount: finalAmount, // අවසාන payable එක
+        // these are going to  database 
+        subtotal: totalAmount, // total amount without discount
+        discount_percentage: discountPercentage, // % amount 
+        discount_amount: discountAmount, // LKR amount 
+        total_amount: finalAmount, //  payable amount after discount
         payment_method: paymentMethod, // 'cash' or 'credit'
 
         items: cart.map((item) => ({
@@ -162,7 +162,7 @@ const AddOrder = () => {
         setCart([]);
         setSelectedCustomer(null);
         setCusSearch("");
-        setDiscount(0); // 👈 discount reset කරන්න
+        setDiscount(0); // 👈 discount reset 
       }
     } catch (err) {
       console.error("Order Error:", err);
@@ -318,13 +318,13 @@ const AddOrder = () => {
                       </button>
                     </div>
 
-                    {/* Trash Button Div - දැන් මේක වෙන් වෙලා තියෙන්නේ */}
+                    {/* Trash Button Div - now it get divided */}
                     <div className="flex items-center bg-red-50 hover:bg-red-100 rounded-xl p-1 border border-red-100 transition-colors">
                       <button 
                         onClick={() => removeItemCompletely(item.cartItemId)}
                         className="text-red-500 p-1" 
                       >
-                        <Trash2 size={16} /> {/* ✅ බින් එක රතු පාටයි */}
+                        <Trash2 size={16} /> {/* ✅ bin in red colour */}
                       </button>
                     </div>
                 </div>
@@ -386,7 +386,7 @@ const AddOrder = () => {
                   value={discount}
                   onChange={(e) =>
                     setDiscount(Math.min(100, Math.max(0, e.target.value)))
-                  } // 0-100 අතර තියාගන්නවා
+                  } // keep 0-100 
                   placeholder="0"
                   className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 pl-4 pr-10 text-sm font-black outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all text-right shadow-sm"
                 />
