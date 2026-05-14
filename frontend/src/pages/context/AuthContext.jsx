@@ -96,10 +96,10 @@ export const AuthProvider = ({ children }) => {
         const secondsLeft = parseInt(expiresAt) - now;
 
         if (secondsLeft <= 120 && secondsLeft > 0) {
-            console.log('⏰ Token expiring soon, refreshing...');
+            console.log('Token expiring soon, refreshing...');
             await refreshAccessTokenFn();
         } else if (secondsLeft <= 0) {
-            console.warn('⏰ Token expired!');
+            console.warn('Token expired!');
             
             //Force login only if the session ends.
             logout('/login'); 
@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }) => {
         
         const interval = setInterval(() => {
             checkTokenExpiry();
-        }, 60000); // Every 1 minute check
+        }, 30000); // Every 1 minute check
 
         setLoading(false);
         return () => clearInterval(interval);
