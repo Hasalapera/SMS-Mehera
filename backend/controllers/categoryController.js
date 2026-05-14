@@ -11,7 +11,7 @@ const addCategory = async (req, res) => {
         });
 
         if (existingCategory) {
-            return res.status(400).json({ error: 'මෙම කාණ්ඩය (Category) දැනටමත් පද්ධතියට ඇතුළත් කර ඇත.' });
+            return res.status(400).json({ error: 'This category name is already in use.' });
         }
 
         // 2. create new category
@@ -31,10 +31,10 @@ const addCategory = async (req, res) => {
         
         // If the error is due to unique constraint violation, send a specific message
         if (error.name === 'SequelizeUniqueConstraintError') {
-            return res.status(400).json({ error: 'මෙම Category නාමය දැනටමත් පවතී.' });
+            return res.status(400).json({ error: 'This category name is already in use.' });
         }
 
-        return res.status(500).json({ error: 'සර්වර් එකේ දෝෂයක් පවතී. කරුණාකර නැවත උත්සාහ කරන්න.' });
+        return res.status(500).json({ error: 'There is an error on the server. Please try again.' });
     }
 };
 
@@ -61,7 +61,7 @@ const deleteCategory = async (req, res) => {
 
         if (!category) return res.status(404).json({ error: "Category not found" });
 
-        // paranoid: true නිසා මේකෙන් වෙන්නේ Soft Delete එකක්
+        // paranoid: true -> this will soft delete the category (set deletedAt timestamp) instead of hard deleting the record
         await category.destroy();
 
         res.status(200).json({ message: "Category archived successfully" });

@@ -28,7 +28,7 @@ const getBrands = async (req, res) => {
         const brands = await Brand.findAll({
             attributes: {
                 include: [
-                    // 💡 Subquery එකක් පාවිච්චි කරලා ඒ ඒ බ්‍රෑන්ඩ් එකට අදාළ ප්‍රොඩක්ට්ස් ගණන ගමු
+                    // use subquery for get product count for each brand
                     [
                         sequelize.literal(`(
                             SELECT COUNT(*)
@@ -41,7 +41,7 @@ const getBrands = async (req, res) => {
                     ]
                 ]
             },
-            order: [['createdAt', 'DESC']] // අලුත්ම ඒවා උඩට එන්න
+            order: [['createdAt', 'DESC']] // Newest first
         });
 
         res.status(200).json({

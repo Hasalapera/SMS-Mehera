@@ -21,15 +21,15 @@ const loginUser = async (req, res) => {
             const admin = await User.findOne({ where: { role: 'admin' } });
             let displayContact = 'N/A';
             if (admin) {
-                // ඩේටාබේස් එකේ තියෙන නම අනුව (contact_no හෝ phone1) වෙනස් කරගන්න
+                // change this if your admin contact field is different
                 const rawContact = admin.contact_no || admin.phone1;
 
                 if (rawContact) {
                     try {
-                        // 🔐 Decrypt කරන්න ට්‍රයි කරනවා
+                        // try for decrypt
                         displayContact = decrypt(rawContact);
                     } catch (e) {
-                        // 📝 Decrypt කරන්න බැරි නම් plain text එකම ගන්නවා
+                        //if cannot decrypt, use raw value (in case it's not encrypted)
                         displayContact = rawContact;
                     }
                 }
@@ -96,7 +96,7 @@ const loginUser = async (req, res) => {
             success: true,
             message: "Logged in successfully",
             accessToken,
-            refreshToken, // ⚠️ localStorage එකට දෙන්න
+            refreshToken, // ⚠️ give for localStorage 
             user: safeUser,
             expiresAt: accessDecoded.exp,
             refreshExpiresAt: refreshDecoded.exp

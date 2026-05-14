@@ -21,6 +21,7 @@ const addProduct = async (req, res) => {
         const variantImages = req.files['variant_images'] || [];
         let imageCounter = 0;
 
+        // 4. create variants with their respective images
         const variantPromises = parsedVariants.map(async (v, index) => {
             let vImgUrl = null;
             if (v.hasImage) {
@@ -28,6 +29,7 @@ const addProduct = async (req, res) => {
                 imageCounter++;
             }
 
+            // create variant with the image URL (if it has one)
             return await ProductVariant.create({
                 product_id: newProduct.product_id,
                 sku: v.sku,
@@ -39,6 +41,7 @@ const addProduct = async (req, res) => {
             });
         });
 
+        // wait for all variants to be created
         await Promise.all(variantPromises);
         res.status(201).json({ message: "Product added successfully!" });
 
@@ -48,8 +51,10 @@ const addProduct = async (req, res) => {
     }
 };
 
+// Get all products with their variants, category, and brand
 const getProducts = async (req, res) => {
     try {
+        // Use eager loading to get associated category, brand, and variants in one query
         const products = await Product.findAll({
             include: [
                 { model: Category, as: 'category' },
@@ -69,10 +74,12 @@ const getProducts = async (req, res) => {
     }
 };
 
+// Get single product by ID with its variants, category, and brand
 const getProductById = async (req, res) => {
     try {
         const { id } = req.params;
 
+        // Use eager loading to get associated category, brand, and variants in one query
         const product = await Product.findByPk(id, {
             include: [
                 { model: Category, as: 'category' },
@@ -81,10 +88,12 @@ const getProductById = async (req, res) => {
             ]
         });
 
+        // If product not found, return 404
         if (!product) {
             return res.status(404).json({ error: 'Product not found' });
         }
 
+        // Return the product with its associations
         res.status(200).json({
             message: 'Product retrieved successfully',
             product
@@ -96,17 +105,23 @@ const getProductById = async (req, res) => {
 };
 
 
+// Update product details (excluding variants for simplicity)
 const updateProduct = async (req, res) => {
     try {
+        // For simplicity, we are only updating the main product details here. Variants can be updated through a separate endpoint if needed.
         const { id } = req.params;
+        // Get the update data from the request body
         const updateData = req.body;
 
+        // If there's a new main image, get its URL
         const product = await Product.findByPk(id);
         
+        // If product not found, return 404
         if (!product) {
             return res.status(404).json({ error: "Product not found" });
         }
 
+        // If a new main image is uploaded, update the image_url
         await product.update(updateData);
 
         res.status(200).json({
@@ -120,18 +135,24 @@ const updateProduct = async (req, res) => {
     }
 };
 
+// Delete a product (soft delete)
 const deleteProduct = async (req, res) => {
     try {
+        // Get the product ID from the request parameters
         const { id } = req.params;
 
+        // Find the product by ID
         const product = await Product.findByPk(id);
         
+        // If product not found, return 404
         if (!product) {
             return res.status(404).json({ error: "Product not found" });
         }
 
+        // Soft delete the product (set deletedAt timestamp)
         await product.destroy();
 
+        // Return success response
         res.status(200).json({ message: "Product deleted successfully" });
 
     } catch (err) {
