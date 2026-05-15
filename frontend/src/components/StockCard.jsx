@@ -8,6 +8,10 @@ const StockCard = ({ product }) => {
   // Get all variants of the product (empty array if none)
   const variants = product?.variants || [];
   const totalStock = variants.reduce((sum, item) => sum + Number(item.stock_count || 0), 0);
+  const totalProductValue = variants.reduce(
+    (sum, item) => sum + (Number(item.price || 0) * Number(item.stock_count || 0)),
+    0
+  );
 
   // Get latest updated time from variants
   const variantDates = variants
@@ -104,9 +108,17 @@ const StockCard = ({ product }) => {
             <span className="text-[10px] font-bold text-textMain/50 transition-colors duration-300">Units</span>
           </div>
         </div>
-        <div className="text-right min-w-[110px]">
-          <p className="text-[9px] font-bold text-textMain/50 transition-colors duration-300 uppercase tracking-widest mb-0.5">Updated</p>
-          <p className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 text-right">{lastUpdated}</p>
+        <div className="text-right min-w-[120px] flex flex-col items-end gap-1">
+          <div>
+            <p className="text-[9px] font-bold text-textMain/50 transition-colors duration-300 uppercase tracking-widest mb-0.5">Total Value</p>
+            <p className="text-sm font-black text-primary transition-colors duration-300">
+              Rs. {totalProductValue.toLocaleString()}
+            </p>
+          </div>
+          <div>
+            <p className="text-[9px] font-bold text-textMain/50 transition-colors duration-300 uppercase tracking-widest mb-0.5">Updated</p>
+            <p className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 text-right">{lastUpdated}</p>
+          </div>
         </div>
       </div>
 
@@ -118,6 +130,8 @@ const StockCard = ({ product }) => {
             {variants.map((v) => {
               const vStock = Number(v.stock_count || 0);
               const vCritical = Number(v.critical_stock_level ?? 5);
+              const vPrice = Number(v.price || 0);
+              const vTotalValue = vPrice * vStock;
               const vStatus = getVariantStatus(vStock, vCritical);
 
               return (
@@ -140,12 +154,20 @@ const StockCard = ({ product }) => {
                     <p className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 mt-0.5">
                       <span className="font-black text-textMain transition-colors duration-300">{vStock}</span> units
                     </p>
+                    <p className="text-[9px] font-bold text-textMain/50 transition-colors duration-300 mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span>Unit: <span className="font-black text-textMain transition-colors duration-300">Rs. {vPrice.toLocaleString()}</span></span>                    
+                    </p>
                   </div>
 
                   {/*Per-Variant Status Badge */}
-                  <span className={`shrink-0 text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-wider ${vStatus.text} ${vStatus.bg}`}>
-                    {vStatus.label}
-                  </span>
+                  <div className="shrink-0 flex flex-col items-end gap-1">
+                    <span className={`text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-wider ${vStatus.text} ${vStatus.bg}`}>
+                      {vStatus.label}
+                    </span>
+                    <span className="text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-wider bg-black/5 text-textMain/50 border border-border transition-colors duration-300">
+                      Rs. {vTotalValue.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               );
             })}
