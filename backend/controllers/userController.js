@@ -286,7 +286,7 @@ const getUserProfile = async (req, res) => {
             where: { user_id: id },
             include: [{ model: UserArea, as: 'areas', attributes: ['district_name'] }],
             attributes: { exclude: ['password', 'default_password'] },
-            paranoid: false // 👈 අයින් කරපු අයවත් පේන්න මේක ඕනේ
+            paranoid: false 
         });
 
         if (!user) return res.status(404).json({ error: "User not found" });
