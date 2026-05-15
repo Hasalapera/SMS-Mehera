@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   Plus, Search, Package, AlertCircle,
-  Loader2, ArrowLeft, RefreshCw, Trash2, CheckCircle2, ClipboardList, Undo2, Sparkles
+  Loader2, ArrowLeft, RefreshCw, Trash2, CheckCircle2, ClipboardList, Undo2, Sparkles,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -20,6 +21,8 @@ const AddStock = () => {
   const [isApplying, setIsApplying] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
   const [lastAppliedSummary, setLastAppliedSummary] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 5;
 
   useEffect(() => {
     if (!token) {
@@ -209,6 +212,29 @@ const AddStock = () => {
     return pName.includes(search);
   });
 
+  const totalPages = Math.ceil(filteredProducts.length / rowsPerPage);
+  const safeCurrentPage = totalPages > 0 ? Math.min(currentPage, totalPages) : 1;
+  const indexOfLastRow = safeCurrentPage * rowsPerPage;
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const currentProducts = filteredProducts.slice(indexOfFirstRow, indexOfLastRow);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (totalPages === 0) {
+      if (currentPage !== 1) setCurrentPage(1);
+      return;
+    }
+
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   if (loading) {
     return (
       <div className="w-full min-h-screen bg-background transition-colors duration-300 flex items-center justify-center">
@@ -298,7 +324,7 @@ const AddStock = () => {
             </div>
 
             <div className="divide-y divide-border">
-              {filteredProducts.map((product) => (
+              {currentProducts.map((product) => (
                 <button
                   key={product.product_id}
                   onClick={() => addProductToQueue(product)}
@@ -319,6 +345,44 @@ const AddStock = () => {
                 </button>
               ))}
             </div>
+
+            {totalPages > 1 && (
+              <div className="px-5 py-4 border-t border-border bg-card/30 flex items-center justify-between gap-3 flex-wrap">
+                <p className="text-[10px] font-black text-textMain/50 uppercase tracking-widest">
+                  Page {safeCurrentPage} of {totalPages}
+                </p>
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  <button
+                    disabled={safeCurrentPage === 1}
+                    onClick={() => paginate(safeCurrentPage - 1)}
+                    className="p-2 rounded-lg border border-border text-textMain/50 hover:text-primary transition-all duration-300 disabled:opacity-30"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => paginate(i + 1)}
+                      className={`w-8 h-8 rounded-lg text-[11px] font-black transition-all ${safeCurrentPage === i + 1 ? 'bg-primary text-textMain shadow-md shadow-[#b4a460]/20' : 'bg-background text-textMain/50 hover:bg-primary/10'}`}
+                      aria-label={`Go to page ${i + 1}`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+
+                  <button
+                    disabled={safeCurrentPage === totalPages}
+                    onClick={() => paginate(safeCurrentPage + 1)}
+                    className="p-2 rounded-lg border border-border text-textMain/50 hover:text-primary transition-all duration-300 disabled:opacity-30"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -340,7 +404,7 @@ const AddStock = () => {
               </div>
             </div>
 
-            <div className="max-h-[560px] overflow-y-auto p-4 space-y-4">
+            <div className="max-h-140 overflow-y-auto p-4 space-y-4">
               {selectedProducts.length === 0 ? (
                 <div className="py-16 text-center border-2 border-dashed border-border rounded-3xl">
                   <Package size={34} className="mx-auto text-textMain/20 mb-3 transition-colors duration-300" />
