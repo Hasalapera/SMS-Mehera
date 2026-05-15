@@ -2,7 +2,7 @@ const { Order, OrderItem, ProductVariant, Product, User } = require('../models')
 const sequelize = require('../db/db');
 const { sendEmailInvoice } = require('../utils/sendEmailInvoice'); // 👈 Import එක {} ඇතුළේ තියෙනවාද බලන්න
 
-// --- 1. පවතින සාමාන්‍ය ඕඩර් එක (SALES REP / OFFLINE) ---
+// --- 1. (SALES REP / OFFLINE) ---
 const placeOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
@@ -15,7 +15,8 @@ const placeOrder = async (req, res) => {
       discount_percentage,   // % 
       discount_amount,       
       total_amount,          // final total after discount
-      items 
+      items,
+      payment_method         // 'cash' or 'credit' 
     } = req.body;
 
     const newOrder = await Order.create({
@@ -26,8 +27,9 @@ const placeOrder = async (req, res) => {
       subtotal: subtotal || 0,                    // store sub total
       discount_percentage: discount_percentage || 0, // % store 
       discount_amount: discount_amount || 0,      // store discount amount
-      total_amount: total_amount || 0,            // store final payable amount
-      order_status: 'pending',
+      total_amount: total_amount || 0, 
+      payment_method: payment_method || 'cash',   // store payment method
+     order_status: 'requested',
       created_by: req.user.user_id,
       order_type: 'offline'
     }, { transaction });
@@ -42,11 +44,11 @@ const placeOrder = async (req, res) => {
 
     await OrderItem.bulkCreate(orderItemsData, { transaction });
     
-    await transaction.commit(); // ✅ කලින්ම Commit කරනවා
+    await transaction.commit(); // ✅ confirm DB operations before sending response
 
     res.status(201).json({ success: true, message: "Order placed successfully!", orderId: newOrder.order_id });
   } catch (error) {
-    // ⚠️ Commit වුණාට පස්සේ rollback කරන්න බැරි නිසා මේ condition එක වැදගත්
+    // if there is error rollback it
     if (transaction && !transaction.finished) await transaction.rollback();
     console.error("Order Error:", error);
     res.status(500).json({ success: false, message: "Failed to place order" });
@@ -78,7 +80,7 @@ const placeOnlineOrder = async (req, res) => {
       discount_percentage: discount_percentage || 0,
       discount_amount: discount_amount || 0,
       total_amount: total_amount || 0,
-      order_status: 'pending',
+      order_status: 'requested',
       created_by: req.user.user_id,
       order_type: 'online' 
     }, { transaction });
@@ -176,4 +178,24 @@ const getAllOrders = async (req, res) => {
   }
 };
 
-module.exports = { placeOrder, placeOnlineOrder, getAllOrders };
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+
+    const order = await Order.findByPk(orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    order.order_status = status;
+    await order.save();
+
+    res.status(200).json({ success: true, message: "Order status updated", order });
+  } catch (error) {
+    console.error("Status Update Error:", error);
+    res.status(500).json({ success: false, message: "Failed to update order status" });
+  }
+};
+
+module.exports = { placeOrder, placeOnlineOrder, getAllOrders, updateOrderStatus };

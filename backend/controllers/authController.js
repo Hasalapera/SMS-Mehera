@@ -2,6 +2,7 @@ require('dotenv').config();
 const { User } = require('../models');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const { decrypt } = require('../utils/cryptoUtils');
 
 const loginUser = async (req, res) => {
     try {
@@ -16,13 +17,32 @@ const loginUser = async (req, res) => {
             });
         }
 
-        if (user.deleted_at) {
-            return res.status(401).json({ 
+        if (user.deleted_at || !user.is_active) {
+            // get an admin 
+            const admin = await User.findOne({ where: { role: 'admin' } });
+            let displayContact = 'N/A';
+            if (admin) {
+                // change this if your admin contact field is different
+                const rawContact = admin.contact_no || admin.phone1;
+
+                if (rawContact) {
+                    try {
+                        // try for decrypt
+                        displayContact = decrypt(rawContact);
+                    } catch (e) {
+                        //if cannot decrypt, use raw value (in case it's not encrypted)
+                        displayContact = rawContact;
+                    }
+                }
+            }
+            return res.status(403).json({ 
                 success: false,
-                message: "Account deleted" 
+                message: `Account deactivated. Please contact Administrator at ${displayContact}`,
+                adminContact: displayContact
             });
         }
 
+        // password comparissan (given pw and db)
         const isMatch = await bcrypt.compare(password, user.password.trim());
         
         if (!isMatch) {
@@ -67,8 +87,8 @@ const loginUser = async (req, res) => {
         });
 
         // Safe user
-        const safeUser = user.toJSON();
-        delete safeUser.password;
+        const safeUser = user.toJSON(); // convert complex instance into simple js object 
+        delete safeUser.password; // remove password (frontend ekata yawana eka walakwanawa)
 
         // Decoded tokens
         const accessDecoded = jwt.decode(accessToken);
@@ -78,7 +98,7 @@ const loginUser = async (req, res) => {
             success: true,
             message: "Logged in successfully",
             accessToken,
-            refreshToken, // ⚠️ localStorage එකට දෙන්න
+            refreshToken, // ⚠️ give for localStorage 
             user: safeUser,
             expiresAt: accessDecoded.exp,
             refreshExpiresAt: refreshDecoded.exp
@@ -94,8 +114,10 @@ const loginUser = async (req, res) => {
 };
 
 // 🆕 REFRESH TOKEN ROUTE
+// renew the access token using refresh token
 const refreshAccessToken = async (req, res) => {
     try {
+        // refreesh token eka check karanawa
         const { refreshToken } = req.body;
 
         if (!refreshToken) {
@@ -106,10 +128,10 @@ const refreshAccessToken = async (req, res) => {
         }
 
         try {
-            // Verify refresh token
+            // Verify refresh token (expire wela nadda, is it valid one)
             const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
 
-            // Generate new access token
+            // Generate new access token for relavent time limit
             const newAccessToken = jwt.sign(
                 { user_id: decoded.user_id, role: decoded.role },
                 process.env.JWT_SECRET,
@@ -151,6 +173,7 @@ const refreshAccessToken = async (req, res) => {
 };
 
 const logoutUser = (req, res) => {
+    // clear the access token
     res.clearCookie('accessToken', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -158,6 +181,7 @@ const logoutUser = (req, res) => {
         path: '/'
     });
 
+    // clear the refresh token
     res.clearCookie('refreshToken', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

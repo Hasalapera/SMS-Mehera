@@ -9,7 +9,7 @@ const ViewBrands = () => {
   const [activeTab, setActiveTab] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 1. Brands Fetch කරගැනීම
+  // 1. Brands Fetch 
   useEffect(() => {
     const fetchBrands = async () => {
       try {
@@ -28,7 +28,7 @@ const ViewBrands = () => {
       }
     };
 
-    fetchBrands(); // කෙලින්ම මේ useEffect එක ඇතුළෙම කෝල් කරන්න
+    fetchBrands(); 
   }, []); 
 
   // 🗑️ Delete/Archive Logic
@@ -59,11 +59,10 @@ const ViewBrands = () => {
 
         toast.success(`${brandName} moved to archive`);
         
-        // UI එකෙන් අයින් කරන්න
         const updatedBrands = brands.filter(b => b.brand_id !== brandId);
         setBrands(updatedBrands);
         
-        // ඊළඟට තියෙන Brand එක පෙන්වන්න
+        // show next brand
         if (updatedBrands.length > 0) {
           setActiveTab(updatedBrands[0].brand_id);
         } else {
@@ -82,7 +81,7 @@ const ViewBrands = () => {
   if (loading) {
     return (
       <div className="h-96 flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#b4a460]" size={40} />
+        <Loader2 className="animate-spin text-primary transition-all duration-300" size={40} />
       </div>
     );
   }
@@ -93,27 +92,27 @@ const ViewBrands = () => {
       
       {/* Header */}
       <div className="mb-10 text-left">
-        <h2 className="text-3xl font-bold text-black flex items-center gap-3">
-          <div className="p-3 bg-[#b4a460] rounded-2xl text-black shadow-lg shadow-[#b4a460]/20">
+        <h2 className="text-3xl font-bold text-textMain transition-colors duration-300 flex items-center gap-3">
+          <div className="p-3 bg-primary transition-all duration-300 rounded-2xl text-textMain transition-colors duration-300 shadow-lg shadow-[#b4a460]/20">
             <LayoutGrid size={28} />
           </div>
           Our Brands Portfolio
         </h2>
-        <p className="text-gray-500 text-sm mt-2 ml-16">
+        <p className="text-textMain/50 transition-colors duration-300 text-sm mt-2 ml-16">
           Explore and manage the official brand partners of Mehera International.
         </p>
       </div>
 
       {/* Tabs Section */}
-      <div className="flex flex-wrap gap-3 mb-8 border-b border-gray-100 pb-4">
+      <div className="flex flex-wrap gap-3 mb-8 border-b border-border transition-colors duration-300 pb-4">
         {brands.map((brand) => (
           <button
             key={brand.brand_id}
             onClick={() => setActiveTab(brand.brand_id)}
             className={`px-8 py-3 rounded-2xl font-bold text-sm transition-all duration-300 ${
               activeTab === brand.brand_id
-                ? 'bg-[#b4a460] text-white shadow-xl scale-105'
-                : 'bg-white text-gray-400 hover:bg-black hover:text-[#b4a460] hover:shadow-lg'
+                ? 'bg-primary transition-all duration-300 text-white shadow-xl scale-105'
+                : 'bg-card transition-colors duration-300 text-textMain/50 transition-colors duration-300 hover:bg-black hover:text-primary transition-all duration-300 hover:shadow-lg'
             }`}
           >
             {brand.brand_name}
@@ -123,7 +122,7 @@ const ViewBrands = () => {
 
       {/* Brand Content Card */}
       {activeBrand && (
-        <div className="bg-white border border-gray-100 rounded-[3rem] shadow-sm p-8 md:p-12 animate-in slide-in-from-bottom-5 duration-500">
+        <div className="bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-[3rem] shadow-sm p-8 md:p-12 animate-in slide-in-from-bottom-5 duration-500">
           <button 
             onClick={() => handleDeleteBrand(activeBrand.brand_id, activeBrand.brand_name)}
             className="absolute top-8 right-8 p-4 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-3xl transition-all group"
@@ -135,7 +134,7 @@ const ViewBrands = () => {
             
             {/* Left: Brand Logo Area */}
             <div className="w-full lg:w-1/3">
-              <div className="aspect-square rounded-[2.5rem] bg-gray-50 border-2 border-dashed border-gray-100 flex items-center justify-center overflow-hidden p-6 shadow-inner">
+              <div className="aspect-square rounded-[2.5rem] bg-card transition-colors duration-300 border-2 border-dashed border-border transition-colors duration-300 flex items-center justify-center overflow-hidden p-6 shadow-inner">
                 {activeBrand.image_url ? (
                   <img 
                     src={activeBrand.image_url} 
@@ -143,7 +142,7 @@ const ViewBrands = () => {
                     className="w-full h-full object-contain"
                   />
                 ) : (
-                  <div className="flex flex-col items-center text-gray-300">
+                  <div className="flex flex-col items-center text-textMain/50 transition-colors duration-300">
                     <ImageIcon size={64} />
                     <span className="text-[10px] uppercase font-bold mt-2">No Logo Available</span>
                   </div>
@@ -154,34 +153,34 @@ const ViewBrands = () => {
             {/* Right: Brand Details */}
             <div className="flex-1 space-y-8 text-left">
               <div>
-                <span className="bg-[#b4a460]/10 text-[#b4a460] px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
+                <span className="bg-primary/10 transition-all duration-300 text-primary transition-all duration-300 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
                   Official Partner
                 </span>
-                <h3 className="text-4xl font-black text-black mt-4">{activeBrand.brand_name}</h3>
+                <h3 className="text-4xl font-black text-textMain transition-colors duration-300 mt-4">{activeBrand.brand_name}</h3>
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center gap-3 text-gray-400">
-                  <FileText size={18} className="text-[#b4a460]" />
+                <div className="flex items-center gap-3 text-textMain/50 transition-colors duration-300">
+                  <FileText size={18} className="text-primary transition-all duration-300" />
                   <span className="text-xs font-bold uppercase tracking-widest">Brand Description</span>
                 </div>
-                <p className="text-gray-600 leading-relaxed text-lg italic">
+                <p className="text-textMain/50 transition-colors duration-300 leading-relaxed text-lg italic">
                   "{activeBrand.description || "No description provided for this brand yet."}"
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-gray-50">
-                <div className="p-6 bg-gray-50 rounded-3xl">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Total Products</p>
-                  <p className="text-2xl font-black text-black">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-border">
+                <div className="p-6 bg-card transition-colors duration-300 rounded-3xl">
+                  <p className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 uppercase mb-1">Total Products</p>
+                  <p className="text-2xl font-black text-textMain transition-colors duration-300">
                   {/* 🚀 Backend එකෙන් එන productCount එක මෙතනට දානවා */}
                   {activeBrand.productCount || 0}
                 </p>
-                <p className="text-[9px] text-gray-400 font-medium uppercase mt-1">Items in registry</p>
+                <p className="text-[9px] text-textMain/50 transition-colors duration-300 font-medium uppercase mt-1">Items in registry</p>
                 </div>
-                <div className="p-6 bg-gray-50 rounded-3xl">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Created Date</p>
-                  <p className="text-sm font-bold text-black">
+                <div className="p-6 bg-card transition-colors duration-300 rounded-3xl">
+                  <p className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 uppercase mb-1">Created Date</p>
+                  <p className="text-sm font-bold text-textMain transition-colors duration-300">
                     {new Date(activeBrand.createdAt).toLocaleDateString()}
                   </p>
                 </div>
@@ -194,9 +193,9 @@ const ViewBrands = () => {
 
       {/* Empty State */}
       {brands.length === 0 && !loading && (
-        <div className="bg-white rounded-[2rem] p-20 text-center border border-gray-100">
+        <div className="bg-card transition-colors duration-300 rounded-[2rem] p-20 text-center border border-border transition-colors duration-300">
             <Tag size={48} className="mx-auto text-gray-200 mb-4" />
-            <p className="text-gray-400 font-bold italic">No brands found in the inventory.</p>
+            <p className="text-textMain/50 transition-colors duration-300 font-bold italic">No brands found in the inventory.</p>
         </div>
       )}
     </div>

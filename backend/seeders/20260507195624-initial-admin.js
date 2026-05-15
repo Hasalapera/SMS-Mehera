@@ -9,27 +9,26 @@ module.exports = {
     const adminPassword = process.env.INITIAL_ADMIN_PASSWORD;
 
     if (!adminEmail || !adminPassword) {
-      console.error("❌ Skipping Seed: Credentials missing in .env");
+      console.error("Skipping Seed: Credentials missing in .env");
       return;
     }
 
-    // 1. ඊමේල් එකෙන් යූසර් ඉන්නවාද කියලා චෙක් කරනවා
+    // 1. Checking if the user exists by email
     const existingUser = await User.findOne({ 
       where: { email: adminEmail } 
     });
 
-    // 2. යූසර් දැනටමත් ඉන්නවා නම්, කිසිම දෙයක් කරන්නේ නැහැ
+    // 2. If the user already exists, nothing will be done.
     if (existingUser) {
       console.log(`\x1b[33m%s\x1b[0m`, `ℹ️  Skipping Seed: Admin (${adminEmail}) already exists in shared DB.`);
       return;
     }
 
-    // 3. යූසර් නැත්නම් විතරක් අලුතින් ක්‍රියේට් කරනවා
+    // 3. Create a new user only if it does not exist.
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
     await User.create({
-      // 💡 මෙතන user_id එක දෙන්නේ නැහැ. 
-      // Sequelize Model එකෙන් ඒක auto-generate කරගන්නවා.
+      // auto generate id from sequilize model
       name: 'Hasala Perera',
       email: adminEmail,
       password: hashedPassword,

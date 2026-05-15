@@ -66,31 +66,31 @@ const ChangePassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center text-white p-4">
-      <div className="bg-[#1a1a1a] p-8 rounded-[2.5rem] border border-gray-800 w-full max-w-md shadow-2xl shadow-[#b4a460]/5">
+    <div className="min-h-screen bg-background transition-all duration-300 flex items-center justify-center text-textMain transition-colors duration-300 p-4">
+      <div className="bg-card transition-all duration-300 p-8 rounded-[2.5rem] border border-border transition-colors duration-300 w-full max-w-md shadow-2xl shadow-[#b4a460]/5">
         
         <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-[#b4a460]/10 rounded-2xl flex items-center justify-center mb-4 border border-[#b4a460]/20">
-                <Lock className="text-[#b4a460]" size={32} />
+            <div className="w-16 h-16 bg-primary/10 transition-all duration-300 rounded-2xl flex items-center justify-center mb-4 border border-primary/20 transition-all duration-300">
+                <Lock className="text-primary transition-all duration-300" size={32} />
             </div>
-            <h2 className="text-2xl font-bold text-[#b4a460]">Security Sync</h2>
-            <p className="text-gray-400 text-[10px] uppercase tracking-widest mt-2">Update your temporary credentials</p>
+            <h2 className="text-2xl font-bold text-primary transition-all duration-300">Security Sync</h2>
+            <p className="text-textMain/50 transition-colors duration-300 text-[10px] uppercase tracking-widest mt-2">Update your temporary credentials</p>
         </div>
         
         <form onSubmit={handleChangePassword} className="space-y-5">
           {/* New Password */}
           <div className="relative">
             <input 
-              type={showNewPassword ? "text" : "password"} // 👈 Type එක state එක අනුව මාරු වෙනවා
+              type={showNewPassword ? "text" : "password"} //The type changes depending on the state.
               placeholder="New Password" 
-              className="w-full bg-black border border-gray-700 p-4 rounded-2xl focus:border-[#b4a460] outline-none transition-all pr-12 text-sm"
+              className="w-full bg-black border border-border p-4 rounded-2xl focus:border-primary transition-all duration-300 outline-none transition-all pr-12 text-sm"
               onChange={(e) => setNewPassword(e.target.value)}
               required
             />
             <button 
               type="button"
               onClick={() => setShowNewPassword(!showNewPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#b4a460]"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300"
             >
               {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
@@ -101,20 +101,20 @@ const ChangePassword = () => {
             <input 
               type={showConfirmPassword ? "text" : "password"} 
               placeholder="Confirm New Password" 
-              className="w-full bg-black border border-gray-700 p-4 rounded-2xl focus:border-[#b4a460] outline-none transition-all pr-12 text-sm"
+              className="w-full bg-black border border-border p-4 rounded-2xl focus:border-primary transition-all duration-300 outline-none transition-all pr-12 text-sm"
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
             <button 
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#b4a460]"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300"
             >
               {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
 
-          <button className="w-full bg-[#b4a460] text-black font-black uppercase tracking-widest py-4 rounded-2xl hover:bg-[#9a8b50] transition-all transform active:scale-95 shadow-lg shadow-[#b4a460]/20">
+          <button className="w-full bg-primary transition-all duration-300 text-textMain transition-colors duration-300 font-black uppercase tracking-widest py-4 rounded-2xl hover:bg-[#9a8b50] transition-all transform active:scale-95 shadow-lg shadow-[#b4a460]/20">
             Update & Login
           </button>
         </form>

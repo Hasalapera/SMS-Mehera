@@ -134,17 +134,17 @@ const AddOnlineOrder = () => {
   };
 
   return (
-    <div className="flex flex-col h-full font-sans text-left bg-white">
+    <div className="flex flex-col h-full font-sans text-left bg-card transition-colors duration-300">
       <Toaster position="top-right" />
       
-      <div className="p-6 border-b border-gray-50 bg-gray-50/20">
+      <div className="p-6 border-b border-border bg-card/20 transition-colors duration-300">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-black text-[#b4a460] rounded-2xl shadow-lg">
+          <div className="p-3 bg-black text-primary transition-all duration-300 rounded-2xl shadow-lg">
             <ShoppingCart size={20} />
           </div>
           <div>
-            <h2 className="text-sm font-black uppercase tracking-widest text-black">Online Registry</h2>
-            <p className="text-[9px] font-bold text-gray-400 mt-1 uppercase">Retail Entry Form</p>
+            <h2 className="text-sm font-black uppercase tracking-widest text-textMain transition-colors duration-300">Online Registry</h2>
+            <p className="text-[9px] font-bold text-textMain/50 transition-colors duration-300 mt-1 uppercase">Retail Entry Form</p>
           </div>
         </div>
       </div>
@@ -154,110 +154,110 @@ const AddOnlineOrder = () => {
         {/* CUSTOMER REGISTRY SECTION */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-2">
-            <UserPlus size={14} className="text-[#b4a460]" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Customer Registry</span>
+            <UserPlus size={14} className="text-primary transition-all duration-300" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-textMain/50 transition-colors duration-300">Customer Registry</span>
           </div>
           
           <div className="space-y-3">
             {/* Full Name */}
             <div className="relative group">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#b4a460]" size={16} />
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={16} />
               <input 
                 type="text" name="name" value={customerInfo.name} onChange={handleInputChange}
                 placeholder="Full Name *" 
-                className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none"
+                className="w-full pl-12 pr-4 py-4 bg-card transition-colors duration-300 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none"
               />
             </div>
             
             {/* Contacts */}
             <div className="grid grid-cols-2 gap-3">
                 <div className="relative group">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300" size={16} />
                   <input 
                     type="text" name="primaryPhone" value={customerInfo.primaryPhone} onChange={handleInputChange}
                     placeholder="Contact No 1 *" 
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl text-[10px] font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none"
+                    className="w-full pl-12 pr-4 py-4 bg-card transition-colors duration-300 border-none rounded-2xl text-[10px] font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none"
                   />
                 </div>
                 <div className="relative group">
-                  <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
+                  <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300" size={16} />
                   <input 
                     type="text" name="secondaryPhone" value={customerInfo.secondaryPhone} onChange={handleInputChange}
                     placeholder="Contact No 2 (Optional)" 
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl text-[10px] font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none"
+                    className="w-full pl-12 pr-4 py-4 bg-card transition-colors duration-300 border-none rounded-2xl text-[10px] font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none"
                   />
                 </div>
             </div>
 
             {/* Email Field */}
             <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#b4a460]" size={16} />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={16} />
                 <input 
                     type="email" name="email" value={customerInfo.email} onChange={handleInputChange}
                     placeholder="Email Address * (Required for Invoice)" 
-                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none"
+                    className="w-full pl-12 pr-4 py-4 bg-card transition-colors duration-300 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none"
                 />
             </div>
 
             {/* District Dropdown */}
             <div className="relative group">
-                <Map className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#b4a460]" size={16} />
+                <Map className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={16} />
                 <select 
                     name="district" value={customerInfo.district} onChange={handleInputChange}
-                    className="w-full pl-12 pr-10 py-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none appearance-none"
+                    className="w-full pl-12 pr-10 py-4 bg-card transition-colors duration-300 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none appearance-none"
                 >
                     <option value="">Select District *</option>
                     {districts.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-300">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-textMain/50 transition-colors duration-300">
                     <Plus size={12} className="rotate-45" />
                 </div>
             </div>
 
             {/* Address */}
             <div className="relative group">
-              <MapPin className="absolute left-4 top-4 text-gray-300 group-focus-within:text-[#b4a460]" size={16} />
+              <MapPin className="absolute left-4 top-4 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={16} />
               <textarea 
                 name="address" value={customerInfo.address} onChange={handleInputChange}
                 placeholder="Delivery Address *" 
                 rows="3"
-                className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none resize-none shadow-inner"
+                className="w-full pl-12 pr-4 py-4 bg-card transition-colors duration-300 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none resize-none shadow-inner"
               />
             </div>
           </div>
         </div>
 
         {/* CART QUEUE */}
-        <div className="space-y-4 pt-4 border-t border-gray-50">
+        <div className="space-y-4 pt-4 border-t border-border">
           <div className="flex items-center gap-2 mb-2">
-            <Package size={14} className="text-[#b4a460]" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Order Queue ({cart.length})</span>
+            <Package size={14} className="text-primary transition-all duration-300" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-textMain/50 transition-colors duration-300">Order Queue ({cart.length})</span>
           </div>
 
           {cart.length > 0 ? (
             <div className="space-y-3">
               {cart.map((item) => (
-                <div key={item.cartItemId} className="p-4 bg-white border border-gray-100 rounded-[2rem] flex items-center justify-between group hover:border-[#b4a460]/30 transition-all shadow-sm">
+                <div key={item.cartItemId} className="p-4 bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-[2rem] flex items-center justify-between group hover:border-primary/30 transition-all duration-300 transition-all shadow-sm">
                   <div className="flex-1 overflow-hidden pr-4">
-                    <h4 className="text-[11px] font-black uppercase text-black leading-tight truncate">{item.name}</h4>
+                    <h4 className="text-[11px] font-black uppercase text-textMain transition-colors duration-300 leading-tight truncate">{item.name}</h4>
                     {item.variant_name && item.variant_name !== 'Standard' && (
-                      <p className="text-[9px] text-[#b4a460] font-black uppercase mt-0.5">{item.variant_name}</p>
+                      <p className="text-[9px] text-primary transition-all duration-300 font-black uppercase mt-0.5">{item.variant_name}</p>
                     )}
-                    <p className="text-[10px] font-serif italic text-gray-400 mt-0.5">Rs. {item.price.toLocaleString()}</p>
+                    <p className="text-[10px] font-serif italic text-textMain/50 transition-colors duration-300 mt-0.5">Rs. {item.price.toLocaleString()}</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1.5 bg-gray-100/50 p-1 rounded-xl">
-                      <button onClick={() => updateQty(item.cartItemId, -1)} className="p-1.5 hover:bg-white rounded-lg transition-all shadow-sm"><Minus size={10} /></button>
+                      <button onClick={() => updateQty(item.cartItemId, -1)} className="p-1.5 hover:bg-card transition-colors duration-300 rounded-lg transition-all shadow-sm"><Minus size={10} /></button>
                       <span className="text-xs font-black w-5 text-center">{item.qty}</span>
-                      <button onClick={() => updateQty(item.cartItemId, 1)} className="p-1.5 hover:bg-white rounded-lg transition-all shadow-sm"><Plus size={10} /></button>
+                      <button onClick={() => updateQty(item.cartItemId, 1)} className="p-1.5 hover:bg-card transition-colors duration-300 rounded-lg transition-all shadow-sm"><Plus size={10} /></button>
                     </div>
-                    <button onClick={() => removeItem(item.cartItemId)} className="p-2.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={14} /></button>
+                    <button onClick={() => removeItem(item.cartItemId)} className="p-2.5 text-textMain/50 transition-colors duration-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={14} /></button>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="py-12 bg-gray-50/50 rounded-[2.5rem] border border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-300">
+            <div className="py-12 bg-card/50 transition-colors duration-300 rounded-[2.5rem] border border-dashed border-border transition-colors duration-300 flex flex-col items-center justify-center text-textMain/50 transition-colors duration-300">
               <ShoppingCart size={32} className="mb-2 opacity-10" />
               <p className="text-[9px] font-black uppercase tracking-[0.2em]">Queue is empty</p>
             </div>
@@ -266,22 +266,22 @@ const AddOnlineOrder = () => {
       </div>
 
       {/* 👇 UPDATED FOOTER WITH DISCOUNT */}
-      <div className="p-8 border-t border-gray-100 bg-white space-y-6">
+      <div className="p-8 border-t border-border transition-colors duration-300 bg-card transition-colors duration-300 space-y-6">
         
         {/* Subtotal Display */}
-        <div className="flex justify-between items-center pb-4 border-b border-gray-50">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Gross Subtotal</span>
-          <span className="text-sm font-black text-black">Rs. {totalAmount.toLocaleString()}</span>
+        <div className="flex justify-between items-center pb-4 border-b border-border">
+          <span className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">Gross Subtotal</span>
+          <span className="text-sm font-black text-textMain transition-colors duration-300">Rs. {totalAmount.toLocaleString()}</span>
         </div>
 
         {/* Discount Input */}
-        <div className="p-4 bg-[#f8f8f8] rounded-2xl border border-dashed border-gray-200">
+        <div className="p-4 bg-background transition-all duration-300 rounded-2xl border border-dashed border-border transition-colors duration-300">
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-2">
-              <Percent size={14} className="text-[#b4a460]" />
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Discount Rate</span>
+              <Percent size={14} className="text-primary transition-all duration-300" />
+              <span className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">Discount Rate</span>
             </div>
-            <span className="text-[10px] font-black text-[#b4a460]">% Percentage</span>
+            <span className="text-[10px] font-black text-primary transition-all duration-300">% Percentage</span>
           </div>
           <div className="relative">
             <input 
@@ -289,13 +289,13 @@ const AddOnlineOrder = () => {
               value={discount}
               onChange={(e) => setDiscount(Math.min(100, Math.max(0, e.target.value)))}
               placeholder="0"
-              className="w-full bg-white border-none rounded-xl py-3 pl-4 pr-10 text-sm font-black outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all text-right shadow-sm"
+              className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 pl-4 pr-10 text-sm font-black outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all text-right shadow-sm"
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-[#b4a460] text-sm">%</span>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-primary transition-all duration-300 text-sm">%</span>
           </div>
           {discount > 0 && (
             <div className="mt-3 text-right">
-              <p className="text-[9px] text-[#b4a460] font-black uppercase italic">
+              <p className="text-[9px] text-primary transition-all duration-300 font-black uppercase italic">
                 {discount}% OFF Applied (-Rs. {discountAmount.toLocaleString()})
               </p>
             </div>
@@ -305,13 +305,13 @@ const AddOnlineOrder = () => {
         {/* Grand Total */}
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Grand Total</p>
+            <p className="text-[9px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">Grand Total</p>
             <div className="flex items-baseline gap-1">
-              <span className="text-[10px] font-black text-[#b4a460]">LKR</span>
-              <span className="text-3xl font-black tracking-tighter text-black">{finalAmount.toLocaleString()}</span>
+              <span className="text-[10px] font-black text-primary transition-all duration-300">LKR</span>
+              <span className="text-3xl font-black tracking-tighter text-textMain transition-colors duration-300">{finalAmount.toLocaleString()}</span>
             </div>
           </div>
-          <span className="text-[8px] font-black uppercase px-4 py-1.5 rounded-full bg-[#b4a460]/10 text-[#b4a460]">
+          <span className="text-[8px] font-black uppercase px-4 py-1.5 rounded-full bg-primary/10 transition-all duration-300 text-primary transition-all duration-300">
             {cart.length} Items Selected
           </span>
         </div>
@@ -320,7 +320,7 @@ const AddOnlineOrder = () => {
         <button 
           onClick={handlePlaceOnlineOrder}
           disabled={cart.length === 0 || !customerInfo.name || !customerInfo.primaryPhone || !customerInfo.district || !customerInfo.email}
-          className="w-full py-5 bg-black text-[#b4a460] rounded-[1.5rem] font-black uppercase text-[11px] tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-gray-900 transition-all disabled:bg-gray-100 disabled:text-gray-300 shadow-xl shadow-[#b4a460]/10"
+          className="w-full py-5 bg-black text-primary transition-all duration-300 rounded-[1.5rem] font-black uppercase text-[11px] tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-gray-900 transition-all disabled:bg-gray-100 disabled:text-textMain/50 transition-colors duration-300 shadow-xl shadow-[#b4a460]/10"
         >
           <CheckCircle2 size={18} />
           Complete Online Order
