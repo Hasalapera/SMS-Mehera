@@ -7,7 +7,7 @@ const { encrypt, decrypt } = require('../utils/cryptoUtils');
 const addUserByAdmin = async (req, res) => {
     console.log("--- Add User Process Started ---");
     try {
-        const { name, email, role, dob, contact_no, nic_no, selectedDistricts } = req.body;
+        const { name, email, role, dob, contact_no, nic_no,address, gender, selectedDistricts } = req.body;
 
         if (!name || !email || !role) {
             return res.status(400).json({ message: "Name, email and role are required." });
@@ -41,6 +41,8 @@ const addUserByAdmin = async (req, res) => {
                 dob,
                 contact_no: encrypt(contact_no),
                 nic_no,
+                address: null,
+                gender: null,
                 is_active: true,
                 is_default_password: true,
                 default_password: defaultPassword
@@ -292,10 +294,22 @@ const getUserProfile = async (req, res) => {
         if (!user) return res.status(404).json({ error: "User not found" });
 
         const userData = user.toJSON();
-        if (userData.contact_no) userData.contact_no = decrypt(userData.contact_no);
+        
+        // 🔐 Safe Decryption Block
+        if (userData.contact_no) {
+            try {
+                // Try to decrypt the number
+                userData.contact_no = decrypt(userData.contact_no);
+            } catch (decryptErr) {
+                // If it's already plain text, fallback to the raw value without crashing
+                console.warn("Decryption failed, using raw contact_no:", decryptErr.message);
+            }
+        }
         
         res.status(200).json({ user: userData });
     } catch (err) {
+        // 🪵 Debugging වලට ලේසි වෙන්න සර්වර් කන්සෝල් එකේ error එක ප්‍රින්ට් කරමු
+        console.error("Get Profile Error:", err.message); 
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
@@ -376,15 +390,31 @@ const removeUserArea = async (req, res) => {
  */
 const updateProfile = async (req, res) => {
     try {
-        const userId = req.user?.user_id || req.body.user_id;
-        if(!userId) return res.status(400).json({ error: "User ID is required" });
+        const loggedInUser = req.user;
+        let targetUserId;
 
-        const user = await User.findByPk(userId);
+        // If the logged-in user is an admin and a user_id is provided in the body,
+        // they are trying to edit another user's profile.
+        if (loggedInUser.role === 'admin' && req.body.user_id) {
+            targetUserId = req.body.user_id;
+        } else {
+            // Otherwise, users can only edit their own profile.
+            targetUserId = loggedInUser.user_id;
+        }
+
+        if(!targetUserId) return res.status(400).json({ error: "Target User ID is required for update." });
+
+        const user = await User.findByPk(targetUserId);
         if (!user) return res.status(404).json({ error: "User not found" });
+
+        // Security check: Ensure non-admins are not trying to edit other users
+        if (loggedInUser.role !== 'admin' && targetUserId.toString() !== loggedInUser.user_id.toString()) {
+            return res.status(403).json({ error: "Forbidden: You can only update your own profile." });
+        }
 
         const updateData = {};
         if (req.body.contact_no) {
-            updateData.contact_no = encrypt(req.body.contact_no); // ✅ Encrypt කරනවා
+            updateData.contact_no = encrypt(req.body.contact_no); 
         }
         
         const incomingName = req.body.name || req.body.full_name;
@@ -395,6 +425,12 @@ const updateProfile = async (req, res) => {
         if (req.body.dob && req.body.dob !== "") updateData.dob = req.body.dob;
         if (req.body.nic_no) updateData.nic_no = req.body.nic_no;
         
+        // 🏠 Aluth Address field eka catch karala updateData ekata daddi
+        if (req.body.address) updateData.address = req.body.address;
+        
+        // 👫 Aluth Gender field eka catch karala updateData ekata daddi
+        if (req.body.gender) updateData.gender = req.body.gender;
+        
         if (req.file) {
             updateData.profile_image = req.file.path || req.file.secure_url;
         }
@@ -403,11 +439,10 @@ const updateProfile = async (req, res) => {
             await user.update(updateData);
         }
 
-        const updatedUserInstance = await User.findByPk(userId, {
+        const updatedUserInstance = await User.findByPk(targetUserId, {
             attributes: { exclude: ['password', 'default_password'] },
         });
 
-        // ✅ මචං මෙතන තමයි 'userData' define කළේ. දැන් error එක එන්නේ නැහැ.
         const userData = updatedUserInstance.toJSON(); 
         if (userData.contact_no) {
             userData.contact_no = decrypt(userData.contact_no);
