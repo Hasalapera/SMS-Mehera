@@ -4,7 +4,7 @@ import axios from "axios";
 import {
   UserPlus, Users, ArrowRightLeft, Search, CheckCircle2, 
   XCircle, ChevronDown, ChevronUp, Loader2, RefreshCw, Plus, 
-  AlertTriangle, MapPin, UserCheck
+  AlertTriangle, MapPin, UserCheck, Info
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { MySwal } from "../../utils/swalConfig";
@@ -243,6 +243,27 @@ const AssignUser = () => {
         return !c.sales_rep_id && repDistricts.includes(c.district);
     });
 
+    const showCustomerDetails = (e, customer) => {
+      e.stopPropagation();
+      MySwal.fire({
+        title: `<h3 class="text-xl font-black text-textMain uppercase tracking-widest">${customer.saloon_name}</h3>`,
+        html: `
+          <div class="text-left space-y-3 mt-4 text-sm font-bold text-textMain/80">
+            <p><strong class="text-textMain">Owner:</strong> ${customer.owner_name || 'N/A'}</p>
+            <p><strong class="text-textMain">District:</strong> ${customer.district}</p>
+            <p><strong class="text-textMain">Address:</strong> ${customer.lane1}${customer.lane2 ? ', ' + customer.lane2 : ''}</p>
+            <p><strong class="text-textMain">Phone:</strong> ${customer.phone1}${customer.phone2 ? ', ' + customer.phone2 : ''}</p>
+          </div>
+        `,
+        showConfirmButton: true,
+        confirmButtonText: 'Close',
+        customClass: {
+          popup: '!bg-card !rounded-[2rem] border border-border shadow-[0_10px_40px_rgba(0,0,0,0.08)] p-6',
+          confirmButton: 'bg-black text-white px-6 py-2.5 !rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-primary transition-all duration-300 w-full mt-4',
+        }
+      });
+    };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
       
@@ -371,7 +392,14 @@ const AssignUser = () => {
               <div className="space-y-8 animate-in fade-in duration-500">
                 <div className="flex justify-between items-end">
                   <div>
-                    <h2 className="text-2xl font-black text-textMain transition-colors duration-300">Map Customers</h2>
+                    <h2 className="text-2xl font-black text-textMain transition-colors duration-300 flex items-center gap-3">
+                      Map Customers
+                      {selectedRep && eligibleCustomers.length > 0 && (
+                        <span className="bg-primary text-textMain text-xs px-3 py-1 rounded-full font-black">
+                          {eligibleCustomers.length}
+                        </span>
+                      )}
+                    </h2>
                     <p className="text-[10px] text-primary transition-all duration-300 font-black uppercase tracking-widest mt-1">{selectedRep ? `Step 2: Selection for ${selectedRep.name}` : "Step 1: Select a rep from the left"}</p>
                   </div>
                 </div>
@@ -381,7 +409,16 @@ const AssignUser = () => {
                       {eligibleCustomers.length > 0 ? eligibleCustomers.map((cust) => (
                         <div key={cust.customer_id} onClick={() => toggleCustomerSelection(cust)} className={`p-5 rounded-3xl border transition-all duration-300 cursor-pointer flex justify-between items-center group ${tempSelected.find((s) => s.customer_id === cust.customer_id) ? "border-primary transition-all duration-300 bg-primary/5 transition-all duration-300" : "border-border transition-colors duration-300 bg-card transition-colors duration-300 hover:border-primary/30 transition-all duration-300"}`}>
                           <div>
-                            <p className="font-black text-xs text-textMain transition-colors duration-300">{cust.saloon_name}</p>
+                            <div className="font-black text-xs text-textMain transition-colors duration-300 flex items-center gap-2">
+                              {cust.saloon_name}
+                              <button
+                                onClick={(e) => showCustomerDetails(e, cust)}
+                                className="text-textMain/40 hover:text-primary transition-all duration-300 z-10 focus:outline-none"
+                                title="View Customer Details"
+                              >
+                                <Info size={14} />
+                              </button>
+                            </div>
                             <p className="text-[9px] text-textMain/50 transition-colors duration-300 font-bold uppercase mt-1">{cust.district}</p>
                           </div>
                           {tempSelected.find((s) => s.customer_id === cust.customer_id) ? <CheckCircle2 className="text-primary transition-all duration-300" size={22} /> : <div className="w-5 h-5 rounded-full border-2 border-border transition-colors duration-300 group-hover:border-primary/30 transition-all duration-300 transition-all" />}
