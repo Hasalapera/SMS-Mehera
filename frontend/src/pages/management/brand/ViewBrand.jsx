@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Tag, FileText, Globe, Loader2, Image as ImageIcon, LayoutGrid, Trash2 } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { toast, Toaster } from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
@@ -14,7 +14,7 @@ const ViewBrands = () => {
     const fetchBrands = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5001/api/brands/getBrands');
+        const response = await api.get('/brands/getBrands');
         const brandData = response.data.brands || response.data;
         setBrands(brandData);
         
@@ -53,7 +53,7 @@ const ViewBrands = () => {
     if (result.isConfirmed) {
       try {
         const token = localStorage.getItem('accessToken');
-        await axios.delete(`http://localhost:5001/api/brands/delete/${brandId}`, {
+        await axios.delete(`/brands/delete/${brandId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, NavLink, useLocation } from 'react-router-dom';
 import ViewOrders from '../pages/management/order/ViewOrders';
-import axios from 'axios';
+import api from '../api/axiosInstance';
 
 const menuConfig = {
   admin: { 
@@ -148,10 +148,10 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
     const fetchBranding = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        const url = token ? 'http://localhost:5001/api/settings' : 'http://localhost:5001/api/settings/public';
+        const url = token ? '/settings' : '/settings/public';
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         
-        const res = await axios.get(url, { headers });
+        const res = await api.get(url, { headers });
         setSystemSettings(res.data);
       } catch (err) {
         console.error("Sidebar branding fetch failed:", err.response?.data || err.message);
@@ -292,6 +292,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
               <NavItem icon={BarChart2} label="Reports" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('reports')} isOpen={openSubMenu === 'reports'} />
               {!isSidebarCollapsed && openSubMenu === 'reports' && (
                 <div className="ml-9 space-y-1 border-l border-border transition-colors duration-300 pl-2">
+                  <NavLink to="/sales-report" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><FileText size={14} /> Sales </NavLink>
                   <NavLink to="/reports/daily-summary" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><FileText size={14} /> Daily Summary</NavLink>
                   <NavLink to="/reports/qb-export" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary transition-all duration-300 font-bold' : 'text-textMain/50 transition-colors duration-300 hover:text-primary transition-all duration-300'}`}><Download size={14} /> QB Export</NavLink>
                 </div>

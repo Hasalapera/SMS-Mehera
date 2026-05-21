@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Phone, Bot, Send, Camera, Headphones, Trash2, Tag, Palette, Info, ShieldAlert, CheckCircle } from 'lucide-react';
-import axios from 'axios';
+import api from '../api/axiosInstance';
 
 const FloatingPopup = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -67,7 +67,7 @@ const FloatingPopup = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post('http://localhost:5001/api/ask-ai', {
+      const res = await api.post('/ask-ai', {
         prompt: textToSend || "Analyze this photo",
         imageBase64: tempImage
       });

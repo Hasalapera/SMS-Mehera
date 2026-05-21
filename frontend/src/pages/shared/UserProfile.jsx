@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import api from "../../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
 import {
   User,
@@ -106,7 +106,7 @@ const UserProfile = () => {
         const targetId = id || loggedInUser?.user_id;
         const config = { headers: { Authorization: `Bearer ${token}` } };
         const response = await axios.get(
-          `http://localhost:5001/api/users/profile/${targetId}`,
+          `/users/profile/${targetId}`,
           config,
         );
         const fetchedUser = response.data.user;
@@ -130,7 +130,7 @@ const UserProfile = () => {
           setLoadingCustomers(true);
           try {
             const custRes = await axios.get(
-              `http://localhost:5001/api/customers/by-rep/${targetId}`,
+              `/customers/by-rep/${targetId}`,
               config,
             );
             setCustomers(custRes.data.customers || []);
@@ -153,7 +153,7 @@ const UserProfile = () => {
   const handleAddArea = async (district) => {
     try {
       await axios.put(
-        `http://localhost:5001/api/users/add-area/${user.user_id}`,
+        `/users/add-area/${user.user_id}`,
         { district },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -167,7 +167,7 @@ const UserProfile = () => {
   const handleRemoveArea = async (district) => {
     try {
       await axios.put(
-        `http://localhost:5001/api/users/remove-area/${user.user_id}`,
+        `/users/remove-area/${user.user_id}`,
         { district },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -193,7 +193,7 @@ const UserProfile = () => {
 
     try {
       const response = await axios.put(
-        "http://localhost:5001/api/users/update-profile",
+        "/users/update-profile",
         uploadData,
         {
           headers: {
@@ -226,7 +226,7 @@ const UserProfile = () => {
     setIsUpdating(true);
     try {
       await axios.put(
-        "http://localhost:5001/api/users/change-password",
+        "/users/change-password",
         {
           userId: user.user_id,
           oldPassword: passData.currentPassword,

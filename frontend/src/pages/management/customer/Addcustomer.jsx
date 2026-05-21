@@ -4,7 +4,7 @@ import {
   UserPlus, Phone, MapPin, Building2, UserCircle, 
   Loader2, ArrowLeft, RefreshCcw, CheckCircle2, Info
 } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 
 const AddCustomer = () => {
@@ -33,7 +33,7 @@ const AddCustomer = () => {
   // useEffect(() => {
   //   const fetchCustomerCount = async () => {
   //     try {
-  //       const res = await axios.get('http://localhost:5001/api/customers/count');
+  //       const res = await api.get('/customers/count');
   //       setCustomerCount(res.data.count || 0);
   //     } catch (err) { console.error(err); }
   //   };
@@ -42,7 +42,7 @@ const AddCustomer = () => {
 
   const fetchCustomerCount = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/customers/count');
+      const res = await api.get('/customers/count');
       setCustomerCount(res.data.count || 0);
     } catch (err) { console.error(err); }
   };
@@ -92,7 +92,7 @@ const AddCustomer = () => {
         address: `${formData.lane1}, ${formData.lane2}` 
       };
 
-      await axios.post('http://localhost:5001/api/customers/add', submissionData);
+      await api.post('/customers/add', submissionData);
       toast.success("Customer Registered Successfully!");
 
       if (isFromAssignUser) {

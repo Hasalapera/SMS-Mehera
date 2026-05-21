@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
-import axios from 'axios';
+import api from '../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../pages/context/AuthContext'; 
 
@@ -24,7 +24,7 @@ const Login = () => {
   useEffect(() => {
     const fetchBranding = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/settings/public');
+        const res = await api.get('/settings/public');
         setSystemSettings(res.data);
       } catch (err) {
         console.error("Login branding fetch failed:", err);
@@ -53,7 +53,7 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:5001/api/users/login', {
+      const response = await api.post('/users/login', {
           email, 
           password
       });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axiosInstance';
 import { Sparkles, Loader2, ShieldCheck, Star, Headset, Palette, Droplets, Sparkle } from 'lucide-react';
 import StatNavBar from '../components/StatNavBar';
 import Footer from '../components/Footer';
@@ -13,7 +13,7 @@ const Products = () => {
     window.scrollTo(0, 0);
     const fetchProducts = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/products/getProducts');
+        const response = await api.get('/products/getProducts');
         const data = response.data?.products || response.data;
         setProducts(data);
       } catch (err) {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserPlus, Mail, Phone, Calendar, ShieldCheck, IdCard, MapPin, Loader2, ArrowLeft } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast'; 
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -151,7 +151,7 @@ const handleSubmit = async (e) => {
 
   try {
     const response = await axios.post(
-      'http://localhost:5001/api/users/addUser', 
+      '/users/addUser', 
       formData, 
       { headers: { 'Authorization': `Bearer ${token}` } }
     );

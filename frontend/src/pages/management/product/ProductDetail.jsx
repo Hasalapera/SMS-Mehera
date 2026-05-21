@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, PlusCircle } from "lucide-react"; 
-import axios from "axios";
+import api from "../../../api/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-hot-toast"; 
 
@@ -36,7 +36,7 @@ export default function ProductDetail() {
           ? { headers: { Authorization: `Bearer ${token}` } }
           : {};
 
-        const response = await axios.get(`http://localhost:5001/api/products/${id}`, config);
+        const response = await axios.get(`/products/${id}`, config);
         const data = response.data?.product || response.data?.data || response.data;
 
         setProduct(data);

@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 
 import AddOrder from './AddOrder';
 import ViewOrders from './ViewOrders';
@@ -24,7 +24,7 @@ const Orders = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/products/getProducts');
+        const res = await api.get('/products/getProducts');
         const data = res.data?.products || res.data;
         setProducts(data);
       } catch (err) {

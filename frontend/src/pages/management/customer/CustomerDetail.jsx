@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -73,7 +73,7 @@ export default function CustomerDetail() {
 
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:5001/api/customers/${id}`, {
+        const response = await axios.get(`/customers/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -104,7 +104,7 @@ export default function CustomerDetail() {
     setSavingNote(true);
     try {
       const response = await axios.post(
-        `http://localhost:5001/api/customers/${id}/notes`,
+        `/customers/${id}/notes`,
         {
           note_text: noteText.trim(),
           tag: selectedTag,
@@ -167,7 +167,7 @@ export default function CustomerDetail() {
   const confirmDelete = async (noteId) => {
     try {
       await axios.delete(
-        `http://localhost:5001/api/customers/${id}/notes/${noteId}`,
+        `/customers/${id}/notes/${noteId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

@@ -18,6 +18,8 @@ const contactRoutes = require('./routes/contactRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const errorHandler = require('./middlewares/errorMiddleware');
 const settingRoutes = require('./routes/settingRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -68,6 +70,7 @@ app.use('/api/ask-ai', aiRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/settings', settingRoutes); 
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/report', reportRoutes);
 
 app.use(errorHandler);
 

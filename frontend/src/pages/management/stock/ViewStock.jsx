@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { Search, Loader2, ArrowLeft, RefreshCw, Package } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -26,7 +26,7 @@ const ViewStock = () => {
     try {
       setLoading(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.get('http://localhost:5001/api/products/getProducts', config);
+      const res = await api.get('/products/getProducts', config);
       setProducts(res.data.products || res.data);
     } catch (err) {
       if (err.response?.status === 401) {

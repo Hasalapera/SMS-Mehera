@@ -51,6 +51,10 @@ User.hasMany(Order, { foreignKey: 'created_by' });
 User.hasMany(Customer, { foreignKey: 'sales_rep_id', as: 'assignedCustomers' });
 Customer.belongsTo(User, { foreignKey: 'sales_rep_id', as: 'salesRep' });
 
+// 9. Order and Customer Associations 
+Order.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' }); 
+Customer.hasMany(Order, { foreignKey: 'customer_id' });
+
 module.exports = {
   sequelize,
   User,

@@ -3,7 +3,7 @@ import { useAuth } from "./pages/context/AuthContext";
 import { NotificationProvider } from "./pages/context/NotificationContext";
 import DashboardLayout from "./components/DashboardLayout";
 import { useEffect } from "react";
-import axios from "axios";
+import api from "../src/api/axiosInstance";
 
 //sales management
 import Customer from "./pages/management/customer/Customer";
@@ -57,6 +57,9 @@ import ProductDetail from './pages/management/product/ProductDetail';
 //Order Management (Now in management/order folder)
 import ViewOrders from "./pages/management/order/ViewOrders";
 import AddOrder from "./pages/management/order/AddOrder";
+
+//Report Management
+import SalesReport from "./pages/management/report/SalesReport";
 
 //Quotation Management
 import Quotation from "./pages/shared/Quotation";
@@ -340,6 +343,9 @@ function App() {
         <Route path='/addStock' element={userRole === 'admin' ? <AddStock /> : <Navigate to="/dashboard" />} />
         <Route path='/editStock' element={userRole === 'admin' ? <EditStock /> : <Navigate to="/dashboard" />} />
         <Route path='/viewStock' element={['admin', 'manager', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ViewStock /> : <Navigate to="/dashboard" />} />
+
+        {/* report management - admin, manager can view */}
+        <Route path="/sales-report" element={["admin", "manager"].includes(userRole) ? <SalesReport /> : <Navigate to="/dashboard" />} />
 
         {/* settings page - can change logo for admin other can do anyone */}
         <Route path="/settingsPage" element={["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? <SettingsPage /> : <Navigate to="/home" />} />

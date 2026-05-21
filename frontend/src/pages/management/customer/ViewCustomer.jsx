@@ -5,7 +5,7 @@ import {
   Phone, MapPin, ArrowRight, Users, Loader2, RefreshCw, UserCircle,
   ChevronDown, ChevronLeft, ChevronRight
 } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 
@@ -37,7 +37,7 @@ export default function ViewCustomer() {
 
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:5001/api/customers/all', {
+            const res = await api.get('/customers/all', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const customerData = Array.isArray(res.data) ? res.data : (res.data.customers || []);

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Tag, FileText, PlusCircle, LayoutGrid, Loader2, ArrowLeft } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,7 +20,7 @@ const AddCategory = () => {
     setLoading(true);
     console.log("Current Token:", token);
     try {
-      const response = await axios.post('http://localhost:5001/api/category/addCategory', 
+      const response = await api.post('/category/addCategory', 
         {
           name: categoryName,
           description: description

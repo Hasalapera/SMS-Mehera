@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Tag, FileText, LayoutGrid, Loader2, Search, Package, ChevronRight, Calendar, ArrowUpRight, Trash2 } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 import Swal from 'sweetalert2';
 
@@ -27,7 +27,7 @@ const ViewCategories = () => {
 
         if (result.isConfirmed) {
             try {
-                await axios.delete(`http://localhost:5001/api/category/delete/${id}`, {
+                await axios.delete(`/category/delete/${id}`, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
                 });
 
@@ -52,7 +52,7 @@ const ViewCategories = () => {
         const fetchCategories = async () => {
         try {
             // Backend එකේ getCategories එකේදී 'include: [Product]' දාලා තිබිය යුතුයි
-            const response = await axios.get('http://localhost:5001/api/category/getCategories', {
+            const response = await api.get('/category/getCategories', {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
                 }

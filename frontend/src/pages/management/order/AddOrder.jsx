@@ -13,7 +13,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import axios from "axios";
+import api from "../../../api/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
 
 const AddOrder = () => {
@@ -104,7 +104,7 @@ const AddOrder = () => {
           ? { headers: { Authorization: `Bearer ${token}` } }
           : {};
         const res = await axios.get(
-          `http://localhost:5001/api/customers/search?q=${query}`,
+          `/customers/search?q=${query}`,
           config,
         );
         setSuggestions(res.data);
@@ -151,7 +151,7 @@ const AddOrder = () => {
 
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const res = await axios.post(
-        "http://localhost:5001/api/orders/place",
+        "/orders/place",
         orderData,
         config,
       );

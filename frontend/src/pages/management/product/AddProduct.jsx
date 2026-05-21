@@ -3,7 +3,7 @@ import {
   Package, Tag, Layers, FileText, PlusCircle, Trash2, 
   Loader2, Upload, X, Image as ImageIcon, AlertTriangle 
 } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 
 const AddProduct = () => {
@@ -30,10 +30,10 @@ const AddProduct = () => {
         const token = localStorage.getItem('accessToken');
         const headers = { Authorization: `Bearer ${token}` };
 
-        const brandsResponse = await axios.get('http://localhost:5001/api/brands/getBrands', { headers });
+        const brandsResponse = await api.get('/brands/getBrands', { headers });
         setBrands(brandsResponse.data.brands || brandsResponse.data);
       
-        const categoriesResponse = await axios.get('http://localhost:5001/api/category/getCategories', { headers });
+        const categoriesResponse = await api.get('/category/getCategories', { headers });
         setCategories(categoriesResponse.data.categories || categoriesResponse.data);
       } catch (err) {
         console.error("Data load error", err);
@@ -108,7 +108,7 @@ const AddProduct = () => {
 
     try {
       const token = localStorage.getItem('accessToken');
-      await axios.post('http://localhost:5001/api/products/addProduct', data, {
+      await api.post('/products/addProduct', data, {
         headers: { 
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data' 

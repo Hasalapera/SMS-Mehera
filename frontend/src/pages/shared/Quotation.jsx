@@ -12,7 +12,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import api from "../../api/axiosInstance";
 import { useAuth } from "../../pages/context/AuthContext";
 
 const Quotation = () => {
@@ -29,7 +29,7 @@ const Quotation = () => {
   useEffect(() => {
     const fetchBranding = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/settings/public');
+        const res = await api.get('/settings/public');
         setSystemSettings(res.data);
       } catch (err) {
         console.error("Quotation branding fetch failed:", err);

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { use } from 'react';
-import axios from 'axios';
+import api from '../../api/axiosInstance';
 
 const Dashboard = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -19,7 +19,7 @@ const Dashboard = () => {
   // useEffect(() => {
   //   const fetchTrendingProducts = async () => {
   //     try {
-  //       const response = await axios.get('http://localhost:5001/api/products/getProducts');
+  //       const response = await api.get('/products/getProducts');
   //       if(response.data && response.data.products && Array.isArray(response.data.products)){
   //         setTrendinngProducts(response.data.products.slice(0, 4));
   //       }else{

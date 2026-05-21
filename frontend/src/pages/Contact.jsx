@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import axios from 'axios'; 
+import api from '../api/axiosInstance'; 
 import { Phone, Mail, Clock, MapPin, Facebook, Instagram, Send } from 'lucide-react';
 import StatNavBar from '../components/StatNavBar';
 import Footer from '../components/Footer';
@@ -25,7 +25,7 @@ const Contact = () => {
     };
 
     try {
-      const res = await axios.post('http://localhost:5001/api/contact/send-message', formData);
+      const res = await api.post('/contact/send-message', formData);
       
       if (res.data.success) {
         Swal.fire({

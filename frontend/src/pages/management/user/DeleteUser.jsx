@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, AlertTriangle, UserX, Search, ShieldCheck, Loader2 } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 import {MySwal} from '../../utils/swalConfig';
 
@@ -14,7 +14,7 @@ const DeleteUser = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await axios.get('http://localhost:5001/api/users/all-users', {
+      const response = await api.get('/users/all-users', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -66,7 +66,7 @@ const DeleteUser = () => {
           const token = localStorage.getItem('accessToken');
 
           await axios.put(
-            `http://localhost:5001/api/users/delete-user/${userId}`,
+            `/users/delete-user/${userId}`,
             { adminPassword },
             { headers: { Authorization: `Bearer ${token}` } }
           );

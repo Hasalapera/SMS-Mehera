@@ -4,7 +4,7 @@ import {
   Mail, Phone, ArrowRight, UserX, UserPlus, Filter, Check
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import {MySwal} from '../../utils/swalConfig';
 import toast from 'react-hot-toast';
 
@@ -39,7 +39,7 @@ const ViewUser = () => {
   const fetchUsers = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await axios.get('http://localhost:5001/api/users/all-users', {
+      const response = await api.get('/users/all-users', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -109,7 +109,7 @@ const handleRestore = async (userId, userName) => {
     if (adminPassword) {
       try {
         const token = localStorage.getItem('accessToken');
-        await axios.put(`http://localhost:5001/api/users/restore-user/${userId}`, { adminPassword }, {
+        await axios.put(`/users/restore-user/${userId}`, { adminPassword }, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success(`${userName}'s account has been restored!`);
@@ -148,7 +148,7 @@ const handleResetPassword = async (userId, userName) => {
     if (adminPassword) {
       try {
         const token = localStorage.getItem('accessToken');
-        await axios.put('http://localhost:5001/api/users/reset-password', 
+        await api.put('/users/reset-password', 
           { user_id: userId, adminPassword: adminPassword },
           { headers: { Authorization: `Bearer ${token}` } }
         );

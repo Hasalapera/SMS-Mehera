@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { 
   Search, Package, Tag, Layers, RefreshCw, 
   ArrowLeft, Loader2 
@@ -41,8 +41,8 @@ const ViewProduct = () => {
     try {
         const config = { headers: { Authorization: `Bearer ${token}` } };
         const [catRes, brandRes] = await Promise.all([
-            axios.get('http://localhost:5001/api/category/getCategories', config),
-            axios.get('http://localhost:5001/api/brands/getBrands', config)
+            api.get('/category/getCategories', config),
+            api.get('/brands/getBrands', config)
         ]);
         setCategories(catRes.data.categories || catRes.data);
         setBrands(brandRes.data.brands || brandRes.data);
@@ -56,7 +56,7 @@ const ViewProduct = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/products/getProducts', {
+      const res = await api.get('/products/getProducts', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
