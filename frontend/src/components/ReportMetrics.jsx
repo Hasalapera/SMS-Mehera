@@ -18,7 +18,7 @@ const ReportMetrics = ({ orders }) => {
   const topRep = Object.keys(repCounts).reduce((a, b) => repCounts[a] > repCounts[b] ? a : b, "N/A");
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[1rem]">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[1rem] print:grid-cols-4 print:gap-x-[2.5rem] print:gap-y-0">
       <MetricCard icon={DollarSign} label="Net Sales Volume" value={`Rs. ${totalSalesValue.toLocaleString()}`} />
       <MetricCard icon={ShoppingBag} label="Approved Invoices" value={orders.length} />
       <MetricCard icon={UserCheck} label="Top Performer (Rep)" value={topRep} />
@@ -28,7 +28,7 @@ const ReportMetrics = ({ orders }) => {
 };
 
 const MetricCard = ({ icon: Icon, label, value, color = "text-primary" }) => (
-  <div className="p-[1.25rem] bg-card border border-border rounded-[1.5rem] flex items-center gap-[1rem] print:bg-transparent print:border-gray-300 print:p-0 print:gap-3 print:rounded-none">
+  <div className="p-[1.25rem] bg-card border border-border rounded-[1.5rem] flex items-center gap-[1rem] print:border-none print:bg-transparent print:p-0 print:gap-[0.75rem] print:shadow-none">
     <div className={`p-[0.75rem] bg-background border border-border rounded-[1rem] ${color} print:p-2 print:bg-gray-100 print:border-gray-300`}>
       <Icon size={24} />
     </div>

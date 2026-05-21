@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Package, Calendar, User, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Package, Calendar, User, MapPin, X, Receipt } from 'lucide-react';
 
 const ReportTable = ({ orders = [] }) => {
   // 🔢 Pagination States
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5; // 📄 පේජ් එකකට පෙන්වන්න ඕනේ ඕඩර්ස් ගණන (උඹට ඕන නම් මාරු කරපන්)
+  
+  const [selectedOrder, setSelectedOrder] = useState(null); // 🔍 Click කරපු Order එක තියාගන්න state එක
 
   // Calculate indexing numbers for screen pagination
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -32,7 +34,7 @@ const ReportTable = ({ orders = [] }) => {
       <div className="hidden md:block w-full overflow-x-auto custom-scrollbar">
         <table className="w-full text-left border-separate border-spacing-y-[1.5rem] print:border-collapse print:border-spacing-y-0">
           <thead className="print:table-row-group">
-            <tr className="text-[0.6875rem] font-black text-textMain/50 uppercase tracking-[0.15em]">
+            <tr className="text-[0.5875rem] font-black text-textMain/50 uppercase tracking-[0.15em] whitespace-nowrap">
               <th className="px-[1rem] py-[1rem]">Invoice Reference</th>
               <th className="px-[1rem] py-[1rem]">Sales Representative</th>
               <th className="px-[1rem] py-[1rem]">Customer</th>
@@ -51,7 +53,11 @@ const ReportTable = ({ orders = [] }) => {
               const isVisibleOnScreen = index >= indexOfFirstItem && index < indexOfLastItem;
 
               return (
-                <tr key={order.order_id} className={`group transition-all text-[0.8125rem] print:break-inside-avoid print:text-[10px] ${!isVisibleOnScreen ? 'hidden print:table-row' : ''}`}>
+                <tr 
+                  key={order.order_id} 
+                  onClick={() => setSelectedOrder(order)}
+                  className={`group transition-all text-[0.8125rem] print:break-inside-avoid print:text-[10px] cursor-pointer hover:bg-primary/5 ${!isVisibleOnScreen ? 'hidden print:table-row' : ''}`}
+                >
                   
                   {/* Reference ID */}
                   <td className="px-[1rem] py-[1.25rem] bg-background border-y border-l border-border rounded-l-[1rem] font-mono font-bold text-textMain print:bg-transparent print:rounded-none print:border-b print:border-gray-200 print:border-l-0 print:border-t-0 print:border-r-0 print:py-3 print:px-1">
@@ -110,7 +116,11 @@ const ReportTable = ({ orders = [] }) => {
           const isVisibleOnScreen = index >= indexOfFirstItem && index < indexOfLastItem;
 
           return (
-            <div key={order.order_id} className={`p-[1.25rem] bg-background border border-border rounded-[1.25rem] space-y-[1rem] transition-all print:break-inside-avoid ${!isVisibleOnScreen ? 'hidden print:block' : ''}`}>
+            <div 
+              key={order.order_id} 
+              onClick={() => setSelectedOrder(order)}
+              className={`p-[1.25rem] bg-background border border-border rounded-[1.25rem] space-y-[1rem] transition-all print:break-inside-avoid cursor-pointer hover:border-primary/40 hover:shadow-lg ${!isVisibleOnScreen ? 'hidden print:block' : ''}`}
+            >
               
               {/* Card Top: Reference & Date */}
               <div className="flex justify-between items-center border-b border-border/60 pb-[0.75rem]">
@@ -216,6 +226,116 @@ const ReportTable = ({ orders = [] }) => {
             >
               <ChevronRight size={16} />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🔍 Details Popup Modal (Hidden in Print) */}
+      {selectedOrder && (
+        <div 
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 print:hidden animate-in fade-in duration-300"
+          onClick={() => setSelectedOrder(null)}
+        >
+          <div 
+            className="bg-card w-full max-w-3xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300 border border-border"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-[1.5rem] border-b border-border bg-background flex justify-between items-center">
+              <div className="flex items-center gap-[1rem]">
+                <div className="p-[0.75rem] bg-primary/10 rounded-[1rem] text-primary">
+                  <Receipt size={24} />
+                </div>
+                <div>
+                  <h3 className="text-[1.125rem] font-black uppercase text-textMain tracking-tight">
+                    Order Details
+                  </h3>
+                  <p className="text-[0.625rem] font-bold text-textMain/50 uppercase tracking-widest mt-[0.25rem]">
+                    Ref: #{selectedOrder.order_id.substring(0, 8).toUpperCase()} • {new Date(selectedOrder.created_at || selectedOrder.createdAt).toLocaleDateString('en-GB')}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedOrder(null)}
+                className="p-[0.5rem] bg-card border border-border rounded-full text-textMain/50 hover:text-red-500 hover:bg-red-50 transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-[1.5rem] overflow-y-auto custom-scrollbar space-y-[1.5rem] bg-card flex-1">
+              
+              {/* Rep & Customer Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-[1rem]">
+                {/* Rep Info */}
+                <div className="p-[1rem] bg-background border border-border rounded-[1.5rem] space-y-[0.75rem]">
+                  <p className="text-[0.625rem] font-black text-primary uppercase tracking-widest flex items-center gap-[0.5rem]">
+                    <User size={12} /> Sales Representative
+                  </p>
+                  <div>
+                    <p className="font-bold text-[0.875rem] text-textMain">{selectedOrder.creator?.name || selectedOrder.sales_rep?.name || 'Unknown Rep'}</p>
+                    <p className="text-[0.75rem] text-textMain/50 font-medium mt-[0.25rem]">{selectedOrder.creator?.email || selectedOrder.sales_rep?.email || 'No Email'}</p>
+                  </div>
+                </div>
+
+                {/* Customer Info */}
+                <div className="p-[1rem] bg-background border border-border rounded-[1.5rem] space-y-[0.75rem]">
+                  <p className="text-[0.625rem] font-black text-primary uppercase tracking-widest flex items-center gap-[0.5rem]">
+                    <MapPin size={12} /> Customer Information
+                  </p>
+                  <div>
+                    <p className="font-bold text-[0.875rem] text-textMain">{selectedOrder.customer?.saloon_name || 'Direct Order'}</p>
+                    <p className="text-[0.75rem] text-textMain/50 font-medium mt-[0.25rem] uppercase tracking-wider">
+                      {selectedOrder.customer?.district || selectedOrder.district || 'Unknown Location'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Items Manifest */}
+              <div className="space-y-[1rem]">
+                <p className="text-[0.625rem] font-black text-textMain/50 uppercase tracking-widest ml-[0.5rem]">Manifested Items</p>
+                <div className="border border-border rounded-[1.5rem] overflow-hidden bg-background">
+                  <table className="w-full text-left">
+                    <thead className="bg-card/50 border-b border-border">
+                      <tr className="text-[0.625rem] font-black uppercase text-textMain/50 tracking-widest">
+                        <th className="px-[1rem] py-[0.75rem]">Product</th>
+                        <th className="px-[1rem] py-[0.75rem] text-center">Qty</th>
+                        <th className="px-[1rem] py-[0.75rem] text-right hidden sm:table-cell">Price</th>
+                        <th className="px-[1rem] py-[0.75rem] text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {(selectedOrder.OrderItems || selectedOrder.items || []).map((item, idx) => {
+                        const price = parseFloat(item.price || 0);
+                        const qty = item.quantity || item.qty || 0;
+                        return (
+                          <tr key={idx} className="text-[0.75rem] font-medium text-textMain hover:bg-card/50 transition-colors">
+                            <td className="px-[1rem] py-[0.75rem]">
+                              <p className="font-bold">{item.variant?.product?.name || 'Unknown Product'}</p>
+                              <p className="text-[0.625rem] text-primary italic mt-[0.125rem]">{item.variant?.variant_name || item.variant?.size || 'Standard'}</p>
+                            </td>
+                            <td className="px-[1rem] py-[0.75rem] text-center font-bold">{qty}</td>
+                            <td className="px-[1rem] py-[0.75rem] text-right text-textMain/60 hidden sm:table-cell">Rs. {price.toLocaleString()}</td>
+                            <td className="px-[1rem] py-[0.75rem] text-right font-bold text-textMain">Rs. {(price * qty).toLocaleString()}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer (Total) */}
+            <div className="p-[1.5rem] border-t border-border bg-background flex justify-between items-center rounded-b-[2rem]">
+              <span className="text-[0.6875rem] font-black text-textMain/50 uppercase tracking-widest">Net Order Value</span>
+              <span className="text-[1.25rem] font-black text-primary tracking-tighter">
+                Rs. {((selectedOrder.OrderItems || selectedOrder.items || []).reduce((sum, item) => sum + (parseFloat(item.price || 0) * (item.quantity || item.qty || 0)), 0)).toLocaleString()}.00
+              </span>
+            </div>
           </div>
         </div>
       )}
