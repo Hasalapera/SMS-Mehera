@@ -2,7 +2,7 @@ const { Order, OrderItem, ProductVariant, Product, User } = require('../models')
 const sequelize = require('../db/db');
 const { sendEmailInvoice } = require('../utils/sendEmailInvoice'); // 👈 Import එක {} ඇතුළේ තියෙනවාද බලන්න
 
-// --- 1. පවතින සාමාන්‍ය ඕඩර් එක (SALES REP / OFFLINE) ---
+// --- 1. current normal orde eka (SALES REP / OFFLINE) ---
 const placeOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
@@ -42,11 +42,11 @@ const placeOrder = async (req, res) => {
 
     await OrderItem.bulkCreate(orderItemsData, { transaction });
     
-    await transaction.commit(); // ✅ කලින්ම Commit කරනවා
+    await transaction.commit(); 
 
     res.status(201).json({ success: true, message: "Order placed successfully!", orderId: newOrder.order_id });
   } catch (error) {
-    // ⚠️ Commit වුණාට පස්සේ rollback කරන්න බැරි නිසා මේ condition එක වැදගත්
+    //  Commit unata passe rollback karanna bari nisa condition eka important
     if (transaction && !transaction.finished) await transaction.rollback();
     console.error("Order Error:", error);
     res.status(500).json({ success: false, message: "Failed to place order" });
@@ -93,12 +93,12 @@ const placeOnlineOrder = async (req, res) => {
 
     await OrderItem.bulkCreate(orderItemsData, { transaction });
 
-    // ✅ DB එකේ වැඩේ ඉවරයි - Commit කරනවා
+    
     await transaction.commit();
     // Send discount details while sending email
     if (email) {
       try {
-        // await එක අනිවාර්යයි, නැත්නම් හිරවෙන්න පුළුවන්
+        
         await sendEmailInvoice(email, {
           order_id: newOrder.order_id,
           customer_name,
@@ -113,7 +113,7 @@ const placeOnlineOrder = async (req, res) => {
         });
         console.log(`✅ Invoice sent to ${email}`);
       } catch (emailErr) {
-        // ඊමේල් එක ෆේල් වුණත් ඕඩර් එක දැනටමත් සේව් වෙලා තියෙන්නේ
+        
         console.error("❌ Email process failed but order is saved:", emailErr.message);
       }
     }
@@ -121,7 +121,7 @@ const placeOnlineOrder = async (req, res) => {
     res.status(201).json({ success: true, message: "Online Order placed successfully!", orderId: newOrder.order_id });
 
   } catch (error) {
-    // ⚠️ Transaction එක ඉවර නැතිනම් විතරක් Rollback කරන්න
+    
     if (transaction && !transaction.finished) await transaction.rollback();
     
     console.error("Online Order Error:", error);
