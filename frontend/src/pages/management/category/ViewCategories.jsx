@@ -27,7 +27,7 @@ const ViewCategories = () => {
 
         if (result.isConfirmed) {
             try {
-                await axios.delete(`/category/delete/${id}`, {
+                await api.delete(`/category/delete/${id}`, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
                 });
 

@@ -39,9 +39,9 @@ const AssignUser = () => {
   const fetchInitialData = async () => {
     try {
       const [repsRes, custRes, delRepsRes] = await Promise.all([
-        axios.get("/users/sales-reps", { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get("/customers/all", { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get("/customers/deleted-reps", { headers: { Authorization: `Bearer ${token}` } })
+        api.get("/users/sales-reps", { headers: { Authorization: `Bearer ${token}` } }),
+        api.get("/customers/all", { headers: { Authorization: `Bearer ${token}` } }),
+        api.get("/customers/deleted-reps", { headers: { Authorization: `Bearer ${token}` } })
       ]);
       setSalesReps(repsRes.data.users);
       setCustomers(custRes.data);
@@ -55,7 +55,7 @@ const AssignUser = () => {
     setSelectedRep(rep);
     setLoading(true);
     try {
-      const res = await axios.get(`/customers/by-rep/${rep.user_id}`, {
+      const res = await api.get(`/customers/by-rep/${rep.user_id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setAssignedCustomers(res.data.customers);
@@ -78,7 +78,7 @@ const AssignUser = () => {
     if (!selectedRep || tempSelected.length === 0) return;
     try {
       const customerIds = tempSelected.map((c) => c.customer_id);
-      await axios.post("/customers/assign-rep", 
+      await api.post("/customers/assign-rep", 
         { customer_id: customerIds, sales_rep_id: selectedRep.user_id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -101,7 +101,7 @@ const AssignUser = () => {
     }
     setTransferLoading(true);
     try {
-      const res = await axios.get(`/customers/by-rep/${id}`, {
+      const res = await api.get(`/customers/by-rep/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setInactiveRepCustomers(res.data.customers);
@@ -124,7 +124,7 @@ const AssignUser = () => {
 
     if (result.isConfirmed) {
       try {
-        await axios.post("/customers/assign-rep", 
+        await api.post("/customers/assign-rep", 
           { customer_id: [customerId], sales_rep_id: targetRepId },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -181,7 +181,7 @@ const AssignUser = () => {
         try {
         setLoading(true);
         const token = localStorage.getItem('accessToken');
-        await axios.put(`/users/add-area/${rep.user_id}`, 
+        await api.put(`/users/add-area/${rep.user_id}`, 
             { district }, 
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -206,7 +206,7 @@ const AssignUser = () => {
     const handleDirectAdd = async (userId, district, repName) => {
         try {
             const token = localStorage.getItem('accessToken');
-            await axios.put(`/users/add-area/${userId}`, 
+            await api.put(`/users/add-area/${userId}`, 
             { district }, 
             { headers: { Authorization: `Bearer ${token}` } }
             );

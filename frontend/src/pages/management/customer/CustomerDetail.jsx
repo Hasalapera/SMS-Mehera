@@ -73,7 +73,7 @@ export default function CustomerDetail() {
 
       try {
         setLoading(true);
-        const response = await axios.get(`/customers/${id}`, {
+        const response = await api.get(`/customers/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -103,7 +103,7 @@ export default function CustomerDetail() {
 
     setSavingNote(true);
     try {
-      const response = await axios.post(
+      const response = await api.post(
         `/customers/${id}/notes`,
         {
           note_text: noteText.trim(),
@@ -166,7 +166,7 @@ export default function CustomerDetail() {
 
   const confirmDelete = async (noteId) => {
     try {
-      await axios.delete(
+      await api.delete(
         `/customers/${id}/notes/${noteId}`,
         {
           headers: { Authorization: `Bearer ${token}` },

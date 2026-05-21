@@ -115,7 +115,7 @@ const AddOnlineOrder = () => {
         order_type: 'online'
       };
 
-      const response = await axios.post(
+      const response = await api.post(
         '/orders/online', 
         orderData,
         { headers: { Authorization: `Bearer ${token}` } }

@@ -92,7 +92,7 @@ const ViewOrders = () => {
             try {
                 // this Backend route should be here
                 // if elese make the route (router.put('/update-order-status/:id', ...))
-                await axios.put(`/orders/update-order-status/${orderId}`, 
+                await api.put(`/orders/update-order-status/${orderId}`, 
                     { status: newStatus }, 
                     { headers: { Authorization: `Bearer ${token}` } }
                 );

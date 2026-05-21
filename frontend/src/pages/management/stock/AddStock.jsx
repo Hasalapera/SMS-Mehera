@@ -149,7 +149,7 @@ const AddStock = () => {
     try {
       setIsApplying(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const response = await axios.patch(
+      const response = await api.patch(
         '/stock/variants/batch-add-stock',
         { updates },
         config
@@ -185,7 +185,7 @@ const AddStock = () => {
     try {
       setIsUndoing(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const response = await axios.patch(
+      const response = await api.patch(
         '/stock/variants/batch-revert-stock',
         { updates: lastAppliedSummary.updates },
         config

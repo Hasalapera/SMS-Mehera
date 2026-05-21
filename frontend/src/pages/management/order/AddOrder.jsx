@@ -103,7 +103,7 @@ const AddOrder = () => {
         const config = token
           ? { headers: { Authorization: `Bearer ${token}` } }
           : {};
-        const res = await axios.get(
+        const res = await api.get(
           `/customers/search?q=${query}`,
           config,
         );
@@ -150,7 +150,7 @@ const AddOrder = () => {
       };
 
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.post(
+      const res = await api.post(
         "/orders/place",
         orderData,
         config,

@@ -65,7 +65,7 @@ const DeleteUser = () => {
         try {
           const token = localStorage.getItem('accessToken');
 
-          await axios.put(
+          await api.put(
             `/users/delete-user/${userId}`,
             { adminPassword },
             { headers: { Authorization: `Bearer ${token}` } }

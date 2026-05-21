@@ -36,7 +36,8 @@ export default function ProductDetail() {
           ? { headers: { Authorization: `Bearer ${token}` } }
           : {};
 
-        const response = await axios.get(`/products/${id}`, config);
+        // 💡 FIX: Appending a cache-buster query parameter to bypass browser-level ERR_CACHE_READ_FAILURE
+        const response = await api.get(`/products/${id}?_cb=${new Date().getTime()}`, config);
         const data = response.data?.product || response.data?.data || response.data;
 
         setProduct(data);

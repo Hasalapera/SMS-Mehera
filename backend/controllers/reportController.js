@@ -72,11 +72,14 @@ const getSalesReport = async (req, res) => {
             // 2. Frontend expects `items`, but Sequelize's default is `OrderItems`.
             order.items = order.OrderItems;
             if (order.items) {
-                // 3. Frontend expects `quantity`, but the model has `qty`.
+                // 3. Frontend expects `quantity` and `price` directly on the item.
+                //    The original `OrderItem` model has `qty` and `price`. Let's map them.
                 order.items = order.items.map(item => {
-                    item.quantity = item.qty;
-                    delete item.qty;
-                    return item;
+                    return {
+                        ...item, // Keep other item data like variant info
+                        quantity: item.qty,
+                        price: item.price,
+                    };
                 });
             }
             delete order.OrderItems;

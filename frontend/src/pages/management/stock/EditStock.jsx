@@ -162,7 +162,7 @@ const EditStock = () => {
     try {
       setIsApplying(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const response = await axios.patch(
+      const response = await api.patch(
         '/stock/variants/batch-edit-stock',
         { updates },
         config
@@ -209,7 +209,7 @@ const EditStock = () => {
         newStock: u.oldStock  //SET it back to old stock value
       }));
 
-      const response = await axios.patch(
+      const response = await api.patch(
         '/stock/variants/batch-edit-stock',  //✅ Use edit endpoint
         { updates: revertUpdates },
         config
