@@ -3,9 +3,10 @@ const router = express.Router();
 const { 
     placeOrder, 
     placeOnlineOrder, 
-    getAllOrders 
+    getAllOrders ,
+    updateOrderStatus
 } = require('../controllers/orderController');
-const { verifyToken } = require('../middlewares/authMiddleware');
+const { verifyToken, isAdmin } = require('../middlewares/authMiddleware');
 
 // normal Orders (Sales Rep/Admin)
 router.post('/place', verifyToken, placeOrder);
@@ -15,6 +16,10 @@ router.post('/online', verifyToken, placeOnlineOrder);
 
 // Get all orders (Admin/Sales Rep) - verifyToken middleware
 router.get('/all', verifyToken, getAllOrders);
+
+// Update order status (Admin only)
+router.put('/update-order-status/:orderId', verifyToken, isAdmin, updateOrderStatus);
+
 
 
 

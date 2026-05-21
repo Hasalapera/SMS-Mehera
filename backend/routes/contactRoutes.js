@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 
-// ✅ services වෙනුවට utils ලෙස වෙනස් කළා
 const { sendContactMessage } = require('../utils/sendEmailInvoice'); 
 
 router.post('/send-message', async (req, res) => {

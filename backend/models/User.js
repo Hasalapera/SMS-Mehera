@@ -22,7 +22,7 @@ const User = sequelize.define('User', {
         allowNull: false,
     },
     role: {
-        type: DataTypes.ENUM('admin', 'manager', 'sales_rep', 'online_store_keeper'),
+        type: DataTypes.ENUM('admin', 'manager', 'sales_rep', 'online_store_keeper', 'logistics_officer'),
         allowNull: false,
     },
     dob: {
@@ -31,6 +31,14 @@ const User = sequelize.define('User', {
     },
     contact_no: {
         type: DataTypes.STRING,
+        allowNull: true,
+    },
+    address: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+    },
+    gender: {
+        type: DataTypes.ENUM('male', 'female', 'other'),
         allowNull: true,
     },
     nic_no: {

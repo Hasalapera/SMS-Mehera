@@ -47,13 +47,13 @@ const StockCard = ({ product }) => {
     ? 'border-red-200'
     : hasLowStock
     ? 'border-orange-200'
-    : 'border-gray-100';
+    : 'border-border transition-colors duration-300';
 
   return (
-    <div className={`group rounded-[1.5rem] overflow-hidden border ${cardBorder} bg-white transition-all duration-300 flex flex-col hover:shadow-xl hover:shadow-gray-200/60`}>
+    <div className={`group rounded-[1.5rem] overflow-hidden border ${cardBorder} bg-card transition-all duration-300 flex flex-col hover:shadow-xl hover:shadow-gray-200/60`}>
 
       {/*--Image -- */}
-      <div className="relative bg-[#F9F4DA]/50 aspect-square flex items-center justify-center overflow-hidden p-6">
+      <div className="relative bg-card/50 transition-all duration-300 aspect-square flex items-center justify-center overflow-hidden p-6">
         <img
           src={product.image_url || "https://placehold.co/300x300?text=No+Image"}
           alt={product.product_name}
@@ -61,14 +61,14 @@ const StockCard = ({ product }) => {
         />
 
         {/* Variants Count Badge*/}
-        <div className="absolute top-3 left-3 bg-black/85 text-[#b4a460] text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-[#b4a460]/20">
+        <div className="absolute top-3 left-3 bg-black/85 text-primary transition-all duration-300 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-primary/20 transition-all duration-300">
           {variants.length} Variants
         </div>
 
         {/* View Product Button*/}
         <button
           onClick={() => navigate(`/product/${product.product_id}`)}
-          className="absolute top-3 right-3 p-2 bg-black/80 text-[#b4a460] rounded-lg hover:bg-black transition-all hover:scale-110"
+          className="absolute top-3 right-3 p-2 bg-black/80 text-primary transition-all duration-300 rounded-lg hover:bg-black transition-all hover:scale-110"
           title="View Product"
         >
           <Eye size={14} />
@@ -83,35 +83,35 @@ const StockCard = ({ product }) => {
       </div>
 
       {/* --Product Name & Category-- */}
-      <div className="px-5 pt-4 pb-3 min-h-[88px] flex flex-col justify-start"> <h3 className="text-sm font-black text-black uppercase tracking-tight leading-snug line-clamp-2 overflow-hidden group-hover:text-[#b4a460] transition-colors mb-0.5 min-h-[2.4rem]">
+      <div className="px-5 pt-4 pb-3 min-h-[88px] flex flex-col justify-start"> <h3 className="text-sm font-black text-textMain transition-colors duration-300 uppercase tracking-tight leading-snug line-clamp-2 overflow-hidden group-hover:text-primary transition-all duration-300 mb-0.5 min-h-[2.4rem]">
         {product.product_name}
       </h3>
-        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+        <p className="text-[10px] text-textMain/50 transition-colors duration-300 font-bold uppercase tracking-widest">
           {product.category?.category_name || 'Category'}
         </p>
       </div>
 
       {/*-- Total Network Stock-- */}
-      <div className="mx-5 mb-3 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 flex items-center justify-between">
+      <div className="mx-5 mb-3 bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-xl px-4 py-3 flex items-center justify-between">
         <div>
-          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Total Stock</p>
+          <p className="text-[9px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest mb-0.5">Total Stock</p>
           <div className="flex items-baseline gap-1.5">
-            <span className={`text-2xl font-black ${hasOutOfStock ? 'text-red-500' : hasLowStock ? 'text-orange-500' : 'text-black'}`}>
+            <span className={`text-2xl font-black ${hasOutOfStock ? 'text-red-500' : hasLowStock ? 'text-orange-500' : 'text-textMain transition-colors duration-300'}`}>
               {totalStock}
             </span>
-            <span className="text-[10px] font-bold text-gray-400">Units</span>
+            <span className="text-[10px] font-bold text-textMain/50 transition-colors duration-300">Units</span>
           </div>
         </div>
         <div className="text-right min-w-[110px]">
-  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Updated</p>
-  <p className="text-[10px] font-bold text-gray-600 text-right">{lastUpdated}</p>
+  <p className="text-[9px] font-bold text-textMain/50 transition-colors duration-300 uppercase tracking-widest mb-0.5">Updated</p>
+  <p className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 text-right">{lastUpdated}</p>
 </div>
       </div>
 
       {/* -- Variants List (Scrollable) -- */}
       {variants.length > 0 && (
         <div className="mx-5 mb-5">
-          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Variants</p>
+          <p className="text-[9px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest mb-2">Variants</p>
           <div className="flex flex-col gap-1.5 max-h-16 overflow-y-auto pr-1">
             {variants.map((v) => {
               const vStock = Number(v.stock_count || 0);
@@ -121,10 +121,10 @@ const StockCard = ({ product }) => {
               return (
                 <div
                   key={v.variant_id || v.sku}
-                  className="flex items-center gap-2.5 bg-gray-50 border border-gray-100 rounded-xl p-2.5"
+                  className="flex items-center gap-2.5 bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-xl p-2.5"
                 >
                   {/* Variant Image */}
-                  <div className="w-9 h-9 bg-white rounded-lg shrink-0 flex items-center justify-center overflow-hidden border border-gray-100">
+                  <div className="w-9 h-9 bg-card transition-colors duration-300 rounded-lg shrink-0 flex items-center justify-center overflow-hidden border border-border transition-colors duration-300">
                     <img
                       src={v.image_url || product.image_url || 'https://placehold.co/80x80?text=No'}
                       alt={v.variant_name}
@@ -134,9 +134,9 @@ const StockCard = ({ product }) => {
 
                   {/* Variant Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-black text-black truncate">{v.variant_name || v.sku || 'Variant'}</p>
-                    <p className="text-[10px] font-bold text-gray-500 mt-0.5">
-                      <span className="font-black text-black">{vStock}</span> units
+                    <p className="text-[10px] font-black text-textMain transition-colors duration-300 truncate">{v.variant_name || v.sku || 'Variant'}</p>
+                    <p className="text-[10px] font-bold text-textMain/50 transition-colors duration-300 mt-0.5">
+                      <span className="font-black text-textMain transition-colors duration-300">{vStock}</span> units
                     </p>
                   </div>
 

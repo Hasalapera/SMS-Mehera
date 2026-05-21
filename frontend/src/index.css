@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+/* --- Tailwind v4 Theme Mapping --- */
+@theme {
+  /* This creates classes like bg-primary, text-textMain, border-border, bg-card, bg-background */
+  --color-primary: var(--theme-primary);
+  --color-background: var(--theme-bg);
+  --color-card: var(--theme-card);
+  --color-sidebar: var(--theme-sidebar);
+  --color-textMain: var(--theme-text);
+  --color-border: var(--theme-border);
+
+  /* Add some custom shadows if needed */
+  --shadow-sm: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 10px 40px -4px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 15px 50px -5px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 25px 70px -10px rgba(0, 0, 0, 0.12);
+}
+
+/* --- Custom Scrollbar --- */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
@@ -11,5 +29,70 @@
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #b4a460;
+  background: var(--theme-primary);
+}
+
+/* --- Theme Variables --- */
+:root {
+  --theme-primary: #b4a460;
+  --theme-bg: #fcfcfc;      /* Clean White Floor */
+  --theme-card: #ffffff;    /* White Surface */
+  --theme-text: #171717;
+  --theme-border: #e5e7eb;
+  --theme-sidebar: #ffffff;
+}
+
+/* Ensure SettingsPage.jsx .dark class toggle changes the variables correctly */
+:root.dark, .dark {
+  --theme-primary: #d4c480;
+  --theme-bg: #0a0a0a;      /* 🌑 Matte Black Floor */
+  --theme-card: #141414;    /* 🃏 Deep Charcoal Surface */
+  --theme-sidebar: #0f0f0f;
+  --theme-text: #ededed;    /* Soft White */
+  --theme-border: rgba(255, 255, 255, 0.05); /* ✨ Subtle Glass Border */
+}
+
+/* --- Global Styles --- */
+
+body {
+  background-color: var(--theme-bg);
+  color: var(--theme-text);
+  transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out, border-color 0.5s ease-in-out;
+}
+
+@media print {
+  /* 🚫 1. මුළු ඇප් එකේම තියෙන අනෙක් හැම එලිමන්ට් එකක්ම ප්‍රින්ට් එකෙන් හයිඩ් කරනවා */
+  body * {
+    visibility: hidden;
+  }
+
+  #mehera-printable-node,
+  #mehera-printable-node * {
+    visibility: visible;
+  }
+
+  #mehera-printable-node {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+
+    --theme-bg: #ffffff !important;
+    --theme-card: #ffffff !important;
+    --theme-text: #111111 !important;  
+    --theme-border: #d1d5db !important;
+    --theme-primary: #b4a460 !important;
+    
+    background-color: #ffffff !important;
+    color: #111111 !important;
+  }
+  
+  html, body {
+    height: auto;
+    background: #ffffff !important;
+  }
 }
