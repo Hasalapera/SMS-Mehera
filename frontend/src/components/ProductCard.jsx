@@ -19,31 +19,31 @@ const ProductCard = ({ product, onAddToCart }) => {
   // const displayStock = firstVariant ? firstVariant.stock_count : 0;
 
   const handleNavigation = () => {
-    // දැන් ලොග් වෙලා හිටියත් නැතත් ඕනෑම කෙනෙකුට පේජ් එක බලන්න පුළුවන් ✅
+    //anyone can show without login
     navigate(`/product/${product.product_id}`);
   };
 
   return (
-    <div className="group bg-white rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-[#b4a460]/15 transition-all duration-500 border border-gray-100 flex flex-col h-full">
+    <div className="group bg-card transition-colors duration-300 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-[#b4a460]/15 transition-all duration-500 border border-border transition-colors duration-300 flex flex-col h-full">
       
       {/* --- Image Container --- */}
-      <div className="relative bg-[#F9F4DA]/50 aspect-square flex items-center justify-center overflow-hidden p-10">
+      <div className="relative bg-card/50 transition-all duration-300 aspect-square flex items-center justify-center overflow-hidden p-10">
         <img 
           src={product.image_url || "https://placehold.co/400x400/F9F4DA/9A8B50?text=No+Image"} 
           alt={product.product_name}
-          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700 mix-blend-multiply"
+          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700 mix-blend-multiply dark:mix-blend-normal"
         />
         
         {/* Brand Badge */}
         <div className="absolute top-6 left-6">
-          <span className="bg-black/90 backdrop-blur-sm text-[#b4a460] text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-[#b4a460]/20 shadow-lg">
+          <span className="bg-black/90 backdrop-blur-sm text-primary transition-all duration-300 text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-primary/20 transition-all duration-300 shadow-lg">
             {product.brand?.brand_name || 'Mehera'}
           </span>
         </div>
 
         {/* Stock Level Badge */}
         {/* <div className="absolute top-6 right-6">
-          <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter shadow-sm ${displayStock > 0 ? 'bg-white text-green-600' : 'bg-red-50 text-red-600'}`}>
+          <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter shadow-sm ${displayStock > 0 ? 'bg-card transition-colors duration-300 text-green-600' : 'bg-red-50 text-red-600'}`}>
             {displayStock > 0 ? `${displayStock} IN STOCK` : 'OUT OF STOCK'}
           </span>
         </div> */}
@@ -83,19 +83,19 @@ const ProductCard = ({ product, onAddToCart }) => {
                   console.error("onAddToCart function is not provided to ProductCard");
                 }
               }}
-              className="p-3 bg-white text-[#b4a460] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110 active:scale-95"
+              className="p-3 bg-card transition-colors duration-300 text-primary transition-all duration-300 rounded-2xl shadow-xl hover:bg-black hover:text-primary transition-all duration-300 transition-all transform hover:scale-110 active:scale-95"
               title="Add to Order"
             >
               <ShoppingCart size={18} />
             </button>
           )}
 
-          <button className="p-3 bg-white text-[#9A8B50] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110">
+          <button className="p-3 bg-card transition-colors duration-300 text-[#9A8B50] rounded-2xl shadow-xl hover:bg-black hover:text-primary transition-all duration-300 transition-all transform hover:scale-110">
             <Heart size={18} />
           </button>
           <button 
             onClick={handleNavigation}
-            className="p-3 bg-white text-[#9A8B50] rounded-2xl shadow-xl hover:bg-black hover:text-[#b4a460] transition-all transform hover:scale-110"
+            className="p-3 bg-card transition-colors duration-300 text-[#9A8B50] rounded-2xl shadow-xl hover:bg-black hover:text-primary transition-all duration-300 transition-all transform hover:scale-110"
           >
             <Eye size={18} />
           </button>
@@ -103,35 +103,35 @@ const ProductCard = ({ product, onAddToCart }) => {
       </div>
 
       {/* --- Product Details --- */}
-      <div className="p-6 bg-white flex-1 flex flex-col text-left">
+      <div className="p-6 bg-card transition-colors duration-300 flex-1 flex flex-col text-left">
         <div className="flex justify-between items-start mb-3">
           <div className="flex-1 overflow-hidden pr-2">
-            <h3 className="text-base font-black text-black leading-tight truncate group-hover:text-[#b4a460] transition-colors uppercase tracking-tight">
+            <h3 className="text-base font-black text-textMain transition-colors duration-300 leading-tight truncate group-hover:text-primary transition-all duration-300 uppercase tracking-tight">
               {product.product_name}
             </h3>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.15em] mt-1.5 flex items-center gap-1.5">
-              <span className="w-1 h-1 rounded-full bg-[#b4a460]"></span>
+            <p className="text-[10px] text-textMain/50 transition-colors duration-300 font-bold uppercase tracking-[0.15em] mt-1.5 flex items-center gap-1.5">
+              <span className="w-1 h-1 rounded-full bg-primary transition-all duration-300"></span>
               {product.category?.category_name || 'Premium Series'}
             </p>
           </div>
           <div className="text-right shrink-0">
-            <p className="text-sm font-black text-black tabular-nums tracking-tighter">
+            <p className="text-sm font-black text-textMain transition-colors duration-300 tabular-nums tracking-tighter">
               {displayPrice ? `${Number(displayPrice).toLocaleString()} LKR` : 'Price on Req'}
             </p>
           </div>
         </div>
 
         {/* --- Variants & Main Button --- */}
-        <div className="mt-auto pt-5 border-t border-gray-50 flex items-center justify-between">
+        <div className="mt-auto pt-5 border-t border-border flex items-center justify-between">
           <div className="flex -space-x-3 hover:space-x-1 transition-all duration-300">
             {variantsPreview?.length > 0 ? (
               variantsPreview.map((variant) => (
-                <div key={variant.variant_id} className="w-9 h-9 rounded-full border-[3px] border-white overflow-hidden bg-white shadow-md ring-1 ring-gray-100 transition-transform hover:-translate-y-1">
+                <div key={variant.variant_id} className="w-9 h-9 rounded-full border-[3px] border-white overflow-hidden bg-card transition-colors duration-300 shadow-md ring-1 ring-gray-100 transition-transform hover:-translate-y-1">
                   <img src={variant.image_url || product.image_url} className="w-full h-full object-cover" alt="v" />
                 </div>
               ))
             ) : (
-              <div className="w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center border-2 border-white text-gray-300">
+              <div className="w-9 h-9 rounded-full bg-card transition-colors duration-300 flex items-center justify-center border-2 border-white text-textMain/50 transition-colors duration-300">
                 <LayoutGrid size={14} />
               </div>
             )}
@@ -139,7 +139,7 @@ const ProductCard = ({ product, onAddToCart }) => {
           
           <button 
             onClick={handleNavigation}
-            className="flex items-center justify-center w-10 h-10 bg-black text-[#b4a460] rounded-2xl hover:bg-[#1a1a1a] hover:scale-110 active:scale-95 transition-all shadow-lg shadow-[#b4a460]/20"
+            className="flex items-center justify-center w-10 h-10 bg-black text-primary transition-all duration-300 rounded-2xl hover:bg-card transition-all duration-300 hover:scale-110 active:scale-95 transition-all shadow-lg shadow-[#b4a460]/20"
           >
             <ChevronRight size={20} strokeWidth={3} />
           </button>
