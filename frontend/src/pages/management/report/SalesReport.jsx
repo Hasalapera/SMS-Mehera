@@ -117,7 +117,7 @@ const SalesReport = () => {
         </div>
 
         {/* Filter Layer - Sticky on Mobile for quick access */}
-        <div className="sticky top-[80px] md:top-[90px] z-40 py-2 -my-2 md:py-0 md:my-0 bg-background/95 backdrop-blur-xl border-b border-border/40 md:border-none md:bg-transparent md:backdrop-blur-none mx-[-1.5rem] px-[1.5rem] md:mx-0 md:px-0 transition-all duration-300">
+        <div className="sticky md:static top-[80px] md:top-auto z-40 md:z-auto py-2 -my-2 md:py-0 md:my-0 bg-background/95 backdrop-blur-xl border-b border-border/40 md:border-none md:bg-transparent md:backdrop-blur-none mx-[-1.5rem] px-[1.5rem] md:mx-0 md:px-0 transition-all duration-300">
           <ReportFilters 
             filterType={filterType} setFilterType={setFilterType} 
             dates={dates} setDates={setDates} 
