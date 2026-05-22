@@ -38,6 +38,7 @@ const batchAddStockToVariants = async (req, res) => {
         const { updates } = req.body;
 
         if (!Array.isArray(updates) || updates.length === 0) {
+            // Rollback transaction before returning error response
             await transaction.rollback();
             return res.status(400).json({ error: 'Updates array is required' });
         }
@@ -60,9 +61,11 @@ const batchAddStockToVariants = async (req, res) => {
                 return res.status(404).json({ error: `Variant not found: ${variantId}` });
             }
 
+            // Get previous stock
             const previousStock = Number(variant.stock_count || 0);
             const newStock = previousStock + quantity;
 
+            // Update stock count
             await variant.update({ stock_count: newStock }, { transaction });
 
             appliedUpdates.push({

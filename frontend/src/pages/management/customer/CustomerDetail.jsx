@@ -174,7 +174,7 @@ export default function CustomerDetail() {
       );
       setNotes((current) => current.filter((note) => note.note_id !== noteId));
        const successToastId = toast.success('Note deleted successfully', { duration: 1200 });
-      // Force dismiss after 600ms to ensure it disappears on mobile
+      // Force dismiss after 1200ms to ensure it disappears on mobile
       setTimeout(() => toast.dismiss(successToastId), 1200);
     } catch (err) {
       console.error('Failed to delete note:', err);
