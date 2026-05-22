@@ -21,21 +21,20 @@ const SalesReport = () => {
 
   // 📡 Async handler to pull aggregated records from backend
   const fetchReportData = async () => {
+    // Auto-fetch ONLY when both dates are provided if 'custom' is selected
+    if (filterType === 'custom' && (!dates.startDate || !dates.endDate)) {
+        return; 
+    }
+
     setLoading(true);
     try {
         let queryStr = `/report/sales-report?filterType=${filterType}`;
         if (filterType === 'custom') {
-            if (!dates.startDate || !dates.endDate) {
-                toast.error("Please pick both start & end durations!");
-                setLoading(false);
-                return;
-            }
             queryStr += `&startDate=${dates.startDate}&endDate=${dates.endDate}`;
         }
 
         const response = await api.get(queryStr);
         setOrders(response.data.orders || []);
-        toast.success("Sales data compiled successfully!");
     } catch (err) {
         toast.error("Failed to load reporting node registries.");
         console.error(err);
@@ -57,10 +56,10 @@ const SalesReport = () => {
     fetchBranding();
   }, []);
 
-  // Trigger content on mounting sequence
+  // Auto-fetch data on filter changes
   useEffect(() => {
     fetchReportData();
-  }, [filterType]);
+  }, [filterType, dates.startDate, dates.endDate]);
 
   // --- Font Scaling Logic for Mobile ---
   useEffect(() => {
@@ -91,10 +90,10 @@ const SalesReport = () => {
   });
 
   return (
-    <div ref={wrapperRef} className="p-[1.5rem] md:p-[2rem] max-w-[72rem] mx-auto space-y-[2rem] min-h-screen">
+    <div ref={wrapperRef} className="p-[1.5rem] md:p-[2rem] max-w-[72rem] mx-auto min-h-screen relative">
       
       {/* --- SCREEN VIEW (This part is hidden during print) --- */}
-      <div className="print:hidden">
+      <div className="print:hidden flex flex-col gap-[1.5rem] md:gap-[2rem]">
         {/* Header Panel */}
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-[1rem]">
           <div>
@@ -117,11 +116,13 @@ const SalesReport = () => {
           </button>
         </div>
 
-        {/* Filter Layer */}
-        <ReportFilters 
-          filterType={filterType} setFilterType={setFilterType} 
-          dates={dates} setDates={setDates} onFetch={fetchReportData} 
-        />
+        {/* Filter Layer - Sticky on Mobile for quick access */}
+        <div className="sticky top-[80px] md:top-[90px] z-40 py-2 -my-2 md:py-0 md:my-0 bg-background/95 backdrop-blur-xl border-b border-border/40 md:border-none md:bg-transparent md:backdrop-blur-none mx-[-1.5rem] px-[1.5rem] md:mx-0 md:px-0 transition-all duration-300">
+          <ReportFilters 
+            filterType={filterType} setFilterType={setFilterType} 
+            dates={dates} setDates={setDates} 
+          />
+        </div>
 
         {loading ? (
           <div className="py-[5rem] text-center flex flex-col items-center justify-center gap-[1rem]">
@@ -294,7 +295,8 @@ const SalesReport = () => {
       {/* --- Advanced Print Control Styles --- */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          @page { size: A4; margin: 15mm 15mm 20mm 15mm; }
+          @page { size: A4; margin: 30mm 15mm 20mm 15mm; } /* 💡 2 වෙනි පිටුවේ ඉඳන් උඩින් 30mm ක ලස්සන ඉඩක් තියනවා */
+          @page :first { margin-top: 15mm; } /* 💡 පළමු පිටුවේ උඩින් තියෙන 15mm ඉඩ ඒ විදිහටම තියාගන්නවා */
           /* 
             💡 FIX: This overrides the global 'body * { visibility: hidden }' from index.css,
             which conflicts with react-to-print's iframe-based printing.

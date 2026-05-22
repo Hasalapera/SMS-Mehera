@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, ShoppingBag, UserCheck, TrendingUp } from 'lucide-react';
+import { DollarSign, UserCheck } from 'lucide-react';
 
 const ReportMetrics = ({ orders }) => {
   
@@ -18,11 +18,9 @@ const ReportMetrics = ({ orders }) => {
   const topRep = Object.keys(repCounts).reduce((a, b) => repCounts[a] > repCounts[b] ? a : b, "N/A");
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[1rem] print:grid-cols-4 print:gap-x-[2.5rem] print:gap-y-0">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-[1.5rem] md:gap-[2.5rem] print:grid-cols-2 print:gap-[4rem]">
       <MetricCard icon={DollarSign} label="Net Sales Volume" value={`Rs. ${totalSalesValue.toLocaleString()}`} />
-      <MetricCard icon={ShoppingBag} label="Approved Invoices" value={orders.length} />
       <MetricCard icon={UserCheck} label="Top Performer (Rep)" value={topRep} />
-      <MetricCard icon={TrendingUp} label="Audit Status" value="100% Certified" color="text-green-600" />
     </div>
   );
 };
