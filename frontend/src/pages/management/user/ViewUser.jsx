@@ -109,7 +109,7 @@ const handleRestore = async (userId, userName) => {
     if (adminPassword) {
       try {
         const token = localStorage.getItem('accessToken');
-        await axios.put(`/users/restore-user/${userId}`, { adminPassword }, {
+        await api.put(`/users/restore-user/${userId}`, { adminPassword }, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success(`${userName}'s account has been restored!`);

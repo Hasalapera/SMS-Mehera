@@ -8,30 +8,34 @@ const getSalesReport = async (req, res) => {
         let start = new Date();
         let end = new Date();
 
+        let dateFilter = {}; // By default, no date filter (for 'all' option)
+
         // 📅 1. FilterType eka anuwa Date Range eka calculation karamu
         if (filterType === 'daily') {
             start.setHours(0, 0, 0, 0);
             end.setHours(23, 59, 59, 999);
+            dateFilter = { created_at: { [Op.between]: [start, end] } };
         } else if (filterType === 'monthly') {
             start = new Date(start.getFullYear(), start.getMonth(), 1);
             end = new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59, 999);
+            dateFilter = { created_at: { [Op.between]: [start, end] } };
         } else if (filterType === 'yearly') {
             start = new Date(start.getFullYear(), 0, 1);
             end = new Date(start.getFullYear(), 12, 0, 23, 59, 59, 999);
+            dateFilter = { created_at: { [Op.between]: [start, end] } };
         } else if (filterType === 'custom' && startDate && endDate) {
             start = new Date(startDate);
             start.setHours(0, 0, 0, 0);
             end = new Date(endDate);
             end.setHours(23, 59, 59, 999);
+            dateFilter = { created_at: { [Op.between]: [start, end] } };
         }
 
         // 📡 2. Query execution with Deep Eager Loading
         const rawOrders = await Order.findAll({
             where: {
                 order_status: 'approved', // 🔒 Strict Check: Requested orders baha! Approved mthrakmai.
-                created_at: {
-                    [Op.between]: [start, end]
-                }
+                ...dateFilter // Apply date boundaries dynamically
             },
             include: [
                 {
@@ -72,11 +76,14 @@ const getSalesReport = async (req, res) => {
             // 2. Frontend expects `items`, but Sequelize's default is `OrderItems`.
             order.items = order.OrderItems;
             if (order.items) {
-                // 3. Frontend expects `quantity`, but the model has `qty`.
+                // 3. Frontend expects `quantity` and `price` directly on the item.
+                //    The original `OrderItem` model has `qty` and `price`. Let's map them.
                 order.items = order.items.map(item => {
-                    item.quantity = item.qty;
-                    delete item.qty;
-                    return item;
+                    return {
+                        ...item, // Keep other item data like variant info
+                        quantity: item.qty,
+                        price: item.price,
+                    };
                 });
             }
             delete order.OrderItems;

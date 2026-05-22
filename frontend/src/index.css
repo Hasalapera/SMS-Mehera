@@ -75,8 +75,8 @@ body {
     position: absolute;
     left: 0;
     top: 0;
-    width: 100% !important;
-    padding: 0 !important;
+    width: 100%; /* Use 100% width, box-sizing will handle padding */
+    padding: 1.5rem !important; /* 📄 Print එකට ලස්සනට margin එකක් දානවා */
     margin: 0 !important;
     border: none !important;
     box-shadow: none !important;
@@ -94,5 +94,10 @@ body {
   html, body {
     height: auto;
     background: #ffffff !important;
+  }
+
+  /* Hide scrollbars in print view */
+  .custom-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }

@@ -150,7 +150,7 @@ const handleSubmit = async (e) => {
   const token = localStorage.getItem('accessToken'); 
 
   try {
-    const response = await axios.post(
+    const response = await api.post(
       '/users/addUser', 
       formData, 
       { headers: { 'Authorization': `Bearer ${token}` } }

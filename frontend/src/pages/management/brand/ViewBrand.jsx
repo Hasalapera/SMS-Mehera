@@ -53,7 +53,7 @@ const ViewBrands = () => {
     if (result.isConfirmed) {
       try {
         const token = localStorage.getItem('accessToken');
-        await axios.delete(`/brands/delete/${brandId}`, {
+        await api.delete(`/brands/delete/${brandId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 

@@ -32,11 +32,18 @@ export default function ProductDetail() {
 
       try {
         setLoading(true);
-        const config = token
-          ? { headers: { Authorization: `Bearer ${token}` } }
-          : {};
+        // 💡 FIX: Force the browser to completely bypass the disk cache using strict Headers
+        const config = {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          },
+          params: { _cb: new Date().getTime() } // Fallback cache-buster
+        };
 
-        const response = await api.get(`/products/${id}?_cb=${new Date().getTime()}`, config);
+        const response = await api.get(`/products/${id}`, config);
         const data = response.data?.product || response.data?.data || response.data;
 
         setProduct(data);

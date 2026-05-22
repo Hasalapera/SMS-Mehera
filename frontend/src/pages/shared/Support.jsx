@@ -70,7 +70,7 @@ const Support = () => {
     try {
       const token = localStorage.getItem('accessToken');
       
-      const response = await axios.post(
+      const response = await api.post(
         '/support/send-email', data, {
           headers: {
             Authorization: `Bearer ${token}`
