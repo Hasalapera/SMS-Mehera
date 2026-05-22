@@ -12,9 +12,6 @@ import ViewCustomer from './pages/management/customer/ViewCustomer';
 import CustomerDetail from './pages/management/customer/CustomerDetail';
 import Orders from "./pages/management/order/Orders";
 
-//support management
-//import Support from './pages/shared/Support';
-
 //stock management
 import AddStock from "./pages/management/stock/AddStock";
 import EditStock from "./pages/management/stock/EditStock";
@@ -54,6 +51,9 @@ import AddProduct from './pages/management/product/AddProduct';
 import ViewProduct from './pages/management/product/ViewProduct';
 import ProductDetail from './pages/management/product/ProductDetail';
 
+// Workshop Management (Now in management/workshop folder)
+import ViewWorkshops from "./pages/management/workshop/ViewWorkshops";
+
 //Order Management (Now in management/order folder)
 import ViewOrders from "./pages/management/order/ViewOrders";
 import AddOrder from "./pages/management/order/AddOrder";
@@ -64,15 +64,10 @@ import SalesReport from "./pages/management/report/SalesReport";
 //Quotation Management
 import Quotation from "./pages/shared/Quotation";
 
-
 //Settings
 import SettingsPage from './pages/SettingsPage';
 
-
 import AddOnlineOrder from "./pages/management/order/AddOnlineOrder";
-
-//gihaaaaan testing;
-
 
 import OurBrands from './pages/OurBrands';
 import Workshops from './pages/Workshops';
@@ -87,8 +82,7 @@ function App() {
   const { user, loading } = useAuth();
 
   if (loading) return <div>Loading Registry...</div>;
-  // const storedUser = localStorage.getItem('user');
-  // const user = (storedUser && storedUser !== "undefined") ? JSON.parse(storedUser) : null;
+  
   const userRole = user?.role;
   const isFirstLogin =
     user?.is_first_login === 1 || user?.mustChangePassword === true;
@@ -114,7 +108,6 @@ function App() {
         }}
         gutter={8}
         toastOptions={{
-          // 💡 Global styling 
           style: {
             background: 'var(--color-card)', 
             color: 'var(--color-text)',      
@@ -126,8 +119,6 @@ function App() {
             boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
             transition: 'background-color 0.5s ease-in-out, color 0.5s ease-in-out, border-color 0.5s ease-in-out',
           },
-
-          //success toast
           success: {
             duration: 2000,
             iconTheme: {
@@ -138,7 +129,6 @@ function App() {
               borderLeft: '5px solid #b4a460', 
             },
           },
-
           error: {
             duration: 3000,
             iconTheme: {
@@ -156,12 +146,7 @@ function App() {
         <Route path='/login' element={<Login />} />
         <Route path='/change-password' element={user ? <ChangePassword /> : <Navigate to="/login" />} />
         <Route path="/under-construction" element={<UnderConstruction />} />
-        
 
-        {/* Gihaaaaan Testing */}
-        
-
-        {/* <FloatingPopup /> */}
         <Route path="/brands" element={<OurBrands />} />
         <Route path="/workshops" element={<Workshops />} />
         <Route path="/about" element={<AboutUs />} />
@@ -176,7 +161,6 @@ function App() {
 
           <Route path="/order/:id" element={["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? <Quotation /> : <Navigate to="/home" />} />
 
-          {/* --- අලුතින් එකතු කළ STOCK ROUTE --- */}
           <Route
             path="/viewStock"
             element={
@@ -189,8 +173,6 @@ function App() {
               )
             }
           />
-
-          {/*DashboardLayout එක ඇතුළත : redirect to add customer*/}
 
           <Route
             path="/customer"
@@ -225,7 +207,6 @@ function App() {
             }
           />
 
-          {/* Add Customer Route : redirect to add-customer page */}
           <Route
             path="/add-customer"
             element={
@@ -237,7 +218,6 @@ function App() {
             }
           />
 
-          {/* Add Order Route : redireact to add oder */}
           <Route
             path="/orders"
             element={
@@ -249,7 +229,6 @@ function App() {
             }
           />
 
-          {/* Add Online Order Route : redirect to add online order */}
           <Route
             path="/add-online-order"
             element={
@@ -261,7 +240,6 @@ function App() {
             }
           />
 
-          {/* 1. Dashboard can access Admin and Manager only */}
           <Route
             path="/dashboard"
             element={
@@ -286,7 +264,7 @@ function App() {
               )
             }
           />
-          {/* 3. User Management - Admin only */}
+          
           <Route
             path="/addUser"
             element={
@@ -314,53 +292,52 @@ function App() {
             } 
           />
           <Route
-          path="/delete-user"
-          element={
-            userRole === "admin" ? <DeleteUser /> : <Navigate to="/dashboard" />
-          }
-        />
+            path="/delete-user"
+            element={
+              userRole === "admin" ? <DeleteUser /> : <Navigate to="/dashboard" />
+            }
+          />
 
-        {/* Brand management - only for admin */}
-        <Route path='/addBrand' element={userRole === 'admin' ? <AddBrand /> : <Navigate to="/dashboard" />} />
-        <Route path='/getBrands' element={userRole === 'admin' ? <ViewBrand /> : <Navigate to="/dashboard" />} />
+          {/* Brand management */}
+          <Route path='/addBrand' element={userRole === 'admin' ? <AddBrand /> : <Navigate to="/dashboard" />} />
+          <Route path='/getBrands' element={userRole === 'admin' ? <ViewBrand /> : <Navigate to="/dashboard" />} />
 
-        {/* Category management - only for admin */}
-        <Route path='/addCategory' element={userRole === 'admin' ? <AddCategory /> : <Navigate to="/dashboard" />} /> 
-        <Route path='/getCategories' element={userRole === 'admin' ? <ViewCategories /> : <Navigate to="/dashboard" />} /> 
+          {/* Category management */}
+          <Route path='/addCategory' element={userRole === 'admin' ? <AddCategory /> : <Navigate to="/dashboard" />} /> 
+          <Route path='/getCategories' element={userRole === 'admin' ? <ViewCategories /> : <Navigate to="/dashboard" />} /> 
 
-        {/* product management - admin and manager can view; only admin can add */}
-        <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
-        <Route path='/inventory' element={['admin', 'manager'].includes(userRole) ? <ViewProduct /> : <Navigate to="/dashboard" />} />
-        {/* <Route path='/product/:id' element={['admin', 'manager'].includes(userRole) ? <ProductDetail /> : <Navigate to="/dashboard" />} /> */}
-        <Route path='/product/:id' element={['admin', 'manager', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ProductDetail /> : <Navigate to="/home" />} />
+          {/* Product management */}
+          <Route path='/addProduct' element={userRole === 'admin' ? <AddProduct /> : <Navigate to="/dashboard" />} />
+          <Route path='/inventory' element={['admin', 'manager'].includes(userRole) ? <ViewProduct /> : <Navigate to="/dashboard" />} />
+          <Route path='/product/:id' element={['admin', 'manager', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ProductDetail /> : <Navigate to="/home" />} />
 
+          {/* ✅ Workshop Management Route */}
+          <Route 
+            path='/manage-workshops' 
+            element={['admin', 'manager'].includes(userRole) ? <ViewWorkshops /> : <Navigate to="/dashboard" />} 
+          />
 
-        {/* orders management - admin, sales rep, online_store_keeper can create; admin, manager, sales_rep, online_store_keeper can view */}
-        <Route path='/view-orders' element={userRole === 'admin' || userRole === 'manager' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <ViewOrders /> : <Navigate to="/" />} />
-        <Route path="/add-order" element={userRole === 'admin' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <AddOrder /> : <Navigate to="/" />} />
+          {/* Orders management */}
+          <Route path='/view-orders' element={userRole === 'admin' || userRole === 'manager' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <ViewOrders /> : <Navigate to="/" />} />
+          <Route path="/add-order" element={userRole === 'admin' || userRole === 'sales_rep' || userRole === 'online_store_keeper' ? <AddOrder /> : <Navigate to="/" />} />
 
-        {/* stock management - admin, sales rep, online_store_keeper can view; only admin can add/edit */}
-        <Route path='/addStock' element={userRole === 'admin' ? <AddStock /> : <Navigate to="/dashboard" />} />
-        <Route path='/editStock' element={userRole === 'admin' ? <EditStock /> : <Navigate to="/dashboard" />} />
-        <Route path='/viewStock' element={['admin', 'manager', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ViewStock /> : <Navigate to="/dashboard" />} />
+          {/* Stock management (🛠️ varUserRole -> userRole ලෙස නිවැරදි කරන ලදි) */}
+          <Route path='/addStock' element={userRole === 'admin' ? <AddStock /> : <Navigate to="/dashboard" />} />
+          <Route path='/editStock' element={userRole === 'admin' ? <EditStock /> : <Navigate to="/dashboard" />} />
+          <Route path='/viewStock' element={['admin', 'manager', 'sales_rep', 'online_store_keeper'].includes(userRole) ? <ViewStock /> : <Navigate to="/dashboard" />} />
 
-        {/* report management - admin, manager can view */}
-        <Route path="/sales-report" element={["admin", "manager"].includes(userRole) ? <SalesReport /> : <Navigate to="/dashboard" />} />
+          {/* Report management */}
+          <Route path="/sales-report" element={["admin", "manager"].includes(userRole) ? <SalesReport /> : <Navigate to="/dashboard" />} />
 
-        {/* settings page - can change logo for admin other can do anyone */}
-        <Route path="/settingsPage" element={["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? <SettingsPage /> : <Navigate to="/home" />} />
+          {/* Settings page */}
+          <Route path="/settingsPage" element={["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? <SettingsPage /> : <Navigate to="/home" />} />
 
+        </Route>
 
-</Route>
+        <Route path="*" element={<Navigate to="/under-construction" replace />} />
+      </Routes>
 
-      {/* <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/" />} /> */}
-      {/* <Route path="*" element={<Navigate to="/under-construction" />} /> */}
-      <Route path="*" element={<Navigate to="/under-construction" replace />} />
-    </Routes>
-
-     
       <FloatingPopup /> 
-
     </>
     </NotificationProvider> 
   );
