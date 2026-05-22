@@ -42,7 +42,7 @@ const Navbar = () => {
                 const token = localStorage.getItem('accessToken');
                 const url = token ? '/settings' : '/settings/public';
                 const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-                const res = await axios.get(url, { headers });
+                const res = await api.get(url, { headers });
                 setSystemSettings(res.data);
             } catch (err) {
                 console.error("Navbar branding fetch failed:", err.response?.data || err.message);

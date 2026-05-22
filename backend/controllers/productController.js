@@ -13,7 +13,7 @@ const addProduct = async (req, res) => {
         // frontend url eken ena wistara tika aragannawa
         const { product_name, brand_id, category_id, description, variants } = req.body;
         
-        // 1. get main image URL (if Provided)
+        // 1. get main image URL 
         const mainImageUrl = req.files['main_image'] ? req.files['main_image'][0].path : null;
 
         // 2. create product 
