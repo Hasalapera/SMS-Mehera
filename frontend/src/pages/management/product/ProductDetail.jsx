@@ -36,7 +36,7 @@ export default function ProductDetail() {
           ? { headers: { Authorization: `Bearer ${token}` } }
           : {};
 
-        const response = await axios.get(`/products/${id}`, config);
+        const response = await api.get(`/products/${id}?_cb=${new Date().getTime()}`, config);
         const data = response.data?.product || response.data?.data || response.data;
 
         setProduct(data);

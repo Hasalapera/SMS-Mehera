@@ -105,7 +105,7 @@ const UserProfile = () => {
       try {
         const targetId = id || loggedInUser?.user_id;
         const config = { headers: { Authorization: `Bearer ${token}` } };
-        const response = await axios.get(
+        const response = await api.get(
           `/users/profile/${targetId}`,
           config,
         );
@@ -129,7 +129,7 @@ const UserProfile = () => {
         if (fetchedUser.role === "sales_rep") {
           setLoadingCustomers(true);
           try {
-            const custRes = await axios.get(
+            const custRes = await api.get(
               `/customers/by-rep/${targetId}`,
               config,
             );
@@ -152,7 +152,7 @@ const UserProfile = () => {
 
   const handleAddArea = async (district) => {
     try {
-      await axios.put(
+      await api.put(
         `/users/add-area/${user.user_id}`,
         { district },
         { headers: { Authorization: `Bearer ${token}` } },
@@ -166,7 +166,7 @@ const UserProfile = () => {
 
   const handleRemoveArea = async (district) => {
     try {
-      await axios.put(
+      await api.put(
         `/users/remove-area/${user.user_id}`,
         { district },
         { headers: { Authorization: `Bearer ${token}` } },
@@ -192,7 +192,7 @@ const UserProfile = () => {
       uploadData.append("image", fileInputRef.current.files[0]);
 
     try {
-      const response = await axios.put(
+      const response = await api.put(
         "/users/update-profile",
         uploadData,
         {
@@ -225,7 +225,7 @@ const UserProfile = () => {
       return toast.error("Mismatch!");
     setIsUpdating(true);
     try {
-      await axios.put(
+      await api.put(
         "/users/change-password",
         {
           userId: user.user_id,

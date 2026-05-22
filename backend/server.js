@@ -19,7 +19,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const errorHandler = require('./middlewares/errorMiddleware');
 const settingRoutes = require('./routes/settingRoutes');
 const reportRoutes = require('./routes/reportRoutes');
-
+const workshopRoutes = require('./routes/workshopRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -29,14 +29,15 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // MIDDLEWARE
 // =====================================================
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
+// 1. CORS මුලින්ම තියෙන්න ඕනේ හැම රූට් එකකටම කලින් 🛠️
 app.use(cors({
   origin: 'http://localhost:5173', 
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], 
   credentials: true
 }));
+
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Request logging (development only)
 if (NODE_ENV !== 'production') {
@@ -72,6 +73,9 @@ app.use('/api/settings', settingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/report', reportRoutes);
 
+// ✅ Workshop Route එක අනිත් රූට්ස් තියෙන තැනටම පිළිවෙළට දැම්මා
+app.use('/api/workshops', workshopRoutes);
+
 app.use(errorHandler);
 
 // =====================================================
@@ -83,9 +87,6 @@ const startServer = async () => {
     console.log('\n🔗 Connecting to database...');
     await sequelize.authenticate();
     console.log('✓ Database connection successful');
-
-    // 👈 REMOVE sync completely! Only authenticate
-    
     console.log('✓ Database ready');
 
     // Start server
