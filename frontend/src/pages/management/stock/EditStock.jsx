@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { 
   Plus, Search, Package, AlertCircle,
   Loader2, ArrowLeft, RefreshCw, Trash2, CheckCircle2, ClipboardList, Undo2, Sparkles, Edit3,
@@ -36,7 +36,7 @@ const EditStock = () => {
     try {
       setLoading(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.get('http://localhost:5001/api/products/getProducts', config);
+      const res = await api.get('/products/getProducts', config);
       setProducts(res.data.products || res.data);
     } catch (err) {
       if(err.response?.status === 401) {
@@ -165,8 +165,8 @@ const EditStock = () => {
     try {
       setIsApplying(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const response = await axios.patch(
-        'http://localhost:5001/api/stock/variants/batch-edit-stock',
+      const response = await api.patch(
+        '/stock/variants/batch-edit-stock',
         { updates },
         config
       );
@@ -212,8 +212,8 @@ const EditStock = () => {
         newStock: u.oldStock  //SET it back to old stock value
       }));
 
-      const response = await axios.patch(
-        'http://localhost:5001/api/stock/variants/batch-edit-stock',  //✅ Use edit endpoint
+      const response = await api.patch(
+        '/stock/variants/batch-edit-stock',  //✅ Use edit endpoint
         { updates: revertUpdates },
         config
       );

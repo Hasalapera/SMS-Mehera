@@ -4,7 +4,7 @@ import {
   CheckCircle2, MapPin, Phone, UserPlus, Smartphone, Map, Mail, Percent
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { useAuth } from '../../context/AuthContext';
 
 const AddOnlineOrder = () => {
@@ -115,8 +115,8 @@ const AddOnlineOrder = () => {
         order_type: 'online'
       };
 
-      const response = await axios.post(
-        'http://localhost:5001/api/orders/online', 
+      const response = await api.post(
+        '/orders/online', 
         orderData,
         { headers: { Authorization: `Bearer ${token}` } }
       );

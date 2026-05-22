@@ -12,7 +12,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import api from "../../api/axiosInstance";
 import { useAuth } from "../../pages/context/AuthContext";
 
 const Quotation = () => {
@@ -29,7 +29,7 @@ const Quotation = () => {
   useEffect(() => {
     const fetchBranding = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/settings/public');
+        const res = await api.get('/settings/public');
         setSystemSettings(res.data);
       } catch (err) {
         console.error("Quotation branding fetch failed:", err);
@@ -154,13 +154,13 @@ const Quotation = () => {
                 <p className="text-[0.5625em] font-black tracking-[0.5em] text-primary uppercase">International</p>
               </>
             )}
-            <div className="mt-[1.5em] space-y-1 text-[0.5625em] text-textMain/60 print:text-gray-600 font-bold uppercase tracking-widest">
+            <div className="mt-[1.5em] space-y-1 text-[0.5625em] text-gray-300 print:text-gray-600 font-bold uppercase tracking-widest">
               <p className="flex items-center gap-2">
                 <MapPin size={16 * fontScale} className="text-primary" /> No 182,
                 Kuruppumulla Road, Panadura
               </p>
               <p className="flex items-center gap-2">
-                <Phone size={10 * fontScale} className="text-primary" /> 0707 577 500 /
+                <Phone size={14 * fontScale} className="text-primary" /> 0707 577 500 /
                 502
               </p>
             </div>
@@ -189,18 +189,18 @@ const Quotation = () => {
           <div className="grid grid-cols-2 gap-[2.5em]">
             {/* 1. Created By (The person who originally placed the order) */}
             <div className="space-y-3">
-              <h3 className="text-[0.5625em] font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                <ShoppingCart size={24 * fontScale} /> Original Entry By:
+              <h3 className="text-[0.5625em] font-black text-textMain/60 uppercase tracking-widest flex items-center gap-2">
+                <ShoppingCart size={14 * fontScale} className="text-primary" /> Original Entry By:
               </h3>
               <div className="flex items-center gap-3 bg-card p-3 rounded-2xl border border-border shadow-sm">
-                <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center text-textMain/50">
+                <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center text-[#b4a460]">
                   <User size={14 * fontScale} />
                 </div>
                 <div>
                   <p className="text-[0.625em] font-black text-textMain uppercase leading-tight">
                     {orderData.creator?.name || "System Record"}
                   </p>
-                  <p className="text-[0.5em] text-textMain/60 font-bold uppercase italic">
+                  <p className="text-[0.5em] text-primary font-bold uppercase italic">
                     Role:{" "}
                     {orderData.creator?.role?.replace("_", " ") ||
                       "Authorized Staff"}
@@ -212,7 +212,7 @@ const Quotation = () => {
             {/* 2. Issued By (The person who is currently generating the quotation) */}
             <div className="space-y-3 text-right">
               <h3 className="text-[0.5625em] font-black text-textMain/60 uppercase tracking-widest flex items-center gap-2 justify-end">
-                Quotation Issued By: <ClipboardList size={10 * fontScale} />
+                Quotation Issued By: <ClipboardList size={14 * fontScale} className="text-primary" />
               </h3>
               <div className="flex items-center gap-3 bg-card p-3 rounded-2xl border border-border shadow-sm justify-end">
                 <div className="text-right">
@@ -348,13 +348,13 @@ const Quotation = () => {
         {/* Footer */}
         <div className="bg-black py-6 mt-auto print:bg-black">
         <div className="flex flex-col items-center justify-center flex flex-col gap-[0.5em]">
-          <p className="text-[0.5em] text-gray-500 uppercase tracking-[0.4em] font-black flex items-center gap-2">
+          {/* <p className="text-[0.5em] text-gray-500 uppercase tracking-[0.4em] font-black flex items-center gap-2">
             <span className="text-[#b4a460]">Order Entry:</span> 
             <span className="text-gray-300">{orderData.creator?.name || 'System'}</span>
             <span className="mx-2 text-gray-700">|</span>
             <span className="text-[#b4a460]">Issued By:</span> 
             <span className="text-gray-300">{user?.name || user?.full_name || 'Authorized Staff'}</span>
-          </p>
+          </p> */}
           
           <div className="flex items-center gap-4">
               <p className="text-[0.4375em] text-gray-600 uppercase tracking-[0.6em] font-bold">
@@ -375,21 +375,28 @@ const Quotation = () => {
             size: A4; 
             margin: 0; 
           }
-          body {
+          /* 💡 FIX: Overrides global index.css rules that hide elements to prevent blank pages */
+          body * { visibility: visible !important; }
+          html, body {
             background: white !important; 
-            margin: 0; 
+            width: 100% !important;
+            margin: 0 !important; 
+            padding: 0 !important;
             -webkit-print-color-adjust: exact;
           }
           .print\:hidden { display: none !important; }
 
           .quotation-container {
             font-size: 16px !important; 
-            width: 800px !important;    
+            width: 100% !important;    
+            max-width: 100% !important;
             height: auto !important;
             transform: none !important; 
-            margin: 0 auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
             box-shadow: none !important;
             display: block !important;
+            box-sizing: border-box !important;
           }
 
           tr { page-break-inside: avoid; }

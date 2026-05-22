@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import api from "../../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
 import {
   User,
@@ -105,8 +105,8 @@ const UserProfile = () => {
       try {
         const targetId = id || loggedInUser?.user_id;
         const config = { headers: { Authorization: `Bearer ${token}` } };
-        const response = await axios.get(
-          `http://localhost:5001/api/users/profile/${targetId}`,
+        const response = await api.get(
+          `/users/profile/${targetId}`,
           config,
         );
         const fetchedUser = response.data.user;
@@ -129,8 +129,8 @@ const UserProfile = () => {
         if (fetchedUser.role === "sales_rep") {
           setLoadingCustomers(true);
           try {
-            const custRes = await axios.get(
-              `http://localhost:5001/api/customers/by-rep/${targetId}`,
+            const custRes = await api.get(
+              `/customers/by-rep/${targetId}`,
               config,
             );
             setCustomers(custRes.data.customers || []);
@@ -152,8 +152,8 @@ const UserProfile = () => {
 
   const handleAddArea = async (district) => {
     try {
-      await axios.put(
-        `http://localhost:5001/api/users/add-area/${user.user_id}`,
+      await api.put(
+        `/users/add-area/${user.user_id}`,
         { district },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -166,8 +166,8 @@ const UserProfile = () => {
 
   const handleRemoveArea = async (district) => {
     try {
-      await axios.put(
-        `http://localhost:5001/api/users/remove-area/${user.user_id}`,
+      await api.put(
+        `/users/remove-area/${user.user_id}`,
         { district },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -192,8 +192,8 @@ const UserProfile = () => {
       uploadData.append("image", fileInputRef.current.files[0]);
 
     try {
-      const response = await axios.put(
-        "http://localhost:5001/api/users/update-profile",
+      const response = await api.put(
+        "/users/update-profile",
         uploadData,
         {
           headers: {
@@ -225,8 +225,8 @@ const UserProfile = () => {
       return toast.error("Mismatch!");
     setIsUpdating(true);
     try {
-      await axios.put(
-        "http://localhost:5001/api/users/change-password",
+      await api.put(
+        "/users/change-password",
         {
           userId: user.user_id,
           oldPassword: passData.currentPassword,

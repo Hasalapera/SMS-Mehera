@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../../api/axiosInstance';
 import { MessageCircle, Paperclip, Send, HelpCircle, ShieldCheck, Mail, Loader2, X } from 'lucide-react';
 import { useAuth } from '../../pages/context/AuthContext'; // Path preserved from your snippet logic
 import { MySwal } from '../utils/swalConfig';
@@ -19,7 +19,7 @@ const Support = () => {
       if (user?.role?.toLowerCase() !== 'admin') {
         try {
           const token = localStorage.getItem('accessToken');
-          const response = await axios.get('http://localhost:5001/api/support/getAdminContacts', {
+          const response = await api.get('/support/getAdminContacts', {
             headers: { Authorization: `Bearer ${token}` }
           });
           
@@ -70,8 +70,8 @@ const Support = () => {
     try {
       const token = localStorage.getItem('accessToken');
       
-      const response = await axios.post(
-        'http://localhost:5001/api/support/send-email', data, {
+      const response = await api.post(
+        '/support/send-email', data, {
           headers: {
             Authorization: `Bearer ${token}`
           }

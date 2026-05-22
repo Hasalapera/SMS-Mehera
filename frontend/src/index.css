@@ -59,3 +59,45 @@ body {
   color: var(--theme-text);
   transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out, border-color 0.5s ease-in-out;
 }
+
+@media print {
+  /* 🚫 1. මුළු ඇප් එකේම තියෙන අනෙක් හැම එලිමන්ට් එකක්ම ප්‍රින්ට් එකෙන් හයිඩ් කරනවා */
+  body * {
+    visibility: hidden;
+  }
+
+  #mehera-printable-node,
+  #mehera-printable-node * {
+    visibility: visible;
+  }
+
+  #mehera-printable-node {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%; /* Use 100% width, box-sizing will handle padding */
+    padding: 1.5rem !important; /* 📄 Print එකට ලස්සනට margin එකක් දානවා */
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+
+    --theme-bg: #ffffff !important;
+    --theme-card: #ffffff !important;
+    --theme-text: #111111 !important;  
+    --theme-border: #d1d5db !important;
+    --theme-primary: #b4a460 !important;
+    
+    background-color: #ffffff !important;
+    color: #111111 !important;
+  }
+  
+  html, body {
+    height: auto;
+    background: #ffffff !important;
+  }
+
+  /* Hide scrollbars in print view */
+  .custom-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}

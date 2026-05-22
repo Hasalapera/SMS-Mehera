@@ -4,7 +4,7 @@ import {
   Settings, Moon, Sun, Globe, Upload, Save, 
   Image as ImageIcon, ShieldCheck, Palette, Edit3
 } from 'lucide-react';
-import axios from 'axios';
+import api from '../api/axiosInstance';
 import toast from 'react-hot-toast';
 
 const SettingsPage = () => {
@@ -27,7 +27,7 @@ const SettingsPage = () => {
             const token = localStorage.getItem('accessToken'); 
             
             // 💡 res එක try එක ඇතුළෙම declare කරලා පාවිච්චි කරන්න
-            const res = await axios.get('http://localhost:5001/api/settings', {
+            const res = await api.get('/settings', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -61,7 +61,7 @@ const SettingsPage = () => {
     setLoading(true);
     try {
       // 2. මෙන්න මෙතනට Headers ටික අනිවාර්යයෙන්ම ඕනේ
-      const res = await axios.post('http://localhost:5001/api/settings/upload-logo', formData, {
+      const res = await api.post('/settings/upload-logo', formData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data' // File upload එකක් නිසා මේක වැදගත්
@@ -92,7 +92,7 @@ const SettingsPage = () => {
       if (isAdmin) {
         // 💡 මෙතන ඔයාගේ Backend එකේ route එක PUT ද POST ද කියලා බලන්න. 
         // සාමාන්‍යයෙන් update එකකට PUT තමයි පාවිච්චි කරන්නේ.
-        await axios.put('http://localhost:5001/api/settings', { 
+        await api.put('/settings', { 
           light_logo_url: lightLogo,
           dark_logo_url: darkLogo,
           default_language: language

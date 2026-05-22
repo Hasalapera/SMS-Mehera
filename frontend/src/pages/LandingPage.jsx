@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ShoppingBag, ShieldCheck, Loader2, Sparkles } from 'lucide-react';
-import axios from 'axios';
+import api from '../api/axiosInstance';
 import emailjs from '@emailjs/browser';
 import ProductCard from '../components/ProductCard';
 import StatNavBar from '../components/StatNavBar';
@@ -18,7 +18,7 @@ const LandingPage = () => {
   useEffect(() => {
     const fetchLandingProducts = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/products/getProducts');
+        const response = await api.get('/products/getProducts');
         const data = response.data?.products || response.data;
         setProducts(data.slice(0, 8));
       } catch (err) {

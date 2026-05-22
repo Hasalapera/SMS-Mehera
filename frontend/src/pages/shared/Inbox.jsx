@@ -416,7 +416,7 @@ export default Inbox;
 //   const fetchNotifications = async () => {
 //     try {
 //       const config = { headers: { Authorization: `Bearer ${token}` } };
-//       const res = await axios.get('http://localhost:5001/api/notifications', config);
+//       const res = await api.get('/notifications', config);
 //       setNotifications(res.data.notifications || []);
       
 //       // Build unread counts
@@ -439,7 +439,7 @@ export default Inbox;
 //   const handleMarkAsRead = async (id) => {
 //     try {
 //       const config = { headers: { Authorization: `Bearer ${token}` } };
-//       await axios.patch(`http://localhost:5001/api/notifications/${id}/read`, {}, config);
+//       await axios.patch(`/notifications/${id}/read`, {}, config);
 //       setNotifications(prev =>
 //         prev.map(n => n.notification_id === id ? { ...n, is_read: true, read_at: new Date() } : n)
 //       );
@@ -452,7 +452,7 @@ export default Inbox;
 //   const handleMarkAllAsRead = async () => {
 //     try {
 //       const config = { headers: { Authorization: `Bearer ${token}` } };
-//       await axios.patch('http://localhost:5001/api/notifications/read-all', {}, config);
+//       await axios.patch('/notifications/read-all', {}, config);
 //       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
 //       toast.success('All marked as read');
 //     } catch (err) {
@@ -463,7 +463,7 @@ export default Inbox;
 //   const handleDelete = async (id) => {
 //     try {
 //       const config = { headers: { Authorization: `Bearer ${token}` } };
-//       await axios.delete(`http://localhost:5001/api/notifications/${id}`, config);
+//       await axios.delete(`/notifications/${id}`, config);
 //       setNotifications(prev => prev.filter(n => n.notification_id !== id));
 //       toast.error('Notification deleted');
 //     } catch (err) {

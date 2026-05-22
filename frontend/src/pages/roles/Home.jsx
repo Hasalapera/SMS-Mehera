@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, ChevronDown, Loader2, PackageSearch, X, PlusCircle, Check } from 'lucide-react';
-import axios from 'axios';
+import api from '../../api/axiosInstance';
 import ProductCard from '../../components/ProductCard';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -21,7 +21,7 @@ const Home = () => {
     const fetchProducts = async () => {
       try {
         const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-        const res = await axios.get('http://localhost:5001/api/products/getProducts', config);
+        const res = await api.get('/products/getProducts', config);
         const productData = res.data?.products || res.data;
         setProducts(productData);
 
