@@ -57,6 +57,11 @@ export const NotificationProvider = ({ children }) => {
     return counts;
   }, [notifications]);
 
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
+  }, []);
+
+
   // Total unread count (for sidebar bell badge)
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
@@ -69,6 +74,7 @@ export const NotificationProvider = ({ children }) => {
     deleteNotification,
     getUnreadByType,
     unreadCount,             // New
+    clearNotifications,      // New
   };
 
   return (
