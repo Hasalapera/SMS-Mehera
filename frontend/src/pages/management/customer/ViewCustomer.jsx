@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search, Filter, UserPlus, Building2,
-  Phone, MapPin, ArrowRight, Users, Loader2, RefreshCw, UserCircle,
+  Phone, MapPin, ArrowRight, Users, Loader2, RefreshCw, UserCircle, Mail,
   ChevronDown, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import api from '../../../api/axiosInstance';
@@ -256,6 +256,12 @@ export default function ViewCustomer() {
                                     <Phone size={12} className="text-primary transition-all duration-300" />
                                     {customer.phone1}
                                     </p>
+                                    {customer.email && (
+                                        <p className="text-[10px] text-textMain/40 transition-colors duration-300 font-bold flex items-center gap-1.5 mt-1">
+                                            <Mail size={10} className="text-primary transition-all duration-300" />
+                                            {customer.email}
+                                        </p>
+                                    )}
                                 </td>
             
                                 {/* District */}
@@ -346,6 +352,12 @@ export default function ViewCustomer() {
                         <Phone size={14} className="text-primary" />
                         <span>{customer.phone1}</span>
                       </div>
+                      {customer.email && (
+                          <div className="flex items-center gap-2 text-sm text-textMain/60 font-medium">
+                              <Mail size={14} className="text-primary" />
+                              <span>{customer.email}</span>
+                          </div>
+                      )}
                       <div className="flex items-center gap-2 text-sm text-textMain/60 font-medium">
                         <MapPin size={14} className="text-primary" />
                         <span>{customer.district}</span>

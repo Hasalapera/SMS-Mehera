@@ -88,7 +88,6 @@ const ViewBrands = () => {
 
   return (
     <div className="w-full max-w-6xl mx-auto animate-in fade-in duration-500 pb-10 px-4">
-      <Toaster position="top-right" />
       
       {/* Header */}
       <div className="mb-10 text-left">

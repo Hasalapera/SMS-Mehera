@@ -31,12 +31,16 @@ import UnderConstruction from './pages/shared/UnderConstruction';
 // Role Dashboards (Now in roles folder)
 import Dashboard from "./pages/roles/Dashboard";
 import Home from "./pages/roles/Home";
+import LogisticsDashboard from "./pages/roles/LogisticsDashboard";
+import History from "./pages/roles/History";
 
 // User Management (Now in management/user folder)
 import AddUser from "./pages/management/user/AddUser";
 import ViewUsers from "./pages/management/user/ViewUser";
 import DeleteUser from "./pages/management/user/DeleteUser";
 import AssignUser from "./pages/management/user/AssignUser";
+import TargetAssignForm from "./pages/management/user/TargetAssignForm";
+
 
 // Brand Management (Now in management/brand folder)
 import AddBrand from "./pages/management/brand/AddBrand";
@@ -60,6 +64,11 @@ import AddOrder from "./pages/management/order/AddOrder";
 
 //Report Management
 import SalesReport from "./pages/management/report/SalesReport";
+import CurrentProgress from "./pages/management/report/CurrentProgress";
+import ProductSummaryReport from "./pages/management/report/ProductSummaryReport";
+import CriticalStock from './pages/management/report/CriticalStock';
+
+
 
 //Quotation Management
 import Quotation from "./pages/shared/Quotation";
@@ -74,6 +83,7 @@ import Workshops from './pages/Workshops';
 import AboutUs from './pages/AboutUs';
 import Contact from './pages/Contact';
 import Products from './pages/Products';
+import ConfirmDelivery from './pages/shared/ConfirmDelivery';
 import FloatingPopup from './components/FloatingPopup';
 import Navbar from './components/Navbar';
 import { Toaster } from 'react-hot-toast';
@@ -152,6 +162,7 @@ function App() {
         <Route path="/about" element={<AboutUs />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/products" element={<Products />} />
+        <Route path="/confirm-delivery/:orderId/:token" element={<ConfirmDelivery />} />
         <Route path="/product/:id" element={<ProductDetail />} />
 
         <Route element={user ? <DashboardLayout /> : <Navigate to="/" />}>
@@ -164,7 +175,7 @@ function App() {
           <Route
             path="/viewStock"
             element={
-              ["admin", "sales_rep", "online_store_keeper", "manager"].includes(
+              ["admin", "sales_rep", "online_store_keeper", "manager", "logistics_officer"].includes(
                 userRole,
               ) ? (
                 <ViewStock />
@@ -221,8 +232,23 @@ function App() {
           <Route
             path="/orders"
             element={
-              ["admin", "sales_rep", "online_store_keeper"].includes(userRole) ? (
+            userRole === "logistics_officer" ? (
+              <LogisticsDashboard />
+            ) : ["admin", "sales_rep", "online_store_keeper"].includes(userRole) ? (
                 <Orders />
+              ) : (
+                <Navigate to="/home" />
+              )
+            }
+          />
+
+          <Route
+            path="/orders/history"
+            element={
+              userRole === "logistics_officer" ? (
+                <History />
+              ) : ["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? (
+                <Navigate to="/under-construction" />
               ) : (
                 <Navigate to="/home" />
               )
@@ -247,6 +273,8 @@ function App() {
                 <Navigate to="/change-password" />
               ) : ["admin", "manager"].includes(userRole) ? (
                 <Dashboard />
+          ) : userRole === "logistics_officer" ? (
+            <Navigate to="/home" />
               ) : (
                 <Navigate to="/home" />
               )
@@ -257,8 +285,10 @@ function App() {
             element={
               isFirstLogin ? (
                 <Navigate to="/change-password" />
-              ) : ["sales_rep", "online_store_keeper", "logistics_officer"].includes(userRole) ? (
+            ) : ["sales_rep", "online_store_keeper"].includes(userRole) ? (
                 <Home />
+          ) : userRole === "logistics_officer" ? (
+            <LogisticsDashboard />
               ) : (
                 <Navigate to="/dashboard" />
               )
@@ -291,6 +321,18 @@ function App() {
               )
             } 
           />
+
+          <Route
+            path="/assign-targets"
+            element={
+              ["admin", "manager"].includes(userRole) ? (
+                <TargetAssignForm />
+              ) : (
+                <Navigate to="/dashboard" />
+              )
+            }
+          />
+
           <Route
             path="/delete-user"
             element={
@@ -328,6 +370,9 @@ function App() {
 
           {/* Report management */}
           <Route path="/sales-report" element={["admin", "manager"].includes(userRole) ? <SalesReport /> : <Navigate to="/dashboard" />} />
+          <Route path="/current-progress" element={["admin", "manager"].includes(userRole) ? <CurrentProgress /> : <Navigate to="/dashboard" />} />
+          <Route path="/product-summary" element={["admin", "manager"].includes(userRole) ? <ProductSummaryReport /> : <Navigate to="/dashboard" />} />
+          <Route path="/critical-stock" element={["admin", "manager"].includes(userRole) ? <CriticalStock /> : <Navigate to="/dashboard" />} />
 
           {/* Settings page */}
           <Route path="/settingsPage" element={["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? <SettingsPage /> : <Navigate to="/home" />} />

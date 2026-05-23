@@ -20,6 +20,8 @@ const errorHandler = require('./middlewares/errorMiddleware');
 const settingRoutes = require('./routes/settingRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const workshopRoutes = require('./routes/workshopRoutes');
+const salesTargetRoutes = require('./routes/salesTargetRoutes');
+
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -72,6 +74,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/settings', settingRoutes); 
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/report', reportRoutes);
+app.use('/api/salesTarget', salesTargetRoutes);
 
 // ✅ Workshop Route එක අනිත් රූට්ස් තියෙන තැනටම පිළිවෙළට දැම්මා
 app.use('/api/workshops', workshopRoutes);

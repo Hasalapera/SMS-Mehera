@@ -73,9 +73,17 @@ export default function ProductDetail() {
     
     let updatedCart;
     if (existingItemIndex > -1) {
+      if (savedCart[existingItemIndex].qty + 1 > variant.stock_count) {
+        toast.error(`Cannot add more! Only ${variant.stock_count} units available in stock.`);
+        return;
+      }
       updatedCart = [...savedCart];
       updatedCart[existingItemIndex].qty += 1;
     } else {
+      if (variant.stock_count < 1) {
+        toast.error("Item is out of stock!");
+        return;
+      }
       updatedCart = [...savedCart, { 
         cartItemId,
         product_id: product.product_id,
@@ -83,7 +91,8 @@ export default function ProductDetail() {
         variant_name: variant.variant_name,
         name: product.product_name,
         price: Number(variant.price),
-        qty: 1
+        qty: 1,
+        stock_count: variant.stock_count
       }];
     }
 

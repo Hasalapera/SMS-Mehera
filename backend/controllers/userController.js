@@ -295,6 +295,24 @@ const getUserProfile = async (req, res) => {
 
         const userData = user.toJSON();
         
+        // 🧑‍💼 Fetch assigned customers if the user is a Sales Rep
+        let assignedCustomers = [];
+        if (userData.role === 'sales_rep') {
+            const rawCustomers = await Customer.findAll({
+                where: { sales_rep_id: id }
+            });
+            
+            // 🔐 Decrypt customer phone numbers before sending to the frontend
+            assignedCustomers = rawCustomers.map(c => {
+                const customer = c.toJSON();
+                try {
+                    if (customer.phone1) customer.phone1 = decrypt(customer.phone1);
+                    if (customer.phone2) customer.phone2 = decrypt(customer.phone2);
+                } catch (e) { console.warn("Customer phone decryption failed in profile"); }
+                return customer;
+            });
+        }
+        
         // 🔐 Safe Decryption Block
         if (userData.contact_no) {
             try {
@@ -306,7 +324,7 @@ const getUserProfile = async (req, res) => {
             }
         }
         
-        res.status(200).json({ user: userData });
+        res.status(200).json({ user: userData, customers: assignedCustomers });
     } catch (err) {
         // 🪵 Debugging වලට ලේසි වෙන්න සර්වර් කන්සෝල් එකේ error එක ප්‍රින්ට් කරමු
         console.error("Get Profile Error:", err.message); 

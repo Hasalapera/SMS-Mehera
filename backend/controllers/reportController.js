@@ -12,14 +12,18 @@ const getSalesReport = async (req, res) => {
 
         // 📅 1. FilterType eka anuwa Date Range eka calculation karamu
         if (filterType === 'daily') {
+            if (startDate) start = new Date(startDate);
             start.setHours(0, 0, 0, 0);
+            end = new Date(start);
             end.setHours(23, 59, 59, 999);
             dateFilter = { created_at: { [Op.between]: [start, end] } };
         } else if (filterType === 'monthly') {
+            if (startDate) start = new Date(startDate);
             start = new Date(start.getFullYear(), start.getMonth(), 1);
             end = new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59, 999);
             dateFilter = { created_at: { [Op.between]: [start, end] } };
         } else if (filterType === 'yearly') {
+            if (startDate) start = new Date(startDate);
             start = new Date(start.getFullYear(), 0, 1);
             end = new Date(start.getFullYear(), 12, 0, 23, 59, 59, 999);
             dateFilter = { created_at: { [Op.between]: [start, end] } };

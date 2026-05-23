@@ -84,7 +84,18 @@ const Navbar = () => {
         if (currentUser?.role === 'online_store_keeper' && link.name === 'Customer') {
             return false;
         }
+
+        if (currentUser?.role === 'logistics_officer') {
+            return ['Home', 'History', 'Stock', 'Support'].includes(link.name);
+        }
+        
         return true;
+    }).map(link => {
+        // 🛡️ Logistics officer ට 'Home' වෙනුවට 'Dashboard' කියලා පෙන්වන්න
+        if (currentUser?.role === 'logistics_officer' && link.name === 'Home') {
+            return { ...link, name: 'Dashboard' };
+        }
+        return link;
     });
 
     const getInitials = (name) => {

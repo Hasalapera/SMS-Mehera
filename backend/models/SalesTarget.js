@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database'); // 💡 උඹේ ප්‍රොජෙක්ට් එකේ හැටියට database config path එක මාරු කරපන්
+const sequelize = require('../db/db'); // 💡 උඹේ ප්‍රොජෙක්ට් එකේ හැටියට database config path එක මාරු කරපන්
 
 const SalesTarget = sequelize.define('SalesTarget', {
   id: {

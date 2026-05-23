@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import api from '../../../api/axiosInstance'; // 👈 Centralized API Instance
 import { toast } from 'react-hot-toast';
-import { FileDown, FileText, Loader2, User } from 'lucide-react';
+import { FileDown, FileText, Loader2, User, FileSpreadsheet } from 'lucide-react';
 import ReportFilters from '../../../components/ReportFilters';
 import ReportMetrics from '../../../components/ReportMetrics';
 import ReportTable from '../../../components/ReportTable';
@@ -12,12 +12,14 @@ const SalesReport = () => {
   const [loading, setLoading] = useState(false);
   const [filterType, setFilterType] = useState('monthly');
   const [orders, setOrders] = useState([]);
-  const [dates, setDates] = useState({ startDate: '', endDate: '' });
+  const [dates, setDates] = useState({ startDate: new Date().toISOString().slice(0, 10), endDate: '' });
   const { user } = useAuth(); // Get current user
   const [systemSettings, setSystemSettings] = useState(null); // For logo
   const printComponentRef = useRef(null); // Ref for printable component
   const wrapperRef = useRef(null); // Ref for scaling wrapper
   const [fontScale, setFontScale] = useState(1);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // Default: මේ මාසය ("2026-05")
+  const [selectedRepId, setSelectedRepId] = useState(''); // සිලෙක්ට් කරන Sales Rep ගේ ID එක
 
   // 📡 Async handler to pull aggregated records from backend
   const fetchReportData = async () => {
@@ -31,6 +33,10 @@ const SalesReport = () => {
         let queryStr = `/report/sales-report?filterType=${filterType}`;
         if (filterType === 'custom') {
             queryStr += `&startDate=${dates.startDate}&endDate=${dates.endDate}`;
+        } else if (filterType === 'monthly' && dates.startDate) {
+            queryStr += `&startDate=${dates.startDate.substring(0, 7)}`;
+        } else if (filterType === 'yearly' && dates.startDate) {
+            queryStr += `&startDate=${dates.startDate.substring(0, 4)}-01-01`;
         }
 
         const response = await api.get(queryStr);
@@ -59,6 +65,9 @@ const SalesReport = () => {
   // Auto-fetch data on filter changes
   useEffect(() => {
     fetchReportData();
+    if (filterType === 'monthly' && dates.startDate) {
+        setSelectedMonth(dates.startDate.substring(0, 7));
+    }
   }, [filterType, dates.startDate, dates.endDate]);
 
   // --- Font Scaling Logic for Mobile ---
@@ -81,7 +90,54 @@ const SalesReport = () => {
     return () => window.removeEventListener("resize", handleFontScale);
   }, [orders]);
 
-  // 🖨️ PDF Trigger Mechanism using react-to-print v3 API.
+  // 📊 QuickBooks (QB) CSV Export Generator
+  const handleDownloadQB = () => {
+    if (orders.length === 0) return;
+
+    // QuickBooks Data Map Headers
+    const headers = [
+      "InvoiceNumber", "CustomerName", "Date", 
+      "ItemName", "ItemDescription", "Quantity", "Rate", "Amount"
+    ];
+
+    const csvRows = [headers.join(",")];
+
+    orders.forEach(order => {
+      const invoiceNo = `ORD-${order.order_id.substring(0, 8).toUpperCase()}`;
+      const customer = `"${order.customer?.saloon_name || order.customer_name || 'Direct Customer'}"`;
+      const date = new Date(order.created_at || order.createdAt).toLocaleDateString('en-US'); // MM/DD/YYYY is standard for QB
+
+      // Map all items
+      const items = order.items || order.OrderItems || [];
+      items.forEach(item => {
+        const itemName = `"${item.variant?.product?.name || 'Item'} - ${item.variant?.variant_name || 'Std'}"`;
+        const desc = `"${item.variant?.product?.name || 'Product'}"`;
+        const qty = item.quantity || item.qty || 0;
+        const rate = item.price || 0;
+        const amount = qty * rate;
+        csvRows.push([invoiceNo, customer, date, itemName, desc, qty, rate, amount].join(","));
+      });
+
+      // Add Discount as a separate line item (Negative Amount) to balance the total in QB
+      const discountAmt = Number(order.discount_amount || 0);
+      if (discountAmt > 0) {
+        csvRows.push([invoiceNo, customer, date, '"Discount"', '"Order Discount"', 1, -discountAmt, -discountAmt].join(","));
+      }
+    });
+
+    // Generate and Download the CSV File
+    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `QuickBooks_Export_${filterType}_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("QuickBooks CSV exported successfully!");
+  };
+
+  // ️ PDF Trigger Mechanism using react-to-print v3 API.
   // The `contentRef` prop is used as per the latest API specification,
   // which directly takes the ref object instead of a function.
   const handleDownloadPDF = useReactToPrint({
@@ -90,34 +146,45 @@ const SalesReport = () => {
   });
 
   return (
-    <div ref={wrapperRef} className="p-[1.5rem] md:p-[2rem] max-w-[72rem] mx-auto min-h-screen relative">
+    <div ref={wrapperRef} className="p-6 max-w-[72rem] mx-auto min-h-screen relative animate-in fade-in duration-500">
       
       {/* --- SCREEN VIEW (This part is hidden during print) --- */}
-      <div className="print:hidden flex flex-col gap-[1.5rem] md:gap-[2rem]">
+      <div className="print:hidden flex flex-col gap-6">
         {/* Header Panel */}
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-[1rem]">
+        <div className="mb-8 flex flex-col sm:flex-row justify-between sm:items-start gap-4">
           <div>
-            <h1 className="text-[1.5rem] font-serif font-bold text-textMain flex items-center gap-[0.75rem]">
-              <div className="p-[0.5rem] bg-primary/10 rounded-[0.75rem] text-primary"><FileText size={24} /></div>
+            <h2 className="text-2xl font-bold text-textMain transition-colors duration-300 flex items-center gap-3">
+              <div className="p-2 bg-primary transition-all duration-300 rounded-lg text-textMain transition-colors duration-300">
+                <FileText size={24} />
+              </div>
               Executive Sales Ledger
-            </h1>
-            <p className="text-[0.8125rem] text-textMain/50 mt-[0.25rem]">
+            </h2>
+            <p className="text-textMain/50 transition-colors duration-300 text-sm mt-1 ml-12">
               Compile certified accounting documentation for Mehera International distribution loops.
             </p>
           </div>
           
-          {/* Export Button Action */}
-          <button 
-            onClick={handleDownloadPDF}
-            disabled={orders.length === 0}
-            className="px-[1.5rem] py-[0.75rem] bg-black text-white hover:bg-primary hover:text-black font-bold text-[0.875rem] rounded-[1rem] shadow-md transition-all flex items-center justify-center gap-[0.5rem] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <FileDown size={18} /> Export PDF Report
-          </button>
+          {/* Export Button Actions */}
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleDownloadQB}
+              disabled={orders.length === 0}
+              className="bg-[#2ca01c] transition-all duration-300 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-[#2ca01c]/20 hover:bg-[#238016] hover:scale-105 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <FileSpreadsheet size={18} /> Export QB
+            </button>
+            <button 
+              onClick={handleDownloadPDF}
+              disabled={orders.length === 0}
+              className="bg-primary transition-all duration-300 text-textMain transition-colors duration-300 px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-[#b4a460]/20 hover:bg-[#9a8b50] hover:scale-105 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <FileDown size={18} /> Export PDF
+            </button>
+          </div>
         </div>
 
         {/* Filter Layer - Sticky on Mobile for quick access */}
-        <div className="sticky md:static top-[80px] md:top-auto z-40 md:z-auto py-2 -my-2 md:py-0 md:my-0 bg-background/95 backdrop-blur-xl border-b border-border/40 md:border-none md:bg-transparent md:backdrop-blur-none mx-[-1.5rem] px-[1.5rem] md:mx-0 md:px-0 transition-all duration-300">
+        <div className="sticky md:static top-[80px] md:top-auto z-40 md:z-auto py-2 -my-2 md:py-0 md:my-0 bg-background/95 backdrop-blur-xl border-b border-border/40 md:border-none md:bg-transparent md:backdrop-blur-none mx-[-1.5rem] px-[1.5rem] md:mx-0 md:px-0 transition-all duration-300 mb-6">
           <ReportFilters 
             filterType={filterType} setFilterType={setFilterType} 
             dates={dates} setDates={setDates} 
@@ -125,33 +192,38 @@ const SalesReport = () => {
         </div>
 
         {loading ? (
-          <div className="py-[5rem] text-center flex flex-col items-center justify-center gap-[1rem]">
+          <div className="py-20 text-center flex flex-col items-center justify-center gap-4">
             <Loader2 className="animate-spin text-primary" size={40} />
-            <p className="text-[0.875rem] text-textMain/50 font-bold tracking-widest uppercase">Compiling Node Documents...</p>
+            <p className="text-sm text-textMain/50 font-bold tracking-widest uppercase">Compiling Node Documents...</p>
           </div>
         ) : (
           /* Screen Report View */
-          <div className="bg-card border border-border rounded-[2.5rem] space-y-[2rem] shadow-sm p-[2rem]">
+          <div className="bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-[2rem] shadow-sm p-8 md:p-12 space-y-8">
             {/* Header Metadata inside the printable area */}
-            <div className="border-b border-border pb-[1.5rem] flex justify-between items-end">
+            <div className="border-b border-border transition-colors duration-300 pb-6 flex justify-between items-end">
               <div>
-                <h2 className="text-[1.25rem] font-serif font-bold text-textMain">MEHERA INTERNATIONAL (PVT) LTD</h2>
-                <p className="text-[0.75rem] uppercase tracking-widest font-black text-primary mt-[0.25rem]">Official Distribution Audit Report</p>
+                <h2 className="text-xl font-bold text-textMain transition-colors duration-300">MEHERA INTERNATIONAL (PVT) LTD</h2>
+                <p className="text-xs uppercase tracking-widest font-black text-primary transition-all duration-300 mt-1">Official Distribution Audit Report</p>
               </div>
-              <div className="text-right text-[0.75rem] text-textMain/50 font-medium">
+              <div className="text-right text-xs text-textMain/50 transition-colors duration-300 font-bold">
                 <p>Generated: {new Date().toLocaleDateString('en-GB')}</p>
-                <p className="uppercase font-bold text-[0.6875rem] mt-[0.125rem]">Scope: {filterType}</p>
+                <p className="uppercase tracking-widest font-black text-[10px] mt-1">Scope: {filterType}</p>
               </div>
             </div>
 
             {/* Metrics Layer */}
-            <ReportMetrics orders={orders} />
+            <ReportMetrics 
+              orders={orders}
+              selectedMonth={selectedMonth}  // 👈 උඹ පාවිච්චි කරන ස්ටේට් නම දාන්න (Format: "2026-05")
+              selectedRepId={selectedRepId}  // 👈 සිලෙක්ට් කරලා ඉන්න රෙප්ගේ ID එක
+              token={user?.token || localStorage.getItem('token')} 
+             />
 
             {/* Table Data Matrix */}
             {orders.length > 0 ? (
               <ReportTable orders={orders} />
             ) : (
-              <div className="py-[3rem] text-center text-textMain/40 font-bold italic text-[0.875rem] uppercase">
+              <div className="py-12 text-center text-textMain/40 transition-colors duration-300 font-bold italic text-sm uppercase">
                 No approved transactional records found for this scope.
               </div>
             )}

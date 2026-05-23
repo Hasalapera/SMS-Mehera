@@ -1,23 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DollarSign, UserCheck, TrendingUp, TrendingDown, X, Package } from 'lucide-react';
+import api from '../api/axiosInstance'; 
 
-const ReportMetrics = ({ orders }) => {
+const ReportMetrics = ({ orders = [], selectedMonth, selectedRepId, token }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState('best'); // 'best' | 'slow'
   
-  // 🧮 Math function to parse all items and gather values
+  // 🎯 Dynamic target සඳහා රාජ්‍ය තන්ත්‍රය (States)
+  const [targetAmount, setTargetAmount] = useState(0);
+  const [loadingTarget, setLoadingTarget] = useState(false);
+
+  // 🧮 1. Net Sales Volume (Live calculation from currently filtered orders)
   const totalSalesValue = orders.reduce((acc, order) => {
-    // 💡 FIX: Ensure `order.items` is an array before reducing.
     const orderTotal = Array.isArray(order.items) ? order.items.reduce((sum, item) => sum + (parseFloat(item.price || 0) * (item.quantity || 0)), 0) : 0;
     return acc + orderTotal;
   }, 0);
 
-  // 🥇 Compute top performing sales representative dynamically
+  // 🥇 2. Compute top performing sales representative dynamically
   const repCounts = {};
   orders.forEach(o => {
     if (o.sales_rep?.name) repCounts[o.sales_rep.name] = (repCounts[o.sales_rep.name] || 0) + 1;
   });
   const topRep = Object.keys(repCounts).reduce((a, b) => repCounts[a] > repCounts[b] ? a : b, "N/A");
+
+  // 📡 3. FETCH LIVE TARGET FROM BACKEND MIGRATED TABLE
+  useEffect(() => {
+    const fetchTarget = async () => {
+      // රෙප් කෙනෙක් සහ මාසයක් සිලෙක්ට් කරලා තියෙනවා නම් විතරක් API එකට කෝල් කරනවා
+      if (!selectedRepId || !selectedMonth) {
+        setTargetAmount(0);
+        return;
+      }
+      try {
+        setLoadingTarget(true);
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        
+        // අපි කලින් බැක්ඇන්ඩ් එකේ හදපු endpoint එකට ගහනවා
+        const response = await api.get(`/salesTarget/rep-summary?sales_rep_id=${selectedRepId}&month=${selectedMonth}`, config);
+        
+        if (response.data?.success && response.data?.data) {
+          setTargetAmount(parseFloat(response.data.data.adjusted_target_amount || 0));
+        } else {
+          setTargetAmount(0);
+        }
+      } catch (err) {
+        console.error("Error fetching sales target:", err);
+        setTargetAmount(0); // එරර් එකක් ආවොත් සේප් එකේ 0 දානවා (No crash)
+      } finally {
+        setLoadingTarget(false);
+      }
+    };
+
+    fetchTarget();
+  }, [selectedRepId, selectedMonth, token]);
 
   // 📦 Product Analysis (Best Selling & Slow Moving)
   const productStats = {};
@@ -54,11 +89,9 @@ const ReportMetrics = ({ orders }) => {
   const sortedProducts = Object.values(productStats).sort((a, b) => b.qty - a.qty);
   
   const bestSelling = sortedProducts.length > 0 ? sortedProducts[0] : null;
-  // Filter out products with 0 sales if necessary, though in 'orders' they at least have 1
   const slowMoving = sortedProducts.length > 0 ? sortedProducts[sortedProducts.length - 1] : null;
 
   const top10 = sortedProducts.slice(0, 10);
-  // For slow moving, reverse the sorted array and take top 10
   const bottom10 = [...sortedProducts].reverse().slice(0, 10);
 
   const openModal = (tab) => {
@@ -68,10 +101,16 @@ const ReportMetrics = ({ orders }) => {
 
   return (
     <>
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[0.75rem] md:gap-[1rem] print:grid-cols-4 print:gap-[0.75rem]">
+    {/* 📐 Grid Layout: උඹේ පිරිසිදු rem සහ responsive classes ආරක්ෂා කර ඇත */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[0.75rem] md:gap-[1rem] print:grid-cols-4 print:gap-[0.75rem] items-end">
+      
+      {/* 1. Net Sales Volume */}
       <MetricCard icon={DollarSign} label="Net Sales Volume" value={`Rs. ${totalSalesValue.toLocaleString()}`} />
+      
+      {/* 2. Top Performer */}
       <MetricCard icon={UserCheck} label="Top Performer (Rep)" value={topRep} />
       
+      {/* 4. Best Selling Card */}
       <MetricCard 
         icon={TrendingUp} 
         label="Best Selling" 
@@ -81,6 +120,7 @@ const ReportMetrics = ({ orders }) => {
         onAction={() => openModal('best')}
       />
       
+      {/* 5. Slow Moving Card */}
       <MetricCard 
         icon={TrendingDown} 
         label="Slow Moving" 
@@ -91,7 +131,7 @@ const ReportMetrics = ({ orders }) => {
       />
     </div>
 
-    {/* 📊 Modal for Product Insights */}
+    {/* 📊 Modal for Product Insights (උඹ ලියපු ලස්සන Modal එක 100% ඒ විදිහටමයි) */}
     {isModalOpen && (
       <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 print:hidden animate-in fade-in duration-300" onClick={() => setIsModalOpen(false)}>
         <div className="bg-card w-full max-w-4xl rounded-[1.5rem] md:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300 border border-border" onClick={(e) => e.stopPropagation()}>
@@ -171,7 +211,7 @@ const ReportMetrics = ({ orders }) => {
 };
 
 const MetricCard = ({ icon: Icon, label, value, subtext, color = "text-primary", onAction }) => (
-  <div className="p-[0.75rem] md:p-[1rem] bg-card border border-border rounded-[1rem] md:rounded-[1.25rem] flex items-center gap-[0.5rem] md:gap-[0.75rem] print:border-none print:bg-transparent print:p-0 print:gap-[0.5rem] print:shadow-none relative group">
+  <div className="p-[0.75rem] md:p-[1rem] bg-card border border-border rounded-[1rem] md:rounded-[1.25rem] flex items-center gap-[0.5rem] md:gap-[0.75rem] print:border-none print:bg-transparent print:p-0 print:gap-[0.5rem] print:shadow-none relative group h-full">
     <div className={`p-[0.4rem] md:p-[0.5rem] bg-background border border-border rounded-[0.6rem] md:rounded-[0.75rem] ${color} print:p-1.5 print:bg-gray-100 print:border-gray-300 shrink-0`}>
       <Icon size={16} className="md:w-[18px] md:h-[18px] print:w-[14px] print:h-[14px]" />
     </div>

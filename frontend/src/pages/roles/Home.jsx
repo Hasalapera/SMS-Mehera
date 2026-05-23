@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, Loader2, PackageSearch, X, PlusCircle, Check } from 'lucide-react';
+import { Search, ChevronDown, Loader2, PackageSearch, X, PlusCircle, Check, ScanLine, QrCode } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import ProductCard from '../../components/ProductCard';
 import { useAuth } from '../context/AuthContext';
@@ -14,8 +14,12 @@ const Home = () => {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scannedOrderId, setScannedOrderId] = useState(null);
+  const [otpInput, setOtpInput] = useState("");
+  const [showOtpModal, setShowOtpModal] = useState(false);
 
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -39,6 +43,67 @@ const Home = () => {
     };
     fetchProducts();
   }, [token]);
+
+  useEffect(() => {
+      let html5QrcodeScanner = null;
+      if (isScannerOpen) {
+          const initScanner = () => {
+              html5QrcodeScanner = new window.Html5QrcodeScanner(
+                  "delivery-qr-reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false
+              );
+              html5QrcodeScanner.render(onScanSuccess, () => {});
+          };
+          if (!window.Html5QrcodeScanner) {
+              const script = document.createElement('script');
+              script.src = "https://unpkg.com/html5-qrcode";
+              script.async = true;
+              script.onload = initScanner;
+              document.body.appendChild(script);
+          } else {
+              initScanner();
+          }
+      }
+      return () => {
+          if (html5QrcodeScanner) html5QrcodeScanner.clear().catch(e => console.error("Scanner clear error", e));
+      };
+  }, [isScannerOpen]);
+
+  const onScanSuccess = async (decodedText) => {
+      setIsScannerOpen(false);
+      setLoading(true);
+      try {
+          const config = { headers: { Authorization: `Bearer ${token}` } };
+          const res = await api.post(`/orders/initiate-delivery/${decodedText}`, {}, config);
+          if (res.data.success) {
+              setScannedOrderId(decodedText);
+              setShowOtpModal(true);
+              toast.success("OTP sent to customer's email!");
+          }
+      } catch (err) {
+          toast.error(err.response?.data?.message || "Failed to initiate delivery for this QR.");
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  const handleVerifyOTP = async () => {
+      if (!otpInput || otpInput.length < 6) return toast.error("Please enter a valid 6-digit OTP");
+      setLoading(true);
+      try {
+          const config = { headers: { Authorization: `Bearer ${token}` } };
+          const res = await api.post(`/orders/rep-confirm-delivery/${scannedOrderId}`, { otp: otpInput }, config);
+          if (res.data.success) {
+              toast.success("Order marked as Delivered successfully!");
+              setShowOtpModal(false);
+              setOtpInput("");
+              setScannedOrderId(null);
+          }
+      } catch (err) {
+          toast.error(err.response?.data?.message || "Invalid OTP or request failed.");
+      } finally {
+          setLoading(false);
+      }
+  };
 
   // ✅ වැඩිදියුණු කළ Search Filter (Product Name + Variant Names)
   const filteredProducts = products.filter(p => {
@@ -92,15 +157,24 @@ const Home = () => {
     setSelectedProduct(null);
   };
 
+  const canScanDelivery = user && ["sales_rep", "admin", "manager"].includes(user?.role?.toLowerCase());
+
   return (
     <div className="w-full min-h-screen bg-background transition-all duration-300 text-textMain transition-colors duration-300 overflow-x-hidden text-left" onClick={() => setIsDropdownOpen(false)}>
       
-      <div className="w-full px-6 pt-10 pb-4">
-          <h1 className="text-4xl font-black text-textMain transition-colors duration-300 uppercase tracking-tight">Inventory Catalog</h1>
-          <p className="text-textMain/50 transition-colors duration-300 text-xs font-bold uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
-              <span className="w-8 h-[2px] bg-primary transition-all duration-300"></span>
-              Search by product name or shade number
-          </p>
+      <div className="w-full px-6 pt-10 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+              <h1 className="text-4xl font-black text-textMain transition-colors duration-300 uppercase tracking-tight">Inventory Catalog</h1>
+              <p className="text-textMain/50 transition-colors duration-300 text-xs font-bold uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
+                  <span className="w-8 h-[2px] bg-primary transition-all duration-300"></span>
+                  Search by product name or shade number
+              </p>
+          </div>
+          {canScanDelivery && (
+              <button onClick={() => setIsScannerOpen(true)} className="flex items-center gap-2 px-6 py-3 bg-black text-primary rounded-xl font-black uppercase text-[11px] tracking-widest shadow-lg hover:bg-primary hover:text-black transition-all">
+                  <ScanLine size={18} /> Delivery Scanner
+              </button>
+          )}
       </div>
 
       <div className="max-w-full px-6 py-4 flex flex-col md:flex-row gap-4 items-center">
@@ -203,6 +277,43 @@ const Home = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 📷 Scanner Modal */}
+      {isScannerOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+              <div className="bg-card w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-border">
+                  <div className="p-6 border-b border-border bg-background flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                          <div className="p-2 bg-primary/10 text-primary rounded-lg"><QrCode size={24} /></div>
+                          <div>
+                              <h3 className="text-lg font-black uppercase text-textMain tracking-tight">Scan Delivery QR</h3>
+                              <p className="text-[10px] font-bold text-textMain/50 uppercase tracking-widest">Mark shipped orders as delivered</p>
+                          </div>
+                      </div>
+                      <button onClick={() => setIsScannerOpen(false)} className="p-2 bg-card border border-border rounded-full text-textMain/50 hover:text-red-500 transition-all"><X size={20} /></button>
+                  </div>
+                  <div className="p-6 bg-background">
+                      <div id="delivery-qr-reader" className="w-full rounded-2xl overflow-hidden border-2 border-primary/30 shadow-inner bg-black min-h-[300px]"></div>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* 🔑 OTP Modal */}
+      {showOtpModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+              <div className="bg-card w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-border p-8 text-center">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-primary/20"><Check size={32} className="text-primary" /></div>
+                  <h3 className="text-xl font-black uppercase text-textMain tracking-tight mb-2">Verify Delivery</h3>
+                  <p className="text-xs text-textMain/50 font-bold mb-6">An OTP has been sent to the customer's email. Please enter it below to confirm delivery.</p>
+                  <input type="text" maxLength="6" value={otpInput} onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))} className="w-full bg-background border border-border rounded-xl py-4 px-4 text-center text-2xl tracking-[0.5em] font-black text-textMain outline-none focus:ring-2 focus:ring-primary/20 mb-6" placeholder="------" />
+                  <div className="flex gap-3">
+                      <button onClick={() => { setShowOtpModal(false); setScannedOrderId(null); setOtpInput(""); }} className="flex-1 py-3 bg-background border border-border text-textMain/70 rounded-xl font-black uppercase text-[10px] tracking-widest hover:text-textMain transition-all">Cancel</button>
+                      <button onClick={handleVerifyOTP} disabled={otpInput.length < 6} className="flex-1 py-3 bg-primary text-black rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-[#9a8b50] transition-all disabled:opacity-50">Confirm</button>
+                  </div>
+              </div>
+          </div>
       )}
     </div>
   );

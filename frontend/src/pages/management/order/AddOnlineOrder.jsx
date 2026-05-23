@@ -44,6 +44,14 @@ const AddOnlineOrder = () => {
   }, []);
 
   const updateQty = (id, delta) => {
+    if (delta > 0) {
+      const item = cart.find(i => i.cartItemId === id);
+      if (item && item.stock_count !== undefined && item.qty + delta > item.stock_count) {
+        toast.error(`Only ${item.stock_count} units available in stock!`);
+        return;
+      }
+    }
+
     const newCart = cart.map(item => 
       item.cartItemId === id ? { ...item, qty: Math.max(1, item.qty + delta) } : item
     );
@@ -135,7 +143,6 @@ const AddOnlineOrder = () => {
 
   return (
     <div className="flex flex-col h-full font-sans text-left bg-card transition-colors duration-300">
-      <Toaster position="top-right" />
       
       <div className="p-6 border-b border-border bg-card/20 transition-colors duration-300">
         <div className="flex items-center gap-3">
