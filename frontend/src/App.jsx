@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./pages/context/AuthContext";
-import { NotificationProvider } from "./pages/context/NotificationContext";
+import { NotificationProvider, useNotifications } from "./pages/context/NotificationContext";
 import DashboardLayout from "./components/DashboardLayout";
 import { useEffect } from "react";
 import api from "../src/api/axiosInstance";
@@ -98,7 +98,6 @@ function App() {
   }, []);
 
   return (
-    <NotificationProvider>
     <> 
       <Toaster
         position="top-right"
@@ -339,8 +338,31 @@ function App() {
 
       <FloatingPopup /> 
     </>
-    </NotificationProvider> 
+
   );
 }
 
-export default App;
+// Add this ABOVE export default
+function NotificationCleaner() {
+  const { user } = useAuth();
+  const { clearNotifications } = useNotifications();
+
+  useEffect(() => {
+    clearNotifications();
+  }, [user]);
+
+  return null; // Renders nothing
+}
+
+function AppWithNotifications() {
+  return (
+    <NotificationProvider>
+      <NotificationCleaner /> {/* Handles clearing */}
+      <App />
+    </NotificationProvider>
+  );
+}
+
+export default AppWithNotifications;
+
+//export default App;
