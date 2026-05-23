@@ -1,16 +1,19 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 
-// Create notification context
 const NotificationContext = createContext();
 
-// Provider component
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
 
-  // Add new notification to the top
+  //Load notifications fetched from API into context
+  const setNotificationsFromAPI = useCallback((apiNotifications) => {
+    setNotifications(apiNotifications);
+  }, []);
+
+  // Add new notification to top of list (called from AddStock after apply)
   const addNotification = useCallback((notification) => {
     const newNotif = {
-      notification_id: Date.now().toString(), // Temporary ID
+      notification_id: Date.now().toString(),
       is_read: false,
       read_at: null,
       created_at: new Date(),
@@ -38,12 +41,12 @@ export const NotificationProvider = ({ children }) => {
     );
   }, []);
 
-  // Delete notification
+  // Remove notification from list
   const deleteNotification = useCallback((id) => {
     setNotifications(prev => prev.filter(n => n.notification_id !== id));
   }, []);
 
-  // Get unread count by type
+  // Get unread count grouped by type (for filter tab badges)
   const getUnreadByType = useCallback(() => {
     const counts = {};
     notifications.forEach(notif => {
@@ -54,13 +57,18 @@ export const NotificationProvider = ({ children }) => {
     return counts;
   }, [notifications]);
 
+  // Total unread count (for sidebar bell badge)
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
   const value = {
     notifications,
+    setNotificationsFromAPI, // New
     addNotification,
     markAsRead,
     markAllAsRead,
     deleteNotification,
     getUnreadByType,
+    unreadCount,             // New
   };
 
   return (
@@ -70,7 +78,6 @@ export const NotificationProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use notifications anywhere
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
