@@ -1,4 +1,4 @@
-const {Order, Product, User, ProductVariant, UserArea, Customer, Brand, Category,OrderItem, sequelize} = require('../models');
+const {Order, Product, User, ProductVariant, UserArea, Customer, Brand, Category,OrderItem, SalesTarget, sequelize} = require('../models');
 const { Op } = require('sequelize');
 
 const getSalesReport = async (req, res) => {
@@ -107,6 +107,65 @@ const getSalesReport = async (req, res) => {
     }
 };
 
+const getSalesRepRanking = async (req, res) => {
+    try {
+        const month = req.query.month || new Date().toISOString().slice(0, 7);
+        const startDate = new Date(`${month}-01T00:00:00.000Z`);
+        const endDate = new Date(startDate);
+        endDate.setMonth(startDate.getMonth() + 1);
+
+        // 1. Get all active sales reps
+        const reps = await User.findAll({
+            where: { role: 'sales_rep', is_active: true },
+            attributes: ['user_id', 'name', 'profile_image']
+        });
+
+        const rankings = [];
+
+        for (const rep of reps) {
+            // 2. Get Live Sales for the month (Approved, Shipped, Delivered)
+            const salesSum = await Order.findOne({
+                attributes: [[sequelize.fn('SUM', sequelize.literal('CAST(total_amount AS NUMERIC)')), 'totalSales']],
+                where: {
+                    created_by: rep.user_id,
+                    order_status: ['approved', 'shipped', 'delivered'], 
+                    created_at: { [Op.gte]: startDate, [Op.lt]: endDate }
+                },
+                raw: true
+            });
+            const achieved = parseFloat(salesSum?.totalSales || 0);
+
+            // 3. Get Target for the month
+            const targetData = await SalesTarget.findOne({
+                where: { sales_rep_id: rep.user_id, month },
+                raw: true
+            });
+            const target = targetData ? parseFloat(targetData.adjusted_target_amount) : 0;
+            
+            // 4. Calculate Percentage
+            const achievementPercentage = target > 0 ? (achieved / target) * 100 : (achieved > 0 ? 100 : 0);
+
+            rankings.push({
+                user_id: rep.user_id,
+                name: rep.name,
+                profile_image: rep.profile_image,
+                achieved,
+                target,
+                achievementPercentage
+            });
+        }
+
+        // Sort by highest sales (achieved) descending
+        rankings.sort((a, b) => b.achieved - a.achieved);
+
+        res.status(200).json({ success: true, month, rankings });
+    } catch (err) {
+        console.error("❌ Rep Ranking Error:", err);
+        res.status(500).json({ success: false, message: "Failed to generate rep ranking." });
+    }
+};
+
 module.exports = {
-    getSalesReport
+    getSalesReport,
+    getSalesRepRanking
 };

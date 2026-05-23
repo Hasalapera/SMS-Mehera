@@ -6,8 +6,8 @@ import {
   BarChart2, Settings, HelpCircle, LogOut, ChevronDown, 
   ChevronRight, Menu, Inbox, SlidersHorizontal, PlusCircle, 
   ChevronLeft, UserPlus, UserMinus, UserCog, List, FileText, 
-  Download, History, PackageX, ShoppingBasket, ReceiptText, Tag, Boxes, X,
-  PackagePlus, PackageSearch, SquarePen, Sun, Moon, Sparkles, Target, TrendingUp, AlertTriangle
+  Download, History, ShoppingBasket, ReceiptText, Tag, Boxes, X,
+  PackagePlus, PackageSearch, SquarePen, Sun, Moon, Sparkles, Target, TrendingUp, AlertTriangle, Award
 } from 'lucide-react';
 import { useNavigate, NavLink, useLocation } from 'react-router-dom';
 import ViewOrders from '../pages/management/order/ViewOrders';
@@ -28,7 +28,8 @@ const menuConfig = {
     canViewOrders: true, 
     canManageStocks: true,
     canViewStocks: true,
-    canManageWorkshops: true 
+    canManageWorkshops: true,
+    canViewRanking: true
   },
   manager: { 
     canFullManageUsers: false, 
@@ -45,7 +46,26 @@ const menuConfig = {
     canFullManageOrders: false,
     canManageStocks: false,
     canViewStocks: true,
-    canManageWorkshops: true 
+    canManageWorkshops: true,
+    canViewRanking: true
+  },
+  sales_rep: {
+    canViewReports: false,
+    canViewRanking: true,
+    canViewStocks: true,
+    canViewOrders: true,
+  },
+  online_store_keeper: {
+    canViewReports: false,
+    canViewRanking: true,
+    canViewStocks: true,
+    canViewOrders: true,
+  },
+  logistics_officer: {
+    canViewReports: false,
+    canViewRanking: true,
+    canViewStocks: true,
+    canViewOrders: true,
   }
 };
 
@@ -255,16 +275,22 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
           )}
 
           {/* Reports */}
-          {permissions.canViewReports && (
+          {(permissions.canViewReports || permissions.canViewRanking) && (
             <>
               <NavItem icon={BarChart2} label="Reports" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('reports')} isOpen={openSubMenu === 'reports'} />
               {!isSidebarCollapsed && openSubMenu === 'reports' && (
                 <div className="ml-9 space-y-1 border-l border-border pl-2">
-                  <NavLink to="/sales-report" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><FileText size={14} /> Sales Summary </NavLink>
-                  <NavLink to="/current-progress" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><TrendingUp size={14} /> Current Progress </NavLink>
-                  <NavLink to="/reports/qb-export" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><Download size={14} /> QB Export</NavLink>
-                  <NavLink to="/product-summary" className={({ isActive }) => `flex items-center gap-[0.5rem] p-[0.5rem] text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><Package size={14} /> Product Summary </NavLink>
-                  <NavLink to="/critical-stock" className={({ isActive }) => `flex items-center gap-[0.5rem] p-[0.5rem] text-[11px] transition-colors ${isActive ? 'text-red-500 font-bold' : 'text-textMain/50 hover:text-red-500'}`}><AlertTriangle size={14} className="text-red-500" /> Critical Stock </NavLink>
+                  {permissions.canViewReports && (
+                    <>
+                      <NavLink to="/sales-report" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><FileText size={14} /> Sales Summary </NavLink>
+                      <NavLink to="/current-progress" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><TrendingUp size={14} /> Current Progress </NavLink>
+                      <NavLink to="/product-summary" className={({ isActive }) => `flex items-center gap-[0.5rem] p-[0.5rem] text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><Package size={14} /> Product Summary </NavLink>
+                      <NavLink to="/critical-stock" className={({ isActive }) => `flex items-center gap-[0.5rem] p-[0.5rem] text-[11px] transition-colors ${isActive ? 'text-red-500 font-bold' : 'text-textMain/50 hover:text-red-500'}`}><AlertTriangle size={14} className="text-red-500" /> Critical Stock </NavLink>
+                    </>
+                  )}
+                  {permissions.canViewRanking && (
+                    <NavLink to="/rep-ranking" className={({ isActive }) => `flex items-center gap-[0.5rem] p-[0.5rem] text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-textMain/50 hover:text-[#b4a460]'}`}><Award size={14} /> Rep Ranking </NavLink>
+                  )}
                 </div>
               )}
             </>

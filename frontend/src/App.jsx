@@ -67,6 +67,7 @@ import SalesReport from "./pages/management/report/SalesReport";
 import CurrentProgress from "./pages/management/report/CurrentProgress";
 import ProductSummaryReport from "./pages/management/report/ProductSummaryReport";
 import CriticalStock from './pages/management/report/CriticalStock';
+import SalesRepRanking from "./pages/management/report/SalesRepRanking";
 
 
 
@@ -372,6 +373,7 @@ function App() {
           <Route path="/current-progress" element={["admin", "manager"].includes(userRole) ? <CurrentProgress /> : <Navigate to="/dashboard" />} />
           <Route path="/product-summary" element={["admin", "manager"].includes(userRole) ? <ProductSummaryReport /> : <Navigate to="/dashboard" />} />
           <Route path="/critical-stock" element={["admin", "manager"].includes(userRole) ? <CriticalStock /> : <Navigate to="/dashboard" />} />
+          <Route path="/rep-ranking" element={<SalesRepRanking />} />
 
           {/* Settings page */}
           <Route path="/settingsPage" element={["admin", "manager", "sales_rep", "online_store_keeper"].includes(userRole) ? <SettingsPage /> : <Navigate to="/home" />} />

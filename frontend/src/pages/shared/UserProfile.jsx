@@ -80,7 +80,7 @@ const UserProfile = () => {
   const loggedInUser = JSON.parse(localStorage.getItem("user"));
   const isAdmin = loggedInUser?.role === "admin";
   const isOwnProfile = !id || id === loggedInUser?.user_id;
-  const showBackButton = isAdmin && !isOwnProfile;
+  const showBackButton = !isOwnProfile;
 
   const [passData, setPassData] = useState({
     currentPassword: "",
@@ -273,13 +273,13 @@ const UserProfile = () => {
     <div className="p-4 md:p-8 max-w-6xl mx-auto animate-in fade-in duration-500 text-left bg-background text-textMain min-h-screen">
       {showBackButton && (
         <button
-          onClick={() => navigate("/all-users")} 
+          onClick={() => navigate(-1)} 
           className="mb-6 flex items-center gap-2 text-textMain/60 hover:text-primary transition-all font-black text-[10px] uppercase tracking-[0.2em] group"
         >
           <div className="p-2 bg-card rounded-xl shadow-sm border border-border group-hover:border-primary transition-all">
             <ArrowLeft size={16} className="group-hover:text-primary" />
           </div>
-          Back to User List
+          Go Back
         </button>
       )}
 

@@ -16,25 +16,25 @@ const Dashboard = () => {
   const [trendingProducts, setTrendinngProducts] = useState([]);
   
 
-  // useEffect(() => {
-  //   const fetchTrendingProducts = async () => {
-  //     try {
-  //       const response = await api.get('/products/getProducts');
-  //       if(response.data && response.data.products && Array.isArray(response.data.products)){
-  //         setTrendinngProducts(response.data.products.slice(0, 4));
-  //       }else{
-  //         console.log("No data received or data is not an array");
-  //         setTrendinngProducts([]);
-  //       }
-  //     } catch (error) {
-  //       console.error('Error fetching trending products:', error);
-  //     }finally{
-  //       // setLoading(false);
-  //     }
-  //   };
+  useEffect(() => {
+    const fetchTrendingProducts = async () => {
+      try {
+        const response = await api.get('/products/getProducts');
+        if(response.data && response.data.products && Array.isArray(response.data.products)){
+          setTrendinngProducts(response.data.products.slice(0, 4));
+        }else{
+          console.log("No data received or data is not an array");
+          setTrendinngProducts([]);
+        }
+      } catch (error) {
+        console.error('Error fetching trending products:', error);
+      }finally{
+        // setLoading(false);
+      }
+    };
 
-  //   fetchTrendingProducts();
-  // }, []);
+    fetchTrendingProducts();
+  }, []);
 
   // const user = JSON.parse(localStorage.getItem('user'))
   // const user = JSON.parse(localStorage.getItem('user')) || { full_name: 'Admin User' };
@@ -156,7 +156,7 @@ const Dashboard = () => {
           </div>
 
           {/* Trending Products */}
-          {/* <div className="bg-card transition-colors duration-300 p-6 md:p-8 rounded-[1.5rem] border border-border transition-colors duration-300 shadow-sm">
+          <div className="bg-card transition-colors duration-300 p-6 md:p-8 rounded-[1.5rem] border border-border transition-colors duration-300 shadow-sm">
             <div className="flex justify-between items-center mb-8">
               <h4 className="text-sm font-bold text-textMain transition-colors duration-300">Trending Products</h4>
               <MoreVertical size={16} className="text-textMain/50 transition-colors duration-300 cursor-pointer" />
@@ -165,10 +165,10 @@ const Dashboard = () => {
               {trendingProducts.length > 0 ? (
                 trendingProducts.map((item, idx) => (
                   <div key={item.id || `prod-${idx}`} className="flex items-center justify-between group cursor-pointer">
-                    <div className="flex items-center gap-3 text-left"> */}
+                    <div className="flex items-center gap-3 text-left">
                       {/* Database එකේ තියෙන Image එක පෙන්නන්න */}
-                      {/* <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden shadow-inner"> */}
-                        {/* <img 
+                      <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden shadow-inner">
+                        <img 
                           // item?.productImage තියෙනවාද කියලා බලලා විතරක් URL එක හදන්න
                           src={item?.productImage ? `http://localhost:5001/${item.productImage}` : 'https://placehold.co/100x100?text=No+Image'} 
                           className="w-full h-full object-cover" 
@@ -191,8 +191,8 @@ const Dashboard = () => {
               ) : (
                 <p className="text-[10px] text-center text-textMain/50">No products available</p>
               )}
-            </div> */}
-          {/* </div> */}
+            </div>
+          </div>
         </div>
 
         {/* Top Performers Table */}
