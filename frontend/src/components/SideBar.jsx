@@ -251,29 +251,6 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
             </div>
           )}
 
-          {/* Workshops Section */}
-          {permissions.canManageWorkshops && (
-            <div className="space-y-1">
-              <NavItem 
-                icon={Sparkles} 
-                label="Workshops" 
-                isCollapsed={isSidebarCollapsed} 
-                onClick={() => handleToggleSubMenu('workshops')} 
-                isOpen={openSubMenu === 'workshops'} 
-              />
-              {!isSidebarCollapsed && openSubMenu === 'workshops' && (
-                <div className="ml-9 space-y-1 border-l border-border pl-2">
-                  <NavLink 
-                    to="/manage-workshops" 
-                    className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}
-                  >
-                    <List size={14} /> Workshop Console
-                  </NavLink>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Reports */}
           {(permissions.canViewReports || permissions.canViewRanking) && (
             <>
@@ -377,6 +354,29 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
                 </div>
               )}
             </>
+          )}
+
+          {/* Workshops Section */}
+          {permissions.canManageWorkshops && (
+            <div className="space-y-1">
+              <NavItem 
+                icon={Sparkles} 
+                label="Workshops" 
+                isCollapsed={isSidebarCollapsed} 
+                onClick={() => handleToggleSubMenu('workshops')} 
+                isOpen={openSubMenu === 'workshops'} 
+              />
+              {!isSidebarCollapsed && openSubMenu === 'workshops' && (
+                <div className="ml-9 space-y-1 border-l border-border pl-2">
+                  <NavLink 
+                    to="/manage-workshops" 
+                    className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}
+                  >
+                    <List size={14} /> Workshop Console
+                  </NavLink>
+                </div>
+              )}
+            </div>
           )}
         </div>
 

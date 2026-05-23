@@ -1,7 +1,8 @@
-const { User, UserArea, Customer, sequelize } = require('../models');
+const { User, UserArea, Customer, Order, sequelize } = require('../models');
 const bcrypt = require('bcrypt');
 const { sendWelcomeEmail } = require('../utils/emailSender');
 const { encrypt, decrypt } = require('../utils/cryptoUtils');
+const { Op } = require('sequelize');
 
 
 const addUserByAdmin = async (req, res) => {
@@ -587,6 +588,82 @@ const getSalesReps = async (req, res) => {
     }
 };
 
+/**
+ * Get Top Performers purely based on Sales Reps' explicitly assigned areas and customers
+ */
+const getTopPerformers = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+
+        // 1. Fetch active sales reps and their areas
+        const reps = await User.findAll({
+            where: { role: 'sales_rep', is_active: true },
+            include: [{ model: UserArea, as: 'areas' }]
+        });
+
+        let dateFilter = {};
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            dateFilter = { created_at: { [Op.between]: [start, end] } };
+        }
+
+        const topPerformers = [];
+
+        for (const rep of reps) {
+            // 2. Fetch ALL valid orders placed by this rep (regardless of assigned areas)
+            const repOrders = await Order.findAll({
+                where: {
+                    created_by: rep.user_id,
+                    order_status: { [Op.in]: ['approved', 'shipped', 'delivered'] },
+                    ...dateFilter
+                },
+                include: [{
+                    model: Customer,
+                    as: 'customer'
+                }]
+            });
+
+            let totalSales = 0;
+            const districtSales = {};
+
+            repOrders.forEach(o => {
+                const amt = parseFloat(o.total_amount) || 0;
+                const dist = o.customer?.district || o.district || 'Global';
+                totalSales += amt;
+                districtSales[dist] = (districtSales[dist] || 0) + amt;
+            });
+
+            if (totalSales > 0) {
+                let topArea = 'Multiple Regions';
+                let maxSales = -1;
+                for (const [dist, amt] of Object.entries(districtSales)) {
+                    if (amt > maxSales) { maxSales = amt; topArea = dist; }
+                }
+
+                topPerformers.push({
+                    user_id: rep.user_id,
+                    name: rep.name,
+                    role: rep.role,
+                    image: rep.profile_image,
+                    sales: totalSales,
+                    topArea: topArea
+                });
+            }
+        }
+
+        // Sort by total sales and return top 5
+        topPerformers.sort((a, b) => b.sales - a.sales);
+        res.status(200).json({ success: true, performers: topPerformers.slice(0, 5) });
+
+    } catch (err) {
+        console.error("Top Performers Error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
 module.exports = {
     addUserByAdmin,
     updatePassword,
@@ -600,5 +677,6 @@ module.exports = {
     getSalesReps,
     verifySession,
     addUserArea,
-    removeUserArea
+    removeUserArea,
+    getTopPerformers
 };

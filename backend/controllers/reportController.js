@@ -38,7 +38,7 @@ const getSalesReport = async (req, res) => {
         // 📡 2. Query execution with Deep Eager Loading
         const rawOrders = await Order.findAll({
             where: {
-                order_status: 'approved', // 🔒 Strict Check: Requested orders baha! Approved mthrakmai.
+                order_status: { [Op.in]: ['approved', 'shipped', 'delivered'] }, // ✅ Include all finalized states
                 ...dateFilter // Apply date boundaries dynamically
             },
             include: [
