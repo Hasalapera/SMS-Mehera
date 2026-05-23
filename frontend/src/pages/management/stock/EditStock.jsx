@@ -8,9 +8,11 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 const EditStock = () => {
   const { token, logout } = useAuth();
+  const { addNotification } = useNotifications(); // Get addNotification from context
   const navigate = useNavigate();
 
   // States
@@ -66,7 +68,8 @@ const EditStock = () => {
         variant_name: v.variant_name,
         price: Number(v.price || 0),
         stock_count: Number(v.stock_count || 0),
-        newStockQty: String(v.stock_count) // set current stock as default
+        critical_stock_level: Number(v.critical_stock_level || 5),
+        newStockQty: String(v.stock_count)
       })),
       bulkQty: ''
     };
@@ -138,6 +141,16 @@ const EditStock = () => {
     );
   };
 
+  // Save notification to DB
+  const saveNotificationToDB = async (type, title, message, severity, reference_id = null) => {
+    try {
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await api.post('/notifications', { type, title, message, severity, reference_id }, config);
+    } catch (err) {
+      console.error('Failed to save notification:', err);
+    }
+  };
+
   const handleApplyAllStock = async () => {
   const updates = [];
 
@@ -185,10 +198,64 @@ const EditStock = () => {
           oldStock: Number(u.oldStock),
           newStock: Number(u.newStock)
         })),
-        appliedAt: new Date().toLocaleString()
+        appliedAt: new Date().toLocaleString(),
+        // Save names for revert notification
+        variantDetails: selectedProducts.flatMap(product =>
+          product.variants
+            .filter(v => Number(v.newStockQty) !== Number(v.stock_count))
+            .map(v => ({
+              variant_id: v.variant_id,
+              variant_name: v.variant_name,
+              product_name: product.product_name,
+              oldStock: Number(v.stock_count),
+              newStock: Number(v.newStockQty)
+            }))
+        )
       });
+
+      // Create notifications for each updated variant
+      for (const product of selectedProducts) {
+        for (const variant of product.variants) {
+          const newStock = Number(variant.newStockQty);
+          const oldStock = Number(variant.stock_count);
+
+          // Only notify if quantity actually changed
+          if (newStock === oldStock) continue;
+
+          const criticalLevel = variant.critical_stock_level || 5;
+          const difference = newStock - oldStock;
+          const sign = difference > 0 ? '+' : '';
+
+          let title = '';
+          let message = '';
+          let severity = 'info';
+
+          if (newStock <= 0) {
+            title = '🔴 Out of Stock Alert';
+            message = `${product.product_name} - ${variant.variant_name} is now OUT OF STOCK (0 units)`;
+            severity = 'critical';
+          } else if (newStock <= criticalLevel) {
+            title = '🔴 Critical Stock Level';
+            message = `${product.product_name} - ${variant.variant_name} dropped to CRITICAL level (${newStock} units)`;
+            severity = 'critical';
+          } else if (newStock < 10) {
+            title = '🟡 Low Stock Alert';
+            message = `${product.product_name} - ${variant.variant_name} is LOW (${newStock} units, ${sign}${difference} change)`;
+            severity = 'warning';
+          } else {
+            title = '📦 Stock Updated';
+            message = `${product.product_name} - ${variant.variant_name} set to ${newStock} units (${sign}${difference} change)`;
+            severity = 'info';
+          }
+
+          await saveNotificationToDB('stock', title, message, severity, variant.variant_id);
+          addNotification({ type: 'stock', title, message, severity });
+        }
+      }
+
       setSelectedProducts([]);
       fetchProducts();
+
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to apply stock updates');
     } finally {
@@ -213,13 +280,30 @@ const EditStock = () => {
       }));
 
       const response = await api.patch(
-        '/stock/variants/batch-edit-stock',  //✅ Use edit endpoint
+        '/stock/variants/batch-edit-stock',  // Use edit endpoint
         { updates: revertUpdates },
         config
       );
 
       const reverted = Number(response.data?.summary?.updatedVariants || lastAppliedSummary.updates.length);
       toast.success(`Reverted stock update for ${reverted} variant(s)`);
+
+      // Create revert notification per variant with names
+      for (const detail of (lastAppliedSummary.variantDetails || [])) {
+        await saveNotificationToDB(
+          'stock',
+          '↩️ Stock Edit Reverted',
+          `${detail.product_name} - ${detail.variant_name}: reverted from ${detail.newStock} back to ${detail.oldStock} units`,
+          'warning'
+        );
+        addNotification({
+          type: 'stock',
+          title: '↩️ Stock Edit Reverted',
+          message: `${detail.product_name} - ${detail.variant_name}: reverted from ${detail.newStock} back to ${detail.oldStock} units`,
+          severity: 'warning'
+        });
+      }
+
       setLastAppliedSummary(null);
       fetchProducts();
     } catch (err) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../../api/axiosInstance';
+import api from '../../../api/axiosInstance'; // Uses existing axios instance
 import { 
   Plus, Search, Package, AlertCircle,
   Loader2, ArrowLeft, RefreshCw, Trash2, CheckCircle2, ClipboardList, Undo2, Sparkles,
@@ -8,12 +8,13 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext'; // Import context
 
 const AddStock = () => {
   const { token, logout } = useAuth();
+  const { addNotification } = useNotifications(); // Get addNotification
   const navigate = useNavigate();
 
-  // States
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,7 +58,6 @@ const AddStock = () => {
       return;
     }
 
-    // Create a temporary stock queue object for a selected product
     const queueProduct = {
       product_id: product.product_id,
       product_name: product.product_name,
@@ -67,6 +67,7 @@ const AddStock = () => {
         variant_name: v.variant_name,
         price: Number(v.price || 0),
         stock_count: Number(v.stock_count || 0),
+        critical_stock_level: Number(v.critical_stock_level || 5), // Keep for notification logic
         qtyToAdd: ''
       })),
       bulkQty: ''
@@ -133,6 +134,17 @@ const AddStock = () => {
     );
   };
 
+  // Save notification to DB via API
+  const saveNotificationToDB = async (type, title, message, severity, reference_id = null) => {
+    try {
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await api.post('/notifications', { type, title, message, severity, reference_id }, config);
+    } catch (err) {
+      // Don't block the flow if notification fails
+      console.error('Failed to save notification:', err);
+    }
+  };
+
   const handleApplyAllStock = async () => {
     const updates = [];
 
@@ -153,6 +165,8 @@ const AddStock = () => {
     try {
       setIsApplying(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
+
+      // Apply stock update to backend
       const response = await api.patch(
         '/stock/variants/batch-add-stock',
         { updates },
@@ -165,14 +179,68 @@ const AddStock = () => {
       const totalUnits = Number(summary.totalUnits || 0);
 
       toast.success(`Stock updated for ${updatedVariants} variant(s)`);
+
       setLastAppliedSummary({
         updatedVariants,
         totalUnits,
         updates: appliedUpdates.map((u) => ({ variant_id: u.variant_id, quantity: Number(u.quantity) })),
-        appliedAt: new Date().toLocaleString()
+        appliedAt: new Date().toLocaleString(),
+        // Save names for revert notification
+        variantDetails: selectedProducts.flatMap(product =>
+          product.variants
+            .filter(v => Number(v.qtyToAdd) > 0)
+            .map(v => ({
+              variant_id: v.variant_id,
+              variant_name: v.variant_name,
+              product_name: product.product_name,
+              quantity: Number(v.qtyToAdd)
+            }))
+        )
       });
+
+      // Create notifications for each updated variant
+      for (const product of selectedProducts) {
+        for (const variant of product.variants) {
+          const qty = Number(variant.qtyToAdd);
+          if (!Number.isInteger(qty) || qty <= 0) continue;
+
+          // Calculate new stock after addition
+          const newStock = variant.stock_count + qty;
+          const criticalLevel = variant.critical_stock_level || 5;
+
+          let title = '';
+          let message = '';
+          let severity = 'info';
+
+          if (newStock <= 0) {
+            title = '🔴 Still Out of Stock';
+            message = `${product.product_name} - ${variant.variant_name} is still OUT OF STOCK after update`;
+            severity = 'critical';
+          } else if (newStock <= criticalLevel) {
+            title = '🔴 Critical Stock Level';
+            message = `${product.product_name} - ${variant.variant_name} is at CRITICAL level (${newStock} units)`;
+            severity = 'critical';
+          } else if (newStock < 10) {
+            title = '🟡 Low Stock Alert';
+            message = `${product.product_name} - ${variant.variant_name} is LOW (${newStock} units after adding ${qty})`;
+            severity = 'warning';
+          } else {
+            title = '📦 Stock Added';
+            message = `${product.product_name} - ${variant.variant_name} updated to ${newStock} units (+${qty} added)`;
+            severity = 'info';
+          }
+
+          // Save to DB (persistent)
+          await saveNotificationToDB('stock', title, message, severity, variant.variant_id);
+
+          // Add to context (shows immediately in Inbox without refresh)
+          addNotification({ type: 'stock', title, message, severity });
+        }
+      }
+
       setSelectedProducts([]);
       fetchProducts();
+
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to apply stock updates');
     } finally {
@@ -197,6 +265,23 @@ const AddStock = () => {
 
       const reverted = Number(response.data?.summary?.revertedVariants || lastAppliedSummary.updates.length);
       toast.success(`Reverted stock update for ${reverted} variant(s)`);
+      
+      // Create revert notification per variant with names
+      for (const detail of (lastAppliedSummary.variantDetails || [])) {
+        await saveNotificationToDB(
+          'stock',
+          '↩️ Stock Addition Reverted',
+          `${detail.product_name} - ${detail.variant_name}: ${detail.quantity} units addition has been reverted`,
+          'warning'
+        );
+        addNotification({
+          type: 'stock',
+          title: '↩️ Stock Addition Reverted',
+          message: `${detail.product_name} - ${detail.variant_name}: ${detail.quantity} units addition has been reverted`,
+          severity: 'warning'
+        });
+      }
+      
       setLastAppliedSummary(null);
       fetchProducts();
     } catch (err) {
@@ -227,7 +312,6 @@ const AddStock = () => {
       if (currentPage !== 1) setCurrentPage(1);
       return;
     }
-
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
     }
@@ -360,7 +444,6 @@ const AddStock = () => {
                   >
                     <ChevronLeft size={18} />
                   </button>
-
                   {[...Array(totalPages)].map((_, i) => (
                     <button
                       key={i + 1}
@@ -371,7 +454,6 @@ const AddStock = () => {
                       {i + 1}
                     </button>
                   ))}
-
                   <button
                     disabled={safeCurrentPage === totalPages}
                     onClick={() => paginate(safeCurrentPage + 1)}
@@ -480,7 +562,6 @@ const AddStock = () => {
         </div>
       </div>
 
-      {/* Empty State */}
       {filteredProducts.length === 0 && (
         <div className="bg-card border border-dashed border-border rounded-[3rem] py-24 text-center transition-colors duration-300">
           <div className="bg-background w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
