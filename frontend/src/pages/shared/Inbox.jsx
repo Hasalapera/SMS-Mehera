@@ -28,6 +28,7 @@ const Inbox = () => {
   const [fontScale, setFontScale] = useState(1);
   const wrapperRef = useRef(null);
 
+  // Initialize with mock data on first load
   useEffect(() => {
     if (notifications.length === 0) {
       initializeMockNotifications();
@@ -35,11 +36,12 @@ const Inbox = () => {
     setLoading(false);
   }, []);
 
+  // Handle responsive font scaling
   useEffect(() => {
     const handleScaling = () => {
       if (wrapperRef.current) {
         const availableWidth = wrapperRef.current.offsetWidth;
-        const designWidth = 800;
+        const designWidth = 800; // Original Design Base
 
         if (availableWidth < designWidth) {
           const ratio = availableWidth / designWidth;
@@ -55,6 +57,7 @@ const Inbox = () => {
     return () => window.removeEventListener("resize", handleScaling);
   }, []);
 
+  // Initialize mock notifications for demo
   const initializeMockNotifications = () => {
     const now = new Date();
     
@@ -126,6 +129,7 @@ const Inbox = () => {
     toast.error('Notification deleted');
   };
 
+  // Filter notifications
   const filteredNotifications = activeFilter === 'all'
     ? notifications
     : notifications.filter(n => n.type === activeFilter);
@@ -133,6 +137,7 @@ const Inbox = () => {
   const unreadCount = notifications.filter(n => !n.is_read).length;
   const unreadByType = getUnreadByType();
 
+  // Notification config
   const getNotificationConfig = (type, severity) => {
     const configs = {
       stock: { 
@@ -187,9 +192,10 @@ const Inbox = () => {
   return (
     <div ref={wrapperRef} className="w-full min-h-screen overflow-x-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
 
+      {/* Header - Using CSS Variables */}
       <div className="bg-black px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b-4 border-primary dark:border-primary">
         <div className="flex items-center gap-5">
-
+          {/* Icon Box */}
           <div className="p-3 bg-primary rounded-2xl text-black dark:text-black">
             <Bell size={26 * fontScale} strokeWidth={2.5} />
           </div>
@@ -206,11 +212,12 @@ const Inbox = () => {
 
         {unreadCount > 0 && (
           <div className="flex items-center gap-4">
-
+            {/* Unread Badge */}
             <div className="px-4 py-2.5 bg-primary/20 rounded-2xl flex items-center gap-2">
               <span className="text-sm font-black text-primary dark:text-primary">{unreadCount} Unread</span>
             </div>
             
+            {/* Mark All Read Button */}
             <button
               onClick={handleMarkAllAsRead}
               className="px-4 py-2.5 bg-card text-textMain border border-border dark:border-gray-700 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-primary hover:text-black dark:hover:bg-primary dark:hover:text-black transition-all focus:outline-none"
@@ -222,7 +229,7 @@ const Inbox = () => {
       </div>
 
       <div className="p-6 md:p-8">
-
+        {/* Filter Tabs - Using CSS Variables */}
         <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
           {[
             { key: 'all', label: 'All', icon: Bell },
@@ -251,6 +258,7 @@ const Inbox = () => {
           ))}
         </div>
 
+        {/* Notifications List - Using CSS Variables */}
         {filteredNotifications.length > 0 ? (
           <div className="space-y-3">
             {filteredNotifications.map(notification => {
@@ -267,10 +275,12 @@ const Inbox = () => {
                   }`}
                 >
                   <div className="flex items-start gap-4">
+                    {/* Icon */}
                     <div className={`p-3 rounded-xl shrink-0 ${config.bgColor}`}>
                       <IconComponent size={20} color={config.color} />
                     </div>
 
+                    {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4">
                         <div>
@@ -285,6 +295,7 @@ const Inbox = () => {
                           </p>
                         </div>
 
+                        {/* Status Badge */}
                         <div className="shrink-0">
                           {notification.severity && notification.severity !== 'info' && (
                             <span className={`text-[7px] font-black px-2 py-1 rounded-lg uppercase tracking-wider ${
@@ -299,6 +310,7 @@ const Inbox = () => {
                       </div>
                     </div>
 
+                    {/* Action Buttons */}
                     <div className="flex items-center gap-2 shrink-0">
                       {!notification.is_read && (
                         <button
