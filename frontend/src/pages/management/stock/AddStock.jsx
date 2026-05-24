@@ -11,7 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext'; // Import context
 
 const AddStock = () => {
-  const { token, logout } = useAuth();
+  const { token, logout, user } = useAuth();
   const { addNotification } = useNotifications(); // Get addNotification
   const navigate = useNavigate();
 
@@ -214,19 +214,19 @@ const AddStock = () => {
 
           if (newStock <= 0) {
             title = '🔴 Still Out of Stock';
-            message = `${product.product_name} - ${variant.variant_name} is still OUT OF STOCK after update`;
+            message = `${product.product_name} - ${variant.variant_name} is still OUT OF STOCK after update by ${user.name}`;
             severity = 'critical';
           } else if (newStock <= criticalLevel) {
             title = '🔴 Critical Stock Level';
-            message = `${product.product_name} - ${variant.variant_name} is at CRITICAL level (${newStock} units)`;
+            message = `${product.product_name} - ${variant.variant_name} is at CRITICAL level (${newStock} units) - updated by ${user.name}`;
             severity = 'critical';
           } else if (newStock < 10) {
             title = '🟡 Low Stock Alert';
-            message = `${product.product_name} - ${variant.variant_name} is LOW (${newStock} units after adding ${qty})`;
+            message = `${product.product_name} - ${variant.variant_name} is LOW (${newStock} units after adding ${qty}) - updated by ${user.name}`;
             severity = 'warning';
           } else {
             title = '📦 Stock Added';
-            message = `${product.product_name} - ${variant.variant_name} updated to ${newStock} units (+${qty} added)`;
+            message = `${product.product_name} - ${variant.variant_name} updated to ${newStock} units (+${qty} added) by ${user.name}`;
             severity = 'info';
           }
 
@@ -271,13 +271,13 @@ const AddStock = () => {
         await saveNotificationToDB(
           'stock',
           '↩️ Stock Addition Reverted',
-          `${detail.product_name} - ${detail.variant_name}: ${detail.quantity} units addition has been reverted`,
+          `${detail.product_name} - ${detail.variant_name}: ${detail.quantity} units addition has been reverted by ${user.name}`,
           'warning'
         );
         addNotification({
           type: 'stock',
           title: '↩️ Stock Addition Reverted',
-          message: `${detail.product_name} - ${detail.variant_name}: ${detail.quantity} units addition has been reverted`,
+          message: `${detail.product_name} - ${detail.variant_name}: ${detail.quantity} units addition has been reverted by ${user.name}`,
           severity: 'warning'
         });
       }
