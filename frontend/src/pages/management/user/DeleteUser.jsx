@@ -3,11 +3,14 @@ import { Trash2, AlertTriangle, UserX, Search, ShieldCheck, Loader2 } from 'luci
 import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 import {MySwal} from '../../utils/swalConfig';
+import { useNotifications } from '../../context/NotificationContext';
 
 const DeleteUser = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const { addNotification } = useNotifications();
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
 
@@ -36,6 +39,18 @@ const DeleteUser = () => {
   };
 
   useEffect(() => { fetchUsers(); }, []);
+  //helper for notification
+  const saveNotificationToDB = async (type, title, message, severity) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      await api.post('/notifications',
+        { type, title, message, severity },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (err) {
+      console.error('Failed to save notification:', err);
+    }
+  };
 
   const handleSoftDelete = async (userId, userName) => {
     // 1. 🛡️ Confirmation Prompt (SweetAlert)
@@ -72,6 +87,21 @@ const DeleteUser = () => {
           );
 
           toast.success(`${userName} archived successfully!`);
+
+          // Create notification
+          await saveNotificationToDB(
+            'user',
+            '🗃️ User Account Archived',
+            `${userName}'s account has been archived by ${currentUser?.name || 'Admin'}`,
+            'warning'
+          );
+          addNotification({
+            type: 'user',
+            title: '🗃️ User Account Archived',
+            message: `${userName}'s account has been archived by ${currentUser?.name || 'Admin'}`,
+            severity: 'warning'
+          });
+
           fetchUsers();
 
         } catch (err) {

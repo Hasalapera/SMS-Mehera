@@ -29,10 +29,25 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
+import { useNotifications } from "../context/NotificationContext";
+
 const UserProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { token, logout, login } = useAuth();
+
+  const { addNotification } = useNotifications();
+  //helper
+  const saveNotificationToDB = async (type, title, message, severity) => {
+  try {
+    await api.post('/notifications',
+      { type, title, message, severity },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  } catch (err) {
+    console.error('Failed to save notification:', err);
+  }
+};
 
   const [isEditing, setIsEditing] = useState(false);
   const [showPassModal, setShowPassModal] = useState(false);
@@ -172,6 +187,21 @@ const UserProfile = () => {
       );
       setUserAreas([...userAreas, { district_name: district }]);
       toast.success(`${district} added!`);
+
+      // Notification
+      await saveNotificationToDB(
+        'user',
+        '📍 Area Assigned',
+        `${district} district assigned to ${user?.name} by ${loggedInUser?.name}`,
+        'info'
+      );
+      addNotification({
+        type: 'user',
+        title: '📍 Area Assigned',
+        message: `${district} district assigned to ${user?.name} by ${loggedInUser?.name}`,
+        severity: 'info'
+      });
+
     } catch (err) {
       toast.error("Failed to add area");
     }
@@ -186,6 +216,21 @@ const UserProfile = () => {
       );
       setUserAreas(userAreas.filter((a) => a.district_name !== district));
       toast.success(`${district} removed!`);
+
+      // Notification
+      await saveNotificationToDB(
+        'user',
+        '📍 Area Removed',
+        `${district} district removed from ${user?.name} by ${loggedInUser?.name}`,
+        'warning'
+      );
+      addNotification({
+        type: 'user',
+        title: '📍 Area Removed',
+        message: `${district} district removed from ${user?.name} by ${loggedInUser?.name}`,
+        severity: 'warning'
+      });
+
     } catch (err) {
       toast.error("Failed to remove area");
     }
@@ -225,6 +270,15 @@ const UserProfile = () => {
         setUser(response.data.user);
         setIsEditing(false);
         toast.success("Profile updated!");
+
+        // Notification
+        const notifMessage = isOwnProfile
+          ? `${loggedInUser?.name} updated their own profile`
+          : `${user?.name}'s profile was updated by ${loggedInUser?.name}`;
+
+        await saveNotificationToDB('user', '✏️ Profile Updated', notifMessage, 'info');
+        addNotification({ type: 'user', title: '✏️ Profile Updated', message: notifMessage, severity: 'info' });
+
       }
     } catch (err) {
       toast.error("Update failed.");
