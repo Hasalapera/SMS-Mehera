@@ -166,19 +166,19 @@ const Inbox = () => {
   }
 
   return (
-    <div ref={wrapperRef} className="w-full min-h-screen overflow-x-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
+    <div ref={wrapperRef} className="w-full min-h-screen overflow-x-hidden bg-background text-textMain font-sans transition-colors duration-500">
 
       {/* Header */}
-      <div className="bg-black px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b-4 border-primary dark:border-primary">
+      <div className="bg-card/90 backdrop-blur-md px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b border-border shadow-sm transition-colors duration-500">
         <div className="flex items-center gap-5">
-          <div className="p-3 bg-primary rounded-2xl text-black dark:text-black">
+          <div className="p-3 bg-primary rounded-2xl text-textMain shadow-lg shadow-[#b4a460]/15">
             <Bell size={26 * fontScale} strokeWidth={2.5} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-0.5">
+            <p className="text-[10px] font-bold text-textMain/50 uppercase tracking-widest mb-0.5">
               Communication Center
             </p>
-            <h1 className="text-2xl font-black text-white dark:text-white uppercase tracking-tight">
+            <h1 className="text-2xl font-black text-textMain uppercase tracking-tight">
               Notification Inbox
             </h1>
           </div>
@@ -186,12 +186,12 @@ const Inbox = () => {
 
         {unreadCount > 0 && (
           <div className="flex items-center gap-4">
-            <div className="px-4 py-2.5 bg-primary/20 rounded-2xl flex items-center gap-2">
-              <span className="text-sm font-black text-primary dark:text-primary">{unreadCount} Unread</span>
+            <div className="px-4 py-2.5 bg-primary/15 rounded-2xl flex items-center gap-2 border border-primary/20">
+              <span className="text-sm font-black text-primary">{unreadCount} Unread</span>
             </div>
             <button
               onClick={handleMarkAllAsRead}
-              className="px-4 py-2.5 bg-card text-textMain border border-border dark:border-gray-700 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-primary hover:text-black dark:hover:bg-primary dark:hover:text-black transition-all focus:outline-none"
+              className="px-4 py-2.5 bg-background text-textMain border border-border rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-primary hover:text-black transition-all focus:outline-none"
             >
               Mark All Read
             </button>
@@ -214,14 +214,14 @@ const Inbox = () => {
               onClick={() => setActiveFilter(tab.key)}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap focus:outline-none ${
                 activeFilter === tab.key
-                  ? 'bg-black dark:bg-primary text-primary dark:text-black shadow-lg'
-                  : 'bg-card text-textMain border border-border dark:border-gray-700 hover:border-primary/30'
+                    ? 'bg-primary text-black shadow-lg shadow-[#b4a460]/20'
+                    : 'bg-card text-textMain border border-border hover:border-primary/30'
               }`}
             >
               <tab.icon size={14} />
               {tab.label}
               {tab.key !== 'all' && unreadByType[tab.key] > 0 && (
-                <span className="ml-1 px-2 py-0.5 bg-primary/20 rounded-full text-[8px] font-black text-primary dark:text-primary">
+                  <span className="ml-1 px-2 py-0.5 bg-primary/20 rounded-full text-[8px] font-black text-primary">
                   {unreadByType[tab.key]}
                 </span>
               )}
@@ -239,9 +239,9 @@ const Inbox = () => {
               return (
                 <div
                   key={notification.notification_id}
-                  className={`p-5 rounded-[1.5rem] border transition-all ${
+                  className={`p-5 rounded-3xl border transition-all ${
                     notification.is_read
-                      ? 'bg-card border-border dark:border-gray-700 opacity-75'
+                      ? 'bg-card border-border opacity-75'
                       : `${config.bgColor} border-primary/20 ring-1 ring-primary/10`
                   }`}
                 >
@@ -258,10 +258,10 @@ const Inbox = () => {
                           <h3 className={`text-sm font-black ${config.textColor} uppercase tracking-tight mb-1`}>
                             {notification.title}
                           </h3>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed max-w-2xl">
+                          <p className="text-[10px] text-textMain/60 leading-relaxed max-w-2xl">
                             {notification.message}
                           </p>
-                          <p className="text-[8px] text-gray-400 dark:text-gray-500 mt-2 uppercase tracking-widest">
+                          <p className="text-[8px] text-textMain/40 mt-2 uppercase tracking-widest">
                             {notification.created_at && new Date(notification.created_at).toLocaleString('en-GB')}
                           </p>
                         </div>
@@ -286,15 +286,15 @@ const Inbox = () => {
                       {!notification.is_read && (
                         <button
                           onClick={() => handleMarkAsRead(notification.notification_id)}
-                          className="p-2 hover:bg-primary/20 dark:hover:bg-primary/20 rounded-lg transition-all text-primary dark:text-primary focus:outline-none"
+                          className="p-2 rounded-lg transition-all duration-200 bg-primary text-black border border-primary/30 hover:bg-primary/90 hover:scale-105 hover:shadow-md hover:shadow-[#b4a460]/25 focus:outline-none shadow-sm shadow-[#b4a460]/20"
                           title="Mark as read"
                         >
-                          <Check size={16} />
+                          <Check size={16} strokeWidth={3} />
                         </button>
                       )}
                       <button
                         onClick={() => handleDelete(notification.notification_id)}
-                        className="p-2 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-all text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 focus:outline-none"
+                        className="p-2 rounded-lg transition-all duration-200 text-red-600 dark:text-red-400 bg-red-100/80 dark:bg-red-900/20 border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-900/30 hover:scale-105 hover:shadow-md hover:shadow-red-500/15 focus:outline-none shadow-sm"
                         title="Delete"
                       >
                         <Trash2 size={16} />
@@ -307,9 +307,9 @@ const Inbox = () => {
           </div>
         ) : (
           <div className="py-20 text-center">
-            <Bell size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-            <h3 className="text-lg font-black text-textMain dark:text-textMain uppercase">No Notifications</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            <Bell size={40} className="mx-auto text-textMain/20 mb-4" />
+            <h3 className="text-lg font-black text-textMain uppercase">No Notifications</h3>
+            <p className="text-sm text-textMain/50 mt-2">
               {activeFilter === 'all'
                 ? "You're all caught up! 🎉"
                 : `No ${activeFilter} notifications yet`}
