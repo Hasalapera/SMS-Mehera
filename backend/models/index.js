@@ -17,6 +17,10 @@ const Setting = SettingModel(sequelize, DataTypes);
 const NotificationModel = require('./Notification');
 const Notification = NotificationModel(sequelize, DataTypes);
 
+// New: Per-user notification read status
+const NotificationReadModel = require('./NotificationRead');
+const NotificationRead = NotificationReadModel(sequelize, DataTypes);
+
 // 1. User Associations
 User.hasMany(UserArea, { foreignKey: 'user_id', as: 'areas', onDelete: 'CASCADE' });
 UserArea.belongsTo(User, { foreignKey: 'user_id' });
@@ -61,6 +65,24 @@ Customer.hasMany(Order, { foreignKey: 'customer_id' });
 User.hasMany(SalesTarget, { foreignKey: 'sales_rep_id', as: 'targets', onDelete: 'CASCADE' });
 SalesTarget.belongsTo(User, { foreignKey: 'sales_rep_id', as: 'salesRep' });
 
+// 12. Notification and NotificationRead Associations
+Notification.hasMany(NotificationRead, { 
+  foreignKey: 'notification_id', 
+  as: 'reads',
+  onDelete: 'CASCADE' 
+});
+NotificationRead.belongsTo(Notification, { 
+  foreignKey: 'notification_id' 
+});
+
+User.hasMany(NotificationRead, { 
+  foreignKey: 'user_id', 
+  onDelete: 'CASCADE' 
+});
+NotificationRead.belongsTo(User, { 
+  foreignKey: 'user_id' 
+});
+
 module.exports = {
   sequelize,
   User,
@@ -75,6 +97,7 @@ module.exports = {
   OrderItem,
   Setting,
   Notification,
+  NotificationRead,
   Workshop,
   SalesTarget 
 };
