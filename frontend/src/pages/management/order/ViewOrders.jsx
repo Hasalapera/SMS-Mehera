@@ -7,6 +7,9 @@ import {
     Trash2, MapPin, Truck, ShoppingCart, Phone
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+
+import { useNotifications } from "../../context/NotificationContext";
+
 import { toast } from 'react-hot-toast';
 import {MySwal} from '../../utils/swalConfig';
 
@@ -28,6 +31,9 @@ const statusBadge = {
 const ViewOrders = () => {
     const navigate = useNavigate();
     const { token, logout } = useAuth();
+
+    const { addNotification } = useNotifications(); // Hook for adding notifications to context and database
+
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -77,6 +83,17 @@ const ViewOrders = () => {
     // change page function
     const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+    //helper function to save notifications to the database
+    const saveNotificationToDB = async (type, title, message, severity) => {
+        try {
+            await api.post(`/notifications`, { type, title, message, severity },
+            { headers: { Authorization: `Bearer ${token}` } }
+            );
+        } catch (err) {
+            console.error('Failed to save notification:', err);
+        }
+        };
+
     const handleStatusUpdate = async (orderId, newStatus) => {
         const result = await MySwal.fire({
             title: 'Are you sure?',
@@ -98,6 +115,33 @@ const ViewOrders = () => {
                 );
 
                 toast.success(`Order ${newStatus} successfully!`);
+
+                // Get status config for notification
+                const statusConfig = {
+                approved:  { title: '✅ Order Approved',   severity: 'info',     emoji: '✅' },
+                rejected:  { title: '❌ Order Rejected',   severity: 'critical', emoji: '❌' },
+                processing:{ title: '⚙️ Order Processing', severity: 'info',     emoji: '⚙️' },
+                shipped:   { title: '🚚 Order Shipped',    severity: 'info',     emoji: '🚚' },
+                delivered: { title: '📦 Order Delivered',  severity: 'info',     emoji: '📦' },
+                cancelled: { title: '🚫 Order Cancelled',  severity: 'warning',  emoji: '🚫' },
+                };
+
+                const config = statusConfig[newStatus] || { title: `📋 Order ${newStatus}`, severity: 'info' };
+                const orderRef = `#${orderId.substring(0, 8).toUpperCase()}`;
+
+                await saveNotificationToDB(
+                'order',
+                config.title,
+                `Order ${orderRef} has been marked as ${newStatus} by ${loggedUser?.name}`,
+                config.severity
+                );
+                addNotification({
+                type: 'order',
+                title: config.title,
+                message: `Order ${orderRef} has been marked as ${newStatus} by ${loggedUser?.name}`,
+                severity: config.severity
+                });
+
                 fetchOrders(false); 
             } catch (err) {
                 console.error("Status Update Error:", err);
