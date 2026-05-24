@@ -1,13 +1,6 @@
 // backend/controllers/workshopController.js
 const { Workshop } = require('../models');
-const cloudinary = require('cloudinary').v2;
-
-// Cloudinary Credentials (.env එකෙන් ලෝඩ් වෙනවා)
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
+const { cloudinary } = require('../config/cloudinary'); // 👈 අලුතින් හදන්නේ නැතුව Config එකෙන් කෙලින්ම ගන්නවා
 
 // ➕ CREATE WORKSHOP - Super Safe Version
 exports.createWorkshop = async (req, res) => {
@@ -18,7 +11,7 @@ exports.createWorkshop = async (req, res) => {
     if (req.body.image && req.body.image.startsWith('data:image')) {
       try {
         const uploadRes = await cloudinary.uploader.upload(req.body.image, {
-          folder: 'mehera_workshops',
+          folder: 'mehera-international/workshops',
         });
         image_url = uploadRes.secure_url;
       } catch (cloudinaryErr) {
@@ -65,7 +58,7 @@ exports.updateWorkshop = async (req, res) => {
     if (req.body.image && req.body.image.startsWith('data:image')) {
       try {
         const uploadRes = await cloudinary.uploader.upload(req.body.image, {
-          folder: 'mehera_workshops',
+          folder: 'mehera-international/workshops',
         });
         image_url = uploadRes.secure_url; // Upload සාර්ථක නම් විතරක් අලුත් URL එක ගන්නවා
       } catch (cloudinaryErr) {

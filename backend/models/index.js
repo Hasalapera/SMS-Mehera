@@ -10,7 +10,8 @@ const Customer = require('./Customer');
 const CustomerNote = require('./CustomerNote');
 const Order = require('./Order');
 const OrderItem = require('./OrderItem');
-const Workshop = require('./Workshop'); // ✅ Workshop Model එක පිළිවෙළට එකතු කළා
+const Workshop = require('./Workshop'); 
+const SalesTarget = require('./SalesTarget');
 const SettingModel = require('./Setting');
 const Setting = SettingModel(sequelize, DataTypes);
 const NotificationModel = require('./Notification');
@@ -56,6 +57,10 @@ Customer.belongsTo(User, { foreignKey: 'sales_rep_id', as: 'salesRep' });
 Order.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' }); 
 Customer.hasMany(Order, { foreignKey: 'customer_id' });
 
+// 11. User and SalesTarget Associations
+User.hasMany(SalesTarget, { foreignKey: 'sales_rep_id', as: 'targets', onDelete: 'CASCADE' });
+SalesTarget.belongsTo(User, { foreignKey: 'sales_rep_id', as: 'salesRep' });
+
 module.exports = {
   sequelize,
   User,
@@ -70,5 +75,6 @@ module.exports = {
   OrderItem,
   Setting,
   Notification,
-  Workshop 
+  Workshop,
+  SalesTarget 
 };

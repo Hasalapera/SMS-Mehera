@@ -24,6 +24,7 @@ import {
   EyeOff,
   Clock,
   XCircle,
+  TrendingUp,
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -42,6 +43,12 @@ const UserProfile = () => {
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [userAreas, setUserAreas] = useState([]);
   const [isEditingAreas, setIsEditingAreas] = useState(false);
+
+  // Progress States (For Sales Reps)
+  const [progressData, setProgressData] = useState({ target: 0, achieved: 0 });
+  const [loadingProgress, setLoadingProgress] = useState(false);
+  const currentMonth = new Date().toISOString().slice(0, 7);
+
   const districtsList = [
     "Colombo",
     "Gampaha",
@@ -73,7 +80,7 @@ const UserProfile = () => {
   const loggedInUser = JSON.parse(localStorage.getItem("user"));
   const isAdmin = loggedInUser?.role === "admin";
   const isOwnProfile = !id || id === loggedInUser?.user_id;
-  const showBackButton = isAdmin && !isOwnProfile;
+  const showBackButton = !isOwnProfile;
 
   const [passData, setPassData] = useState({
     currentPassword: "",
@@ -126,18 +133,24 @@ const UserProfile = () => {
             fallbackAvatar,
         });
 
+        setCustomers(response.data.customers || []);
+
         if (fetchedUser.role === "sales_rep") {
-          setLoadingCustomers(true);
+
+          // Fetch Monthly Progress for the Rep
+          setLoadingProgress(true);
           try {
-            const custRes = await api.get(
-              `/customers/by-rep/${targetId}`,
-              config,
-            );
-            setCustomers(custRes.data.customers || []);
-          } catch (custErr) {
-            console.error(custErr);
+            const progRes = await api.get(`/salesTarget/rep-summary?sales_rep_id=${targetId}&month=${currentMonth}`, config);
+            if (progRes.data?.success && progRes.data?.data) {
+              setProgressData({
+                target: parseFloat(progRes.data.data.adjusted_target_amount || 0),
+                achieved: parseFloat(progRes.data.data.live_achieved_amount || 0)
+              });
+            }
+          } catch (progErr) {
+            console.error("Progress fetch error:", progErr);
           } finally {
-            setLoadingCustomers(false);
+            setLoadingProgress(false);
           }
         }
       } catch (err) {
@@ -253,17 +266,20 @@ const UserProfile = () => {
   const isSalesRepProfile = user?.role === "sales_rep";
   const joinDate = user.createdAt || user.created_at;
 
+  const progressPercentage = progressData.target > 0 ? Math.min((progressData.achieved / progressData.target) * 100, 100) : 0;
+  const deficitAmount = Math.max(progressData.target - progressData.achieved, 0);
+
   return (
     <div className="p-4 md:p-8 max-w-6xl mx-auto animate-in fade-in duration-500 text-left bg-background text-textMain min-h-screen">
       {showBackButton && (
         <button
-          onClick={() => navigate("/all-users")} 
+          onClick={() => navigate(-1)} 
           className="mb-6 flex items-center gap-2 text-textMain/60 hover:text-primary transition-all font-black text-[10px] uppercase tracking-[0.2em] group"
         >
           <div className="p-2 bg-card rounded-xl shadow-sm border border-border group-hover:border-primary transition-all">
             <ArrowLeft size={16} className="group-hover:text-primary" />
           </div>
-          Back to User List
+          Go Back
         </button>
       )}
 
@@ -494,9 +510,10 @@ const UserProfile = () => {
         </div>
 
         {/* Right Column (lg:col-span-1) - Operational Districts */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 flex flex-col gap-8">
           {isSalesRepProfile && (
-            <section className="bg-card p-10 rounded-[2.5rem] shadow-sm border border-border h-full">
+            <>
+            <section className="bg-card p-10 rounded-[2.5rem] shadow-sm border border-border">
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-lg font-serif flex items-center gap-3 text-textMain">
                   <MapPin size={20} className="text-primary" /> Operational
@@ -562,6 +579,55 @@ const UserProfile = () => {
                 </div>
               )}
             </section>
+
+            {/* 🚀 Monthly Progress Section */}
+            <section className="bg-card p-8 rounded-[2.5rem] shadow-sm border border-border animate-in slide-in-from-bottom-4 duration-500">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-serif flex items-center gap-3 text-textMain">
+                  <TrendingUp size={20} className="text-primary" /> Current Progress
+                </h2>
+                <span className="text-[10px] font-black uppercase text-primary tracking-widest px-3 py-1 bg-primary/10 rounded-lg border border-primary/20">
+                  {currentMonth}
+                </span>
+              </div>
+
+              {loadingProgress ? (
+                <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-primary" size={24} /></div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center border-b border-border pb-3">
+                      <span className="text-[11px] font-bold text-textMain/50 uppercase tracking-widest">Allocation Quota</span>
+                      <span className="text-sm font-black text-textMain">Rs. {progressData.target.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b border-border pb-3">
+                      <span className="text-[11px] font-bold text-textMain/50 uppercase tracking-widest">Live Achieved</span>
+                      <span className="text-sm font-black text-emerald-500">Rs. {progressData.achieved.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center pb-3">
+                      <span className="text-[11px] font-bold text-textMain/50 uppercase tracking-widest">Remaining Deficit</span>
+                      <span className={`text-sm font-black ${deficitAmount === 0 ? "text-primary" : "text-textMain/50"}`}>
+                        {deficitAmount === 0 ? "Target Achieved!" : `Rs. ${deficitAmount.toLocaleString()}`}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <div className="flex justify-between items-end">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-textMain/40">Completion Index</span>
+                      <span className="text-2xl font-black text-primary tracking-tighter leading-none">{progressPercentage.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-background border border-border h-3 rounded-full overflow-hidden p-0.5 shadow-inner">
+                      <div 
+                        className="bg-gradient-to-r from-primary/70 to-primary h-full transition-all duration-700 ease-out rounded-full shadow-[0_0_10px_rgba(180,164,96,0.3)]" 
+                        style={{ width: `${progressPercentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+            </>
           )}
         </div>
       </div>
@@ -613,7 +679,8 @@ const UserProfile = () => {
                   customers.map((cust) => (
                     <tr
                       key={cust.customer_id}
-                      className="group hover:translate-x-1 transition-all"
+                      className="group hover:translate-x-1 transition-all cursor-pointer hover:bg-primary/5"
+                      onClick={() => navigate(`/customer/${cust.customer_id}`)}
                     >
                       <td className="px-6 py-5 bg-background rounded-l-2xl border-y border-l border-border">
                         <p className="text-sm font-bold text-textMain">

@@ -94,7 +94,7 @@ const Quotation = () => {
             onClick={() => navigate(-1)}
             className="mt-4 text-[0.5625em] font-black uppercase underline hover:text-primary"
           >
-            Back to Registry
+            Back 
           </button>
         </div>
       </div>
@@ -117,7 +117,7 @@ const Quotation = () => {
           onClick={() => navigate(-1)}
           className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-card border border-border rounded-xl text-xs font-black uppercase text-textMain/60 hover:text-textMain transition-all shadow-sm"
         >
-          <ArrowLeft size={16} /> Back to Registry
+          <ArrowLeft size={16} /> Back
         </button>
         <button
           onClick={handlePrint}
@@ -185,8 +185,24 @@ const Quotation = () => {
         </div>
 
         {/* Client & User Info */}
-        <div className="p-[2.5em] border-b border-border bg-background/50">
-          <div className="grid grid-cols-2 gap-[2.5em]">
+        <div className="p-[2.5em] border-b border-border bg-background/50 space-y-[1.5em]">
+          
+          {/* 1. Customer Info (Newly Added Without Breaking Styles) */}
+          <div className="flex justify-between items-center bg-card p-[1.25em] rounded-[1.25rem] border border-border shadow-sm">
+             <div>
+                <h3 className="text-[0.5625em] font-black text-textMain/60 uppercase tracking-widest mb-[0.25em]">Quotation For / Bill To:</h3>
+                <p className="text-[0.875em] font-black text-textMain uppercase">{orderData.customer?.saloon_name || orderData.customer_name || "Walk-in Customer"}</p>
+                <p className="text-[0.5625em] text-textMain/60 font-bold uppercase tracking-widest mt-[0.25em]">
+                   {orderData.customer?.district || orderData.shipping_address || orderData.district || "Unspecified Location"} 
+                   {orderData.phone ? ` • ${orderData.phone}` : ''}
+                </p>
+             </div>
+             <div className="p-[0.75em] bg-primary/10 rounded-xl text-primary">
+                <User size={20 * fontScale} />
+             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-[2.5em] pt-[1.5em] border-t border-border">
             {/* 1. Created By (The person who originally placed the order) */}
             <div className="space-y-3">
               <h3 className="text-[0.5625em] font-black text-textMain/60 uppercase tracking-widest flex items-center gap-2">

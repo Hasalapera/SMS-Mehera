@@ -101,7 +101,7 @@ const ViewOrders = () => {
                 fetchOrders(false); 
             } catch (err) {
                 console.error("Status Update Error:", err);
-                toast.error("Failed to update status.");
+                toast.error(err.response?.data?.message || "Failed to update status.");
             }
         }
     };

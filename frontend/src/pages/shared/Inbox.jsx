@@ -167,7 +167,6 @@ const Inbox = () => {
 
   return (
     <div ref={wrapperRef} className="w-full min-h-screen overflow-x-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
-      <Toaster position="top-right" />
 
       {/* Header */}
       <div className="bg-black px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b-4 border-primary dark:border-primary">
