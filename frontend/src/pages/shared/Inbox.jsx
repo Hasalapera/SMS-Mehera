@@ -236,8 +236,7 @@ const Inbox = () => {
               const config = getNotificationConfig(notification.type, notification.severity);
               const IconComponent = config.icon;
               const isThemeHighlightedMessage =
-                notification.type === 'stock' || (notification.severity && notification.severity !== 'info');
-
+                ['stock', 'customer', 'user', 'order'].includes(notification.type) || (notification.severity && notification.severity !== 'info');
               return (
                 <div
                   key={notification.notification_id}
