@@ -1,7 +1,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { createCustomer, getAllCustomers, getCustomer, addNote, deleteNote, getCustomerCount,searchCustomers, reassignCustomers, assignSalesRep, getUnassignedCustomers, getCustomersByRep, getDeletedSalesReps, getReplacementCandidates  } = require('../controllers/customerController');
+const { createCustomer, getAllCustomers, getCustomer, addNote, deleteNote, getCustomerCount,searchCustomers, reassignCustomers, assignSalesRep, getUnassignedCustomers, getCustomersByRep, getDeletedSalesReps, getReplacementCandidates, updateCustomer  } = require('../controllers/customerController');
 const { verifyToken, isAdmin } = require('../middlewares/authMiddleware');
 
 router.get('/all', getAllCustomers);
@@ -33,9 +33,11 @@ router.get('/replacement-candidates/:deletedRepId', verifyToken, isAdmin, getRep
 // Customer detail with notes
 router.get('/:id', getCustomer);
 
+// Update customer
+router.put('/update/:id', verifyToken, updateCustomer);
+
 // Note management
 router.post('/:id/notes', verifyToken, addNote);
 router.delete('/:id/notes/:noteId', verifyToken, deleteNote);
 
 module.exports = router;
-

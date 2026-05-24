@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axiosInstance';
 import {
   Instagram, Facebook, Twitter, Mail, MapPin,
   Phone, Heart, Leaf, Star, Sparkles
@@ -14,7 +14,7 @@ const Footer = () => {
   useEffect(() => {
     const fetchBranding = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/settings/public');
+        const res = await api.get('/settings/public');
         setSystemSettings(res.data);
       } catch (err) {
         console.error("Footer branding fetch failed:", err);

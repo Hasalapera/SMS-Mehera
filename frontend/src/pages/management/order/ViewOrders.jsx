@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { 
     Calendar, User, Hash, Filter, ShoppingBag, RefreshCw, 
     Loader2, Search, ArrowRight, ClipboardList, ChevronDown, ChevronLeft, ChevronRight,
@@ -43,7 +43,7 @@ const ViewOrders = () => {
         if (!token) return;
         if (showLoader) setLoading(true);
         try {
-            const res = await axios.get('http://localhost:5001/api/orders/all', {
+            const res = await api.get('/orders/all', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             console.log("Order Data Check:", res.data);
@@ -92,7 +92,7 @@ const ViewOrders = () => {
             try {
                 // this Backend route should be here
                 // if elese make the route (router.put('/update-order-status/:id', ...))
-                await axios.put(`http://localhost:5001/api/orders/update-order-status/${orderId}`, 
+                await api.put(`/orders/update-order-status/${orderId}`, 
                     { status: newStatus }, 
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
@@ -101,7 +101,7 @@ const ViewOrders = () => {
                 fetchOrders(false); 
             } catch (err) {
                 console.error("Status Update Error:", err);
-                toast.error("Failed to update status.");
+                toast.error(err.response?.data?.message || "Failed to update status.");
             }
         }
     };

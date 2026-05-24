@@ -13,7 +13,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import axios from "axios";
+import api from "../../../api/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
 
 const AddOrder = () => {
@@ -57,6 +57,12 @@ const AddOrder = () => {
   }, [cart]);
 
   const increaseQty = (cartItemId) => {
+    const item = cart.find(i => i.cartItemId === cartItemId);
+    if (item && item.stock_count !== undefined && item.qty >= item.stock_count) {
+      toast.error(`Only ${item.stock_count} units available in stock!`);
+      return;
+    }
+
     setCart((prev) => {
       const updatedCart = prev.map((item) =>
         item.cartItemId === cartItemId ? { ...item, qty: item.qty + 1 } : item,
@@ -103,8 +109,8 @@ const AddOrder = () => {
         const config = token
           ? { headers: { Authorization: `Bearer ${token}` } }
           : {};
-        const res = await axios.get(
-          `http://localhost:5001/api/customers/search?q=${query}`,
+        const res = await api.get(
+          `/customers/search?q=${query}`,
           config,
         );
         setSuggestions(res.data);
@@ -150,8 +156,8 @@ const AddOrder = () => {
       };
 
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.post(
-        "http://localhost:5001/api/orders/place",
+      const res = await api.post(
+        "/orders/place",
         orderData,
         config,
       );
@@ -166,7 +172,7 @@ const AddOrder = () => {
       }
     } catch (err) {
       console.error("Order Error:", err);
-      toast.error("Something went wrong!");
+      toast.error(err.response?.data?.message || "Something went wrong!");
     }
   };
 

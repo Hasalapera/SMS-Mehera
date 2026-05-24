@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance'; // Uses existing axios instance
 import { 
   Plus, Search, Package, AlertCircle,
-  Loader2, ArrowLeft, RefreshCw, Trash2, CheckCircle2, ClipboardList, Undo2, Sparkles
+  Loader2, ArrowLeft, RefreshCw, Trash2, CheckCircle2, ClipboardList, Undo2, Sparkles,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext'; // Import context
 
 const AddStock = () => {
   const { token, logout } = useAuth();
+  const { addNotification } = useNotifications(); // Get addNotification
   const navigate = useNavigate();
 
-  // States
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,6 +22,8 @@ const AddStock = () => {
   const [isApplying, setIsApplying] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
   const [lastAppliedSummary, setLastAppliedSummary] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 5;
 
   useEffect(() => {
     if (!token) {
@@ -33,7 +37,7 @@ const AddStock = () => {
     try {
       setLoading(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.get('http://localhost:5001/api/products/getProducts', config);
+      const res = await api.get('/products/getProducts', config);
       setProducts(res.data.products || res.data);
     } catch (err) {
       if(err.response?.status === 401) {
@@ -63,6 +67,7 @@ const AddStock = () => {
         variant_name: v.variant_name,
         price: Number(v.price || 0),
         stock_count: Number(v.stock_count || 0),
+        critical_stock_level: Number(v.critical_stock_level || 5), // Keep for notification logic
         qtyToAdd: ''
       })),
       bulkQty: ''
@@ -129,6 +134,17 @@ const AddStock = () => {
     );
   };
 
+  // Save notification to DB via API
+  const saveNotificationToDB = async (type, title, message, severity, reference_id = null) => {
+    try {
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      await api.post('/notifications', { type, title, message, severity, reference_id }, config);
+    } catch (err) {
+      // Don't block the flow if notification fails
+      console.error('Failed to save notification:', err);
+    }
+  };
+
   const handleApplyAllStock = async () => {
     const updates = [];
 
@@ -149,8 +165,10 @@ const AddStock = () => {
     try {
       setIsApplying(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const response = await axios.patch(
-        'http://localhost:5001/api/stock/variants/batch-add-stock',
+
+      // Apply stock update to backend
+      const response = await api.patch(
+        '/stock/variants/batch-add-stock',
         { updates },
         config
       );
@@ -161,14 +179,68 @@ const AddStock = () => {
       const totalUnits = Number(summary.totalUnits || 0);
 
       toast.success(`Stock updated for ${updatedVariants} variant(s)`);
+
       setLastAppliedSummary({
         updatedVariants,
         totalUnits,
         updates: appliedUpdates.map((u) => ({ variant_id: u.variant_id, quantity: Number(u.quantity) })),
-        appliedAt: new Date().toLocaleString()
+        appliedAt: new Date().toLocaleString(),
+        // Save names for revert notification
+        variantDetails: selectedProducts.flatMap(product =>
+          product.variants
+            .filter(v => Number(v.qtyToAdd) > 0)
+            .map(v => ({
+              variant_id: v.variant_id,
+              variant_name: v.variant_name,
+              product_name: product.product_name,
+              quantity: Number(v.qtyToAdd)
+            }))
+        )
       });
+
+      // Create notifications for each updated variant
+      for (const product of selectedProducts) {
+        for (const variant of product.variants) {
+          const qty = Number(variant.qtyToAdd);
+          if (!Number.isInteger(qty) || qty <= 0) continue;
+
+          // Calculate new stock after addition
+          const newStock = variant.stock_count + qty;
+          const criticalLevel = variant.critical_stock_level || 5;
+
+          let title = '';
+          let message = '';
+          let severity = 'info';
+
+          if (newStock <= 0) {
+            title = '🔴 Still Out of Stock';
+            message = `${product.product_name} - ${variant.variant_name} is still OUT OF STOCK after update`;
+            severity = 'critical';
+          } else if (newStock <= criticalLevel) {
+            title = '🔴 Critical Stock Level';
+            message = `${product.product_name} - ${variant.variant_name} is at CRITICAL level (${newStock} units)`;
+            severity = 'critical';
+          } else if (newStock < 10) {
+            title = '🟡 Low Stock Alert';
+            message = `${product.product_name} - ${variant.variant_name} is LOW (${newStock} units after adding ${qty})`;
+            severity = 'warning';
+          } else {
+            title = '📦 Stock Added';
+            message = `${product.product_name} - ${variant.variant_name} updated to ${newStock} units (+${qty} added)`;
+            severity = 'info';
+          }
+
+          // Save to DB (persistent)
+          await saveNotificationToDB('stock', title, message, severity, variant.variant_id);
+
+          // Add to context (shows immediately in Inbox without refresh)
+          addNotification({ type: 'stock', title, message, severity });
+        }
+      }
+
       setSelectedProducts([]);
       fetchProducts();
+
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to apply stock updates');
     } finally {
@@ -185,14 +257,31 @@ const AddStock = () => {
     try {
       setIsUndoing(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const response = await axios.patch(
-        'http://localhost:5001/api/stock/variants/batch-revert-stock',
+      const response = await api.patch(
+        '/stock/variants/batch-revert-stock',
         { updates: lastAppliedSummary.updates },
         config
       );
 
       const reverted = Number(response.data?.summary?.revertedVariants || lastAppliedSummary.updates.length);
       toast.success(`Reverted stock update for ${reverted} variant(s)`);
+      
+      // Create revert notification per variant with names
+      for (const detail of (lastAppliedSummary.variantDetails || [])) {
+        await saveNotificationToDB(
+          'stock',
+          '↩️ Stock Addition Reverted',
+          `${detail.product_name} - ${detail.variant_name}: ${detail.quantity} units addition has been reverted`,
+          'warning'
+        );
+        addNotification({
+          type: 'stock',
+          title: '↩️ Stock Addition Reverted',
+          message: `${detail.product_name} - ${detail.variant_name}: ${detail.quantity} units addition has been reverted`,
+          severity: 'warning'
+        });
+      }
+      
       setLastAppliedSummary(null);
       fetchProducts();
     } catch (err) {
@@ -207,6 +296,28 @@ const AddStock = () => {
     const search = searchTerm.toLowerCase();
     return pName.includes(search);
   });
+
+  const totalPages = Math.ceil(filteredProducts.length / rowsPerPage);
+  const safeCurrentPage = totalPages > 0 ? Math.min(currentPage, totalPages) : 1;
+  const indexOfLastRow = safeCurrentPage * rowsPerPage;
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const currentProducts = filteredProducts.slice(indexOfFirstRow, indexOfLastRow);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (totalPages === 0) {
+      if (currentPage !== 1) setCurrentPage(1);
+      return;
+    }
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   if (loading) {
     return (
@@ -226,7 +337,7 @@ const AddStock = () => {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4">
         <div>
           <h2 className="text-3xl font-extrabold text-textMain flex items-center gap-3 tracking-tight transition-all duration-300">
-            <div className="p-3 bg-black rounded-2xl text-primary shadow-xl">
+            <div className="p-3 bg-primary rounded-2xl text-textMain shadow-xl">
               <Package size={24} />
             </div>
             Stock Management
@@ -297,7 +408,7 @@ const AddStock = () => {
             </div>
 
             <div className="divide-y divide-border">
-              {filteredProducts.map((product) => (
+              {currentProducts.map((product) => (
                 <button
                   key={product.product_id}
                   onClick={() => addProductToQueue(product)}
@@ -318,6 +429,42 @@ const AddStock = () => {
                 </button>
               ))}
             </div>
+
+            {totalPages > 1 && (
+              <div className="px-5 py-4 border-t border-border bg-card/30 flex items-center justify-between gap-3 flex-wrap">
+                <p className="text-[10px] font-black text-textMain/50 uppercase tracking-widest">
+                  Page {safeCurrentPage} of {totalPages}
+                </p>
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  <button
+                    disabled={safeCurrentPage === 1}
+                    onClick={() => paginate(safeCurrentPage - 1)}
+                    className="p-2 rounded-lg border border-border text-textMain/50 hover:text-primary transition-all duration-300 disabled:opacity-30"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => paginate(i + 1)}
+                      className={`w-8 h-8 rounded-lg text-[11px] font-black transition-all ${safeCurrentPage === i + 1 ? 'bg-primary text-textMain shadow-md shadow-[#b4a460]/20' : 'bg-background text-textMain/50 hover:bg-primary/10'}`}
+                      aria-label={`Go to page ${i + 1}`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button
+                    disabled={safeCurrentPage === totalPages}
+                    onClick={() => paginate(safeCurrentPage + 1)}
+                    className="p-2 rounded-lg border border-border text-textMain/50 hover:text-primary transition-all duration-300 disabled:opacity-30"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -339,7 +486,7 @@ const AddStock = () => {
               </div>
             </div>
 
-            <div className="max-h-[560px] overflow-y-auto p-4 space-y-4">
+            <div className="max-h-140 overflow-y-auto p-4 space-y-4">
               {selectedProducts.length === 0 ? (
                 <div className="py-16 text-center border-2 border-dashed border-border rounded-3xl">
                   <Package size={34} className="mx-auto text-textMain/20 mb-3 transition-colors duration-300" />
@@ -364,7 +511,7 @@ const AddStock = () => {
 
                     <div className="p-4 space-y-3">
                       {product.variants.map((variant) => (
-                        <div key={variant.variant_id} className="grid grid-cols-[1fr_auto] gap-3 items-center">
+                        <div key={variant.variant_id} className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-center">
                           <div>
                             <p className="text-[12px] font-bold text-textMain transition-colors duration-300">{variant.variant_name || 'Variant'}</p>
                             <p className="text-[10px] text-textMain/50 font-semibold transition-colors duration-300">{variant.stock_count} units • Rs. {variant.price.toLocaleString()} each</p>
@@ -380,7 +527,7 @@ const AddStock = () => {
                         </div>
                       ))}
 
-                      <div className="pt-3 border-t border-border flex items-center gap-2">
+                      <div className="pt-3 border-t border-border flex flex-col sm:flex-row items-center gap-2">
                         <input
                           type="number"
                           min="1"
@@ -391,7 +538,7 @@ const AddStock = () => {
                         />
                         <button
                           onClick={() => applyBulkToProduct(product.product_id)}
-                          className="px-3 py-2 bg-primary text-black rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300"
+                          className="w-full sm:w-auto px-3 py-2 bg-primary text-black rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300"
                         >
                           Fill All
                         </button>
@@ -415,7 +562,6 @@ const AddStock = () => {
         </div>
       </div>
 
-      {/* Empty State */}
       {filteredProducts.length === 0 && (
         <div className="bg-card border border-dashed border-border rounded-[3rem] py-24 text-center transition-colors duration-300">
           <div className="bg-background w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">

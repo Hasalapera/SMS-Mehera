@@ -30,6 +30,11 @@ const Customer = sequelize.define('Customer', {
         allowNull: false,
         field: 'owner_name'
     },
+    email: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        field: 'email'
+    },
     phone1: {
         type: DataTypes.STRING,
         allowNull: false,

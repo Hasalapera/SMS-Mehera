@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, NavLink } from 'react-router-dom';
 import { LogOut, Menu, X, ChevronRight, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../pages/context/AuthContext';
-import axios from 'axios';
+import api from '../api/axiosInstance';
 import { getAssetUrl } from '../pages/utils/cloudinaryHelper';
 
 const Navbar = () => {
@@ -40,9 +40,9 @@ const Navbar = () => {
             try {
                 // Try fetching public settings if no token, else try private
                 const token = localStorage.getItem('accessToken');
-                const url = token ? 'http://localhost:5001/api/settings' : 'http://localhost:5001/api/settings/public';
+                const url = token ? '/settings' : '/settings/public';
                 const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-                const res = await axios.get(url, { headers });
+                const res = await api.get(url, { headers });
                 setSystemSettings(res.data);
             } catch (err) {
                 console.error("Navbar branding fetch failed:", err.response?.data || err.message);
@@ -84,7 +84,18 @@ const Navbar = () => {
         if (currentUser?.role === 'online_store_keeper' && link.name === 'Customer') {
             return false;
         }
+
+        if (currentUser?.role === 'logistics_officer') {
+            return ['Home', 'History', 'Stock', 'Support'].includes(link.name);
+        }
+        
         return true;
+    }).map(link => {
+        // 🛡️ Logistics officer ට 'Home' වෙනුවට 'Dashboard' කියලා පෙන්වන්න
+        if (currentUser?.role === 'logistics_officer' && link.name === 'Home') {
+            return { ...link, name: 'Dashboard' };
+        }
+        return link;
     });
 
     const getInitials = (name) => {

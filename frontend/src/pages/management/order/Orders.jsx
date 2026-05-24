@@ -5,9 +5,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 
-// පවතින Components
 import AddOrder from './AddOrder';
 import ViewOrders from './ViewOrders';
 import AddOnlineOrder from './AddOnlineOrder';
@@ -21,11 +20,11 @@ const Orders = () => {
   const [selectedProduct, setSelectedProduct] = useState(null); 
   const userRole = user?.role;
 
-  // Inventory එක load කරගැනීම
+  // load the inverntory
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/products/getProducts');
+        const res = await api.get('/products/getProducts');
         const data = res.data?.products || res.data;
         setProducts(data);
       } catch (err) {
@@ -91,7 +90,6 @@ const Orders = () => {
   ];
 
   return (
-    /* 🛡️ මෙන්න මේ පේළිය වෙනස් කළා: md:pl-72 ඇඩ් කරලා තියෙන්නේ */
     <div className="w-full mx-auto animate-in fade-in duration-500 pb-10">
       {/* <div className="p-6 animate-in fade-in duration-500"></div> */}
       

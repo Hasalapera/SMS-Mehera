@@ -4,9 +4,13 @@ const {
     placeOrder, 
     placeOnlineOrder, 
     getAllOrders ,
-    updateOrderStatus
+    updateOrderStatus,
+    updateTrackingInfo,
+    confirmDeliveryWithOTP,
+    initiateDeliveryOTP,
+    verifyDeliveryOTPByRep
 } = require('../controllers/orderController');
-const { verifyToken, isAdmin } = require('../middlewares/authMiddleware');
+const { verifyToken, isAdmin, isAuthorized } = require('../middlewares/authMiddleware');
 
 // normal Orders (Sales Rep/Admin)
 router.post('/place', verifyToken, placeOrder);
@@ -18,7 +22,18 @@ router.post('/online', verifyToken, placeOnlineOrder);
 router.get('/all', verifyToken, getAllOrders);
 
 // Update order status (Admin only)
-router.put('/update-order-status/:orderId', verifyToken, isAdmin, updateOrderStatus);
+router.put('/update-order-status/:orderId', 
+    verifyToken, 
+    isAuthorized(['admin', 'logistics_officer']), 
+    updateOrderStatus
+);
+
+router.put('/update-tracking/:orderId', verifyToken, updateTrackingInfo);
+
+router.post('/confirm-delivery/:orderId', confirmDeliveryWithOTP);
+
+router.post('/initiate-delivery/:orderId', verifyToken, isAuthorized(['sales_rep', 'admin']), initiateDeliveryOTP);
+router.post('/rep-confirm-delivery/:orderId', verifyToken, isAuthorized(['sales_rep', 'admin']), verifyDeliveryOTPByRep);
 
 
 

@@ -1,13 +1,14 @@
-const { User, UserArea, Customer, sequelize } = require('../models');
+const { User, UserArea, Customer, Order, sequelize } = require('../models');
 const bcrypt = require('bcrypt');
 const { sendWelcomeEmail } = require('../utils/emailSender');
 const { encrypt, decrypt } = require('../utils/cryptoUtils');
+const { Op } = require('sequelize');
 
 
 const addUserByAdmin = async (req, res) => {
     console.log("--- Add User Process Started ---");
     try {
-        const { name, email, role, dob, contact_no, nic_no, selectedDistricts } = req.body;
+        const { name, email, role, dob, contact_no, nic_no,address, gender, selectedDistricts } = req.body;
 
         if (!name || !email || !role) {
             return res.status(400).json({ message: "Name, email and role are required." });
@@ -41,6 +42,8 @@ const addUserByAdmin = async (req, res) => {
                 dob,
                 contact_no: encrypt(contact_no),
                 nic_no,
+                address: null,
+                gender: null,
                 is_active: true,
                 is_default_password: true,
                 default_password: defaultPassword
@@ -286,16 +289,46 @@ const getUserProfile = async (req, res) => {
             where: { user_id: id },
             include: [{ model: UserArea, as: 'areas', attributes: ['district_name'] }],
             attributes: { exclude: ['password', 'default_password'] },
-            paranoid: false // 👈 අයින් කරපු අයවත් පේන්න මේක ඕනේ
+            paranoid: false 
         });
 
         if (!user) return res.status(404).json({ error: "User not found" });
 
         const userData = user.toJSON();
-        if (userData.contact_no) userData.contact_no = decrypt(userData.contact_no);
         
-        res.status(200).json({ user: userData });
+        // 🧑‍💼 Fetch assigned customers if the user is a Sales Rep
+        let assignedCustomers = [];
+        if (userData.role === 'sales_rep') {
+            const rawCustomers = await Customer.findAll({
+                where: { sales_rep_id: id }
+            });
+            
+            // 🔐 Decrypt customer phone numbers before sending to the frontend
+            assignedCustomers = rawCustomers.map(c => {
+                const customer = c.toJSON();
+                try {
+                    if (customer.phone1) customer.phone1 = decrypt(customer.phone1);
+                    if (customer.phone2) customer.phone2 = decrypt(customer.phone2);
+                } catch (e) { console.warn("Customer phone decryption failed in profile"); }
+                return customer;
+            });
+        }
+        
+        // 🔐 Safe Decryption Block
+        if (userData.contact_no) {
+            try {
+                // Try to decrypt the number
+                userData.contact_no = decrypt(userData.contact_no);
+            } catch (decryptErr) {
+                // If it's already plain text, fallback to the raw value without crashing
+                console.warn("Decryption failed, using raw contact_no:", decryptErr.message);
+            }
+        }
+        
+        res.status(200).json({ user: userData, customers: assignedCustomers });
     } catch (err) {
+        // 🪵 Debugging වලට ලේසි වෙන්න සර්වර් කන්සෝල් එකේ error එක ප්‍රින්ට් කරමු
+        console.error("Get Profile Error:", err.message); 
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
@@ -376,15 +409,31 @@ const removeUserArea = async (req, res) => {
  */
 const updateProfile = async (req, res) => {
     try {
-        const userId = req.user?.user_id || req.body.user_id;
-        if(!userId) return res.status(400).json({ error: "User ID is required" });
+        const loggedInUser = req.user;
+        let targetUserId;
 
-        const user = await User.findByPk(userId);
+        // If the logged-in user is an admin and a user_id is provided in the body,
+        // they are trying to edit another user's profile.
+        if (loggedInUser.role === 'admin' && req.body.user_id) {
+            targetUserId = req.body.user_id;
+        } else {
+            // Otherwise, users can only edit their own profile.
+            targetUserId = loggedInUser.user_id;
+        }
+
+        if(!targetUserId) return res.status(400).json({ error: "Target User ID is required for update." });
+
+        const user = await User.findByPk(targetUserId);
         if (!user) return res.status(404).json({ error: "User not found" });
+
+        // Security check: Ensure non-admins are not trying to edit other users
+        if (loggedInUser.role !== 'admin' && targetUserId.toString() !== loggedInUser.user_id.toString()) {
+            return res.status(403).json({ error: "Forbidden: You can only update your own profile." });
+        }
 
         const updateData = {};
         if (req.body.contact_no) {
-            updateData.contact_no = encrypt(req.body.contact_no); // ✅ Encrypt කරනවා
+            updateData.contact_no = encrypt(req.body.contact_no); 
         }
         
         const incomingName = req.body.name || req.body.full_name;
@@ -395,6 +444,12 @@ const updateProfile = async (req, res) => {
         if (req.body.dob && req.body.dob !== "") updateData.dob = req.body.dob;
         if (req.body.nic_no) updateData.nic_no = req.body.nic_no;
         
+        // 🏠 Aluth Address field eka catch karala updateData ekata daddi
+        if (req.body.address) updateData.address = req.body.address;
+        
+        // 👫 Aluth Gender field eka catch karala updateData ekata daddi
+        if (req.body.gender) updateData.gender = req.body.gender;
+        
         if (req.file) {
             updateData.profile_image = req.file.path || req.file.secure_url;
         }
@@ -403,11 +458,10 @@ const updateProfile = async (req, res) => {
             await user.update(updateData);
         }
 
-        const updatedUserInstance = await User.findByPk(userId, {
+        const updatedUserInstance = await User.findByPk(targetUserId, {
             attributes: { exclude: ['password', 'default_password'] },
         });
 
-        // ✅ මචං මෙතන තමයි 'userData' define කළේ. දැන් error එක එන්නේ නැහැ.
         const userData = updatedUserInstance.toJSON(); 
         if (userData.contact_no) {
             userData.contact_no = decrypt(userData.contact_no);
@@ -534,6 +588,82 @@ const getSalesReps = async (req, res) => {
     }
 };
 
+/**
+ * Get Top Performers purely based on Sales Reps' explicitly assigned areas and customers
+ */
+const getTopPerformers = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+
+        // 1. Fetch active sales reps and their areas
+        const reps = await User.findAll({
+            where: { role: 'sales_rep', is_active: true },
+            include: [{ model: UserArea, as: 'areas' }]
+        });
+
+        let dateFilter = {};
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            dateFilter = { created_at: { [Op.between]: [start, end] } };
+        }
+
+        const topPerformers = [];
+
+        for (const rep of reps) {
+            // 2. Fetch ALL valid orders placed by this rep (regardless of assigned areas)
+            const repOrders = await Order.findAll({
+                where: {
+                    created_by: rep.user_id,
+                    order_status: { [Op.in]: ['approved', 'shipped', 'delivered'] },
+                    ...dateFilter
+                },
+                include: [{
+                    model: Customer,
+                    as: 'customer'
+                }]
+            });
+
+            let totalSales = 0;
+            const districtSales = {};
+
+            repOrders.forEach(o => {
+                const amt = parseFloat(o.total_amount) || 0;
+                const dist = o.customer?.district || o.district || 'Global';
+                totalSales += amt;
+                districtSales[dist] = (districtSales[dist] || 0) + amt;
+            });
+
+            if (totalSales > 0) {
+                let topArea = 'Multiple Regions';
+                let maxSales = -1;
+                for (const [dist, amt] of Object.entries(districtSales)) {
+                    if (amt > maxSales) { maxSales = amt; topArea = dist; }
+                }
+
+                topPerformers.push({
+                    user_id: rep.user_id,
+                    name: rep.name,
+                    role: rep.role,
+                    image: rep.profile_image,
+                    sales: totalSales,
+                    topArea: topArea
+                });
+            }
+        }
+
+        // Sort by total sales and return top 5
+        topPerformers.sort((a, b) => b.sales - a.sales);
+        res.status(200).json({ success: true, performers: topPerformers.slice(0, 5) });
+
+    } catch (err) {
+        console.error("Top Performers Error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
 module.exports = {
     addUserByAdmin,
     updatePassword,
@@ -547,5 +677,6 @@ module.exports = {
     getSalesReps,
     verifySession,
     addUserArea,
-    removeUserArea
+    removeUserArea,
+    getTopPerformers
 };

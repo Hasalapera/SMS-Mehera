@@ -30,5 +30,6 @@ router.get('/all-users', isAdminOrManager, userController.getAllUsers);
 router.put('/delete-user/:id', isAdmin, softDeleteUser);
 router.put('/restore-user/:id', isAdmin, userController.restoreUser);
 router.get('/sales-reps', verifyToken, isAdmin, userController.getSalesReps);
+router.get('/top-performers', verifyToken, userController.getTopPerformers);
 
 module.exports = router;

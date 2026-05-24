@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   UserPlus, Phone, MapPin, Building2, UserCircle, 
-  Loader2, ArrowLeft, RefreshCcw, CheckCircle2, Info
+  Loader2, ArrowLeft, RefreshCcw, CheckCircle2, Info, Mail
 } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 
 const AddCustomer = () => {
@@ -20,6 +20,7 @@ const AddCustomer = () => {
     type: 'Saloon',
     saloon_name: '',
     owner_name: '',
+    email: '',
     phone1: '',
     phone2: '',
     lane1: '',
@@ -33,7 +34,7 @@ const AddCustomer = () => {
   // useEffect(() => {
   //   const fetchCustomerCount = async () => {
   //     try {
-  //       const res = await axios.get('http://localhost:5001/api/customers/count');
+  //       const res = await api.get('/customers/count');
   //       setCustomerCount(res.data.count || 0);
   //     } catch (err) { console.error(err); }
   //   };
@@ -42,7 +43,7 @@ const AddCustomer = () => {
 
   const fetchCustomerCount = async () => {
     try {
-      const res = await axios.get('http://localhost:5001/api/customers/count');
+      const res = await api.get('/customers/count');
       setCustomerCount(res.data.count || 0);
     } catch (err) { console.error(err); }
   };
@@ -92,7 +93,7 @@ const AddCustomer = () => {
         address: `${formData.lane1}, ${formData.lane2}` 
       };
 
-      await axios.post('http://localhost:5001/api/customers/add', submissionData);
+      await api.post('/customers/add', submissionData);
       toast.success("Customer Registered Successfully!");
 
       if (isFromAssignUser) {
@@ -188,6 +189,14 @@ const AddCustomer = () => {
                       <UserCircle className={`absolute left-5 top-1/2 -translate-y-1/2 transition-colors ${errors.owner_name ? 'text-red-400' : 'text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300'}`} size={18} />
                       <input type="text" name="owner_name" value={formData.owner_name} onChange={handleChange} placeholder="Mr/Ms. Owner Name" 
                         className={`w-full bg-card/50 transition-colors duration-300 border rounded-2xl py-4 pl-13 pr-5 text-sm transition-all outline-none ${errors.owner_name ? 'border-red-500 focus:border-red-600 bg-red-50/30' : 'border-border transition-colors duration-300 focus:border-primary transition-all duration-300 focus:bg-card transition-colors duration-300'}`} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest mb-2.5 block ml-1 flex items-center gap-2">Email Address (Optional)</label>
+                    <div className="relative group">
+                      <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={16} />
+                      <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="customer@example.com" 
+                        className="w-full bg-card/50 transition-colors duration-300 border border-border rounded-2xl py-4 pl-12 pr-4 text-sm transition-all outline-none focus:border-primary focus:bg-card" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-5">
