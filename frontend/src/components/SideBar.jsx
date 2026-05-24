@@ -12,6 +12,7 @@ import {
 import { useNavigate, NavLink, useLocation } from 'react-router-dom';
 import ViewOrders from '../pages/management/order/ViewOrders';
 import api from '../api/axiosInstance';
+import { useNotifications } from '../pages/context/NotificationContext';
 
 const menuConfig = {
   admin: { 
@@ -88,13 +89,15 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed, badge, onClick, isOpen })
   );
 
   if (to) return <NavLink to={to} className={activeClasses}>{renderContent()}</NavLink>;
-  return <button onClick={onClick} className={`${commonClasses} text-textMain/50 transition-colors duration-300 hover:bg-card hover:text-primary transition-all`}>{renderContent()}</button>;
+  return <button onClick={onClick} className={`${commonClasses} text-textMain/50 transition-all duration-300 hover:bg-card hover:text-primary`}>{renderContent()}</button>;
 };
 
 const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setIsMobileOpen }) => {
   const [openSubMenu, setOpenSubMenu] = useState(''); 
   const navigate = useNavigate();
-  const {logout} = useAuth();
+  const { logout, token } = useAuth();
+  const { unreadCount } = useNotifications();
+  const { setNotificationsFromAPI } = useNotifications();
   const [systemSettings, setSystemSettings] = useState(null);
   const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
   
@@ -122,6 +125,22 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
         window.removeEventListener('themeChange', handleThemeChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchNotifications = async () => {
+      try {
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const res = await api.get('/notifications', config);
+        setNotificationsFromAPI(res.data.notifications || []);
+      } catch (err) {
+        console.error('Sidebar notification fetch failed:', err.response?.data || err.message);
+      }
+    };
+
+    fetchNotifications();
+  }, [token, setNotificationsFromAPI]);
 
   useEffect(() => {
     if (isMobileOpen) setIsMobileOpen(false);
@@ -215,7 +234,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
         <div className="space-y-1">
           {!isSidebarCollapsed && <p className="text-[10px] uppercase text-textMain/50 font-black mb-2 ml-2 tracking-widest">Menu</p>}
           <NavItem to={`/dashboard`} icon={LayoutDashboard} label="Dashboard" isCollapsed={isSidebarCollapsed} />
-          <NavItem to="/inbox" icon={Inbox} label="Inbox" badge="10" isCollapsed={isSidebarCollapsed} />
+          <NavItem to="/inbox" icon={Inbox} label="Inbox" badge={unreadCount > 0 ? String(unreadCount) : ''} isCollapsed={isSidebarCollapsed} />
         </div>
 
         <div className="space-y-1">
@@ -261,12 +280,12 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
                     <>
                       <NavLink to="/sales-report" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><FileText size={14} /> Sales Summary </NavLink>
                       <NavLink to="/current-progress" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><TrendingUp size={14} /> Current Progress </NavLink>
-                      <NavLink to="/product-summary" className={({ isActive }) => `flex items-center gap-[0.5rem] p-[0.5rem] text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><Package size={14} /> Product Summary </NavLink>
-                      <NavLink to="/critical-stock" className={({ isActive }) => `flex items-center gap-[0.5rem] p-[0.5rem] text-[11px] transition-colors ${isActive ? 'text-red-500 font-bold' : 'text-textMain/50 hover:text-red-500'}`}><AlertTriangle size={14} className="text-red-500" /> Critical Stock </NavLink>
+                      <NavLink to="/product-summary" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><Package size={14} /> Product Summary </NavLink>
+                      <NavLink to="/critical-stock" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-red-500 font-bold' : 'text-textMain/50 hover:text-red-500'}`}><AlertTriangle size={14} className="text-red-500" /> Critical Stock </NavLink>
                     </>
                   )}
                   {permissions.canViewRanking && (
-                    <NavLink to="/rep-ranking" className={({ isActive }) => `flex items-center gap-[0.5rem] p-[0.5rem] text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-textMain/50 hover:text-[#b4a460]'}`}><Award size={14} /> Rep Ranking </NavLink>
+                    <NavLink to="/rep-ranking" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-textMain/50 hover:text-[#b4a460]'}`}><Award size={14} /> Rep Ranking </NavLink>
                   )}
                 </div>
               )}
