@@ -4,8 +4,8 @@ const { Op } = require('sequelize');
 // Role-based notification type filter
 const getRoleBasedFilter = (role) => {
   if (role === 'admin') return null;
-  if (role === 'manager') return { type: ['stock', 'order'] };
-  if (role === 'sales_rep') return { type: ['order', 'customer'] };
+  if (role === 'manager') return { type: ['stock', 'order', 'user'] };
+  if (role === 'sales_rep') return { type: ['stock' ,'order', 'customer'] };
   if (role === 'online_store_keeper') return { type: ['order', 'stock'] };
   return { type: ['order'] };
 };
