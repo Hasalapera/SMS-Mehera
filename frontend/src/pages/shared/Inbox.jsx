@@ -235,19 +235,23 @@ const Inbox = () => {
             {filteredNotifications.map(notification => {
               const config = getNotificationConfig(notification.type, notification.severity);
               const IconComponent = config.icon;
+              const isThemeHighlightedMessage =
+                notification.type === 'stock' || (notification.severity && notification.severity !== 'info');
 
               return (
                 <div
                   key={notification.notification_id}
                   className={`p-5 rounded-3xl border transition-all ${
-                    notification.is_read
+                    isThemeHighlightedMessage
+                      ? 'bg-card border-primary/20 ring-1 ring-primary/10 shadow-sm shadow-primary/5'
+                      : notification.is_read
                       ? 'bg-card border-border opacity-75'
                       : `${config.bgColor} border-primary/20 ring-1 ring-primary/10`
                   }`}
                 >
                   <div className="flex items-start gap-4">
                     {/* Type icon */}
-                    <div className={`p-3 rounded-xl shrink-0 ${config.bgColor}`}>
+                    <div className={`p-3 rounded-xl shrink-0 ${isThemeHighlightedMessage ? 'bg-primary/10 dark:bg-primary/15' : config.bgColor}`}>
                       <IconComponent size={20} color={config.color} />
                     </div>
 
@@ -255,13 +259,13 @@ const Inbox = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <h3 className={`text-sm font-black ${config.textColor} uppercase tracking-tight mb-1`}>
+                          <h3 className={`text-sm md:text-base font-black uppercase tracking-tight mb-1 ${isThemeHighlightedMessage ? 'text-primary dark:text-primary' : 'text-textMain dark:text-textMain'}`}>
                             {notification.title}
                           </h3>
-                          <p className="text-[10px] text-textMain/60 leading-relaxed max-w-2xl">
+                          <p className={`leading-relaxed max-w-2xl ${isThemeHighlightedMessage ? 'text-[11px] md:text-[13px] font-semibold text-textMain/90 dark:text-textMain/95' : 'text-[10px] text-textMain/80 dark:text-textMain/85'}`}>
                             {notification.message}
                           </p>
-                          <p className="text-[8px] text-textMain/40 mt-2 uppercase tracking-widest">
+                          <p className="text-[8px] text-textMain/55 dark:text-textMain/60 mt-2 uppercase tracking-widest">
                             {notification.created_at && new Date(notification.created_at).toLocaleString('en-GB')}
                           </p>
                         </div>
