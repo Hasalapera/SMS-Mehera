@@ -11,7 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext'; // Import context
 
 const AddStock = () => {
-  const { token, logout } = useAuth();
+  const { token, logout, user } = useAuth();
   const { addNotification } = useNotifications(); // Get addNotification
   const navigate = useNavigate();
 
@@ -134,17 +134,6 @@ const AddStock = () => {
     );
   };
 
-  // Save notification to DB via API
-  const saveNotificationToDB = async (type, title, message, severity, reference_id = null) => {
-    try {
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      await api.post('/notifications', { type, title, message, severity, reference_id }, config);
-    } catch (err) {
-      // Don't block the flow if notification fails
-      console.error('Failed to save notification:', err);
-    }
-  };
-
   const handleApplyAllStock = async () => {
     const updates = [];
 
@@ -207,6 +196,7 @@ const AddStock = () => {
           // Calculate new stock after addition
           const newStock = variant.stock_count + qty;
           const criticalLevel = variant.critical_stock_level || 5;
+          const userInfo = `${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`;
 
           let title = '';
           let message = '';
@@ -214,24 +204,22 @@ const AddStock = () => {
 
           if (newStock <= 0) {
             title = '🔴 Still Out of Stock';
-            message = `${product.product_name} - ${variant.variant_name} is still OUT OF STOCK after update`;
+            message = `${product.product_name} - ${variant.variant_name} is still OUT OF STOCK after update by ${userInfo}`;
             severity = 'critical';
           } else if (newStock <= criticalLevel) {
             title = '🔴 Critical Stock Level';
-            message = `${product.product_name} - ${variant.variant_name} is at CRITICAL level (${newStock} units)`;
+            message = `${product.product_name} - ${variant.variant_name} is at CRITICAL level (${newStock} units) - updated by ${userInfo}`;
             severity = 'critical';
           } else if (newStock < 10) {
             title = '🟡 Low Stock Alert';
-            message = `${product.product_name} - ${variant.variant_name} is LOW (${newStock} units after adding ${qty})`;
+            message = `${product.product_name} - ${variant.variant_name} is LOW (${newStock} units after adding ${qty}) - updated by ${userInfo}`;
             severity = 'warning';
           } else {
             title = '📦 Stock Added';
-            message = `${product.product_name} - ${variant.variant_name} updated to ${newStock} units (+${qty} added)`;
+            message = `${product.product_name} - ${variant.variant_name} updated to ${newStock} units (+${qty} added) by ${userInfo}`;
             severity = 'info';
           }
 
-          // Save to DB (persistent)
-          await saveNotificationToDB('stock', title, message, severity, variant.variant_id);
 
           // Add to context (shows immediately in Inbox without refresh)
           addNotification({ type: 'stock', title, message, severity });
@@ -268,16 +256,10 @@ const AddStock = () => {
       
       // Create revert notification per variant with names
       for (const detail of (lastAppliedSummary.variantDetails || [])) {
-        await saveNotificationToDB(
-          'stock',
-          '↩️ Stock Addition Reverted',
-          `${detail.product_name} - ${detail.variant_name}: ${detail.quantity} units addition has been reverted`,
-          'warning'
-        );
         addNotification({
           type: 'stock',
           title: '↩️ Stock Addition Reverted',
-          message: `${detail.product_name} - ${detail.variant_name}: ${detail.quantity} units addition has been reverted`,
+          message: `${detail.product_name} - ${detail.variant_name}: ${detail.quantity} units addition has been reverted by ${user.name}`,
           severity: 'warning'
         });
       }

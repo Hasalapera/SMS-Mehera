@@ -7,10 +7,18 @@ import {
 import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 
+import { useNotifications } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
+
 const AddCustomer = () => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { addNotification } = useNotifications();
+  const { user } = useAuth();   
+
   const [loading, setLoading] = useState(false);
+
   const [customerCount, setCustomerCount] = useState(0);
   const [errors, setErrors] = useState({});
 
@@ -70,6 +78,18 @@ const AddCustomer = () => {
     }
   };
 
+  const saveNotificationToDB = async (type, title, message, severity) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      await api.post('/notifications',
+        { type, title, message, severity },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (err) {
+      console.error('Failed to save notification:', err);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
@@ -95,6 +115,20 @@ const AddCustomer = () => {
 
       await api.post('/customers/add', submissionData);
       toast.success("Customer Registered Successfully!");
+
+      // Create notification
+      await saveNotificationToDB(
+        'customer',
+        '🏪 New Customer Registered',
+        `${formData.saloon_name} (${formData.type}) - ${formData.district} district registered by ${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`,
+        'info'
+      );
+      addNotification({
+        type: 'customer',
+        title: '🏪 New Customer Registered',
+        message: `${formData.saloon_name} (${formData.type}) - ${formData.district} district registered by ${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`,
+        severity: 'info'
+      });
 
       if (isFromAssignUser) {
         setTimeout(() => {
