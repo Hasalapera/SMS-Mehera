@@ -134,17 +134,6 @@ const AddStock = () => {
     );
   };
 
-  // Save notification to DB via API
-  const saveNotificationToDB = async (type, title, message, severity, reference_id = null) => {
-    try {
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      await api.post('/notifications', { type, title, message, severity, reference_id }, config);
-    } catch (err) {
-      // Don't block the flow if notification fails
-      console.error('Failed to save notification:', err);
-    }
-  };
-
   const handleApplyAllStock = async () => {
     const updates = [];
 
@@ -231,8 +220,6 @@ const AddStock = () => {
             severity = 'info';
           }
 
-          // Save to DB (persistent)
-          await saveNotificationToDB('stock', title, message, severity, variant.variant_id);
 
           // Add to context (shows immediately in Inbox without refresh)
           addNotification({ type: 'stock', title, message, severity });
@@ -269,12 +256,6 @@ const AddStock = () => {
       
       // Create revert notification per variant with names
       for (const detail of (lastAppliedSummary.variantDetails || [])) {
-        await saveNotificationToDB(
-          'stock',
-          '↩️ Stock Addition Reverted',
-          `${detail.product_name} - ${detail.variant_name}: ${detail.quantity} units addition has been reverted by ${user.name}`,
-          'warning'
-        );
         addNotification({
           type: 'stock',
           title: '↩️ Stock Addition Reverted',
