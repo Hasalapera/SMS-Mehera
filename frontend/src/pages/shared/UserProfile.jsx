@@ -117,6 +117,36 @@ const UserProfile = () => {
     picture_url: fallbackAvatar,
   });
 
+  const formatProfileValue = (value) => {
+    if (value === null || value === undefined) return 'Not provided';
+    const text = String(value).trim();
+    return text.length > 0 ? text : 'Not provided';
+  };
+
+  const buildProfileUpdateSummary = (previousUser, updatedFormData) => {
+    if (!previousUser || !updatedFormData) return '';
+
+    const changes = [];
+    const previousDob = previousUser.dob ? String(previousUser.dob).split('T')[0] : '';
+
+    const comparisons = [
+      { label: 'Full Name', before: previousUser.name || previousUser.full_name, after: updatedFormData.full_name },
+      { label: 'Contact No', before: previousUser.contact_no, after: updatedFormData.contact_no },
+      { label: 'Date of Birth', before: previousDob, after: updatedFormData.dob },
+      { label: 'NIC No', before: previousUser.nic_no, after: updatedFormData.nic_no },
+      { label: 'Address', before: previousUser.address, after: updatedFormData.address },
+      { label: 'Gender', before: previousUser.gender, after: updatedFormData.gender },
+    ];
+
+    comparisons.forEach(({ label, before, after }) => {
+      if (formatProfileValue(before) !== formatProfileValue(after)) {
+        changes.push(`${label}: ${formatProfileValue(before)} -> ${formatProfileValue(after)}`);
+      }
+    });
+
+    return changes.join('; ');
+  };
+
   useEffect(() => {
     if (!token) {
       navigate("/");
@@ -238,6 +268,7 @@ const UserProfile = () => {
 
   const handleUpdateProfile = async () => {
     setIsUpdating(true);
+    const previousUser = user;
     const uploadData = new FormData();
     uploadData.append("user_id", user.user_id); // The ID of the user being edited
     uploadData.append("name", formData.full_name);
@@ -272,9 +303,11 @@ const UserProfile = () => {
         toast.success("Profile updated!");
 
         // Notification
+        const updateSummary = buildProfileUpdateSummary(previousUser, formData);
+        const profileName = formData.full_name || previousUser?.name || previousUser?.full_name || 'User';
         const notifMessage = isOwnProfile
-          ? `${loggedInUser?.name} updated their own profile`
-          : `${user?.name}'s profile was updated by ${loggedInUser?.name}`;
+          ? `${profileName} updated their own profile${updateSummary ? ` | Changes: ${updateSummary}` : ''}`
+          : `${profileName}'s profile was updated by ${loggedInUser?.name}${updateSummary ? ` | Changes: ${updateSummary}` : ''}`;
 
         await saveNotificationToDB('user', '✏️ Profile Updated', notifMessage, 'info');
         addNotification({ type: 'user', title: '✏️ Profile Updated', message: notifMessage, severity: 'info' });

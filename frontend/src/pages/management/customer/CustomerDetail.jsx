@@ -52,6 +52,37 @@ const normalizeStats = (responseData, customer) => {
   };
 };
 
+const formatCustomerUpdateValue = (value) => {
+  if (value === null || value === undefined) return 'Not provided';
+  const text = String(value).trim();
+  return text.length > 0 ? text : 'Not provided';
+};
+
+const buildCustomerUpdateSummary = (originalCustomer, updatedFormData) => {
+  if (!originalCustomer || !updatedFormData) return 'No customer field changes detected';
+
+  const comparisons = [
+    { label: 'Business Name', before: originalCustomer.saloon_name, after: updatedFormData.saloon_name },
+    { label: 'Owner Name', before: originalCustomer.owner_name, after: updatedFormData.owner_name },
+    { label: 'Email', before: originalCustomer.email, after: updatedFormData.email },
+    { label: 'Primary Phone', before: originalCustomer.phone1, after: updatedFormData.phone1 },
+    { label: 'Secondary Phone', before: originalCustomer.phone2, after: updatedFormData.phone2 },
+    { label: 'Address', before: [originalCustomer.lane1, originalCustomer.lane2].filter(Boolean).join(', '), after: [updatedFormData.lane1, updatedFormData.lane2].filter(Boolean).join(', ') },
+    { label: 'District', before: originalCustomer.district, after: updatedFormData.district },
+    { label: 'Type', before: originalCustomer.type, after: updatedFormData.type },
+  ];
+
+  const changes = comparisons.filter(({ before, after }) => formatCustomerUpdateValue(before) !== formatCustomerUpdateValue(after));
+
+  if (changes.length === 0) {
+    return '';
+  }
+
+  return changes
+    .map(({ label, before, after }) => `${label}: ${formatCustomerUpdateValue(before)} -> ${formatCustomerUpdateValue(after)}`)
+    .join('; ');
+};
+
 export default function CustomerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -145,17 +176,20 @@ export default function CustomerDetail() {
       });
       toast.success('Customer updated successfully!');
 
+      const updateSummary = buildCustomerUpdateSummary(customer, editFormData);
+      const notificationMessage = `${formatCustomerUpdateValue(editFormData.saloon_name || customerName)} (${formatCustomerUpdateValue(editFormData.type || customerType)}) - ${formatCustomerUpdateValue(editFormData.district || customer.district)} updated by ${loggedInUser?.name}${updateSummary ? ` | Changes: ${updateSummary}` : ''}`;
+
       // Create notification
       await saveNotificationToDB(
         'customer',
         '✏️ Customer Info Updated',
-        `${editFormData.saloon_name} (${editFormData.type}) - ${editFormData.district} updated by ${loggedInUser?.name}`,
+        notificationMessage,
         'info'
       );
       addNotification({
         type: 'customer',
         title: '✏️ Customer Info Updated',
-        message: `${editFormData.saloon_name} (${editFormData.type}) - ${editFormData.district} updated by ${loggedInUser?.name}`,
+        message: notificationMessage,
         severity: 'info'
       });
 
