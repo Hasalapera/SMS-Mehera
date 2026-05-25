@@ -13,6 +13,8 @@ import { useNotifications } from '../../context/NotificationContext';
 const EditStock = () => {
   const { token, logout, user } = useAuth();
   const { addNotification } = useNotifications(); // Get addNotification from context
+  const userInfo = `${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`;
+
   const navigate = useNavigate();
 
   // States
@@ -232,19 +234,19 @@ const EditStock = () => {
 
           if (newStock <= 0) {
             title = '🔴 Out of Stock Alert';
-            message = `${product.product_name} - ${variant.variant_name} is now OUT OF STOCK (0 units) - updated by ${user.name}`;
+            message = `${product.product_name} - ${variant.variant_name} is now OUT OF STOCK (0 units) - updated by ${userInfo}`;
             severity = 'critical';
           } else if (newStock <= criticalLevel) {
             title = '🔴 Critical Stock Level';
-            message = `${product.product_name} - ${variant.variant_name} dropped to CRITICAL level (${newStock} units) - updated by ${user.name}`;
+            message = `${product.product_name} - ${variant.variant_name} dropped to CRITICAL level (${newStock} units) - updated by ${userInfo}`;
             severity = 'critical';
           } else if (newStock < 10) {
             title = '🟡 Low Stock Alert';
-            message = `${product.product_name} - ${variant.variant_name} is LOW (${newStock} units, ${sign}${difference} change) - updated by ${user.name}`;
+            message = `${product.product_name} - ${variant.variant_name} is LOW (${newStock} units, ${sign}${difference} change) - updated by ${userInfo}`;
             severity = 'warning';
           } else {
             title = '📦 Stock Updated';
-            message = `${product.product_name} - ${variant.variant_name} set to ${newStock} units (${sign}${difference} change) - updated by ${user.name}`;
+            message = `${product.product_name} - ${variant.variant_name} set to ${newStock} units (${sign}${difference} change) - updated by ${userInfo}`;
             severity = 'info';
           }
 
@@ -293,13 +295,13 @@ const EditStock = () => {
         await saveNotificationToDB(
           'stock',
           '↩️ Stock Edit Reverted',
-          `${detail.product_name} - ${detail.variant_name}: reverted from ${detail.newStock} back to ${detail.oldStock} units by ${user.name}`,
+          `${detail.product_name} - ${detail.variant_name}: reverted from ${detail.newStock} back to ${detail.oldStock} units by ${userInfo}`,
           'warning'
         );
         addNotification({
           type: 'stock',
           title: '↩️ Stock Edit Reverted',
-          message: `${detail.product_name} - ${detail.variant_name}: reverted from ${detail.newStock} back to ${detail.oldStock} units by ${user.name}`,
+          message: `${detail.product_name} - ${detail.variant_name}: reverted from ${detail.newStock} back to ${detail.oldStock} units by ${userInfo}`,
           severity: 'warning'
         });
       }

@@ -120,13 +120,13 @@ const AddCustomer = () => {
       await saveNotificationToDB(
         'customer',
         '🏪 New Customer Registered',
-        `${formData.saloon_name} (${formData.type}) - ${formData.district} district registered by ${user?.name}`,
+        `${formData.saloon_name} (${formData.type}) - ${formData.district} district registered by ${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`,
         'info'
       );
       addNotification({
         type: 'customer',
         title: '🏪 New Customer Registered',
-        message: `${formData.saloon_name} (${formData.type}) - ${formData.district} district registered by ${user?.name}`,
+        message: `${formData.saloon_name} (${formData.type}) - ${formData.district} district registered by ${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`,
         severity: 'info'
       });
 

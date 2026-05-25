@@ -142,13 +142,13 @@ const AddProduct = () => {
       await saveNotificationToDB(
         'stock',
         '🆕 New Product Added',
-        `${formData.product_name} (${brandName} - ${categoryName}) added with ${variantCount} variant(s) by ${user?.name}`,
+        `${formData.product_name} (${brandName} - ${categoryName}) added with ${variantCount} variant(s) by ${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`,
         'info'
       );
       addNotification({
         type: 'stock',
         title: '🆕 New Product Added',
-        message: `${formData.product_name} (${brandName} - ${categoryName}) added with ${variantCount} variant(s) by ${user?.name}`,
+        message: `${formData.product_name} (${brandName} - ${categoryName}) added with ${variantCount} variant(s) by ${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`,
         severity: 'info'
       });
 

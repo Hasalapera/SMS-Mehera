@@ -207,6 +207,7 @@ const AddStock = () => {
           // Calculate new stock after addition
           const newStock = variant.stock_count + qty;
           const criticalLevel = variant.critical_stock_level || 5;
+          const userInfo = `${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`;
 
           let title = '';
           let message = '';
@@ -214,19 +215,19 @@ const AddStock = () => {
 
           if (newStock <= 0) {
             title = '🔴 Still Out of Stock';
-            message = `${product.product_name} - ${variant.variant_name} is still OUT OF STOCK after update by ${user.name}`;
+            message = `${product.product_name} - ${variant.variant_name} is still OUT OF STOCK after update by ${userInfo}`;
             severity = 'critical';
           } else if (newStock <= criticalLevel) {
             title = '🔴 Critical Stock Level';
-            message = `${product.product_name} - ${variant.variant_name} is at CRITICAL level (${newStock} units) - updated by ${user.name}`;
+            message = `${product.product_name} - ${variant.variant_name} is at CRITICAL level (${newStock} units) - updated by ${userInfo}`;
             severity = 'critical';
           } else if (newStock < 10) {
             title = '🟡 Low Stock Alert';
-            message = `${product.product_name} - ${variant.variant_name} is LOW (${newStock} units after adding ${qty}) - updated by ${user.name}`;
+            message = `${product.product_name} - ${variant.variant_name} is LOW (${newStock} units after adding ${qty}) - updated by ${userInfo}`;
             severity = 'warning';
           } else {
             title = '📦 Stock Added';
-            message = `${product.product_name} - ${variant.variant_name} updated to ${newStock} units (+${qty} added) by ${user.name}`;
+            message = `${product.product_name} - ${variant.variant_name} updated to ${newStock} units (+${qty} added) by ${userInfo}`;
             severity = 'info';
           }
 
