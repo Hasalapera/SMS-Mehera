@@ -113,6 +113,27 @@ const Inbox = () => {
   const unreadCount = notifications.filter(n => !n.is_read).length;
   const unreadByType = getUnreadByType();
 
+  const formatNotificationDateTime = (value) => {
+    if (!value) return 'Unknown date/time';
+
+    const notificationDate = new Date(value);
+    if (Number.isNaN(notificationDate.getTime())) return 'Unknown date/time';
+
+    const datePart = notificationDate.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+
+    const timePart = notificationDate.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    return `${datePart} at ${timePart}`;
+  };
+
   // Icon, color, and background per notification type/severity
   const getNotificationConfig = (type, severity) => {
     const configs = {
@@ -235,6 +256,7 @@ const Inbox = () => {
             {filteredNotifications.map(notification => {
               const config = getNotificationConfig(notification.type, notification.severity);
               const IconComponent = config.icon;
+              const notificationDateValue = notification.created_at || notification.createdAt;
               const isThemeHighlightedMessage =
                 ['stock', 'customer', 'user', 'order'].includes(notification.type) || (notification.severity && notification.severity !== 'info');
               return (
@@ -264,8 +286,8 @@ const Inbox = () => {
                           <p className={`leading-relaxed max-w-2xl ${isThemeHighlightedMessage ? 'text-[11px] md:text-[13px] font-semibold text-textMain/90 dark:text-textMain/95' : 'text-[10px] text-textMain/80 dark:text-textMain/85'}`}>
                             {notification.message}
                           </p>
-                          <p className="text-[8px] text-textMain/55 dark:text-textMain/60 mt-2 uppercase tracking-widest">
-                            {notification.created_at && new Date(notification.created_at).toLocaleString('en-GB')}
+                          <p className="text-[10px] md:text-[11px] text-textMain/55 dark:text-textMain/60 mt-2 uppercase tracking-widest font-medium">
+                            {formatNotificationDateTime(notificationDateValue)}
                           </p>
                         </div>
 
