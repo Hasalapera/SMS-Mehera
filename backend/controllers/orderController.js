@@ -19,18 +19,28 @@ const { sendDeliveryOTP, sendThankYouEmail } = require("../utils/emailSender");
 const placeOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
-    const {
-      customer_id,
-      customer_name,
-      shipping_address,
-      phone,
-      subtotal, // Total
-      discount_percentage, // %
-      discount_amount,
-      total_amount, // final total after discount
+    const { 
+      order_id,              // 👈 Frontend එකෙන් එවන Unique ID එක
+      customer_id, 
+      customer_name, 
+      shipping_address, 
+      phone, 
+      subtotal,              // Total
+      discount_percentage,   // % 
+      discount_amount,       
+      total_amount,          // final total after discount
       items,
       payment_method, // 'cash' or 'credit'
     } = req.body;
+
+    // 🛡️ Idempotency Check: Prevent duplicate offline syncs
+    if (order_id) {
+      const existingOrder = await Order.findByPk(order_id, { transaction });
+      if (existingOrder) {
+        await transaction.rollback();
+        return res.status(200).json({ success: true, message: "Order already synced!", orderId: order_id });
+      }
+    }
 
     // 🛡️ Stock Validation Phase before creating order
     for (const item of items) {
@@ -52,23 +62,21 @@ const placeOrder = async (req, res) => {
       }
     }
 
-    const newOrder = await Order.create(
-      {
-        customer_id,
-        customer_name,
-        shipping_address,
-        phone,
-        subtotal: subtotal || 0, // store sub total
-        discount_percentage: discount_percentage || 0, // % store
-        discount_amount: discount_amount || 0, // store discount amount
-        total_amount: total_amount || 0,
-        payment_method: payment_method || "cash", // store payment method
-        order_status: "requested",
-        created_by: req.user.user_id,
-        order_type: "offline",
-      },
-      { transaction },
-    );
+    const newOrder = await Order.create({
+      order_id: order_id || undefined, // 👈 Frontend ID එක තියෙනවානම් ඒක පාවිච්චි කරනවා, නැත්නම් DB එකෙන් Generate කරනවා
+      customer_id, 
+      customer_name,     
+      shipping_address,
+      phone,
+      subtotal: subtotal || 0,                    // store sub total
+      discount_percentage: discount_percentage || 0, // % store 
+      discount_amount: discount_amount || 0,      // store discount amount
+      total_amount: total_amount || 0, 
+      payment_method: payment_method || 'cash',   // store payment method
+     order_status: 'requested',
+      created_by: req.user.user_id,
+      order_type: 'offline'
+    }, { transaction });
 
     const orderItemsData = items.map((item) => ({
       order_id: newOrder.order_id,

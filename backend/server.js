@@ -32,8 +32,9 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // =====================================================
 
 // 1. CORS මුලින්ම තියෙන්න ඕනේ හැම රූට් එකකටම කලින් 🛠️
+const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 app.use(cors({
-  origin: 'http://localhost:5173', 
+  origin: frontendUrl, 
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], 
   credentials: true
 }));

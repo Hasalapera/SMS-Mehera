@@ -81,15 +81,16 @@ import SettingsPage from "./pages/SettingsPage";
 
 import AddOnlineOrder from "./pages/management/order/AddOnlineOrder";
 
-import OurBrands from "./pages/OurBrands";
-import Workshops from "./pages/Workshops";
-import AboutUs from "./pages/AboutUs";
-import Contact from "./pages/Contact";
-import Products from "./pages/Products";
-import ConfirmDelivery from "./pages/shared/ConfirmDelivery";
-import FloatingPopup from "./components/FloatingPopup";
-import Navbar from "./components/Navbar";
-import { Toaster } from "react-hot-toast";
+import OurBrands from './pages/OurBrands';
+import Workshops from './pages/Workshops';
+import AboutUs from './pages/AboutUs';
+import Contact from './pages/Contact';
+import Products from './pages/Products';
+import ConfirmDelivery from './pages/shared/ConfirmDelivery';
+import FloatingPopup from './components/FloatingPopup';
+import Navbar from './components/Navbar';
+import { Toaster } from 'react-hot-toast';
+import OfflineSyncManager from './components/OfflineSyncManager';
 
 function App() {
   const { user, loading } = useAuth();
@@ -618,6 +619,7 @@ function AppWithNotifications() {
   return (
     <NotificationProvider>
       <NotificationCleaner /> {/* Handles clearing */}
+      <OfflineSyncManager /> {/* 🔄 Background Auto-Sync */}
       <App />
     </NotificationProvider>
   );
