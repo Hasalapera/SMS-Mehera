@@ -10,6 +10,7 @@ const placeOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const { 
+      order_id,              // 👈 Frontend එකෙන් එවන Unique ID එක
       customer_id, 
       customer_name, 
       shipping_address, 
@@ -21,6 +22,15 @@ const placeOrder = async (req, res) => {
       items,
       payment_method         // 'cash' or 'credit' 
     } = req.body;
+
+    // 🛡️ Idempotency Check: Prevent duplicate offline syncs
+    if (order_id) {
+      const existingOrder = await Order.findByPk(order_id, { transaction });
+      if (existingOrder) {
+        await transaction.rollback();
+        return res.status(200).json({ success: true, message: "Order already synced!", orderId: order_id });
+      }
+    }
 
     // 🛡️ Stock Validation Phase before creating order
     for (const item of items) {
@@ -41,6 +51,7 @@ const placeOrder = async (req, res) => {
     }
 
     const newOrder = await Order.create({
+      order_id: order_id || undefined, // 👈 Frontend ID එක තියෙනවානම් ඒක පාවිච්චි කරනවා, නැත්නම් DB එකෙන් Generate කරනවා
       customer_id, 
       customer_name,     
       shipping_address,
@@ -350,15 +361,26 @@ const confirmDeliveryWithOTP = async (req, res) => {
     const order = await Order.findByPk(orderId, {
       include: [{ model: Customer, as: 'customer' }]
     });
+
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
-    if (order.delivery_token !== token || order.delivery_otp !== otp) {
+    // 1. දැනටමත් Delivered ද බලන්න
+    if (order.order_status === 'delivered') {
+      return res.status(400).json({ success: false, message: 'Order is already delivered.' });
+    }
+
+    // 2. Token සහ OTP පරීක්ෂා කරන්න
+    if (!order.delivery_token || order.delivery_token !== token || order.delivery_otp !== otp) {
       return res.status(400).json({ success: false, message: 'Invalid Link or Incorrect OTP!' });
     }
 
+    // 3. Status Update කරලා Token/OTP අයින් කරන්න
     order.order_status = 'delivered';
+    order.delivery_token = null; // Token එක අයින් කරනවා
+    order.delivery_otp = null;   // OTP එක අයින් කරනවා
     await order.save();
 
+    // 4. Thank you email එක යවන්න
     const emailToUse = order.email || (order.customer && order.customer.email);
     if (emailToUse) {
       sendThankYouEmail(emailToUse, order.customer_name || order.customer?.saloon_name, order.order_id).catch(console.error);
@@ -366,6 +388,7 @@ const confirmDeliveryWithOTP = async (req, res) => {
 
     res.status(200).json({ success: true, message: 'Delivery confirmed successfully!' });
   } catch (error) {
+    console.error("Confirm Delivery Error:", error);
     res.status(500).json({ success: false, message: 'Server error confirming delivery' });
   }
 };

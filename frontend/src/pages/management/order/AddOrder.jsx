@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import api from "../../../api/axiosInstance";
+import { v4 as uuidv4 } from 'uuid'; // 👈 Unique ID සෑදීමට
+import db from "../../../db/offlineDb"; // 👈 Local Dexie Database
 import { useAuth } from "../../context/AuthContext";
 
 import { useNotifications } from "../../context/NotificationContext";
@@ -110,6 +112,27 @@ const AddOrder = () => {
 
     if (query.length > 1) {
       setIsSearching(true);
+      
+      // 📡 1. Offline නම්, Local Dexie Database එකෙන් Search කරනවා
+      if (!navigator.onLine) {
+        try {
+            const q = query.toLowerCase();
+            const cachedCustomers = await db.customers.toArray();
+            const filtered = cachedCustomers.filter(c => 
+                (c.saloon_name && c.saloon_name.toLowerCase().includes(q)) ||
+                (c.owner_name && c.owner_name.toLowerCase().includes(q)) ||
+                (c.phone1 && c.phone1.includes(q))
+            );
+            setSuggestions(filtered.slice(0, 10)); // Top 10 results
+        } catch (err) {
+            console.error("Offline search failed", err);
+        } finally {
+            setIsSearching(false);
+        }
+        return;
+      }
+
+      // 📡 2. Online නම් සාමාන්‍ය විදිහටම API එකෙන් Search කරනවා
       try {
         const config = token
           ? { headers: { Authorization: `Bearer ${token}` } }
@@ -149,13 +172,16 @@ const AddOrder = () => {
       const discountAmount = (totalAmount * discountPercentage) / 100;
       const finalAmount = Math.max(0, totalAmount - discountAmount);
 
+      const orderId = uuidv4(); // 🛡️ Frontend එකෙන්ම Unique ID එකක් හදනවා Idempotency වලට
+
       const orderData = {
+        order_id: orderId, // 👈 අලුත් පරාමිතිය
         customer_id: selectedCustomer.customer_id,
         customer_name: selectedCustomer.saloon_name,
         shipping_address: `${selectedCustomer.lane1 || ""}, ${selectedCustomer.district || ""}`,
         phone: selectedCustomer.phone1,
 
-        // these are going to  database 
+        // these are going to database 
         subtotal: totalAmount, // total amount without discount
         discount_percentage: discountPercentage, // % amount 
         discount_amount: discountAmount, // LKR amount 
@@ -170,6 +196,29 @@ const AddOrder = () => {
         })),
       };
 
+      // 🧹 Clear function
+      const finalizeOrderUI = () => {
+        localStorage.removeItem("active_order_cart");
+        setCart([]);
+        setSelectedCustomer(null);
+        setCusSearch("");
+        setDiscount(0);
+      };
+
+      // 📡 1. Offline නම් කෙලින්ම Local DB එකට සේව් කරනවා
+      if (!navigator.onLine) {
+        await db.pendingOrders.add({
+            id: orderId,
+            payload: orderData,
+            created_at: new Date().toISOString(),
+            status: 'pending'
+        });
+        toast.success("You are offline. Order saved locally & will auto-sync later!", { icon: '📡', duration: 4000 });
+        finalizeOrderUI();
+        return;
+      }
+
+      // 📡 2. Online නම් Server එකට යවන්න උත්සාහ කරනවා
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const res = await api.post(
         "/orders/place",
@@ -204,10 +253,25 @@ const AddOrder = () => {
         setSelectedCustomer(null);
         setCusSearch("");
         setDiscount(0); // 👈 discount reset 
+        finalizeOrderUI();
       }
     } catch (err) {
-      console.error("Order Error:", err);
-      toast.error(err.response?.data?.message || "Something went wrong!");
+      // 📡 3. Network Error එකක් නිසා Fail වුණොත් (Server එකට කනෙක්ට් වෙන්න බැරි නම්) Local DB එකට සේව් කරනවා
+      if (err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
+        try {
+          await db.pendingOrders.add({
+              id: orderData.order_id,
+              payload: orderData,
+              created_at: new Date().toISOString(),
+              status: 'pending'
+          });
+          toast.success("Network unstable. Order saved locally & will auto-sync later!", { icon: '📡', duration: 4000 });
+          finalizeOrderUI();
+        } catch (e) { toast.error("Failed to save order offline."); }
+      } else {
+        console.error("Order Error:", err);
+        toast.error(err.response?.data?.message || "Something went wrong!");
+      }
     }
   };
 
