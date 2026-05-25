@@ -42,6 +42,7 @@ import AddUser from "./pages/management/user/AddUser";
 import ViewUsers from "./pages/management/user/ViewUser";
 import DeleteUser from "./pages/management/user/DeleteUser";
 import AssignUser from "./pages/management/user/AssignUser";
+import AddUserBehavior from "./pages/management/user/AddUserBehavior";
 import TargetAssignForm from "./pages/management/user/TargetAssignForm";
 
 // Brand Management (Now in management/brand folder)
@@ -341,6 +342,16 @@ function App() {
             element={
               ["admin", "manager"].includes(userRole) ? (
                 <ViewUsers />
+              ) : (
+                <Navigate to="/dashboard" />
+              )
+            }
+          />
+          <Route
+            path="/add-user-behavior"
+            element={
+              userRole === "admin" ? (
+                <AddUserBehavior />
               ) : (
                 <Navigate to="/dashboard" />
               )
