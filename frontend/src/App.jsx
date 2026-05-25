@@ -88,6 +88,7 @@ import ConfirmDelivery from './pages/shared/ConfirmDelivery';
 import FloatingPopup from './components/FloatingPopup';
 import Navbar from './components/Navbar';
 import { Toaster } from 'react-hot-toast';
+import OfflineSyncManager from './components/OfflineSyncManager';
 
 function App() {
   const { user, loading } = useAuth();
@@ -405,6 +406,7 @@ function AppWithNotifications() {
   return (
     <NotificationProvider>
       <NotificationCleaner /> {/* Handles clearing */}
+      <OfflineSyncManager /> {/* 🔄 Background Auto-Sync */}
       <App />
     </NotificationProvider>
   );

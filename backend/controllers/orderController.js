@@ -10,6 +10,7 @@ const placeOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const { 
+      order_id,              // 👈 Frontend එකෙන් එවන Unique ID එක
       customer_id, 
       customer_name, 
       shipping_address, 
@@ -21,6 +22,15 @@ const placeOrder = async (req, res) => {
       items,
       payment_method         // 'cash' or 'credit' 
     } = req.body;
+
+    // 🛡️ Idempotency Check: Prevent duplicate offline syncs
+    if (order_id) {
+      const existingOrder = await Order.findByPk(order_id, { transaction });
+      if (existingOrder) {
+        await transaction.rollback();
+        return res.status(200).json({ success: true, message: "Order already synced!", orderId: order_id });
+      }
+    }
 
     // 🛡️ Stock Validation Phase before creating order
     for (const item of items) {
@@ -41,6 +51,7 @@ const placeOrder = async (req, res) => {
     }
 
     const newOrder = await Order.create({
+      order_id: order_id || undefined, // 👈 Frontend ID එක තියෙනවානම් ඒක පාවිච්චි කරනවා, නැත්නම් DB එකෙන් Generate කරනවා
       customer_id, 
       customer_name,     
       shipping_address,

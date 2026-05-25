@@ -6,6 +6,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import api from '../../../api/axiosInstance';
+import db from '../../../db/offlineDb'; // 👈 Import Local DB
 
 import AddOrder from './AddOrder';
 import ViewOrders from './ViewOrders';
@@ -24,11 +25,27 @@ const Orders = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
+        // 📡 Offline නම් Local DB එකෙන් Products අදිනවා
+        if (!navigator.onLine) {
+            const cachedProducts = await db.products.toArray();
+            if (cachedProducts.length > 0) {
+                setProducts(cachedProducts);
+                return;
+            }
+        }
         const res = await api.get('/products/getProducts');
         const data = res.data?.products || res.data;
         setProducts(data);
       } catch (err) {
         console.error("Failed to fetch products", err);
+        // Network Error එකක් ආවොත් Fallback විදිහට ආයෙත් Local DB එක බලනවා
+        try {
+            const cachedProducts = await db.products.toArray();
+            if (cachedProducts.length > 0) {
+                setProducts(cachedProducts);
+                return;
+            }
+        } catch(e) {}
         toast.error("Inventory sync failed!");
       }
     };
