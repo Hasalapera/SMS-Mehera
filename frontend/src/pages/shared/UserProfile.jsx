@@ -25,6 +25,12 @@ import {
   Clock,
   XCircle,
   TrendingUp,
+  ClipboardList,
+  Star,
+  ThumbsUp,
+  ThumbsDown,
+  AlertTriangle,
+  Activity
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -36,7 +42,7 @@ const UserProfile = () => {
   const navigate = useNavigate();
   const { token, logout, login } = useAuth();
 
-  const { addNotification } = useNotifications();
+  const { addNotification, setNotificationsFromAPI } = useNotifications();
   //helper
   const saveNotificationToDB = async (type, title, message, severity) => {
   try {
@@ -49,6 +55,47 @@ const UserProfile = () => {
   }
 };
 
+  const refreshNotifications = async () => {
+    try {
+      const res = await api.get('/notifications', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotificationsFromAPI(res.data.notifications || []);
+    } catch (err) {
+      console.error('Failed to refresh notifications:', err);
+    }
+  };
+
+  const formatProfileValue = (value) => {
+    if (value === null || value === undefined) return 'Not provided';
+    const text = String(value).trim();
+    return text.length > 0 ? text : 'Not provided';
+  };
+
+  const buildProfileUpdateSummary = (previousUser, updatedFormData) => {
+    if (!previousUser || !updatedFormData) return '';
+
+    const changes = [];
+    const previousDob = previousUser.dob ? String(previousUser.dob).split('T')[0] : '';
+
+    const comparisons = [
+      { label: 'Full Name', before: previousUser.name || previousUser.full_name, after: updatedFormData.full_name },
+      { label: 'Contact No', before: previousUser.contact_no, after: updatedFormData.contact_no },
+      { label: 'Date of Birth', before: previousDob, after: updatedFormData.dob },
+      { label: 'NIC No', before: previousUser.nic_no, after: updatedFormData.nic_no },
+      { label: 'Address', before: previousUser.address, after: updatedFormData.address },
+      { label: 'Gender', before: previousUser.gender, after: updatedFormData.gender },
+    ];
+
+    comparisons.forEach(({ label, before, after }) => {
+      if (formatProfileValue(before) !== formatProfileValue(after)) {
+        changes.push(`${label}: ${formatProfileValue(before)} -> ${formatProfileValue(after)}`);
+      }
+    });
+
+    return changes.join('; ');
+  };
+
   const [isEditing, setIsEditing] = useState(false);
   const [showPassModal, setShowPassModal] = useState(false);
   const [user, setUser] = useState(null);
@@ -58,6 +105,7 @@ const UserProfile = () => {
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [userAreas, setUserAreas] = useState([]);
   const [isEditingAreas, setIsEditingAreas] = useState(false);
+  const [behaviors, setBehaviors] = useState([]);
 
   // Progress States (For Sales Reps)
   const [progressData, setProgressData] = useState({ target: 0, achieved: 0 });
@@ -117,36 +165,6 @@ const UserProfile = () => {
     picture_url: fallbackAvatar,
   });
 
-  const formatProfileValue = (value) => {
-    if (value === null || value === undefined) return 'Not provided';
-    const text = String(value).trim();
-    return text.length > 0 ? text : 'Not provided';
-  };
-
-  const buildProfileUpdateSummary = (previousUser, updatedFormData) => {
-    if (!previousUser || !updatedFormData) return '';
-
-    const changes = [];
-    const previousDob = previousUser.dob ? String(previousUser.dob).split('T')[0] : '';
-
-    const comparisons = [
-      { label: 'Full Name', before: previousUser.name || previousUser.full_name, after: updatedFormData.full_name },
-      { label: 'Contact No', before: previousUser.contact_no, after: updatedFormData.contact_no },
-      { label: 'Date of Birth', before: previousDob, after: updatedFormData.dob },
-      { label: 'NIC No', before: previousUser.nic_no, after: updatedFormData.nic_no },
-      { label: 'Address', before: previousUser.address, after: updatedFormData.address },
-      { label: 'Gender', before: previousUser.gender, after: updatedFormData.gender },
-    ];
-
-    comparisons.forEach(({ label, before, after }) => {
-      if (formatProfileValue(before) !== formatProfileValue(after)) {
-        changes.push(`${label}: ${formatProfileValue(before)} -> ${formatProfileValue(after)}`);
-      }
-    });
-
-    return changes.join('; ');
-  };
-
   useEffect(() => {
     if (!token) {
       navigate("/");
@@ -179,6 +197,7 @@ const UserProfile = () => {
         });
 
         setCustomers(response.data.customers || []);
+        setBehaviors(fetchedUser.behaviors || []);
 
         if (fetchedUser.role === "sales_rep") {
 
@@ -231,6 +250,7 @@ const UserProfile = () => {
         message: `${district} district assigned to ${user?.name} by ${loggedInUser?.name}`,
         severity: 'info'
       });
+      await refreshNotifications();
 
     } catch (err) {
       toast.error("Failed to add area");
@@ -260,6 +280,7 @@ const UserProfile = () => {
         message: `${district} district removed from ${user?.name} by ${loggedInUser?.name}`,
         severity: 'warning'
       });
+      await refreshNotifications();
 
     } catch (err) {
       toast.error("Failed to remove area");
@@ -292,12 +313,15 @@ const UserProfile = () => {
         },
       );
       if (response.status === 200) {
-        login(
-          response.data.user,
-          token,
-          localStorage.getItem("refreshToken"),
-          localStorage.getItem("expiresAt"),
-        );
+        // Update login session ONLY if the user is updating their own profile
+        if (isOwnProfile) {
+          login(
+            response.data.user,
+            token,
+            localStorage.getItem("refreshToken"),
+            localStorage.getItem("expiresAt"),
+          );
+        }
         setUser(response.data.user);
         setIsEditing(false);
         toast.success("Profile updated!");
@@ -802,6 +826,82 @@ const UserProfile = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        </section>
+      )}
+
+      {/* Spacing Gap before Behaviors */}
+      {(isAdmin || isOwnProfile) && behaviors.length > 0 && <div className="my-10" />}
+
+      {/* Behavior Notes Section */}
+      {(isAdmin || isOwnProfile) && behaviors.length > 0 && (
+        <section className="bg-card p-10 rounded-[2.5rem] shadow-sm border border-border animate-in fade-in duration-700">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-xl font-serif flex items-center gap-3 text-textMain">
+              <ClipboardList size={24} className="text-primary" /> Behavior & Performance Records
+            </h2>
+            <span className="text-[10px] font-black uppercase text-textMain/60 tracking-widest">
+              Total Records: {behaviors.length}
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            {behaviors.map((behavior) => {
+              let icon = <Activity size={16} />;
+              let colorClass = "text-textMain/60 border-border bg-background";
+              
+              switch(behavior.behavior_category) {
+                case 'Excellent':
+                  icon = <Star size={16} />;
+                  colorClass = "text-green-600 border-green-500/20 bg-green-500/10";
+                  break;
+                case 'Good':
+                  icon = <ThumbsUp size={16} />;
+                  colorClass = "text-blue-600 border-blue-500/20 bg-blue-500/10";
+                  break;
+                case 'Average':
+                  icon = <Activity size={16} />;
+                  colorClass = "text-yellow-600 border-yellow-500/20 bg-yellow-500/10";
+                  break;
+                case 'Poor':
+                  icon = <ThumbsDown size={16} />;
+                  colorClass = "text-orange-600 border-orange-500/20 bg-orange-500/10";
+                  break;
+                case 'Warning':
+                  icon = <AlertTriangle size={16} />;
+                  colorClass = "text-red-600 border-red-500/20 bg-red-500/10";
+                  break;
+              }
+
+              const bgClass = colorClass.split(' ').find(c => c.startsWith('bg-'));
+              const borderClass = colorClass.split(' ').find(c => c.startsWith('border-'));
+              const textClass = colorClass.split(' ').find(c => c.startsWith('text-'));
+
+              return (
+                <div key={behavior.note_id} className={`rounded-2xl border p-5 transition-all ${bgClass} ${borderClass}`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider ${textClass}`}>
+                          {icon} {behavior.behavior_category}
+                        </span>
+                        <span className="text-[9px] font-black text-textMain/50 uppercase tracking-widest px-2 py-1 rounded-md bg-background border border-border">
+                          Status: {behavior.current_status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-textMain/80 font-medium leading-relaxed">{behavior.note}</p>
+                      <p className="text-[10px] text-textMain/50 font-bold mt-4 uppercase tracking-wider flex items-center gap-2">
+                        <span>Recorded by {behavior.recorder?.name || 'System'}</span>
+                        <span className="w-1 h-1 rounded-full bg-textMain/20"></span>
+                        <span className="text-primary">{behavior.recorder?.role?.replace('_', ' ') || 'Admin'}</span>
+                        <span className="w-1 h-1 rounded-full bg-textMain/20"></span>
+                        <span>{new Date(behavior.created_at || behavior.createdAt).toLocaleDateString("en-GB")}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
