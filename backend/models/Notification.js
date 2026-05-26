@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
       },
       type: {
-        type: DataTypes.ENUM('stock', 'customer', 'user', 'order'),
+        type: DataTypes.ENUM('stock', 'customer', 'user', 'order', 'target', 'product'),
         allowNull: false,
         comment: 'Type of notification',
       },
