@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../../api/axiosInstance'; // Uses existing axios instance
 import { 
-  Plus, Search, Package, AlertCircle,
+  Package,
   Loader2, ArrowLeft, RefreshCw, Trash2, CheckCircle2, ClipboardList, Undo2, Sparkles,
-  ChevronLeft, ChevronRight, X
+  X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext'; // Import context
+import StockProductBrowser from '../../../components/StockProductBrowser';
 
 const AddStock = () => {
   const { token, logout, user } = useAuth();
@@ -22,8 +23,6 @@ const AddStock = () => {
   const [isApplying, setIsApplying] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
   const [lastAppliedSummary, setLastAppliedSummary] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 5;
 
   useEffect(() => {
     if (!token) {
@@ -78,7 +77,7 @@ const AddStock = () => {
 
   const removeProductFromQueue = (productId) => {
     const toastId = toast.custom((t) => (
-      <div className="w-[320px] max-w-[calc(100vw-2rem)] rounded-[1.5rem] border border-border bg-card p-4 shadow-2xl">
+      <div className="w-[320px] max-w-[calc(100vw-2rem)] rounded-3xl border border-border bg-card p-4 shadow-2xl">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 rounded-full bg-red-500/10 p-2 text-red-500">
             <Trash2 size={16} />
@@ -353,34 +352,6 @@ const AddStock = () => {
     }
   };
 
-  const filteredProducts = products.filter(product => {
-    const pName = product.product_name?.toLowerCase() || '';
-    const search = searchTerm.toLowerCase();
-    return pName.includes(search);
-  });
-
-  const totalPages = Math.ceil(filteredProducts.length / rowsPerPage);
-  const safeCurrentPage = totalPages > 0 ? Math.min(currentPage, totalPages) : 1;
-  const indexOfLastRow = safeCurrentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentProducts = filteredProducts.slice(indexOfFirstRow, indexOfLastRow);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
-
-  useEffect(() => {
-    if (totalPages === 0) {
-      if (currentPage !== 1) setCurrentPage(1);
-      return;
-    }
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
-
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
   if (loading) {
     return (
       <div className="w-full min-h-screen bg-background transition-colors duration-300 flex items-center justify-center">
@@ -393,7 +364,7 @@ const AddStock = () => {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 animate-in fade-in duration-500 transition-colors duration-300">
+    <div className="w-full max-w-7xl mx-auto p-6 animate-in fade-in duration-500">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4">
@@ -409,7 +380,7 @@ const AddStock = () => {
         <div className="flex gap-3">
           <button 
             onClick={() => { setLoading(true); fetchProducts().then(() => setLoading(false)); }}
-            className="p-3 bg-card border border-border rounded-xl text-textMain/50 hover:text-textMain hover:shadow-md transition-all active:scale-90 transition-colors duration-300"
+            className="p-3 bg-card border border-border rounded-xl text-textMain/50 hover:text-textMain hover:shadow-md transition-all active:scale-90 duration-300"
           >
             <RefreshCw size={20} />
           </button>
@@ -419,20 +390,6 @@ const AddStock = () => {
           >
             <ArrowLeft size={18} /> Back
           </button>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="bg-card border border-border rounded-[2.5rem] shadow-sm p-6 mb-8 transition-colors duration-300">
-        <div className="flex items-center gap-4">
-          <Search size={20} className="text-textMain/50 transition-colors duration-300" />
-          <input 
-            type="text"
-            placeholder="Search by product name..."
-            className="flex-1 bg-transparent outline-none text-textMain font-semibold text-sm placeholder:text-textMain/40 transition-colors duration-300"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
         </div>
       </div>
 
@@ -463,71 +420,12 @@ const AddStock = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7">
-          <div className="bg-card border border-border rounded-4xl shadow-sm overflow-hidden transition-colors duration-300">
-            <div className="p-5 border-b border-border bg-card/50 flex items-center justify-between transition-colors duration-300">
-              <h3 className="font-black text-[11px] uppercase tracking-widest text-textMain/50 transition-colors duration-300">Product Rows</h3>
-              <span className="text-[10px] font-black text-primary uppercase tracking-widest">Click Product To Queue</span>
-            </div>
-
-            <div className="divide-y divide-border">
-              {currentProducts.map((product) => (
-                <button
-                  key={product.product_id}
-                  onClick={() => addProductToQueue(product)}
-                  className="w-full p-5 text-left hover:bg-background transition-colors duration-300"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-black text-textMain uppercase tracking-tight transition-colors duration-300">{product.product_name}</p>
-                      <p className="text-[11px] text-textMain/50 font-semibold mt-1 transition-colors duration-300">
-                        Category: {product.category?.category_name || 'N/A'}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-textMain/50 font-black uppercase tracking-widest transition-all duration-300">Variants</p>
-                      <p className="text-lg font-black text-primary">{product.variants?.length || 0}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {totalPages > 1 && (
-              <div className="px-5 py-4 border-t border-border bg-card/30 flex items-center justify-between gap-3 flex-wrap">
-                <p className="text-[10px] font-black text-textMain/50 uppercase tracking-widest">
-                  Page {safeCurrentPage} of {totalPages}
-                </p>
-                <div className="flex items-center gap-2 flex-wrap justify-end">
-                  <button
-                    disabled={safeCurrentPage === 1}
-                    onClick={() => paginate(safeCurrentPage - 1)}
-                    className="p-2 rounded-lg border border-border text-textMain/50 hover:text-primary transition-all duration-300 disabled:opacity-30"
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-                  {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      key={i + 1}
-                      onClick={() => paginate(i + 1)}
-                      className={`w-8 h-8 rounded-lg text-[11px] font-black transition-all ${safeCurrentPage === i + 1 ? 'bg-primary text-textMain shadow-md shadow-[#b4a460]/20' : 'bg-background text-textMain/50 hover:bg-primary/10'}`}
-                      aria-label={`Go to page ${i + 1}`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                  <button
-                    disabled={safeCurrentPage === totalPages}
-                    onClick={() => paginate(safeCurrentPage + 1)}
-                    className="p-2 rounded-lg border border-border text-textMain/50 hover:text-primary transition-all duration-300 disabled:opacity-30"
-                    aria-label="Next page"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <StockProductBrowser
+            products={products}
+            onSelectProduct={addProductToQueue}
+            title="Product Rows"
+            actionLabel="Click Product To Queue"
+          />
         </div>
 
         <div className="lg:col-span-5">
@@ -624,15 +522,6 @@ const AddStock = () => {
         </div>
       </div>
 
-      {filteredProducts.length === 0 && (
-        <div className="bg-card border border-dashed border-border rounded-[3rem] py-24 text-center transition-colors duration-300">
-          <div className="bg-background w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Package className="text-textMain/20" size={48} />
-          </div>
-          <h3 className="text-2xl font-black text-textMain">No Products Found</h3>
-          <p className="text-textMain/50 text-sm mt-2 font-medium">Try adjusting your search terms.</p>
-        </div>
-      )}
     </div>
   );
 };
