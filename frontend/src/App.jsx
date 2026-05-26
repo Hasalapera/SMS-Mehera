@@ -5,7 +5,7 @@ import {
   useNotifications,
 } from "./pages/context/NotificationContext";
 import DashboardLayout from "./components/DashboardLayout";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import api from "../src/api/axiosInstance";
 
 //sales management
@@ -607,9 +607,23 @@ function App() {
 function NotificationCleaner() {
   const { user } = useAuth();
   const { clearNotifications } = useNotifications();
+  const previousUserIdRef = useRef(null);
 
   useEffect(() => {
-    clearNotifications();
+    const currentUserId = user?.user_id ?? null;
+
+    if (!currentUserId) {
+      if (previousUserIdRef.current !== null) {
+        clearNotifications();
+      }
+    } else if (
+      previousUserIdRef.current !== null &&
+      previousUserIdRef.current !== currentUserId
+    ) {
+      clearNotifications();
+    }
+
+    previousUserIdRef.current = currentUserId;
   }, [user]);
 
   return null; // Renders nothing
