@@ -140,13 +140,13 @@ const AddProduct = () => {
       const categoryName = categories.find(c => c.category_id === formData.category_id)?.category_name || '';
 
       await saveNotificationToDB(
-        'stock',
+        'product',
         '🆕 New Product Added',
         `${formData.product_name} (${brandName} - ${categoryName}) added with ${variantCount} variant(s) by ${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`,
         'info'
       );
       addNotification({
-        type: 'stock',
+        type: 'product',
         title: '🆕 New Product Added',
         message: `${formData.product_name} (${brandName} - ${categoryName}) added with ${variantCount} variant(s) by ${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`,
         severity: 'info'

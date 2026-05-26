@@ -1,6 +1,7 @@
 
 const { User, Order, UserArea, Customer, SalesTarget, sequelize} = require('../models');
 const { Op } = require('sequelize');
+const { createNotification } = require('./notificationController');
 
 
 /**
@@ -23,6 +24,17 @@ const assignTarget = async (req, res) => {
     if (!created) {
       await target.update({ active_customer_count, density_factor: densityFactor, base_target_amount, adjusted_target_amount });
     }
+
+    const targetRep = await User.findByPk(sales_rep_id, { attributes: ['name'] });
+    const actorName = req.user?.name || req.user?.full_name || 'System';
+
+    await createNotification(
+      'target',
+      '🎯 Sales Target Locked',
+      `Monthly target for ${targetRep?.name || 'the selected representative'} (${month}) was locked by ${actorName}.`,
+      target.id,
+      'info'
+    );
 
     res.status(200).json({ success: true, message: "Sales target locked successfully!", data: target });
   } catch (err) {

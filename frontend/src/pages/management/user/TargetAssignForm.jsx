@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Target, Users, Calendar, DollarSign, Loader2, CheckCircle, MapPin } from 'lucide-react';
 import api from '../../../api/axiosInstance'; 
 import { toast } from 'react-hot-toast';
+import { useNotifications } from '../../context/NotificationContext';
 
 const TargetAssignForm = ({ token }) => {
+  const { setNotificationsFromAPI } = useNotifications();
   // 📝 Form States
   const [salesReps, setSalesReps] = useState([]);
   const [selectedRep, setSelectedRep] = useState('');
@@ -102,6 +104,9 @@ const TargetAssignForm = ({ token }) => {
         toast.success("Sales target locked successfully!");
         setSelectedRep('');
         setAdjustedTarget('');
+
+        const notificationRes = await api.get('/notifications', config);
+        setNotificationsFromAPI(notificationRes.data.notifications || []);
       }
     } catch (err) {
       console.error(err);
