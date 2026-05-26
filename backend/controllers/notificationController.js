@@ -5,7 +5,7 @@ const { Op } = require('sequelize');
 const getRoleBasedFilter = (role) => {
   if (role === 'admin') return null;
   if (role === 'manager') return { type: ['stock', 'order', 'user', 'customer', 'target', 'product'] };
-  if (role === 'sales_rep') return { type: ['stock' ,'order', 'customer', 'target', 'product'] };
+  if (role === 'sales_rep') return { type: ['stock' ,'order', 'customer', 'target', 'product', 'user'] };
   if (role === 'online_store_keeper') return { type: ['order', 'stock', 'customer', 'product'] };
   return { type: ['order'] };
 };
