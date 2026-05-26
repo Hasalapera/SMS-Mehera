@@ -3,7 +3,7 @@ import api from '../../../api/axiosInstance';
 import { 
   Plus, Search, Package, AlertCircle,
   Loader2, ArrowLeft, RefreshCw, Trash2, CheckCircle2, ClipboardList, Undo2, Sparkles, Edit3,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -80,16 +80,96 @@ const EditStock = () => {
   };
 
   const removeProductFromQueue = (productId) => {
-    const shouldRemove = window.confirm('Remove this product from the edit queue?');
-    if (!shouldRemove) return;
-    setSelectedProducts((prev) => prev.filter((p) => p.product_id !== productId));
+    const toastId = toast.custom((t) => (
+      <div className="w-[320px] max-w-[calc(100vw-2rem)] rounded-3xl border border-border bg-card p-4 shadow-2xl">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 rounded-full bg-red-500/10 p-2 text-red-500">
+            <Trash2 size={16} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-black text-textMain">Remove from edit queue?</p>
+            <p className="mt-1 text-[11px] font-medium text-textMain/60">
+              Remove this product from the edit queue?
+            </p>
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProducts((prev) => prev.filter((p) => p.product_id !== productId));
+                  toast.dismiss(toastId);
+                  toast.success('Product removed from edit queue');
+                }}
+                className="rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-primary/90"
+              >
+                Remove
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.dismiss(toastId)}
+                className="rounded-xl border border-border bg-background px-3 py-2 text-[10px] font-black uppercase tracking-widest text-textMain/60 hover:bg-card"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => toast.dismiss(toastId)}
+            className="text-textMain/40 hover:text-textMain"
+            aria-label="Close confirmation"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   const clearAllQueue = () => {
     if (selectedProducts.length === 0) return;
-    const shouldClear = window.confirm('Clear all products from the edit queue?');
-    if (!shouldClear) return;
-    setSelectedProducts([]);
+    const toastId = toast.custom((t) => (
+      <div className="w-[320px] max-w-[calc(100vw-2rem)] rounded-3xl border border-border bg-card p-4 shadow-2xl">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 rounded-full bg-red-500/10 p-2 text-red-500">
+            <Trash2 size={16} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-black text-textMain">Clear entire edit queue?</p>
+            <p className="mt-1 text-[11px] font-medium text-textMain/60">
+              Clear all products from the edit queue?
+            </p>
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProducts([]);
+                  toast.dismiss(toastId);
+                  toast.success('Edit queue cleared');
+                }}
+                className="rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-primary/90"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.dismiss(toastId)}
+                className="rounded-xl border border-border bg-background px-3 py-2 text-[10px] font-black uppercase tracking-widest text-textMain/60 hover:bg-card"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => toast.dismiss(toastId)}
+            className="text-textMain/40 hover:text-textMain"
+            aria-label="Close confirmation"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   const handleVariantQtyChange = (productId, variantId, value) => {
