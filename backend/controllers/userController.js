@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const { sendWelcomeEmail } = require('../utils/emailSender');
 const { encrypt, decrypt } = require('../utils/cryptoUtils');
 const { Op } = require('sequelize');
+const { createNotification } = require('./notificationController');
 
 
 const addUserByAdmin = async (req, res) => {
@@ -344,6 +345,18 @@ const addUserArea = async (req, res) => {
     if (existing) return res.status(400).json({ error: "District already assigned" });
 
     await UserArea.create({ user_id: id, district_name: district });
+
+        const assignedUser = await User.findByPk(id, { attributes: ['name'] });
+        const actorName = req.user?.name || req.user?.full_name || 'System';
+
+        await createNotification(
+            'customer',
+            '📍 District Assigned',
+            `${district} was assigned to ${assignedUser?.name || 'the selected representative'} by ${actorName}`,
+            id,
+            'info'
+        );
+
     res.status(201).json({ message: "District added successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });

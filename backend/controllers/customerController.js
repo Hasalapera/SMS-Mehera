@@ -2,6 +2,7 @@
 const { Customer, CustomerNote, User, UserArea, sequelize } = require('../models'); // Take Sequelize models
 const { Op } = require('sequelize'); // 👈 Sequelize Operators
 const { encrypt, decrypt } = require('../utils/cryptoUtils'); // For encrypting/decrypting contact numbers
+const { createNotification } = require('./notificationController');
 
 
 const createCustomer = async (req, res) => {
@@ -212,6 +213,20 @@ const assignSalesRep = async (req, res) => {
         await Customer.update(
             { sales_rep_id: sales_rep_id },
             { where: { customer_id: { [Op.in]: customerIds } } }
+        );
+
+        const actorName = req.user?.name || req.user?.full_name || 'System';
+        const customerNames = customersToAssign.map(customer => customer.saloon_name).join(', ');
+        const notificationMessage = customerIds.length > 1
+            ? `${customerIds.length} customers (${customerNames}) were assigned to ${salesRep.name} by ${actorName}`
+            : `${customersToAssign[0]?.saloon_name || 'Customer'} was assigned to ${salesRep.name} by ${actorName}`;
+
+        await createNotification(
+            'customer',
+            customerIds.length > 1 ? '👥 Customers Assigned' : '👤 Customer Assigned',
+            notificationMessage,
+            sales_rep_id,
+            'info'
         );
 
         res.status(200).json({ 
