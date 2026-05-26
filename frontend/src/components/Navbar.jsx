@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, NavLink } from 'react-router-dom';
-import { LogOut, Menu, X, ChevronRight, Sun, Moon } from 'lucide-react';
+import { LogOut, Menu, X, ChevronRight, Sun, Moon, Bell } from 'lucide-react';
 import { useAuth } from '../pages/context/AuthContext';
+import { useNotifications } from '../pages/context/NotificationContext';
 import api from '../api/axiosInstance';
 import { getAssetUrl } from '../pages/utils/cloudinaryHelper';
 
 const Navbar = () => {
     const { logout } = useAuth();
     const navigate = useNavigate();
+    const { unreadCount, setNotificationsFromAPI } = useNotifications();
     const [isOpen, setIsOpen] = useState(false);
     const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
     const [systemSettings, setSystemSettings] = useState(null);
@@ -50,6 +52,33 @@ const Navbar = () => {
         };
         fetchBranding();
     }, []);
+
+    useEffect(() => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        let isMounted = true;
+
+        const fetchNotifications = async () => {
+            try {
+                const config = { headers: { Authorization: `Bearer ${token}` } };
+                const res = await api.get('/notifications', config);
+                if (isMounted) {
+                    setNotificationsFromAPI(res.data.notifications || []);
+                }
+            } catch (err) {
+                console.error('Navbar notification fetch failed:', err.response?.data || err.message);
+            }
+        };
+
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 30000);
+
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
+    }, [setNotificationsFromAPI]);
 
     const toggleTheme = () => {
         if (isDark) {
@@ -134,6 +163,19 @@ const Navbar = () => {
                 </div>
 
                 <div className="flex items-center gap-5">
+                    <button
+                      onClick={() => navigate('/inbox')}
+                      className="relative p-2 text-textMain/50 hover:text-primary transition-all duration-300"
+                      aria-label="Open notifications"
+                      title="Notifications"
+                    >
+                        <Bell size={20} />
+                        {unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-primary text-black text-[10px] font-black flex items-center justify-center shadow-md shadow-[#b4a460]/20">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                        )}
+                    </button>
                     <button onClick={toggleTheme} className="p-2 text-textMain/50 hover:text-primary transition-all duration-300">
                         {isDark ? <Sun size={20} /> : <Moon size={20} />}
                     </button>
