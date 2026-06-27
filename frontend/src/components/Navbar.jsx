@@ -138,21 +138,26 @@ const Navbar = () => {
                         {isDark ? <Sun size={20} /> : <Moon size={20} />}
                     </button>
                     <div className="hidden lg:flex items-center gap-4 border-l border-border transition-colors duration-300 pl-6 group">
-                        <div className="text-right flex flex-col justify-center">
-                            <p className="text-[11px] font-bold tracking-tight text-textMain group-hover:text-primary transition-all duration-300 leading-none">
-                                {currentUser?.full_name || currentUser?.name || 'Mehera User'}
-                            </p>
-                            <p className="text-[8px] text-primary transition-all duration-300 font-black uppercase tracking-wider mt-1 opacity-80 leading-none">
-                                {currentUser?.role?.replace('_', ' ') || 'Sales Specialist'}
-                            </p>
-                        </div>
-                        <div className="relative cursor-pointer" onClick={() => navigate(`/profile/${currentUser?.user_id}`)}>
-                            {currentUser?.picture_url || currentUser?.profile_image ? (
-                                <img src={currentUser?.picture_url || currentUser?.profile_image} className="w-10 h-10 rounded-xl border border-border transition-colors duration-300 group-hover:border-primary transition-all duration-300 object-cover shadow-lg" alt="profile" />
-                            ) : (
-                                <div className="w-10 h-10 rounded-xl bg-primary transition-all duration-300 flex items-center justify-center text-textMain transition-colors duration-300 font-black text-xs uppercase">{getInitials(currentUser?.full_name || currentUser?.name)}</div>
-                            )}
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-[#141414] rounded-full"></div>
+                        <div 
+                            className="flex items-center gap-4 cursor-pointer"
+                            onClick={() => navigate(`/profile/${currentUser?.user_id}`)}
+                        >
+                            <div className="text-right flex flex-col justify-center">
+                                <p className="text-[11px] font-bold tracking-tight text-textMain group-hover:text-primary transition-all duration-300 leading-none">
+                                    {currentUser?.full_name || currentUser?.name || 'Mehera User'}
+                                </p>
+                                <p className="text-[8px] text-primary transition-all duration-300 font-black uppercase tracking-wider mt-1 opacity-80 leading-none">
+                                    {currentUser?.role?.replace('_', ' ') || 'Sales Specialist'}
+                                </p>
+                            </div>
+                            <div className="relative">
+                                {currentUser?.picture_url || currentUser?.profile_image ? (
+                                    <img src={currentUser?.picture_url || currentUser?.profile_image} className="w-10 h-10 rounded-xl border border-border transition-colors duration-300 group-hover:border-primary transition-all duration-300 object-cover shadow-lg" alt="profile" />
+                                ) : (
+                                    <div className="w-10 h-10 rounded-xl bg-primary transition-all duration-300 flex items-center justify-center text-textMain transition-colors duration-300 font-black text-xs uppercase">{getInitials(currentUser?.full_name || currentUser?.name)}</div>
+                                )}
+                                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-[#141414] rounded-full"></div>
+                            </div>
                         </div>
                         <button onClick={handleLogout} className="ml-2 p-2 bg-card/5 transition-colors duration-300 rounded-lg text-textMain/50 transition-colors duration-300 hover:text-red-500 hover:bg-red-500/10"><LogOut size={18} /></button>
                     </div>
@@ -171,7 +176,10 @@ const Navbar = () => {
                         ))}
                     </div>
                     <div className="mt-4 bg-background/50 rounded-3xl p-5 border border-border transition-colors duration-300">
-                        <div className="flex items-center gap-4">
+                        <div 
+                            className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => { navigate(`/profile/${currentUser?.user_id}`); setIsOpen(false); }}
+                        >
                             <div className="relative">
                                 {currentUser?.picture_url || currentUser?.profile_image ? (
                                     <img src={currentUser?.picture_url || currentUser?.profile_image} className="w-14 h-14 rounded-2xl border-2 border-primary transition-all duration-300 object-cover" alt="profile" />

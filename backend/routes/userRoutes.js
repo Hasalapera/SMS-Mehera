@@ -1,7 +1,7 @@
 const userController = require('../controllers/userController'); 
 const express = require('express');
 const router = express.Router();
-const { addUserByAdmin,resetToDefaultPassword, updatePassword, getAllUsers, softDeleteUser, addUserArea, removeUserArea } = require('../controllers/userController');
+const { addUserByAdmin,resetToDefaultPassword, updatePassword, getAllUsers, softDeleteUser, addUserArea, removeUserArea, addUserBehavior } = require('../controllers/userController');
 const { isAdmin, isAdminOrManager, verifyToken } = require('../middlewares/authMiddleware');
 const { loginUser, refreshAccessToken, logoutUser } = require('../controllers/authController');
 
@@ -24,6 +24,8 @@ router.put('/remove-area/:id', verifyToken, isAdmin, removeUserArea);
 
 
 router.post('/addUser', verifyToken, isAdmin, addUserByAdmin);
+
+router.post('/behavior/:id', verifyToken, isAdminOrManager, addUserBehavior);
 
 // router.put('/activate-user/:id', authMiddleware, userController.activateUser);
 router.get('/all-users', isAdminOrManager, userController.getAllUsers);
