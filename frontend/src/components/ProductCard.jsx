@@ -31,7 +31,7 @@ const ProductCard = ({ product, onAddToCart }) => {
         <img 
           src={product.image_url || "https://placehold.co/400x400/F9F4DA/9A8B50?text=No+Image"} 
           alt={product.product_name}
-          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700 mix-blend-multiply dark:mix-blend-normal"
+          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700"
         />
         
         {/* Brand Badge */}

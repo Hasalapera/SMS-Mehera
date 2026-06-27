@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, PlusCircle } from "lucide-react"; 
-import axios from "axios";
+import api from "../../../api/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-hot-toast"; 
 
@@ -32,11 +32,18 @@ export default function ProductDetail() {
 
       try {
         setLoading(true);
-        const config = token
-          ? { headers: { Authorization: `Bearer ${token}` } }
-          : {};
+        // 💡 FIX: Force the browser to completely bypass the disk cache using strict Headers
+        const config = {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          },
+          params: { _cb: new Date().getTime() } // Fallback cache-buster
+        };
 
-        const response = await axios.get(`http://localhost:5001/api/products/${id}`, config);
+        const response = await api.get(`/products/${id}`, config);
         const data = response.data?.product || response.data?.data || response.data;
 
         setProduct(data);
@@ -66,9 +73,17 @@ export default function ProductDetail() {
     
     let updatedCart;
     if (existingItemIndex > -1) {
+      if (savedCart[existingItemIndex].qty + 1 > variant.stock_count) {
+        toast.error(`Cannot add more! Only ${variant.stock_count} units available in stock.`);
+        return;
+      }
       updatedCart = [...savedCart];
       updatedCart[existingItemIndex].qty += 1;
     } else {
+      if (variant.stock_count < 1) {
+        toast.error("Item is out of stock!");
+        return;
+      }
       updatedCart = [...savedCart, { 
         cartItemId,
         product_id: product.product_id,
@@ -76,7 +91,8 @@ export default function ProductDetail() {
         variant_name: variant.variant_name,
         name: product.product_name,
         price: Number(variant.price),
-        qty: 1
+        qty: 1,
+        stock_count: variant.stock_count
       }];
     }
 

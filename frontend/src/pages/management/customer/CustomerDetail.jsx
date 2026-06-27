@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
+
+import { useNotifications } from '../../context/NotificationContext';
+
 import { useAuth } from '../../context/AuthContext';
 import {
   ArrowLeft, Building2, UserCircle, Phone,
   MapPin, Tag, MessageSquarePlus, Trash2,
-  ShoppingBag, CreditCard, Clock, StickyNote, Loader2
+  ShoppingBag, CreditCard, Clock, StickyNote, Loader2,
+  Mail, Edit2, Save, X
 } from 'lucide-react';
 
 const tagConfig = {
@@ -53,6 +57,8 @@ export default function CustomerDetail() {
   const navigate = useNavigate();
   const { token, logout } = useAuth();
 
+  const { addNotification } = useNotifications();
+
   const [customer, setCustomer] = useState(null);
   const [notes, setNotes] = useState([]);
   const [stats, setStats] = useState({ totalOrders: 0, totalSpent: 0, lastOrderDate: null });
@@ -61,8 +67,14 @@ export default function CustomerDetail() {
   const [noteText, setNoteText] = useState('');
   const [selectedTag, setSelectedTag] = useState('general');
   const [savingNote, setSavingNote] = useState(false);
+  const [isEditingInfo, setIsEditingInfo] = useState(false);
+  const [editFormData, setEditFormData] = useState({});
+  const [isSavingInfo, setIsSavingInfo] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const canAddNote = ['admin', 'manager', 'sales_rep'].includes(JSON.parse(localStorage.getItem('user') || 'null')?.role);
+  const loggedInUser = JSON.parse(localStorage.getItem('user') || 'null');
+  const canEditCustomer = loggedInUser?.role === 'admin' || (loggedInUser?.role === 'sales_rep' && customer?.sales_rep_id === loggedInUser?.user_id);
 
   useEffect(() => {
     const fetchCustomer = async () => {
@@ -73,7 +85,7 @@ export default function CustomerDetail() {
 
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:5001/api/customers/${id}`, {
+        const response = await api.get(`/customers/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -96,15 +108,82 @@ export default function CustomerDetail() {
     };
 
     fetchCustomer();
-  }, [id, token, logout, navigate]);
+  }, [id, token, logout, navigate, refreshTrigger]);
+
+  const saveNotificationToDB = async (type, title, message, severity) => {
+    try {
+      await api.post('/notifications',
+        { type, title, message, severity },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (err) {
+      console.error('Failed to save notification:', err);
+    }
+  };
+
+  const handleEditClick = () => {
+    setEditFormData({
+      type: customer.type || 'Saloon',
+      saloon_name: customer.saloon_name || '',
+      owner_name: customer.owner_name || '',
+      email: customer.email || '',
+      phone1: customer.phone1 || '',
+      phone2: customer.phone2 || '',
+      lane1: customer.lane1 || '',
+      lane2: customer.lane2 || '',
+      district: customer.district || '',
+      additional_note: customer.additional_note || ''
+    });
+    setIsEditingInfo(true);
+  };
+
+  const handleUpdateCustomer = async () => {
+    setIsSavingInfo(true);
+    try {
+      await api.put(`/customers/update/${id}`, editFormData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Customer updated successfully!');
+
+      // Create notification
+      await saveNotificationToDB(
+        'customer',
+        '✏️ Customer Info Updated',
+        `${editFormData.saloon_name} (${editFormData.type}) - ${editFormData.district} updated by ${loggedInUser?.name}`,
+        'info'
+      );
+      addNotification({
+        type: 'customer',
+        title: '✏️ Customer Info Updated',
+        message: `${editFormData.saloon_name} (${editFormData.type}) - ${editFormData.district} updated by ${loggedInUser?.name}`,
+        severity: 'info'
+      });
+
+      setIsEditingInfo(false);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (err) {
+      if (err.response?.status === 401) logout();
+      else toast.error(err.response?.data?.error || 'Failed to update customer');
+    } finally {
+      setIsSavingInfo(false);
+    }
+  };
+
+  const handleGoBack = () => {
+    if (loggedInUser?.role === 'sales_rep') {
+      navigate(`/profile/${loggedInUser.user_id}`);
+    } else {
+      navigate('/customers');
+    }
+  };
 
   const handleAddNote = async () => {
     if (!noteText.trim()) return;
 
     setSavingNote(true);
     try {
-      const response = await axios.post(
-        `http://localhost:5001/api/customers/${id}/notes`,
+      const response = await api.post(
+        `/customers/${id}/notes`,
         {
           note_text: noteText.trim(),
           tag: selectedTag,
@@ -166,15 +245,15 @@ export default function CustomerDetail() {
 
   const confirmDelete = async (noteId) => {
     try {
-      await axios.delete(
-        `http://localhost:5001/api/customers/${id}/notes/${noteId}`,
+      await api.delete(
+        `/customers/${id}/notes/${noteId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
       setNotes((current) => current.filter((note) => note.note_id !== noteId));
        const successToastId = toast.success('Note deleted successfully', { duration: 1200 });
-      // Force dismiss after 600ms to ensure it disappears on mobile
+      // Force dismiss after 1200ms to ensure it disappears on mobile
       setTimeout(() => toast.dismiss(successToastId), 1200);
     } catch (err) {
       console.error('Failed to delete note:', err);
@@ -199,8 +278,8 @@ export default function CustomerDetail() {
   if (error || !customer) {
     return (
       <div className="w-full min-h-screen bg-background transition-all duration-500 ease-in-out p-8">
-        <button onClick={() => navigate('/customers')} className="flex items-center gap-2 text-textMain/50 hover:text-textMain transition-all duration-500 mb-8 font-medium">
-          <ArrowLeft size={20} /> Back to Customers
+        <button onClick={handleGoBack} className="flex items-center gap-2 text-textMain/50 hover:text-textMain transition-all duration-500 mb-8 font-medium">
+          <ArrowLeft size={20} /> Go Back
         </button>
         <div className="text-center py-24">
           <p className="text-5xl mb-4">👤</p>
@@ -237,7 +316,7 @@ export default function CustomerDetail() {
             <span className="text-lg font-black text-primary transition-colors duration-500">{customerId}</span>
           </div>
           <button
-            onClick={() => navigate('/customers')}
+            onClick={handleGoBack}
             className="p-3 bg-card transition-all duration-500 ease-in-out hover:bg-card text-textMain/50 hover:text-textMain rounded-xl border border-border"
           >
             <ArrowLeft size={20} />
@@ -252,14 +331,22 @@ export default function CustomerDetail() {
               <h2 className="text-sm font-black text-textMain transition-colors duration-500 uppercase tracking-widest flex items-center gap-2">
                 <UserCircle size={16} className="text-primary transition-colors duration-500" /> Customer Info
               </h2>
-              <span className={`text-[10px] font-black px-3 py-1 rounded-lg border uppercase tracking-wider ${typeBadge[customerType] || typeBadge.Saloon}`}>
-                {customerType}
-              </span>
+              <div className="flex items-center gap-3">
+                {canEditCustomer && (
+                  <button onClick={handleEditClick} className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-textMain transition-colors bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 flex items-center gap-1.5">
+                    <Edit2 size={12} /> Edit
+                  </button>
+                )}
+                <span className={`text-[10px] font-black px-3 py-1 rounded-lg border uppercase tracking-wider ${typeBadge[customerType] || typeBadge.Saloon}`}>
+                  {customerType}
+                </span>
+              </div>
             </div>
 
             <div className="p-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
               <InfoField icon={Building2} label="Business Name" value={customerName} />
               <InfoField icon={UserCircle} label="Owner Name" value={customer.owner_name || 'N/A'} />
+              <InfoField icon={Mail} label="Email Address" value={customer.email || 'N/A'} />
               <InfoField icon={Phone} label="Primary Phone" value={customer.phone1 || 'N/A'} />
               <InfoField icon={Phone} label="Secondary Phone" value={customer.phone2 || 'Not provided'} />
               <InfoField icon={MapPin} label="Address" value={address || 'N/A'} />
@@ -372,6 +459,73 @@ export default function CustomerDetail() {
           </div>
         </div>
       </div>
+
+      {/* ✏️ Edit Customer Modal */}
+      {isEditingInfo && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[1000] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
+          <div className="bg-card w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in">
+            <div className="p-6 sm:p-8 border-b border-border flex justify-between items-center bg-background">
+              <h2 className="text-xl font-black text-textMain uppercase tracking-tight flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-xl text-primary"><Edit2 size={20} /></div>
+                Edit Customer Info
+              </h2>
+              <button onClick={() => setIsEditingInfo(false)} className="p-2 hover:bg-red-500/10 text-textMain/50 hover:text-red-500 rounded-full transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 sm:p-8 overflow-y-auto custom-scrollbar space-y-5 flex-1">
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase text-textMain/50 tracking-widest">Type</label>
+                    <select value={editFormData.type} onChange={e => setEditFormData({...editFormData, type: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none">
+                      <option value="Saloon">Saloon</option>
+                      <option value="Wholesale">Wholesale</option>
+                      <option value="Retail">Retail</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase text-textMain/50 tracking-widest">Business Name</label>
+                    <input type="text" value={editFormData.saloon_name} onChange={e => setEditFormData({...editFormData, saloon_name: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase text-textMain/50 tracking-widest">Owner Name</label>
+                    <input type="text" value={editFormData.owner_name} onChange={e => setEditFormData({...editFormData, owner_name: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase text-textMain/50 tracking-widest">Email Address</label>
+                    <input type="email" value={editFormData.email} onChange={e => setEditFormData({...editFormData, email: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase text-textMain/50 tracking-widest">Primary Phone</label>
+                    <input type="text" value={editFormData.phone1} onChange={e => setEditFormData({...editFormData, phone1: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase text-textMain/50 tracking-widest">Secondary Phone</label>
+                    <input type="text" value={editFormData.phone2} onChange={e => setEditFormData({...editFormData, phone2: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none" />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <label className="text-[10px] font-black uppercase text-textMain/50 tracking-widest">Address / District</label>
+                    <div className="grid grid-cols-3 gap-2">
+                        <input type="text" placeholder="Lane 01" value={editFormData.lane1} onChange={e => setEditFormData({...editFormData, lane1: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none" />
+                        <input type="text" placeholder="Lane 02" value={editFormData.lane2} onChange={e => setEditFormData({...editFormData, lane2: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none" />
+                        <select value={editFormData.district} onChange={e => setEditFormData({...editFormData, district: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none">
+                            <option value="">Select District</option>
+                            {["Colombo", "Gampaha", "Kalutara", "Kandy", "Matale", "Nuwara Eliya", "Galle", "Matara", "Hambantota", "Jaffna", "Kilinochchi", "Mannar", "Vavuniya", "Mullaitivu", "Batticaloa", "Ampara", "Trincomalee", "Kurunegala", "Puttalam", "Anuradhapura", "Polonnaruwa", "Badulla", "Moneragala", "Ratnapura", "Kegalle"].map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                    </div>
+                  </div>
+               </div>
+            </div>
+            <div className="p-6 border-t border-border bg-background flex justify-end gap-3">
+              <button onClick={() => setIsEditingInfo(false)} className="px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] text-textMain/60 hover:bg-card transition-all">Cancel</button>
+              <button onClick={handleUpdateCustomer} disabled={isSavingInfo} className="px-8 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] bg-primary text-black hover:bg-[#9a8b50] flex items-center gap-2 transition-all disabled:opacity-50">
+                {isSavingInfo ? <Loader2 size={14} className="animate-spin"/> : <Save size={14} />} Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

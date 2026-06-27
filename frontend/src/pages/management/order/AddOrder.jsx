@@ -13,8 +13,12 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import axios from "axios";
+import api from "../../../api/axiosInstance";
+import { v4 as uuidv4 } from 'uuid'; // 👈 Unique ID සෑදීමට
+import db from "../../../db/offlineDb"; // 👈 Local Dexie Database
 import { useAuth } from "../../context/AuthContext";
+
+import { useNotifications } from "../../context/NotificationContext";
 
 const AddOrder = () => {
   const [cusSearch, setCusSearch] = useState("");
@@ -23,6 +27,9 @@ const AddOrder = () => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const { token } = useAuth();
+
+  const { addNotification } = useNotifications(); // hook for adding notifications
+
   const [discount, setDiscount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('cash'); 
   
@@ -57,6 +64,12 @@ const AddOrder = () => {
   }, [cart]);
 
   const increaseQty = (cartItemId) => {
+    const item = cart.find(i => i.cartItemId === cartItemId);
+    if (item && item.stock_count !== undefined && item.qty >= item.stock_count) {
+      toast.error(`Only ${item.stock_count} units available in stock!`);
+      return;
+    }
+
     setCart((prev) => {
       const updatedCart = prev.map((item) =>
         item.cartItemId === cartItemId ? { ...item, qty: item.qty + 1 } : item,
@@ -99,12 +112,33 @@ const AddOrder = () => {
 
     if (query.length > 1) {
       setIsSearching(true);
+      
+      // 📡 1. Offline නම්, Local Dexie Database එකෙන් Search කරනවා
+      if (!navigator.onLine) {
+        try {
+            const q = query.toLowerCase();
+            const cachedCustomers = await db.customers.toArray();
+            const filtered = cachedCustomers.filter(c => 
+                (c.saloon_name && c.saloon_name.toLowerCase().includes(q)) ||
+                (c.owner_name && c.owner_name.toLowerCase().includes(q)) ||
+                (c.phone1 && c.phone1.includes(q))
+            );
+            setSuggestions(filtered.slice(0, 10)); // Top 10 results
+        } catch (err) {
+            console.error("Offline search failed", err);
+        } finally {
+            setIsSearching(false);
+        }
+        return;
+      }
+
+      // 📡 2. Online නම් සාමාන්‍ය විදිහටම API එකෙන් Search කරනවා
       try {
         const config = token
           ? { headers: { Authorization: `Bearer ${token}` } }
           : {};
-        const res = await axios.get(
-          `http://localhost:5001/api/customers/search?q=${query}`,
+        const res = await api.get(
+          `/customers/search?q=${query}`,
           config,
         );
         setSuggestions(res.data);
@@ -118,6 +152,16 @@ const AddOrder = () => {
     }
   };
 
+  //helper function to save notifications to the database
+  const saveNotificationToDB = async (type, title, message, severity) => {
+  try {
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    await api.post('/notifications', { type, title, message, severity }, config);
+  } catch (err) {
+    console.error('Failed to save notification:', err);
+  }
+};
+
   const handlePlaceOrder = async () => {
     if (!selectedCustomer) return toast.error("Please select a partner!");
     if (cart.length === 0) return toast.error("Selection queue is empty!");
@@ -128,13 +172,16 @@ const AddOrder = () => {
       const discountAmount = (totalAmount * discountPercentage) / 100;
       const finalAmount = Math.max(0, totalAmount - discountAmount);
 
+      const orderId = uuidv4(); // 🛡️ Frontend එකෙන්ම Unique ID එකක් හදනවා Idempotency වලට
+
       const orderData = {
+        order_id: orderId, // 👈 අලුත් පරාමිතිය
         customer_id: selectedCustomer.customer_id,
         customer_name: selectedCustomer.saloon_name,
         shipping_address: `${selectedCustomer.lane1 || ""}, ${selectedCustomer.district || ""}`,
         phone: selectedCustomer.phone1,
 
-        // these are going to  database 
+        // these are going to database 
         subtotal: totalAmount, // total amount without discount
         discount_percentage: discountPercentage, // % amount 
         discount_amount: discountAmount, // LKR amount 
@@ -149,24 +196,82 @@ const AddOrder = () => {
         })),
       };
 
+      // 🧹 Clear function
+      const finalizeOrderUI = () => {
+        localStorage.removeItem("active_order_cart");
+        setCart([]);
+        setSelectedCustomer(null);
+        setCusSearch("");
+        setDiscount(0);
+      };
+
+      // 📡 1. Offline නම් කෙලින්ම Local DB එකට සේව් කරනවා
+      if (!navigator.onLine) {
+        await db.pendingOrders.add({
+            id: orderId,
+            payload: orderData,
+            created_at: new Date().toISOString(),
+            status: 'pending'
+        });
+        toast.success("You are offline. Order saved locally & will auto-sync later!", { icon: '📡', duration: 4000 });
+        finalizeOrderUI();
+        return;
+      }
+
+      // 📡 2. Online නම් Server එකට යවන්න උත්සාහ කරනවා
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.post(
-        "http://localhost:5001/api/orders/place",
+      const res = await api.post(
+        "/orders/place",
         orderData,
         config,
       );
 
       if (res.data.success) {
         toast.success("Order Placed Successfully!");
+
+        // Notification
+        const loggedInUser = JSON.parse(localStorage.getItem('user'));
+        const discountPercentage = Number(discount) || 0;
+        const discountAmount = (totalAmount * discountPercentage) / 100;
+        const finalAmount = Math.max(0, totalAmount - discountAmount);
+
+        await saveNotificationToDB(
+          'order',
+          '🛒 New Order Placed',
+          `Order for ${selectedCustomer.saloon_name} worth Rs. ${finalAmount.toLocaleString()} placed by ${loggedInUser?.name} (${paymentMethod})`,
+          'info'
+        );
+        addNotification({
+          type: 'order',
+          title: '🛒 New Order Placed',
+          message: `Order for ${selectedCustomer.saloon_name} worth Rs. ${finalAmount.toLocaleString()} placed by ${loggedInUser?.name} (${paymentMethod})`,
+          severity: 'info'
+        });
+
         localStorage.removeItem("active_order_cart");
         setCart([]);
         setSelectedCustomer(null);
         setCusSearch("");
         setDiscount(0); // 👈 discount reset 
+        finalizeOrderUI();
       }
     } catch (err) {
-      console.error("Order Error:", err);
-      toast.error("Something went wrong!");
+      // 📡 3. Network Error එකක් නිසා Fail වුණොත් (Server එකට කනෙක්ට් වෙන්න බැරි නම්) Local DB එකට සේව් කරනවා
+      if (err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
+        try {
+          await db.pendingOrders.add({
+              id: orderData.order_id,
+              payload: orderData,
+              created_at: new Date().toISOString(),
+              status: 'pending'
+          });
+          toast.success("Network unstable. Order saved locally & will auto-sync later!", { icon: '📡', duration: 4000 });
+          finalizeOrderUI();
+        } catch (e) { toast.error("Failed to save order offline."); }
+      } else {
+        console.error("Order Error:", err);
+        toast.error(err.response?.data?.message || "Something went wrong!");
+      }
     }
   };
 

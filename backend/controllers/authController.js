@@ -90,6 +90,17 @@ const loginUser = async (req, res) => {
         const safeUser = user.toJSON(); // convert complex instance into simple js object 
         delete safeUser.password; // remove password (frontend ekata yawana eka walakwanawa)
 
+        // Decrypt contact number before sending to frontend
+        if (safeUser.contact_no) {
+            try { 
+                let dec = decrypt(safeUser.contact_no); 
+                if (dec && dec.length > 20) {
+                    try { dec = decrypt(dec); } catch(e) {}
+                }
+                safeUser.contact_no = dec;
+            } catch (e) { console.warn("Login: Contact decryption failed"); }
+        }
+
         // Decoded tokens
         const accessDecoded = jwt.decode(accessToken);
         const refreshDecoded = jwt.decode(refreshToken);

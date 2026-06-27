@@ -5,6 +5,12 @@ const NotificationContext = createContext();
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
 
+  //Load notifications fetched from API into context
+  const setNotificationsFromAPI = useCallback((apiNotifications) => {
+    setNotifications(apiNotifications);
+  }, []);
+
+  // Add new notification to top of list (called from AddStock after apply)
   const addNotification = useCallback((notification) => {
     const newNotif = {
       notification_id: Date.now().toString(),
@@ -17,6 +23,7 @@ export const NotificationProvider = ({ children }) => {
     return newNotif;
   }, []);
 
+  // Mark single notification as read
   const markAsRead = useCallback((id) => {
     setNotifications(prev =>
       prev.map(n =>
@@ -27,16 +34,19 @@ export const NotificationProvider = ({ children }) => {
     );
   }, []);
 
+  // Mark all notifications as read
   const markAllAsRead = useCallback(() => {
     setNotifications(prev =>
       prev.map(n => ({ ...n, is_read: true, read_at: new Date() }))
     );
   }, []);
 
+  // Remove notification from list
   const deleteNotification = useCallback((id) => {
     setNotifications(prev => prev.filter(n => n.notification_id !== id));
   }, []);
 
+  // Get unread count grouped by type (for filter tab badges)
   const getUnreadByType = useCallback(() => {
     const counts = {};
     notifications.forEach(notif => {
@@ -47,13 +57,24 @@ export const NotificationProvider = ({ children }) => {
     return counts;
   }, [notifications]);
 
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
+  }, []);
+
+
+  // Total unread count (for sidebar bell badge)
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
   const value = {
     notifications,
+    setNotificationsFromAPI, // New
     addNotification,
     markAsRead,
     markAllAsRead,
     deleteNotification,
     getUnreadByType,
+    unreadCount,             // New
+    clearNotifications,      // New
   };
 
   return (

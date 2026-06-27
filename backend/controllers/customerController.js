@@ -6,7 +6,7 @@ const { encrypt, decrypt } = require('../utils/cryptoUtils'); // For encrypting/
 
 const createCustomer = async (req, res) => {
     try {
-        const { type, saloon_name, owner_name, phone1, phone2, lane1, lane2, district, additional_note, customer_display_id } = req.body;
+        const { type, saloon_name, owner_name, email, phone1, phone2, lane1, lane2, district, additional_note, customer_display_id } = req.body;
 
         if (!saloon_name || !owner_name || !phone1 || !lane1 || !district) {
             return res.status(400).json({ error: "Required fields are missing." });
@@ -16,6 +16,7 @@ const createCustomer = async (req, res) => {
             type,
             saloon_name,
             owner_name,
+            email,
             phone1: encrypt(phone1), // Encrypt phone number before saving to DB
             phone2: phone2 ? encrypt(phone2) : null, // Encrypt if provided
             lane1,
@@ -378,6 +379,39 @@ const getReplacementCandidates = async (req, res) => {
     }
 };
 
+// Update Customer Details
+const updateCustomer = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updateData = { ...req.body };
+        const user = req.user;
+
+        const customer = await Customer.findByPk(id);
+        if (!customer) {
+            return res.status(404).json({ error: "Customer not found" });
+        }
+
+        // Sales Reps can only edit their own customers
+        if (user.role === 'sales_rep' && customer.sales_rep_id !== user.user_id) {
+            return res.status(403).json({ error: "You can only update your assigned customers." });
+        }
+
+        if (updateData.phone1) updateData.phone1 = encrypt(updateData.phone1);
+        if (updateData.phone2) updateData.phone2 = encrypt(updateData.phone2);
+
+        await customer.update(updateData);
+
+        const updatedCustomer = customer.toJSON();
+        updatedCustomer.phone1 = updatedCustomer.phone1 ? decrypt(updatedCustomer.phone1) : null;
+        updatedCustomer.phone2 = updatedCustomer.phone2 ? decrypt(updatedCustomer.phone2) : null;
+
+        res.status(200).json({ message: "Customer updated successfully", customer: updatedCustomer });
+    } catch (err) {
+        console.error("Update Customer Error:", err.message);
+        res.status(500).json({ error: "Failed to update customer" });
+    }
+};
+
 module.exports = {  createCustomer, 
                     getAllCustomers, 
                     getCustomer, 
@@ -391,4 +425,5 @@ module.exports = {  createCustomer,
                     getCustomersByRep, 
                     getUnassignedCustomers,
                     getDeletedSalesReps,
-                    getReplacementCandidates };
+                    getReplacementCandidates,
+                    updateCustomer };

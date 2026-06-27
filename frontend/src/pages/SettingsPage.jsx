@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../pages/context/AuthContext';
 import { 
-  Settings, Moon, Sun, Globe, Upload, Save, 
+  Settings, Moon, Sun, Upload, Save, 
   Image as ImageIcon, ShieldCheck, Palette, Edit3
 } from 'lucide-react';
-import axios from 'axios';
+import api from '../api/axiosInstance';
 import toast from 'react-hot-toast';
 
 const SettingsPage = () => {
@@ -13,7 +13,6 @@ const SettingsPage = () => {
 
   // --- States ---
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
-  const [language, setLanguage] = useState(localStorage.getItem('lang') || 'en');
   const [loading, setLoading] = useState(false);
 
   // Branding States (For Admin Only)
@@ -27,7 +26,7 @@ const SettingsPage = () => {
             const token = localStorage.getItem('accessToken'); 
             
             // 💡 res එක try එක ඇතුළෙම declare කරලා පාවිච්චි කරන්න
-            const res = await axios.get('http://localhost:5001/api/settings', {
+            const res = await api.get('/settings', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -61,7 +60,7 @@ const SettingsPage = () => {
     setLoading(true);
     try {
       // 2. මෙන්න මෙතනට Headers ටික අනිවාර්යයෙන්ම ඕනේ
-      const res = await axios.post('http://localhost:5001/api/settings/upload-logo', formData, {
+      const res = await api.post('/settings/upload-logo', formData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data' // File upload එකක් නිසා මේක වැදගත්
@@ -87,15 +86,13 @@ const SettingsPage = () => {
       const token = localStorage.getItem('accessToken'); // 👈 Token එක ගන්නවා
       
       localStorage.setItem('theme', theme);
-      localStorage.setItem('lang', language);
 
       if (isAdmin) {
         // 💡 මෙතන ඔයාගේ Backend එකේ route එක PUT ද POST ද කියලා බලන්න. 
         // සාමාන්‍යයෙන් update එකකට PUT තමයි පාවිච්චි කරන්නේ.
-        await axios.put('http://localhost:5001/api/settings', { 
+        await api.put('/settings', { 
           light_logo_url: lightLogo,
-          dark_logo_url: darkLogo,
-          default_language: language
+          dark_logo_url: darkLogo
         }, {
           headers: { 'Authorization': `Bearer ${token}` } // 👈 Admin check එක pass වෙන්න මේක ඕනේ
         });
@@ -160,19 +157,6 @@ const SettingsPage = () => {
                 <Moon size={32} className={theme === 'dark' ? 'text-primary' : 'text-textMain/50'} />
                 <span className="text-[10px] font-black uppercase tracking-widest text-textMain/50 transition-colors duration-500">Dark Mode</span>
               </button>
-            </div>
-          </div>
-
-          <div className="bg-card transition-colors duration-300 p-8 rounded-[2.5rem] border border-border transition-colors duration-300 shadow-sm">
-            <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-textMain/50 transition-colors duration-300 mb-6 flex items-center gap-2">
-              <Globe size={14} className="text-primary transition-all duration-300" /> Language Settings
-            </h3>
-            <div className="grid grid-cols-3 gap-3">
-              {['en', 'si', 'ta'].map(l => (
-                <button key={l} onClick={() => setLanguage(l)} className={`py-3 rounded-xl border text-xs font-bold transition-all ${language === l ? 'bg-black text-white border-black' : 'bg-card transition-colors duration-300 text-textMain/50 transition-colors duration-300 border-border transition-colors duration-300 hover:border-border transition-colors duration-300'}`}>
-                  {l === 'en' ? 'English' : l === 'si' ? 'සිංහල' : 'தமிழ்'}
-                </button>
-              ))}
             </div>
           </div>
         </div>

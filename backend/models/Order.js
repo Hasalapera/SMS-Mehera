@@ -81,6 +81,16 @@ const Order = sequelize.define('Order', {
     allowNull: true 
   },
 
+  // --- Delivery OTP & One-Time Link ---
+  delivery_token: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  delivery_otp: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+
   payment_method: { 
     type: DataTypes.ENUM('cash', 'credit'), 
     allowNull: false,

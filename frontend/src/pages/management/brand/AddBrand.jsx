@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Tag, FileText, Upload, X, Loader2, PlusCircle, Image as ImageIcon } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 
 const AddBrand = () => {
@@ -37,7 +37,7 @@ const AddBrand = () => {
 
     try {
       const token = localStorage.getItem('accessToken');
-      await axios.post('http://localhost:5001/api/brands/addBrand', data, {
+      await api.post('/brands/addBrand', data, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data' 

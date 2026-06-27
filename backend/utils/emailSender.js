@@ -53,4 +53,43 @@ const sendWelcomeEmail = async (userEmail, fullName, tempPassword, role) => { //
     await transporter.sendMail(mailOptions);
 };
 
-module.exports = { sendWelcomeEmail };
+const sendDeliveryOTP = async (userEmail, customerName, orderId, otp) => {
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+    });
+
+    const mailOptions = {
+        from: '"Mehera International" <' + process.env.EMAIL_USER + '>',
+        to: userEmail,
+        subject: `Delivery Verification OTP - Order #${orderId.substring(0,8).toUpperCase()}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; border: 1px solid #eee; padding: 20px;">
+                <h2 style="color: #2c3e50;">Delivery Verification</h2>
+                <p>Dear <b>${customerName || 'Customer'}</b>,</p>
+                <p>Your order <b>#${orderId.substring(0,8).toUpperCase()}</b> is being delivered. Please provide the following OTP to the delivery agent to confirm receipt of your package:</p>
+                <div style="background-color: #f9f9f9; padding: 15px; text-align: center; margin: 20px 0;">
+                    <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #b4a460;">${otp}</span>
+                </div>
+                <p style="font-size: 0.9em; color: #7f8c8d;">If you did not request this, please contact our support.</p>
+                <p style="font-size: 0.9em; color: #7f8c8d;">Best Regards,<br><strong>Mehera International (Pvt) Ltd.</strong></p>
+            </div>`
+    };
+    await transporter.sendMail(mailOptions);
+};
+
+const sendThankYouEmail = async (userEmail, customerName, orderId) => {
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+    });
+    const mailOptions = {
+        from: '"Mehera International" <' + process.env.EMAIL_USER + '>',
+        to: userEmail,
+        subject: `Thank You for Your Purchase! - Order #${orderId.substring(0,8).toUpperCase()}`,
+        html: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; border: 1px solid #eee; padding: 20px;"><h2 style="color: #b4a460;">Delivery Confirmed! 🎉</h2><p>Dear <b>${customerName || 'Customer'}</b>,</p><p>We have successfully delivered your order <b>#${orderId.substring(0,8).toUpperCase()}</b>.</p><p>Thank you for shopping with Mehera International! We hope you love your premium cosmetics. If you have any feedback or need further assistance, please do not hesitate to contact us.</p><hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;"><p style="font-size: 0.9em; color: #7f8c8d;">Best Regards,<br><strong>Mehera International (Pvt) Ltd.</strong></p></div>`
+    };
+    await transporter.sendMail(mailOptions);
+};
+
+module.exports = { sendWelcomeEmail, sendDeliveryOTP, sendThankYouEmail };

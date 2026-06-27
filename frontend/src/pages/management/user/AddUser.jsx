@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { UserPlus, Mail, Phone, Calendar, ShieldCheck, IdCard, MapPin, Loader2, ArrowLeft } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast'; 
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useNotifications } from '../../context/NotificationContext';
 
 const AddUser = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { addNotification } = useNotifications();
 
   const isFromAssignUser = location.state?.from === '/assign-user'; // Check if navigated from AssignUser page
   const defaultRole = location.state?.defaultRole || 'sales_rep'; // Get default role from navigation state
@@ -19,6 +22,8 @@ const AddUser = () => {
     contact_no: '',
     dob: '',
     nic_no: '', 
+    address: '',
+    gender: '',
     selectedDistricts: [] 
 });
 
@@ -91,10 +96,23 @@ const handleDistrictChange = (district) => {
   setFormData({ ...formData, selectedDistricts: updated });
 };
 
+//save notification to DB
+const saveNotificationToDB = async (type, title, message, severity) => {
+  try {
+    const token = localStorage.getItem('accessToken');
+    await api.post('/notifications', 
+      { type, title, message, severity },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  } catch (err) {
+    console.error('Failed to save notification:', err);
+  }
+};
+
 const handleSubmit = async (e) => {
   e.preventDefault();
 
-  const { nic_no, dob, email, contact_no, name, role, selectedDistricts } = formData;
+  const { nic_no, dob, email, contact_no, name, role, selectedDistricts, address, gender} = formData;
 
   // 1. Email Validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -148,14 +166,30 @@ const handleSubmit = async (e) => {
   const token = localStorage.getItem('accessToken'); 
 
   try {
-    const response = await axios.post(
-      'http://localhost:5001/api/users/addUser', 
+    const response = await api.post(
+      '/users/addUser', 
       formData, 
       { headers: { 'Authorization': `Bearer ${token}` } }
     );
     
     if (response.status === 201) {
       toast.success(`User ${name} added successfully!`);
+
+      // Create notification
+      const currentUser = JSON.parse(localStorage.getItem('user'));
+      await saveNotificationToDB(
+        'user',
+        '👤 New User Registered',
+        `${name} (${email}) has been added as ${role.replace('_', ' ')} by ${currentUser?.name || 'Admin'}`,
+        'info'
+      );
+      addNotification({
+        type: 'user',
+        title: '👤 New User Registered',
+        message: `${name} (${email}) has been added as ${role.replace('_', ' ')} by ${currentUser?.name || 'Admin'}`,
+        severity: 'info'
+      });
+
       // setFormData({ 
       //   name: '', email: '', role: 'sales_rep', contact_no: '', 
       //   dob: '', nic_no: '', selectedDistricts: [] 
@@ -163,7 +197,7 @@ const handleSubmit = async (e) => {
       if (isFromAssignUser) {
           navigate('/assign-user');
       } else {
-          setFormData({ name: '', email: '', role: 'sales_rep', contact_no: '', dob: '', nic_no: '', selectedDistricts: [] });
+          setFormData({ name: '', email: '', role: 'sales_rep', contact_no: '', dob: '', nic_no: '', address: '', gender: '', selectedDistricts: [] });
       }
     }
   } catch (err) {
@@ -207,9 +241,9 @@ const handleSubmit = async (e) => {
           <div className="space-y-2">
             <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">Full Name</label>
             <div className="relative group">
-              <input 
-                type="text" name="name" required value={formData.name} onChange={handleChange}
-                className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] transition-all"
+              <input
+                type="text" name="name" required value={formData.name} onChange={handleChange} placeholder="John Doe"
+                className="w-full bg-background border border-border text-textMain rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
               />
               <UserPlus className="absolute left-4 top-3.5 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={18} />
             </div>
@@ -228,10 +262,10 @@ const handleSubmit = async (e) => {
                 maxLength={12} 
                 title="Enter 12 digits for new NIC or 9 digits followed by 'V' for old NIC" 
                 placeholder="e.g. 199912345678 or 991234567V"
-                className={`w-full bg-card transition-colors duration-300 border rounded-xl py-3 pl-11 pr-4 text-sm transition-all focus:ring-2 
+                className={`w-full bg-background border text-textMain rounded-xl py-3 pl-11 pr-4 text-sm transition-all focus:ring-2 focus:border-primary outline-none 
                   ${formData.nic_no && !/^([0-9]{9}[xXvV]|[0-9]{12})$/.test(formData.nic_no) 
                     ? 'border-red-500 focus:ring-red-200' 
-                    : 'border-transparent focus:ring-[#b4a460]'}`}
+                    : 'border-border focus:ring-primary/20'}`}
               />
               <IdCard className={`absolute left-4 top-3.5 transition-colors 
                 ${formData.nic_no && !/^([0-9]{9}[xXvV]|[0-9]{12})$/.test(formData.nic_no) 
@@ -251,8 +285,8 @@ const handleSubmit = async (e) => {
             <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">Email Address</label>
             <div className="relative group">
               <input 
-                type="email" name="email" required value={formData.email} onChange={handleChange}
-                className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] transition-all"
+                type="email" name="email" required value={formData.email} onChange={handleChange} placeholder="mehera@example.com"
+                className="w-full bg-background border border-border text-textMain rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
               />
               <Mail className="absolute left-4 top-3.5 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={18} />
             </div>
@@ -264,7 +298,7 @@ const handleSubmit = async (e) => {
             <div className="relative group">
               <select 
                 name="role" value={formData.role} onChange={handleChange} disabled={isFromAssignUser} 
-                className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] appearance-none transition-all"
+                className="w-full bg-background border border-border text-textMain rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none appearance-none transition-all"
               >
                 <option value="sales_rep">Sales Representative</option>
                 <option value="manager">Manager</option>
@@ -281,8 +315,8 @@ const handleSubmit = async (e) => {
             <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">Contact No</label>
             <div className="relative group">
               <input 
-                type="text" name="contact_no" required value={formData.contact_no} onChange={handleChange}
-                className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] transition-all"
+                type="text" name="contact_no" required value={formData.contact_no} onChange={handleChange} placeholder="07XXXXXXXX"
+                className="w-full bg-background border border-border text-textMain rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
               />
               <Phone className="absolute left-4 top-3.5 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={18} />
             </div>
@@ -294,9 +328,38 @@ const handleSubmit = async (e) => {
             <div className="relative group">
               <input 
                 type="date" name="dob" required value={formData.dob} onChange={handleChange}
-                className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460] transition-all"
+                className="w-full bg-background border border-border text-textMain rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
               />
               <Calendar className="absolute left-4 top-3.5 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={18} />
+            </div>
+          </div>
+
+          {/* 🏠 Residential Address Input */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-textMain/50 uppercase ml-1">Residential Address</label>
+            <div className="relative group">
+              <input 
+                type="text" name="address" value={formData.address} onChange={handleChange}
+                placeholder="e.g. No 182, Kuruppumulla Road, Panadura"
+                className="w-full bg-background border border-border text-textMain rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+              />
+              <MapPin className="absolute left-4 top-3.5 text-textMain/50 group-focus-within:text-primary transition-all duration-300" size={18} />
+            </div>
+          </div>
+
+          {/* 👫 Gender Dropdown Selection */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-textMain/50 uppercase ml-1">Gender</label>
+            <div className="relative group">
+              <select 
+                name="gender" value={formData.gender} onChange={handleChange}
+                className="w-full bg-background border border-border text-textMain rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none appearance-none transition-all"
+              >
+                <option value="">Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+              <UserPlus className="absolute left-4 top-3.5 text-textMain/50 group-focus-within:text-primary transition-all duration-300" size={18} />
             </div>
           </div>
 
@@ -312,7 +375,7 @@ const handleSubmit = async (e) => {
                   <label key={dist} className="flex items-center gap-2 text-xs text-textMain/50 transition-colors duration-300 cursor-pointer hover:text-textMain transition-colors duration-300">
                     <input 
                       type="checkbox" 
-                      className="rounded border-border transition-colors duration-300 text-primary transition-all duration-300 focus:ring-[#b4a460]"
+                      className="rounded border-border text-primary focus:ring-primary/20 transition-all duration-300"
                       checked={formData.selectedDistricts.includes(dist)}
                       onChange={() => handleDistrictChange(dist)}
                     />

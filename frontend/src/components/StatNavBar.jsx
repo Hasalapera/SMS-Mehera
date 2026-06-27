@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, X, Sun, Moon } from 'lucide-react';
-import axios from 'axios';
+import api from '../api/axiosInstance';
 
 const StatNavBar = () => {
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ const StatNavBar = () => {
   useEffect(() => {
     const fetchBranding = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/settings/public');
+        const res = await api.get('/settings/public');
         setSystemSettings(res.data);
       } catch (err) {
         console.error("StatNavBar branding fetch failed:", err);

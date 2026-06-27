@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axiosInstance';
 import Swal from 'sweetalert2';
 import { Eye, EyeOff, Lock } from 'lucide-react';
 
@@ -30,7 +30,7 @@ const ChangePassword = () => {
     }
 
     try {
-      const response = await axios.put('http://localhost:5001/api/users/update-password', {
+      const response = await api.put('/users/update-password', {
         user_id: userId,
         new_password: newPassword
       });

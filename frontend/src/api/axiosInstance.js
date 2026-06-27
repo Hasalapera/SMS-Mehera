@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
 const api = axios.create({
-    baseURL: 'http://localhost:5001/api',
+    baseURL: BASE_URL,
     withCredentials: true  // ✅ Send HttpOnly cookies
 });
 
@@ -74,7 +76,7 @@ api.interceptors.response.use(
 
                 // IMPORTANT: Use standard axios here to bypass our interceptors
                 // If we use 'api', a failed refresh would trigger this interceptor again!
-                const response = await axios.post('http://localhost:5001/api/users/refresh-token', {
+                const response = await api.post('/users/refresh-token', {
                     refreshToken: storedRefreshToken
                 });
 

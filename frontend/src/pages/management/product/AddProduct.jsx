@@ -3,10 +3,16 @@ import {
   Package, Tag, Layers, FileText, PlusCircle, Trash2, 
   Loader2, Upload, X, Image as ImageIcon, AlertTriangle 
 } from 'lucide-react';
-import axios from 'axios';
+import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 
+import { useNotifications } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
+
 const AddProduct = () => {
+  const { addNotification } = useNotifications(); 
+  const { user } = useAuth();   
+
   const [loading, setLoading] = useState(false);
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -30,10 +36,10 @@ const AddProduct = () => {
         const token = localStorage.getItem('accessToken');
         const headers = { Authorization: `Bearer ${token}` };
 
-        const brandsResponse = await axios.get('http://localhost:5001/api/brands/getBrands', { headers });
+        const brandsResponse = await api.get('/brands/getBrands', { headers });
         setBrands(brandsResponse.data.brands || brandsResponse.data);
       
-        const categoriesResponse = await axios.get('http://localhost:5001/api/category/getCategories', { headers });
+        const categoriesResponse = await api.get('/category/getCategories', { headers });
         setCategories(categoriesResponse.data.categories || categoriesResponse.data);
       } catch (err) {
         console.error("Data load error", err);
@@ -87,6 +93,18 @@ const AddProduct = () => {
     }
   };
 
+  const saveNotificationToDB = async (type, title, message, severity) => {
+  try {
+    const token = localStorage.getItem('accessToken');
+    await api.post('/notifications',
+      { type, title, message, severity },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  } catch (err) {
+    console.error('Failed to save notification:', err);
+  }
+};
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -108,13 +126,32 @@ const AddProduct = () => {
 
     try {
       const token = localStorage.getItem('accessToken');
-      await axios.post('http://localhost:5001/api/products/addProduct', data, {
+      await api.post('/products/addProduct', data, {
         headers: { 
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data' 
         }
       });
       toast.success("Product added successfully!");
+
+      // Create notification
+      const variantCount = formData.variants.length;
+      const brandName = brands.find(b => b.brand_id === formData.brand_id)?.brand_name || '';
+      const categoryName = categories.find(c => c.category_id === formData.category_id)?.category_name || '';
+
+      await saveNotificationToDB(
+        'stock',
+        '🆕 New Product Added',
+        `${formData.product_name} (${brandName} - ${categoryName}) added with ${variantCount} variant(s) by ${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`,
+        'info'
+      );
+      addNotification({
+        type: 'stock',
+        title: '🆕 New Product Added',
+        message: `${formData.product_name} (${brandName} - ${categoryName}) added with ${variantCount} variant(s) by ${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`,
+        severity: 'info'
+      });
+
     } catch (err) {
       toast.error(err.response?.data?.error || "Error uploading product");
     } finally {
