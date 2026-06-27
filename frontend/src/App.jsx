@@ -10,7 +10,7 @@ import api from "../src/api/axiosInstance";
 
 //sales management
 import Customer from "./pages/management/customer/Customer";
-import AddCustomer from "./pages/management/customer/Addcustomer";
+import AddCustomer from "./pages/management/customer/AddCustomer";
 import ViewCustomer from "./pages/management/customer/ViewCustomer";
 import CustomerDetail from "./pages/management/customer/CustomerDetail";
 import Orders from "./pages/management/order/Orders";
@@ -252,7 +252,7 @@ function App() {
             path="/add-customer"
             element={
               ["admin", "sales_rep"].includes(userRole) ? (
-                <Addcustomer />
+                <AddCustomer />
               ) : (
                 <Navigate to="/home" />
               )
