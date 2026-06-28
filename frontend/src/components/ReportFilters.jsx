@@ -25,12 +25,12 @@ const ReportFilters = ({ filterType, setFilterType, dates, setDates }) => {
     <div className="p-4 md:p-6 bg-card transition-colors duration-300 border border-border rounded-2xl flex flex-col gap-4 shadow-sm">
       
       {/* 🔘 Filter Option Buttons */}
-      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-[0.5rem]">
+      <div className="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-2 md:gap-2">
         {filters.map(f => (
           <button
             key={f.id}
             onClick={() => setFilterType(f.id)}
-            className={`px-[0.5rem] py-[0.5rem] sm:px-[1rem] sm:py-[0.5rem] rounded-[0.5rem] sm:rounded-[0.75rem] text-[9px] sm:text-[0.6875rem] font-black uppercase tracking-wider sm:tracking-widest transition-all ${
+            className={`px-3 py-3 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-[10px] font-black uppercase tracking-widest transition-all ${
               filterType === f.id
                 ? 'bg-black text-primary shadow-md sm:scale-105'
                 : 'bg-background transition-colors duration-300 text-textMain/60 hover:bg-primary/10 hover:text-primary border border-border shadow-sm sm:hover:scale-105'
