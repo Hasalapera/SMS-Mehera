@@ -354,20 +354,24 @@ const Dashboard = () => {
               Monitor real-time metrics, analytics, and operational performance.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3 ml-12 md:ml-0 mt-4 md:mt-0">
-            <button className="p-2.5 bg-card border border-border rounded-xl text-textMain/50 shadow-sm relative hover:text-primary transition-all">
-              <Bell size={18} />
-              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-primary rounded-full"></span>
-            </button>
-            <button onClick={handleDownloadCSV} className="flex items-center justify-center gap-2 bg-[#2ca01c] text-white px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-[#2ca01c]/20 hover:bg-[#238016] transition-all">
-              <FileSpreadsheet size={14} /> QB CSV
-            </button>
-            <button onClick={handlePrintSalesLedger} className="flex items-center justify-center gap-2 bg-primary text-black px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-[#b4a460]/20 hover:bg-[#9a8b50] transition-all">
-              <FileDown size={14} /> PDF
-            </button>
-            <button onClick={() => setIsQuotationOpen(true)} className="flex items-center justify-center gap-2 bg-black text-primary px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg border border-primary/30 hover:border-primary transition-all">
-              <ReceiptText size={14} /> Quotation
-            </button>
+          {/* --- ACTION BUTTONS (Mobile Responsive) --- */}
+          <div className="w-full md:w-auto mt-4 md:mt-0">
+            <div className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-3">
+              <button className="col-span-2 md:col-auto p-2.5 bg-card border border-border rounded-xl text-textMain/50 shadow-sm relative hover:text-primary transition-all flex items-center justify-center gap-2">
+                <Bell size={18} />
+                <span className="md:hidden text-xs font-bold uppercase">Notifications</span>
+                <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-primary rounded-full"></span>
+              </button>
+              <button onClick={handleDownloadCSV} className="flex items-center justify-center gap-2 bg-[#2ca01c] text-white px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-[#2ca01c]/20 hover:bg-[#238016] transition-all">
+                <FileSpreadsheet size={14} /> QB CSV
+              </button>
+              <button onClick={handlePrintSalesLedger} className="flex items-center justify-center gap-2 bg-primary text-black px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-[#b4a460]/20 hover:bg-[#9a8b50] transition-all">
+                <FileDown size={14} /> PDF
+              </button>
+              <button onClick={() => setIsQuotationOpen(true)} className="col-span-2 md:col-auto flex items-center justify-center gap-2 bg-black text-primary px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg border border-primary/30 hover:border-primary transition-all">
+                <ReceiptText size={14} /> Quotation
+              </button>
+            </div>
           </div>
         </header>
 
@@ -516,11 +520,11 @@ const Dashboard = () => {
                 <span className="w-2 h-2 rounded-full bg-primary"></span> Net Sales
               </div>
             </div>
-            <div className="overflow-x-auto pb-2">
-              <div className="min-w-[500px] h-64 flex items-end justify-between gap-2 border-b border-border relative pt-10 px-4">
+            <div className="overflow-x-auto pb-2 -mx-2 md:mx-0">
+              <div className="h-64 flex items-end justify-between gap-1 md:gap-2 border-b border-border relative pt-10 px-2 md:px-4">
                   {chartData.map((data, i) => (
                       <div key={data.label || i} className="flex-1 flex flex-col items-center gap-2 relative z-10 group">
-                          <div className="w-full max-w-[40px] bg-background border border-border rounded-t-lg h-40 relative flex flex-col justify-end hover:bg-card transition-colors">
+                          <div className="w-full max-w-[40px] bg-background border border-border rounded-t-md md:rounded-t-lg h-40 relative flex flex-col justify-end hover:bg-card transition-colors">
                               <div className="w-full bg-primary rounded-t-sm" style={{height: `${(data.value / maxChartVal) * 100}%`}}></div>
                               {/* Tooltip */}
                               <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
@@ -535,7 +539,7 @@ const Dashboard = () => {
           </div>
 
           {/* Trending Products */}
-          <div className="bg-card p-6 md:p-8 rounded-[1.5rem] border border-border shadow-sm">
+          <div className="bg-card p-6 md:p-8 rounded-[1.5rem] border border-border shadow-sm h-full">
             <div className="flex justify-between items-center mb-8 border-b border-border pb-4">
               <h4 className="text-sm font-bold text-textMain">Trending Products</h4>
               <div className="flex items-center gap-4">
@@ -543,7 +547,7 @@ const Dashboard = () => {
                  <button onClick={() => navigate('/product-summary')} className="text-[10px] uppercase font-bold text-primary hover:underline">View All</button>
               </div>
             </div>
-            <div className="space-y-4 max-h-[420px] overflow-y-auto custom-scrollbar pr-2">
+            <div className="space-y-4 max-h-[350px] md:max-h-[420px] overflow-y-auto custom-scrollbar pr-2">
               {trendingProducts.length > 0 ? (
                 trendingProducts.map((item, idx) => (
                   <div key={item.id || `prod-${idx}`} className="flex items-center justify-between group cursor-pointer">

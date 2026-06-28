@@ -208,13 +208,13 @@ const LogisticsDashboard = () => {
     return (
         <div className="w-full mx-auto animate-in fade-in duration-500 pb-10">
             {/* Header Section */}
-            <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-serif text-textMain transition-colors duration-300 uppercase tracking-tight flex items-center gap-3">
                         <div className="p-3 bg-black text-primary transition-all duration-300 rounded-2xl shadow-xl"><Truck size={28} /></div>
                         Logistics <span className="italic text-primary transition-all duration-300">Dispatch</span>
                     </h1>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-textMain/50 transition-colors duration-300 mt-2 italic ml-16">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-textMain/50 transition-colors duration-300 mt-2 italic ml-4 sm:ml-16">
                         Manage & dispatch approved registry orders
                     </p>
                 </div>
@@ -232,11 +232,11 @@ const LogisticsDashboard = () => {
             </div>
 
             {/* Tabs Layer */}
-            <div className="flex flex-col sm:flex-row gap-2 bg-gray-100/50 p-1.5 rounded-2xl border border-border transition-colors duration-300 w-full shadow-sm mb-6">
-                <button onClick={() => setActiveTab('online')} className={`flex-1 flex justify-center items-center gap-2 px-8 py-3.5 text-[11px] font-black uppercase tracking-widest transition-all rounded-xl ${activeTab === 'online' ? 'bg-black text-primary shadow-lg' : 'text-textMain/50 hover:text-textMain'}`}>
+            <div className="flex flex-col sm:flex-row gap-2 bg-card p-1.5 rounded-2xl border border-border transition-colors duration-300 w-full shadow-sm mb-6">
+                <button onClick={() => setActiveTab('online')} className={`flex-1 flex justify-center items-center gap-2 px-4 sm:px-8 py-3 text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all rounded-xl ${activeTab === 'online' ? 'bg-black text-primary shadow-lg' : 'text-textMain/50 hover:text-textMain'}`}>
                     <Globe size={16} /> Online Orders <span className="ml-2 bg-primary/20 text-primary px-2 py-0.5 rounded-md">{onlineOrders.length}</span>
                 </button>
-                <button onClick={() => setActiveTab('offline')} className={`flex-1 flex justify-center items-center gap-2 px-8 py-3.5 text-[11px] font-black uppercase tracking-widest transition-all rounded-xl ${activeTab === 'offline' ? 'bg-black text-primary shadow-lg' : 'text-textMain/50 hover:text-textMain'}`}>
+                <button onClick={() => setActiveTab('offline')} className={`flex-1 flex justify-center items-center gap-2 px-4 sm:px-8 py-3 text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all rounded-xl ${activeTab === 'offline' ? 'bg-black text-primary shadow-lg' : 'text-textMain/50 hover:text-textMain'}`}>
                     <Store size={16} /> Offline/Retail Orders <span className="ml-2 bg-primary/20 text-primary px-2 py-0.5 rounded-md">{offlineOrders.length}</span>
                 </button>
             </div>

@@ -119,7 +119,7 @@ const ReportTable = ({ orders = [] }) => {
             <div 
               key={order.order_id} 
               onClick={() => setSelectedOrder(order)}
-              className={`p-[1.25rem] bg-background border border-border rounded-[1.25rem] space-y-[1rem] transition-all print:break-inside-avoid cursor-pointer hover:border-primary/40 hover:shadow-lg ${!isVisibleOnScreen ? 'hidden print:block' : ''}`}
+              className={`p-5 bg-background border border-border rounded-2xl space-y-4 transition-all print:break-inside-avoid cursor-pointer hover:border-primary/40 hover:shadow-lg ${!isVisibleOnScreen ? 'hidden print:block' : ''}`}
             >
               
               {/* Card Top: Reference & Date */}
@@ -127,21 +127,21 @@ const ReportTable = ({ orders = [] }) => {
                 <span className="font-mono font-bold text-textMain text-[0.875rem]">
                   #{order.order_id.substring(0, 8).toUpperCase()}
                 </span>
-                <span className="text-[0.6875rem] text-textMain/50 font-medium flex items-center gap-[0.25rem]">
+                <span className="text-[11px] text-textMain/50 font-medium flex items-center gap-1.5">
                   <Calendar size={12} /> {new Date(order.created_at || order.createdAt).toLocaleDateString('en-GB')}
                 </span>
               </div>
 
               {/* Card Middle: Metadata Fields */}
-              <div className="grid grid-cols-2 gap-[0.75rem] text-[0.75rem]">
-                <div className="space-y-[0.125rem]">
-                  <p className="text-[0.625rem] text-textMain/40 uppercase font-black tracking-wider flex items-center gap-[0.25rem]">
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div className="space-y-1">
+                  <p className="text-[10px] text-textMain/40 uppercase font-black tracking-wider flex items-center gap-1.5">
                     <User size={10} /> Sales Rep
                   </p>
                   <p className="font-bold text-textMain truncate print:overflow-visible print:whitespace-normal">{repName}</p>
                 </div>
-                <div className="space-y-[0.125rem]">
-                  <p className="text-[0.625rem] text-textMain/40 uppercase font-black tracking-wider flex items-center gap-[0.25rem]">
+                <div className="space-y-1">
+                  <p className="text-[10px] text-textMain/40 uppercase font-black tracking-wider flex items-center gap-1.5">
                     <MapPin size={10} /> Saloon / Client
                   </p>
                   <p className="font-bold text-textMain truncate print:overflow-visible print:whitespace-normal">{order.customer?.saloon_name || 'Direct Order'}</p>
@@ -149,8 +149,8 @@ const ReportTable = ({ orders = [] }) => {
               </div>
 
               {/* Card Manifestations: Products Section */}
-              <div className="space-y-[0.5rem] bg-card/50 p-[0.75rem] rounded-[0.75rem] border border-border/40">
-                <p className="text-[0.625rem] text-textMain/40 uppercase font-black tracking-wider flex items-center gap-[0.25rem] mb-[0.25rem]">
+              <div className="space-y-2 bg-card/50 p-3 rounded-xl border border-border/40">
+                <p className="text-[10px] text-textMain/40 uppercase font-black tracking-wider flex items-center gap-1.5 mb-1">
                   <Package size={10} /> Manifested Items
                 </p>
                 <div className="space-y-[0.375rem]">
