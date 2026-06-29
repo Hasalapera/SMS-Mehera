@@ -207,6 +207,25 @@ const LogisticsDashboard = () => {
 
     return (
         <div className="w-full mx-auto animate-in fade-in duration-500 pb-10">
+            {/* 💅 Scanner UI Override Styles */}
+            <style>{`
+                #mehera-qr-reader span, 
+                #mehera-qr-reader a {
+                    color: var(--color-text) !important;
+                    opacity: 0.6;
+                }
+                #mehera-qr-reader #qr-reader__status_message {
+                    color: var(--color-text) !important;
+                    opacity: 1;
+                    font-weight: 700;
+                    font-size: 12px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.1em;
+                }
+                #mehera-qr-reader a[href='https://scanapp.org'] {
+                    display: none !important;
+                }
+            `}</style>
             {/* Header Section */}
             <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>

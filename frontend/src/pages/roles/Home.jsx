@@ -161,7 +161,25 @@ const Home = () => {
 
   return (
     <div className="w-full min-h-screen bg-background transition-all duration-300 text-textMain transition-colors duration-300 overflow-x-hidden text-left" onClick={() => setIsDropdownOpen(false)}>
-      
+      {/* 💅 Scanner UI Override Styles */}
+      <style>{`
+          #delivery-qr-reader span, 
+          #delivery-qr-reader a {
+              color: var(--color-text) !important;
+              opacity: 0.6;
+          }
+          #delivery-qr-reader #qr-reader__status_message {
+              color: var(--color-text) !important;
+              opacity: 1;
+              font-weight: 700;
+              font-size: 12px;
+              text-transform: uppercase;
+              letter-spacing: 0.1em;
+          }
+          #delivery-qr-reader a[href='https://scanapp.org'] {
+              display: none !important;
+          }
+      `}</style>
       <div className="w-full px-6 pt-10 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
               <h1 className="text-4xl font-black text-textMain transition-colors duration-300 uppercase tracking-tight">Inventory Catalog</h1>
