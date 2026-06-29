@@ -1,4 +1,21 @@
-const { ProductVariant, sequelize } = require('../models');
+const { ProductVariant, Product, User, sequelize } = require('../models');
+const { createNotification } = require('./notificationController');
+
+// Format user info for notification messages
+const formatUserInfo = async (user) => {
+    if (!user) return 'System';
+
+    const dbUser = user.user_id
+        ? await User.findByPk(user.user_id, { attributes: ['name', 'role'] })
+        : null;
+
+    const name = dbUser?.name || user.name || 'Unknown';
+    const role = (dbUser?.role || user.role || 'user')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+
+    return `${name} (${role})`;
+};
 
 const addStockToVariant = async (req, res) => {
     try {
@@ -55,7 +72,10 @@ const batchAddStockToVariants = async (req, res) => {
                 return res.status(400).json({ error: 'Each update must include variant_id and positive integer quantity' });
             }
 
-            const variant = await ProductVariant.findByPk(variantId, { transaction });
+            const variant = await ProductVariant.findByPk(variantId, { 
+                transaction,
+                include: [{ model: Product, as: 'product' }] //  Include product for name
+            });
             if (!variant) {
                 await transaction.rollback();
                 return res.status(404).json({ error: `Variant not found: ${variantId}` });
@@ -75,6 +95,41 @@ const batchAddStockToVariants = async (req, res) => {
                 new_stock: newStock
             });
             totalUnits += quantity;
+        }
+
+        // Create notifications after all updates
+        const userInfo = await formatUserInfo(req.user);
+        for (const update of appliedUpdates) {
+        const variant = await ProductVariant.findByPk(update.variant_id, {
+            include: [{ model: Product, as: 'product' }]
+        });
+        
+        const productName = variant?.product?.product_name || 'Unknown Product';
+        const variantName = variant?.variant_name || 'Unknown Variant';
+        const newStock = update.new_stock;
+        const criticalLevel = Number(variant?.critical_stock_level || 5);
+
+        let title, message, severity;
+
+        if (newStock <= 0) {
+            title = '🔴 Still Out of Stock';
+            message = `${productName} - ${variantName} is still OUT OF STOCK after update by ${userInfo}`;
+            severity = 'critical';
+        } else if (newStock <= criticalLevel) {
+            title = '🔴 Critical Stock Level';
+            message = `${productName} - ${variantName} is at CRITICAL level (${newStock} units) - updated by ${userInfo}`;
+            severity = 'critical';
+        } else if (newStock < 10) {
+            title = '🟡 Low Stock Alert';
+            message = `${productName} - ${variantName} is LOW (${newStock} units after adding ${update.quantity}) - updated by ${userInfo}`;
+            severity = 'warning';
+        } else {
+            title = '📦 Stock Added';
+            message = `${productName} - ${variantName} updated to ${newStock} units (+${update.quantity} added) by ${userInfo}`;
+            severity = 'info';
+        }
+
+        await createNotification('stock', title, message, update.variant_id, severity);
         }
 
         await transaction.commit();
@@ -133,6 +188,44 @@ const batchEditStockForVariants = async (req, res) => {
                 change
             });
             totalChange += change;
+        }
+
+        // Create notifications after all updates
+        const userInfo = await formatUserInfo(req.user);
+        for (const update of appliedUpdates) {
+        const variant = await ProductVariant.findByPk(update.variant_id, {
+            include: [{ model: Product, as: 'product' }]
+        });
+
+        const productName = variant?.product?.product_name || 'Unknown Product';
+        const variantName = variant?.variant_name || 'Unknown Variant';
+        const newStock = update.newStock;
+        const oldStock = update.oldStock;
+        const criticalLevel = Number(variant?.critical_stock_level || 5);
+        const difference = newStock - oldStock;
+        const sign = difference > 0 ? '+' : '';
+
+        let title, message, severity;
+
+        if (newStock <= 0) {
+            title = '🔴 Out of Stock Alert';
+            message = `${productName} - ${variantName} is now OUT OF STOCK (0 units) - updated by ${userInfo}`;
+            severity = 'critical';
+        } else if (newStock <= criticalLevel) {
+            title = '🔴 Critical Stock Level';
+            message = `${productName} - ${variantName} dropped to CRITICAL level (${newStock} units) - updated by ${userInfo}`;
+            severity = 'critical';
+        } else if (newStock < 10) {
+            title = '🟡 Low Stock Alert';
+            message = `${productName} - ${variantName} is LOW (${newStock} units, ${sign}${difference} change) - updated by ${userInfo}`;
+            severity = 'warning';
+        } else {
+            title = '📦 Stock Updated';
+            message = `${productName} - ${variantName} set to ${newStock} units (${sign}${difference} change) - updated by ${userInfo}`;
+            severity = 'info';
+        }
+
+        await createNotification('stock', title, message, update.variant_id, severity);
         }
 
         await transaction.commit();
@@ -196,6 +289,25 @@ const batchRevertStockForVariants = async (req, res) => {
                 new_stock: newStock
             });
             totalUnits += quantity;
+        }
+
+        // Create revert notifications
+        const userInfo = await formatUserInfo(req.user);
+        for (const update of revertedUpdates) {
+        const variant = await ProductVariant.findByPk(update.variant_id, {
+            include: [{ model: Product, as: 'product' }]
+        });
+
+        const productName = variant?.product?.product_name || 'Unknown Product';
+        const variantName = variant?.variant_name || 'Unknown Variant';
+
+        await createNotification(
+            'stock',
+            '↩️ Stock Addition Reverted',
+            `${productName} - ${variantName}: ${update.quantity} units addition reverted by ${userInfo}`,
+            update.variant_id,
+            'warning'
+        );
         }
 
         await transaction.commit();

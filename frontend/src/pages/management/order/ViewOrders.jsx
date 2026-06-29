@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNotifications } from "../../context/NotificationContext";
 import { useNavigate } from "react-router-dom";
 import api from "../../../api/axiosInstance";
 import {
@@ -79,6 +80,7 @@ const statusBadge = {
 const ViewOrders = () => {
   const navigate = useNavigate();
   const { token, logout } = useAuth();
+  const { addNotification } = useNotifications();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -127,6 +129,16 @@ const ViewOrders = () => {
   // change page function
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  const saveNotificationToDB = async (type, title, message, severity) => {
+        try {
+            await api.post(`/notifications`, { type, title, message, severity },
+            { headers: { Authorization: `Bearer ${token}` } }
+            );
+        } catch (err) {
+            console.error('Failed to save notification:', err);
+        }
+  };
+
   const handleStatusUpdate = async (orderId, newStatus) => {
     const result = await MySwal.fire({
       title: "Are you sure?",
@@ -139,22 +151,48 @@ const ViewOrders = () => {
     });
 
     if (result.isConfirmed) {
-      try {
-        // this Backend route should be here
-        // if elese make the route (router.put('/update-order-status/:id', ...))
-        await api.put(
-          `/orders/update-order-status/${orderId}`,
-          { status: newStatus },
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
+            try {
+                // this Backend route should be here
+                // if elese make the route (router.put('/update-order-status/:id', ...))
+                await api.put(`/orders/update-order-status/${orderId}`, 
+                    { status: newStatus }, 
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
 
-        toast.success(`Order ${newStatus} successfully!`);
-        fetchOrders(false);
-      } catch (err) {
-        console.error("Status Update Error:", err);
-        toast.error(err.response?.data?.message || "Failed to update status.");
-      }
-    }
+                toast.success(`Order ${newStatus} successfully!`);
+
+                // Get status config for notification
+                const statusConfig = {
+                approved:  { title: '✅ Order Approved',   severity: 'info',     emoji: '✅' },
+                rejected:  { title: '❌ Order Rejected',   severity: 'critical', emoji: '❌' },
+                processing:{ title: '⚙️ Order Processing', severity: 'info',     emoji: '⚙️' },
+                shipped:   { title: '🚚 Order Shipped',    severity: 'info',     emoji: '🚚' },
+                delivered: { title: '📦 Order Delivered',  severity: 'info',     emoji: '📦' },
+                cancelled: { title: '🚫 Order Cancelled',  severity: 'warning',  emoji: '🚫' },
+                };
+
+                const config = statusConfig[newStatus] || { title: `📋 Order ${newStatus}`, severity: 'info' };
+                const orderRef = `#${orderId.substring(0, 8).toUpperCase()}`;
+
+                await saveNotificationToDB(
+                'order',
+                config.title,
+                `Order ${orderRef} has been marked as ${newStatus} by ${loggedUser?.name}`,
+                config.severity
+                );
+                addNotification({
+                type: 'order',
+                title: config.title,
+                message: `Order ${orderRef} has been marked as ${newStatus} by ${loggedUser?.name}`,
+                severity: config.severity
+                });
+
+                fetchOrders(false); 
+            } catch (err) {
+                console.error("Status Update Error:", err);
+                toast.error(err.response?.data?.message || "Failed to update status.");
+            }
+        }
   };
 
   return (

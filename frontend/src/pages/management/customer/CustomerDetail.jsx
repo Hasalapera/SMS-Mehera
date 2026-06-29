@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
+
+import { useNotifications } from '../../context/NotificationContext';
+
 import { useAuth } from '../../context/AuthContext';
 import {
   ArrowLeft, Building2, UserCircle, Phone,
@@ -54,6 +57,8 @@ export default function CustomerDetail() {
   const navigate = useNavigate();
   const { token, logout } = useAuth();
 
+  const { addNotification } = useNotifications();
+
   const [customer, setCustomer] = useState(null);
   const [notes, setNotes] = useState([]);
   const [stats, setStats] = useState({ totalOrders: 0, totalSpent: 0, lastOrderDate: null });
@@ -105,6 +110,17 @@ export default function CustomerDetail() {
     fetchCustomer();
   }, [id, token, logout, navigate, refreshTrigger]);
 
+  const saveNotificationToDB = async (type, title, message, severity) => {
+    try {
+      await api.post('/notifications',
+        { type, title, message, severity },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (err) {
+      console.error('Failed to save notification:', err);
+    }
+  };
+
   const handleEditClick = () => {
     setEditFormData({
       type: customer.type || 'Saloon',
@@ -128,6 +144,21 @@ export default function CustomerDetail() {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Customer updated successfully!');
+
+      // Create notification
+      await saveNotificationToDB(
+        'customer',
+        '✏️ Customer Info Updated',
+        `${editFormData.saloon_name} (${editFormData.type}) - ${editFormData.district} updated by ${loggedInUser?.name}`,
+        'info'
+      );
+      addNotification({
+        type: 'customer',
+        title: '✏️ Customer Info Updated',
+        message: `${editFormData.saloon_name} (${editFormData.type}) - ${editFormData.district} updated by ${loggedInUser?.name}`,
+        severity: 'info'
+      });
+
       setIsEditingInfo(false);
       setRefreshTrigger(prev => prev + 1);
     } catch (err) {

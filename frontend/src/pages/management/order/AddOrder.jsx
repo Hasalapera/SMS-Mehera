@@ -18,6 +18,8 @@ import { v4 as uuidv4 } from 'uuid'; // 👈 Unique ID සෑදීමට
 import db from "../../../db/offlineDb"; // 👈 Local Dexie Database
 import { useAuth } from "../../context/AuthContext";
 
+import { useNotifications } from "../../context/NotificationContext";
+
 const AddOrder = () => {
   const [cusSearch, setCusSearch] = useState("");
   const [cart, setCart] = useState([]);
@@ -25,6 +27,9 @@ const AddOrder = () => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const { token } = useAuth();
+
+  const { addNotification } = useNotifications(); // hook for adding notifications
+
   const [discount, setDiscount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('cash'); 
   
@@ -147,6 +152,16 @@ const AddOrder = () => {
     }
   };
 
+  //helper function to save notifications to the database
+  const saveNotificationToDB = async (type, title, message, severity) => {
+  try {
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    await api.post('/notifications', { type, title, message, severity }, config);
+  } catch (err) {
+    console.error('Failed to save notification:', err);
+  }
+};
+
   const handlePlaceOrder = async () => {
     if (!selectedCustomer) return toast.error("Please select a partner!");
     if (cart.length === 0) return toast.error("Selection queue is empty!");
@@ -213,6 +228,31 @@ const AddOrder = () => {
 
       if (res.data.success) {
         toast.success("Order Placed Successfully!");
+
+        // Notification
+        const loggedInUser = JSON.parse(localStorage.getItem('user'));
+        const discountPercentage = Number(discount) || 0;
+        const discountAmount = (totalAmount * discountPercentage) / 100;
+        const finalAmount = Math.max(0, totalAmount - discountAmount);
+
+        await saveNotificationToDB(
+          'order',
+          '🛒 New Order Placed',
+          `Order for ${selectedCustomer.saloon_name} worth Rs. ${finalAmount.toLocaleString()} placed by ${loggedInUser?.name} (${paymentMethod})`,
+          'info'
+        );
+        addNotification({
+          type: 'order',
+          title: '🛒 New Order Placed',
+          message: `Order for ${selectedCustomer.saloon_name} worth Rs. ${finalAmount.toLocaleString()} placed by ${loggedInUser?.name} (${paymentMethod})`,
+          severity: 'info'
+        });
+
+        localStorage.removeItem("active_order_cart");
+        setCart([]);
+        setSelectedCustomer(null);
+        setCusSearch("");
+        setDiscount(0); // 👈 discount reset 
         finalizeOrderUI();
       }
     } catch (err) {

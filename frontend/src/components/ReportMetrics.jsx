@@ -211,14 +211,14 @@ const ReportMetrics = ({ orders = [], selectedMonth, selectedRepId, token }) => 
 };
 
 const MetricCard = ({ icon: Icon, label, value, subtext, color = "text-primary", onAction }) => (
-  <div className="p-[0.75rem] md:p-[1rem] bg-card border border-border rounded-[1rem] md:rounded-[1.25rem] flex items-center gap-[0.5rem] md:gap-[0.75rem] print:border-none print:bg-transparent print:p-0 print:gap-[0.5rem] print:shadow-none relative group h-full">
-    <div className={`p-[0.4rem] md:p-[0.5rem] bg-background border border-border rounded-[0.6rem] md:rounded-[0.75rem] ${color} print:p-1.5 print:bg-gray-100 print:border-gray-300 shrink-0`}>
-      <Icon size={16} className="md:w-[18px] md:h-[18px] print:w-[14px] print:h-[14px]" />
+  <div className="p-3 md:p-4 bg-card border border-border rounded-xl md:rounded-2xl flex items-center gap-3 md:gap-4 print:border-none print:bg-transparent print:p-0 print:gap-2 print:shadow-none relative group h-full">
+    <div className={`p-2 md:p-3 bg-background border border-border rounded-lg md:rounded-xl ${color} print:p-1.5 print:bg-gray-100 print:border-gray-300 shrink-0`}>
+      <Icon size={16} className="md:w-5 md:h-5 print:w-4 print:h-4" />
     </div>
-    <div className="flex-1 min-w-0 pr-6 md:pr-8 print:pr-0">
-      <p className="text-[0.5625rem] md:text-[0.625rem] uppercase text-textMain/50 font-black tracking-[0.05em] print:text-[8px] print:text-gray-500">{label}</p>
-      <p className="text-[0.6875rem] md:text-[0.8125rem] font-serif font-bold text-textMain mt-[0.125rem] print:text-[11px] print:font-sans print:text-black break-words leading-tight" title={value}>{value}</p>
-      {subtext && <p className="text-[0.5rem] md:text-[0.5625rem] font-bold text-textMain/50 mt-[0.125rem] break-words uppercase tracking-widest print:text-[8px] leading-tight">{subtext}</p>}
+    <div className="flex-1 min-w-0 pr-8 print:pr-0">
+      <p className="text-[10px] md:text-[11px] uppercase text-textMain/50 font-black tracking-widest print:text-[8px] print:text-gray-500">{label}</p>
+      <p className="text-sm md:text-base font-serif font-bold text-textMain mt-0.5 print:text-sm print:font-sans print:text-black break-words leading-tight" title={value}>{value}</p>
+      {subtext && <p className="text-[9px] md:text-[10px] font-bold text-textMain/50 mt-0.5 break-words uppercase tracking-widest print:text-[8px] leading-tight">{subtext}</p>}
     </div>
     {onAction && (
       <button 

@@ -32,10 +32,22 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // =====================================================
 
 // 1. CORS මුලින්ම තියෙන්න ඕනේ හැම රූට් එකකටම කලින් 🛠️
-const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+const allowedOrigins = [
+  'https://www.mehera.lk',
+  'https://sms-mehera-frontend.onrender.com',
+  'http://localhost:5173' // Development සඳහා
+];
+
 app.use(cors({
-  origin: frontendUrl, 
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], 
+  origin: function (origin, callback) {
+    // origin එක undefined නම් (postman වැනි tool වලින් එන ඒවා) ඉඩ දෙන්න
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   credentials: true
 }));
 
