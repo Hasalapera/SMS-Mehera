@@ -153,7 +153,7 @@ const Navbar = () => {
                             )}
                         </button>
                         {isNotifDropdownOpen && (
-                            <div className="absolute top-full right-0 mt-4 w-80 bg-card rounded-2xl shadow-2xl border border-border py-2 z-[110] animate-in fade-in slide-in-from-top-2">
+                            <div className="absolute top-full right-0 mt-4 w-72 sm:w-80 bg-card rounded-2xl shadow-2xl border border-border py-2 z-[110] animate-in fade-in slide-in-from-top-2">
                                 <div className="px-4 py-2 border-b border-border flex justify-between items-center">
                                     <h3 className="text-sm font-bold text-textMain normal-case tracking-normal">Notifications</h3>
                                     {unreadCount > 0 && <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">{unreadCount} New</span>}
@@ -161,7 +161,7 @@ const Navbar = () => {
                                 <div className="max-h-80 overflow-y-auto custom-scrollbar">
                                     {notifications && notifications.length > 0 ? (
                                         notifications.slice(0, 7).map(notif => (
-                                            <div key={notif.notification_id} className={`p-3 border-b border-border last:border-b-0 hover:bg-primary/5 cursor-pointer ${!notif.is_read ? 'bg-primary/10' : ''}`} onClick={() => { navigate('/inbox'); setIsNotifDropdownOpen(false); }}>
+                                            <div key={notif.notification_id} className={`p-3 border-b border-border last:border-b-0 hover:bg-primary/5 cursor-pointer ${!notif.is_read ? 'bg-primary/10' : ''}`} onClick={() => { navigate('/#'); setIsNotifDropdownOpen(false); }}>
                                                 <p className="font-bold text-xs text-textMain truncate normal-case tracking-normal">{notif.title}</p>
                                                 <p className="text-xs text-textMain/70 mt-1 line-clamp-2 normal-case tracking-normal">{notif.message}</p>
                                                 <p className="text-[10px] text-textMain/50 mt-2 normal-case tracking-normal">{new Date(notif.created_at).toLocaleString('en-GB')}</p>
@@ -173,13 +173,13 @@ const Navbar = () => {
                                         </div>
                                     )}
                                 </div>
-                                {notifications && notifications.length > 0 && (
+                                {/* {notifications && notifications.length > 0 && (
                                     <div className="p-2 border-t border-border">
-                                        <button onClick={() => { navigate('/inbox'); setIsNotifDropdownOpen(false); }} className="w-full text-center py-2 text-xs font-bold text-primary hover:bg-primary/10 rounded-lg transition-colors normal-case tracking-normal">
+                                        <button onClick={() => { navigate('/#'); setIsNotifDropdownOpen(false); }} className="w-full text-center py-2 text-xs font-bold text-primary hover:bg-primary/10 rounded-lg transition-colors normal-case tracking-normal">
                                             View All in Inbox
                                         </button>
                                     </div>
-                                )}
+                                )} */}
                             </div>
                         )}
                     </div>

@@ -1,4 +1,4 @@
-const { Order, OrderItem, ProductVariant, Product, User, Customer } = require('../models');
+const { Order, OrderItem, ProductVariant, Product, User, Customer, SalesTarget } = require('../models');
 const sequelize = require('../db/db');
 const { sendEmailInvoice } = require('../utils/sendEmailInvoice'); 
 const crypto = require('crypto');
@@ -233,6 +233,8 @@ const updateOrderStatus = async (req, res) => {
     const { orderId } = req.params;
     const { status } = req.body;
 
+    const previousStatus = (await Order.findByPk(orderId, { attributes: ['order_status'], transaction }))?.order_status;
+
     // Order එකයි ඒකෙ Items ටිකයි database එකෙන් ගන්නවා
     const order = await Order.findByPk(orderId, {
       include: [{ model: OrderItem }],
@@ -245,7 +247,7 @@ const updateOrderStatus = async (req, res) => {
     }
 
     // 🛡️ Admin order එක 'approved' කරනවා නම් විතරක් Stock Check එක කරනවා
-    if (status === 'approved' && order.order_status !== 'approved') {
+    if (status === 'approved' && previousStatus !== 'approved') {
       const variantsToUpdate = [];
 
       // 1. Stock Validation Phase (හැම item එකක්ම check කරනවා)
@@ -287,6 +289,43 @@ const updateOrderStatus = async (req, res) => {
 
     order.order_status = status;
     await order.save({ transaction });
+
+    // --- 🎯 Sales Target Update Logic ---
+    const orderAmount = parseFloat(order.total_amount);
+    const repId = order.created_by;
+    const orderMonth = order.created_at.toISOString().slice(0, 7);
+
+    if (repId && orderAmount > 0) {
+      // Condition 1: An order is newly approved
+      if (status === 'approved' && previousStatus !== 'approved') {
+        await SalesTarget.increment('achieved_amount', {
+          by: orderAmount,
+          where: { sales_rep_id: repId, month: orderMonth },
+          transaction
+        });
+      }
+      // Condition 2: A previously approved order is now cancelled or rejected
+      else if ((status === 'cancelled' || status === 'rejected') && previousStatus === 'approved') {
+        await SalesTarget.decrement('achieved_amount', {
+          by: orderAmount,
+          where: { sales_rep_id: repId, month: orderMonth },
+          transaction
+        });
+      }
+
+      // After any change, re-evaluate the 'is_achieved' status
+      const target = await SalesTarget.findOne({
+        where: { sales_rep_id: repId, month: orderMonth },
+        transaction
+      });
+
+      if (target) {
+        const isNowAchieved = parseFloat(target.achieved_amount) >= parseFloat(target.adjusted_target_amount);
+        if (target.is_achieved !== isNowAchieved) {
+          await target.update({ is_achieved: isNowAchieved }, { transaction });
+        }
+      }
+    }
 
     await transaction.commit(); // ✅ සේරම සාර්ථක නම් Database එකට save කරනවා
 
