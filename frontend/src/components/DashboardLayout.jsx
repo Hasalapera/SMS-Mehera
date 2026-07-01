@@ -4,6 +4,7 @@ import { LayoutDashboard, Users, LogOut, Package, Inbox, Menu } from 'lucide-rea
 import SideBar from './SideBar';
 import Navbar from './Navbar';
 import { useAuth } from '../pages/context/AuthContext';
+import api from '../api/axiosInstance';
 
 const DashboardLayout = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -11,11 +12,24 @@ const DashboardLayout = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
+  const [systemSettings, setSystemSettings] = useState(null);
 
   useEffect(() => {
     const handleThemeChange = () => setIsDark(document.documentElement.classList.contains('dark'));
     window.addEventListener('themeChange', handleThemeChange);
     return () => window.removeEventListener('themeChange', handleThemeChange);
+  }, []);
+
+  useEffect(() => {
+    const fetchBranding = async () => {
+      try {
+        const res = await api.get('/settings/public');
+        setSystemSettings(res.data);
+      } catch (err) {
+        console.error("DashboardLayout branding fetch failed:", err);
+      }
+    };
+    fetchBranding();
   }, []);
 
   useEffect(() => {
@@ -39,8 +53,8 @@ const DashboardLayout = () => {
   const userRole = user?.role;
 
   const getDynamicLogo = () => {
-    // This is a simplified version. A more robust solution would involve a shared context for settings.
-    return isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/nzwPbHWj/mehera-logo.png";
+    const dbLogo = isDark ? systemSettings?.dark_logo_url : systemSettings?.light_logo_url;
+    return dbLogo || (isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/G3Zf00B9/mehera-logo.png");
   };
 
   if (!user) return null;
