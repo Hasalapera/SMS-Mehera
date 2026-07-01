@@ -5,6 +5,8 @@ import SideBar from './SideBar';
 import Navbar from './Navbar';
 import { useAuth } from '../pages/context/AuthContext';
 import api from '../api/axiosInstance';
+import localDarkLogo from '../assets/logo/main-dark.png';
+import localLightLogo from '../assets/logo/main-light.png';
 
 const DashboardLayout = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -54,7 +56,7 @@ const DashboardLayout = () => {
 
   const getDynamicLogo = () => {
     const dbLogo = isDark ? systemSettings?.dark_logo_url : systemSettings?.light_logo_url;
-    return dbLogo || (isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/G3Zf00B9/mehera-logo.png");
+    return dbLogo || (isDark ? localDarkLogo : localLightLogo);
   };
 
   if (!user) return null;

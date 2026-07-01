@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import api from '../api/axiosInstance';
 import toast from 'react-hot-toast';
+import localDarkLogo from '../assets/logo/main-dark.png';
+import localLightLogo from '../assets/logo/main-light.png';
 
 const SettingsPage = () => {
   const { user } = useAuth();
@@ -31,8 +33,8 @@ const SettingsPage = () => {
             });
 
             if (res.data) {
-                setLightLogo(res.data.light_logo_url);
-                setDarkLogo(res.data.dark_logo_url);
+                setLightLogo(res.data.light_logo_url || localLightLogo);
+                setDarkLogo(res.data.dark_logo_url || localDarkLogo);
             }
         } catch (err) {
             console.error("Failed to load branding:", err);

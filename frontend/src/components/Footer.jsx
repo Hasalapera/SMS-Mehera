@@ -5,6 +5,8 @@ import {
   Instagram, Facebook, Twitter, Mail, MapPin,
   Phone, Heart, Leaf, Star, Sparkles
 } from 'lucide-react';
+import localDarkLogo from '../assets/logo/main-dark.png';
+import localLightLogo from '../assets/logo/main-light.png';
 
 const Footer = () => {
   const navigate = useNavigate();
@@ -34,7 +36,7 @@ const Footer = () => {
 
   const getDynamicLogo = () => {
     const dbLogo = isDark ? systemSettings?.dark_logo_url : systemSettings?.light_logo_url;
-    return dbLogo || (isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/G3Zf00B9/mehera-logo.png");
+    return dbLogo || (isDark ? localDarkLogo : localLightLogo);
   };
 
   return (
