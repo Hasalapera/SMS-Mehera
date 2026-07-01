@@ -58,20 +58,20 @@ const Navbar = () => {
         navigate('/', { replace: true });
     };
 
-    const handleNotificationClick = async (notif) => {
-        try {
-            if (!notif.is_read) {
-                await api.patch(`/notifications/${notif.notification_id}/read`);
-                markAsRead(notif.notification_id);
-            }
-        } catch (err) {
-            console.error('Failed to mark notification as read:', err.response?.data || err.message);
-        } finally {
-            setIsNotifDropdownOpen(false);
-            navigate('/inbox');
-            refreshNotifications();
-        }
-    };
+    // const handleNotificationClick = async (notif) => {
+    //     try {
+    //         if (!notif.is_read) {
+    //             await api.patch(`/notifications/${notif.notification_id}/read`);
+    //             markAsRead(notif.notification_id);
+    //         }
+    //     } catch (err) {
+    //         console.error('Failed to mark notification as read:', err.response?.data || err.message);
+    //     } finally {
+    //         setIsNotifDropdownOpen(false);
+    //         navigate('/inbox');
+    //         refreshNotifications();
+    //     }
+    // };
 
     const navLinks = [
         { name: 'Home', path: '/home' },
@@ -174,7 +174,7 @@ const Navbar = () => {
                                             }
 
                                             return (
-                                            <div key={notif.notification_id} className={`p-3 border-b border-border last:border-b-0 hover:bg-primary/5 cursor-pointer ${!notif.is_read ? 'bg-primary/10' : ''}`} onClick={() => handleNotificationClick(notif)}>
+                                            <div key={notif.notification_id} className={`p-3 border-b border-border last:border-b-0 hover:bg-primary/5 cursor-pointer ${!notif.is_read ? 'bg-primary/10' : ''}`}>
                                                 <p className="font-bold text-xs text-textMain truncate normal-case tracking-normal">{notif.title}</p>
                                                 <p className="text-xs text-textMain/70 mt-1 line-clamp-2 normal-case tracking-normal">{message}</p>
                                                 <p className="text-[10px] text-textMain/50 mt-2 normal-case tracking-normal">{new Date(notif.createdAt || notif.created_at).toLocaleString('en-GB')}</p>
@@ -187,13 +187,13 @@ const Navbar = () => {
                                         </div>
                                     )}
                                 </div>
-                                {notifications && notifications.length > 0 && (
+                                {/* {notifications && notifications.length > 0 && (
                                     <div className="p-2 border-t border-border">
                                         <button onClick={() => { navigate('/inbox'); setIsNotifDropdownOpen(false); }} className="w-full text-center py-2 text-xs font-bold text-primary hover:bg-primary/10 rounded-lg transition-colors normal-case tracking-normal">
                                             View All in Inbox
                                         </button>
                                     </div>
-                                )}
+                                )} */}
                             </div>
                         )}
                     </div>
