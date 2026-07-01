@@ -5,8 +5,8 @@ import { useReactToPrint } from 'react-to-print';
 import { toast } from 'react-hot-toast';
 import { 
   LayoutDashboard, Bell, ArrowUpRight, MoreVertical, Calendar,
-  PlusCircle, SlidersHorizontal, Download, RefreshCw, Loader2, ArrowRight, Printer, FileText,
-  FileSpreadsheet, FileDown, ReceiptText, User
+  PlusCircle, SlidersHorizontal, Download, RefreshCw, Loader2, ArrowRight, Printer, FileText, Check, ChevronDown,
+  FileSpreadsheet, FileDown, ReceiptText, User,
 } from 'lucide-react';
 import api from '../../api/axiosInstance';
 import ReportMetrics from '../../components/ReportMetrics';
@@ -19,10 +19,12 @@ const Dashboard = () => {
 
   // --- Filter States ---
   const [period, setPeriod] = useState('month'); // 'week', 'month', 'year', 'custom'
+  const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState(false);
   const [specificMonth, setSpecificMonth] = useState(new Date().toISOString().slice(0, 7));
   const [specificYear, setSpecificYear] = useState(new Date().getFullYear().toString());
   const [customDates, setCustomDates] = useState({ start: '', end: '' });
   const [compareType, setCompareType] = useState('prev'); // 'prev', 'custom'
+  const [isCompareDropdownOpen, setIsCompareDropdownOpen] = useState(false);
   const [compareMonth, setCompareMonth] = useState('');
   const [compareYear, setCompareYear] = useState('');
   const [compareDates, setCompareDates] = useState({ start: '', end: '' });
@@ -49,7 +51,15 @@ const Dashboard = () => {
   const [performers, setPerformers] = useState([]);
 
   // Date Helper Function
-  const formatDate = (date) => date.toISOString().split('T')[0];
+  // const formatDate = (date) => date.toISOString().split('T')[0];
+  // Date Helper Function (Timezone Safe)
+  const formatDate = (date) => {
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+  };
 
   const getAutoDates = (p) => {
     const now = new Date();
@@ -229,13 +239,49 @@ const Dashboard = () => {
         } else {
           // Week or Custom
           const days = {};
+          
+          // 1. මුලින්ම Start Date ඉඳන් End Date වෙනකම් හැම දවසක්ම 0 විදිහට හදාගන්නවා
+          const [sYear, sMonth, sDay] = curStart.split('-');
+          let currentLoopDate = new Date(sYear, sMonth - 1, sDay);
+          
+          const [eYear, eMonth, eDay] = curEnd.split('-');
+          const endLoopDate = new Date(eYear, eMonth - 1, eDay);
+
+          while (currentLoopDate <= endLoopDate) {
+             const yyyy = currentLoopDate.getFullYear();
+             const mm = String(currentLoopDate.getMonth() + 1).padStart(2, '0');
+             const dd = String(currentLoopDate.getDate()).padStart(2, '0');
+             const sortKey = `${yyyy}-${mm}-${dd}`;
+             
+             days[sortKey] = 0; // හැම දවසකටම මුලින් 0 යොදන්න
+             
+             currentLoopDate.setDate(currentLoopDate.getDate() + 1); // ඊළඟ දවසට යන්න
+          }
+
+          // 2. ඊට පස්සේ API එකෙන් ආපු Orders වල ගණන් ටික අදාළ දවස් වලට එකතු කරනවා
           curOrders.forEach(o => {
-             const d = new Date(o.created_at || o.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-             days[d] = (days[d] || 0) + Number(o.total_amount || 0);
+             const dateObj = new Date(o.created_at || o.createdAt);
+             const yyyy = dateObj.getFullYear();
+             const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+             const dd = String(dateObj.getDate()).padStart(2, '0');
+             const sortKey = `${yyyy}-${mm}-${dd}`;
+             
+             if (days[sortKey] !== undefined) {
+                 days[sortKey] += Number(o.total_amount || 0);
+             } else {
+                 days[sortKey] = Number(o.total_amount || 0);
+             }
           });
-          groupedData = Object.keys(days).sort((a,b) => new Date(`${a} 2026`) - new Date(`${b} 2026`)).map(label => ({ label, value: days[label] }));
-          // Fallback if no data
-          if(groupedData.length === 0) groupedData = [{ label: 'No Sales', value: 0 }];
+          
+          // 3. Graph එකට අවශ්‍ය විදිහට Array එකක් බවට පත් කරගන්නවා
+          groupedData = Object.keys(days).sort().map(key => {
+             // key එක (උදා: "2026-07-02") Timezone ප්‍රශ්න නැතුව ලංකාවේ වෙලාවට ගන්නවා
+             const [y, m, d] = key.split('-');
+             const dateObj = new Date(y, m - 1, d);
+             const label = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+             
+             return { label, value: days[key] };
+          });
         }
         setChartData(groupedData);
 
@@ -277,6 +323,22 @@ const Dashboard = () => {
     documentTitle: `SalesReport_${period}_${dateStamp}`,
     pageStyle: `@page { size: A4 portrait; margin: 30mm 15mm 20mm 15mm; } @page :first { margin-top: 15mm; }`
   });
+
+  const periodOptions = [
+      { id: 'week', label: 'This Week' },
+      { id: 'month', label: 'This Month' },
+      { id: 'year', label: 'This Year' },
+      { id: 'specific_month', label: 'Specific Month' },
+      { id: 'specific_year', label: 'Specific Year' },
+      { id: 'custom', label: 'Custom Date' }
+  ];
+
+  const compareOptions = [
+      { id: 'prev', label: 'Previous Period' },
+      { id: 'custom', label: 'Custom Range' },
+      { id: 'specific_month', label: 'Specific Month' },
+      { id: 'specific_year', label: 'Specific Year' }
+  ];
 
   // --- CSV Export Logic ---
   const handleDownloadCSV = () => {
@@ -339,18 +401,21 @@ const Dashboard = () => {
   const maxPerformerVal = Math.max(...performers.map(p => p.sales), 1);
 
   return (
-      <main className={`w-full`}>
+      <main className={`w-full`} onClick={() => {
+        setIsPeriodDropdownOpen(false);
+        setIsCompareDropdownOpen(false);
+      }}>
         
         {/* Header Section */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-start gap-6 mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-textMain transition-colors duration-300 flex items-center gap-3">
+            <h2 className="text-xl md:text-2xl font-bold text-textMain transition-colors duration-300 flex items-center gap-3">
               <div className="p-2 bg-primary transition-all duration-300 rounded-lg text-textMain transition-colors duration-300 shadow-sm">
                 <LayoutDashboard size={24} />
               </div>
               System Dashboard
             </h2>
-            <p className="text-textMain/50 transition-colors duration-300 text-sm mt-1 ml-12">
+            <p className="text-textMain/50 transition-colors duration-300 text-xs md:text-sm mt-1 ml-2 md:ml-12">
               Monitor real-time metrics, analytics, and operational performance.
             </p>
           </div>
@@ -376,38 +441,61 @@ const Dashboard = () => {
         </header>
 
         {/* Action Buttons Bar (Filter, Customize, Export) */}
-        <div className="bg-card p-4 rounded-2xl border border-border shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
+        <div className="bg-card p-3 md:p-4 rounded-2xl border border-border shadow-sm flex flex-wrap items-center justify-start gap-3 mb-8">
           
-          <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
-            <div className="flex items-center gap-2">
-              <Calendar size={16} className="text-primary" />
-              <select value={period} onChange={(e) => setPeriod(e.target.value)} className="bg-transparent text-sm font-bold text-textMain outline-none border-b border-border cursor-pointer pb-1">
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="year">This Year</option>
-                <option value="specific_month">Specific Month</option>
-                <option value="specific_year">Specific Year</option>
-                <option value="custom">Custom Date</option>
-              </select>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative" onClick={(e) => e.stopPropagation()}>
+              <button 
+                type="button"
+                onClick={() => {
+                  setIsPeriodDropdownOpen(!isPeriodDropdownOpen);
+                  setIsCompareDropdownOpen(false);
+                }}
+                className="bg-card border border-border text-primary hover:bg-primary/10 transition-all duration-300 w-full sm:w-auto px-4 py-2.5 rounded-lg font-bold flex items-center gap-2 md:min-w-[180px] justify-between shadow-md active:scale-95"
+              >
+                <span className="truncate uppercase text-[9px] md:text-[10px] tracking-widest">
+                  {periodOptions.find(o => o.id === period)?.label || 'Select Period'}
+                </span>
+                <ChevronDown size={16} className={`transition-transform duration-300 ${isPeriodDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isPeriodDropdownOpen && (
+                <div className="absolute top-full mt-2 w-full bg-card rounded-2xl shadow-2xl border border-border py-2 z-[110] animate-in fade-in slide-in-from-top-2 max-h-44 overflow-y-auto custom-scrollbar">
+                  {periodOptions.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => {
+                        setPeriod(opt.id);
+                        setIsPeriodDropdownOpen(false);
+                      }}
+                      className="w-full text-left pl-6 pr-4 py-2 text-[9px] font-black uppercase tracking-widest hover:bg-primary/10 hover:text-primary flex items-center justify-between"
+                    >
+                      {opt.label}
+                      {period === opt.id && <Check size={14} className="text-primary" />}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {period === 'custom' && (
               <div className="flex items-center gap-2">
-                <input type="date" value={customDates.start} onChange={e => setCustomDates({...customDates, start: e.target.value})} className="bg-background border border-border text-xs rounded-md p-1 outline-none text-textMain" />
-                <span className="text-xs text-textMain/50">to</span>
-                <input type="date" value={customDates.end} onChange={e => setCustomDates({...customDates, end: e.target.value})} className="bg-background border border-border text-xs rounded-md p-1 outline-none text-textMain" />
+                <input type="date" value={customDates.start} onChange={e => setCustomDates({...customDates, start: e.target.value})} className="bg-background border border-border text-[11px] rounded-md px-2.5 py-1.5 outline-none text-textMain" />
+                <span className="text-[11px] text-textMain/50">to</span>
+                <input type="date" value={customDates.end} onChange={e => setCustomDates({...customDates, end: e.target.value})} className="bg-background border border-border text-[11px] rounded-md px-2.5 py-1.5 outline-none text-textMain" />
               </div>
             )}
 
             {period === 'specific_month' && (
               <div className="flex items-center gap-2">
-                <input type="month" value={specificMonth} onChange={e => setSpecificMonth(e.target.value)} className="bg-background border border-border text-xs rounded-md p-1 outline-none text-textMain" />
+                <input type="month" value={specificMonth} onChange={e => setSpecificMonth(e.target.value)} className="bg-background border border-border text-[11px] rounded-md px-2.5 py-1.5 outline-none text-textMain" />
               </div>
             )}
 
             {period === 'specific_year' && (
               <div className="flex items-center gap-2">
-                <select value={specificYear} onChange={e => setSpecificYear(e.target.value)} className="bg-background border border-border text-xs rounded-md p-1 outline-none text-textMain cursor-pointer">
+                <select value={specificYear} onChange={e => setSpecificYear(e.target.value)} className="bg-background border border-border text-[11px] rounded-md px-2.5 py-1.5 outline-none text-textMain cursor-pointer">
                   {Array.from({ length: 11 }, (_, i) => 2024 + i).map(year => (
                     <option key={year} value={year}>{year}</option>
                   ))}
@@ -416,34 +504,58 @@ const Dashboard = () => {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto border-t lg:border-t-0 lg:border-l border-border pt-4 lg:pt-0 lg:pl-4">
-            <div className="flex items-center gap-2 text-xs font-bold text-textMain/50">
-              <span className="uppercase tracking-widest text-[9px]">Compare With:</span>
-              <select value={compareType} onChange={(e) => setCompareType(e.target.value)} className="bg-transparent font-bold text-textMain outline-none border-b border-border cursor-pointer pb-1">
-                <option value="prev">Previous Period</option>
-                <option value="custom">Custom Range</option>
-                <option value="specific_month">Specific Month</option>
-                <option value="specific_year">Specific Year</option>
-              </select>
-            </div>
+          <div className="flex flex-wrap items-center gap-3 lg:border-l border-border lg:pl-4">
+            <div className="relative" onClick={(e) => e.stopPropagation()}>
+              <button 
+                type="button"
+                onClick={() => {
+                  setIsCompareDropdownOpen(!isCompareDropdownOpen);
+                  setIsPeriodDropdownOpen(false);
+                }}
+                className="bg-card border border-border text-primary hover:bg-primary/10 transition-all duration-300 w-full sm:w-auto px-4 py-2.5 rounded-lg font-bold flex items-center gap-2 md:min-w-[180px] justify-between shadow-md active:scale-95"
+              >
+                <span className="truncate uppercase text-[9px] md:text-[10px] tracking-widest">
+                  {compareOptions.find(o => o.id === compareType)?.label || 'Compare'}
+                </span>
+                <ChevronDown size={16} className={`transition-transform duration-300 ${isCompareDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
 
+              {isCompareDropdownOpen && (
+                <div className="absolute top-full mt-2 w-full bg-card rounded-2xl shadow-2xl border border-border py-2 z-[110] animate-in fade-in slide-in-from-top-2 max-h-44 overflow-y-auto custom-scrollbar">
+                  {compareOptions.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => {
+                        setCompareType(opt.id);
+                        setIsCompareDropdownOpen(false);
+                      }}
+                      className="w-full text-left pl-6 pr-4 py-2 text-[9px] font-black uppercase tracking-widest hover:bg-primary/10 hover:text-primary flex items-center justify-between"
+                    >
+                      {opt.label}
+                      {compareType === opt.id && <Check size={14} className="text-primary" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             {compareType === 'custom' && (
               <div className="flex items-center gap-2">
-                <input type="date" value={compareDates.start} onChange={e => setCompareDates({...compareDates, start: e.target.value})} className="bg-background border border-border text-xs rounded-md p-1 outline-none text-textMain" />
-                <span className="text-xs text-textMain/50">to</span>
-                <input type="date" value={compareDates.end} onChange={e => setCompareDates({...compareDates, end: e.target.value})} className="bg-background border border-border text-xs rounded-md p-1 outline-none text-textMain" />
+                <input type="date" value={compareDates.start} onChange={e => setCompareDates({...compareDates, start: e.target.value})} className="bg-background border border-border text-[11px] rounded-md px-2.5 py-1.5 outline-none text-textMain" />
+                <span className="text-[11px] text-textMain/50">to</span>
+                <input type="date" value={compareDates.end} onChange={e => setCompareDates({...compareDates, end: e.target.value})} className="bg-background border border-border text-[11px] rounded-md px-2.5 py-1.5 outline-none text-textMain" />
               </div>
             )}
 
             {compareType === 'specific_month' && (
               <div className="flex items-center gap-2">
-                <input type="month" value={compareMonth} onChange={e => setCompareMonth(e.target.value)} className="bg-background border border-border text-xs rounded-md p-1 outline-none text-textMain" />
+                <input type="month" value={compareMonth} onChange={e => setCompareMonth(e.target.value)} className="bg-background border border-border text-[11px] rounded-md px-2.5 py-1.5 outline-none text-textMain" />
               </div>
             )}
 
             {compareType === 'specific_year' && (
               <div className="flex items-center gap-2">
-                <select value={compareYear} onChange={e => setCompareYear(e.target.value)} className="bg-background border border-border text-xs rounded-md p-1 outline-none text-textMain cursor-pointer">
+                <select value={compareYear} onChange={e => setCompareYear(e.target.value)} className="bg-background border border-border text-[11px] rounded-md px-2.5 py-1.5 outline-none text-textMain cursor-pointer">
                   <option value="">Select Year</option>
                   {Array.from({ length: 11 }, (_, i) => 2024 + i).map(year => (
                     <option key={year} value={year}>{year}</option>
@@ -454,11 +566,11 @@ const Dashboard = () => {
           </div>
 
           {/* Comparison Export Buttons */}
-          <div className="flex flex-col sm:flex-row w-full lg:w-auto border-t lg:border-t-0 lg:border-l border-border pt-4 lg:pt-0 lg:pl-4 justify-end gap-3">
-             <button onClick={handlePrintSales} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-black text-primary border border-primary transition-all duration-300 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:bg-primary hover:text-black w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-3 lg:ml-auto lg:border-l border-border lg:pl-4">
+             <button onClick={handlePrintSales} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-primary border border-primary transition-all duration-300 rounded-lg font-black text-[10px] uppercase tracking-widest shadow-md hover:bg-primary hover:text-black w-full sm:w-auto">
                <FileText size={14} /> Sales Comparison
              </button>
-             <button onClick={handlePrintOrders} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-card text-textMain border border-border transition-all duration-300 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-sm hover:border-primary hover:text-primary w-full sm:w-auto">
+             <button onClick={handlePrintOrders} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-card text-textMain border border-border transition-all duration-300 rounded-lg font-black text-[10px] uppercase tracking-widest shadow-sm hover:border-primary hover:text-primary w-full sm:w-auto">
                <FileText size={14} /> Order Comparison
              </button>
           </div>
@@ -481,7 +593,7 @@ const Dashboard = () => {
                 <span>Total Sales</span>
                 <span className="bg-primary/10 text-primary px-2 py-1 rounded-md text-[9px] uppercase font-black">Verified</span>
               </div>
-              <h3 className="text-3xl font-black text-textMain mb-1 tracking-tighter">LKR {metrics.sales.current.toLocaleString()}</h3>
+              <h3 className="text-2xl md:text-3xl font-black text-textMain mb-1 tracking-tighter">LKR {metrics.sales.current.toLocaleString()}</h3>
               <p className={`text-[11px] font-bold ${isPositive(metrics.sales.current, metrics.sales.previous) ? 'text-green-500' : 'text-red-500'}`}>
                 {calcPercentage(metrics.sales.current, metrics.sales.previous)} <span className="text-textMain/50 font-normal">vs comparison period</span>
               </p>
@@ -493,7 +605,7 @@ const Dashboard = () => {
                 <span>Completed Orders</span>
                 <span className="bg-primary/10 text-primary px-2 py-1 rounded-md text-[9px] uppercase font-black">Volume</span>
               </div>
-              <h3 className="text-3xl font-black text-textMain mb-1 tracking-tighter">{metrics.orders.current}</h3>
+              <h3 className="text-2xl md:text-3xl font-black text-textMain mb-1 tracking-tighter">{metrics.orders.current}</h3>
               <p className={`text-[11px] font-bold ${isPositive(metrics.orders.current, metrics.orders.previous) ? 'text-green-500' : 'text-red-500'}`}>
                 {calcPercentage(metrics.orders.current, metrics.orders.previous)} <span className="text-textMain/50 font-normal">vs comparison period</span>
               </p>
@@ -505,7 +617,7 @@ const Dashboard = () => {
                 <span>Active Customers</span>
                 <span className="bg-primary/10 text-primary px-2 py-1 rounded-md text-[9px] uppercase font-black">Global</span>
               </div>
-              <h3 className="text-3xl font-black text-textMain mb-1 tracking-tighter">{metrics.customers}</h3>
+              <h3 className="text-2xl md:text-3xl font-black text-textMain mb-1 tracking-tighter">{metrics.customers}</h3>
               <p className="text-[11px] font-bold text-textMain/50">Total registered partners network</p>
             </div>
 

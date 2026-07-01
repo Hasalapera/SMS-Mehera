@@ -50,7 +50,13 @@ const Home = () => {
       if (isScannerOpen) {
           const initScanner = () => {
               html5QrcodeScanner = new window.Html5QrcodeScanner(
-                  "delivery-qr-reader", { fps: 10, qrbox: { width: 220, height: 220 } }, false
+                  "delivery-qr-reader", 
+                  { 
+                      fps: 10, 
+                      qrbox: { width: 220, height: 220 },
+                      videoConstraints: { facingMode: "environment" }
+                  }, 
+                  false
               );
               html5QrcodeScanner.render(onScanSuccess, () => {});
           };
@@ -181,11 +187,11 @@ const Home = () => {
       <style>{`
           #delivery-qr-reader span, 
           #delivery-qr-reader a {
-              color: var(--color-textMain) !important;
+              color: #ffffff !important;
               opacity: 0.6;
           }
           #delivery-qr-reader #qr-reader__status_message {
-              color: var(--color-textMain) !important;
+              color: #ffffff !important;
               opacity: 1;
               font-weight: 700;
               font-size: 12px;

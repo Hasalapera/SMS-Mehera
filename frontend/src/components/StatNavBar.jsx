@@ -57,7 +57,7 @@ const StatNavBar = () => {
 
   const getDynamicLogo = () => {
     const dbLogo = isDark ? systemSettings?.dark_logo_url : systemSettings?.light_logo_url;
-    return dbLogo || (isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/nzwPbHWj/mehera-logo.png");
+    return dbLogo || (isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/G3Zf00B9/mehera-logo.png");
   };
 
   return (

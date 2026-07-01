@@ -279,7 +279,13 @@ const LogisticsDashboard = () => {
         if (isScannerOpen) {
             const initScanner = () => {
                 html5QrcodeScanner = new window.Html5QrcodeScanner(
-                    "mehera-qr-reader", { fps: 30, qrbox: { width: 250, height: 250 } }, false
+                    "mehera-qr-reader", 
+                    { 
+                        fps: 30, 
+                        qrbox: { width: 250, height: 250 },
+                        videoConstraints: { facingMode: "environment" } 
+                    }, 
+                    false
                 );
                 html5QrcodeScanner.render(onScanSuccess, () => {});
             };
@@ -319,11 +325,11 @@ const LogisticsDashboard = () => {
             <style>{`
                 #mehera-qr-reader span, 
                 #mehera-qr-reader a {
-                    color: var(--color-text) !important;
+                    color: #ffffff !important;
                     opacity: 0.6;
                 }
                 #mehera-qr-reader #qr-reader__status_message {
-                    color: var(--color-text) !important;
+                    color: #ffffff !important; 
                     opacity: 1;
                     font-weight: 700;
                     font-size: 12px;
