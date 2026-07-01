@@ -1,14 +1,65 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import api from '../../api/axiosInstance';
 
 const NotificationContext = createContext();
 
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   //Load notifications fetched from API into context
   const setNotificationsFromAPI = useCallback((apiNotifications) => {
     setNotifications(apiNotifications);
   }, []);
+
+  const refreshNotifications = useCallback(async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setNotifications([]);
+      return [];
+    }
+
+    try {
+      setLoading(true);
+      const res = await api.get('/notifications');
+      const apiNotifications = res.data.notifications || [];
+      setNotifications(apiNotifications);
+      return apiNotifications;
+    } catch (err) {
+      // 💡 Improved Error Handling: Differentiate between network errors and other errors.
+      if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
+        // This is a connection error, likely because the backend server is not running.
+        // We log a warning instead of an error to reduce console noise during development.
+        console.warn('Notification refresh failed: Could not connect to the server. Is the backend running?');
+      } else if (err.response?.status !== 401) {
+        // This handles other server-side errors (e.g., 500 Internal Server Error).
+        console.error('Failed to refresh notifications:', err);
+      }
+      // For 401 errors, we do nothing here, as AuthContext/interceptors will handle it.
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshNotifications();
+    const interval = setInterval(() => {
+      refreshNotifications();
+    }, 30000);
+
+    const handleAuthChange = () => refreshNotifications();
+    window.addEventListener('storage', handleAuthChange);
+    window.addEventListener('token-refreshed', handleAuthChange);
+    window.addEventListener('auth-changed', handleAuthChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', handleAuthChange);
+      window.removeEventListener('token-refreshed', handleAuthChange);
+      window.removeEventListener('auth-changed', handleAuthChange);
+    };
+  }, [refreshNotifications]);
 
   // Add new notification to top of list (called from AddStock after apply)
   const addNotification = useCallback((notification) => {
@@ -67,7 +118,9 @@ export const NotificationProvider = ({ children }) => {
 
   const value = {
     notifications,
+    loading,
     setNotificationsFromAPI, // New
+    refreshNotifications,
     addNotification,
     markAsRead,
     markAllAsRead,

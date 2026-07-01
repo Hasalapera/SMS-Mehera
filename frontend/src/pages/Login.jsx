@@ -59,7 +59,7 @@ const Login = () => {
       });
 
       // 1. destructure the data coming from the backend.
-      const { user, accessToken, refreshToken, expiresAt, mustChangePassword, user_id, role } = response.data;
+      const { user, accessToken, expiresAt, mustChangePassword, user_id, role } = response.data;
 
       // 2. Case 01: Password eka wenas karanna oninam
       if (mustChangePassword === true) {
@@ -69,8 +69,8 @@ const Login = () => {
               role: role || 'user' 
           };
 
-          //parameters 4ma hari piliwelata yawanawa
-          login(tempUser, accessToken, refreshToken, expiresAt); 
+          // refreshToken is now in an httpOnly cookie, not passed here
+          login(tempUser, accessToken, expiresAt); 
           
           navigate('/change-password', { state: { userId: user_id } });
           return;
@@ -78,8 +78,8 @@ const Login = () => {
       
       // 3. Case 02: normal login
       else {
-          //4 parameters hari piliwelata
-          login(user, accessToken, refreshToken, expiresAt); 
+          // refreshToken is now in an httpOnly cookie, not passed here
+          login(user, accessToken, expiresAt); 
           
           navigate(user.redirectPath || '/dashboard');
           return;

@@ -4,6 +4,7 @@ import api from '../../api/axiosInstance';
 import ProductCard from '../../components/ProductCard';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
+import { MySwal } from '../utils/swalConfig';
 
 const Home = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -49,7 +50,7 @@ const Home = () => {
       if (isScannerOpen) {
           const initScanner = () => {
               html5QrcodeScanner = new window.Html5QrcodeScanner(
-                  "delivery-qr-reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false
+                  "delivery-qr-reader", { fps: 10, qrbox: { width: 220, height: 220 } }, false
               );
               html5QrcodeScanner.render(onScanSuccess, () => {});
           };
@@ -69,6 +70,7 @@ const Home = () => {
   }, [isScannerOpen]);
 
   const onScanSuccess = async (decodedText) => {
+      console.log("Scanned Order ID for Delivery:", decodedText); // 🐞 Debugging: Log the scanned ID
       setIsScannerOpen(false);
       setLoading(true);
       try {
@@ -80,7 +82,21 @@ const Home = () => {
               toast.success("OTP sent to customer's email!");
           }
       } catch (err) {
-          toast.error(err.response?.data?.message || "Failed to initiate delivery for this QR.");
+          // 🐞 Debugging: Log the full error response from the backend
+          console.error("Initiate Delivery Failed:", err.response?.data || err.message);
+          const errorMessage = err.response?.data?.message || "Failed to initiate delivery for this QR.";
+          
+          // Custom alert for missing email
+          if (errorMessage.includes("No email associated")) {
+              MySwal.fire({
+                  icon: 'error',
+                  title: 'Customer Email Missing',
+                  text: 'This order cannot be processed because the customer does not have an email address on file. Please update the customer profile to proceed with OTP verification.',
+                  confirmButtonText: 'Okay'
+              });
+          } else {
+              toast.error(errorMessage);
+          }
       } finally {
           setLoading(false);
       }
@@ -161,44 +177,62 @@ const Home = () => {
 
   return (
     <div className="w-full min-h-screen bg-background transition-all duration-300 text-textMain transition-colors duration-300 overflow-x-hidden text-left" onClick={() => setIsDropdownOpen(false)}>
-      
-      <div className="w-full px-6 pt-10 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      {/* 💅 Scanner UI Override Styles */}
+      <style>{`
+          #delivery-qr-reader span, 
+          #delivery-qr-reader a {
+              color: var(--color-textMain) !important;
+              opacity: 0.6;
+          }
+          #delivery-qr-reader #qr-reader__status_message {
+              color: var(--color-textMain) !important;
+              opacity: 1;
+              font-weight: 700;
+              font-size: 12px;
+              text-transform: uppercase;
+              letter-spacing: 0.1em;
+          }
+          #delivery-qr-reader a[href='https://scanapp.org'] {
+              display: none !important;
+          }
+      `}</style>
+      <div className="w-full px-4 md:px-6 pt-8 md:pt-10 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-              <h1 className="text-4xl font-black text-textMain transition-colors duration-300 uppercase tracking-tight">Inventory Catalog</h1>
-              <p className="text-textMain/50 transition-colors duration-300 text-xs font-bold uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
+              <h1 className="text-2xl md:text-4xl font-black text-textMain transition-colors duration-300 uppercase tracking-tight">Inventory Catalog</h1>
+              <p className="text-textMain/50 transition-colors duration-300 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
                   <span className="w-8 h-[2px] bg-primary transition-all duration-300"></span>
                   Search by product name or shade number
               </p>
           </div>
           {canScanDelivery && (
-              <button onClick={() => setIsScannerOpen(true)} className="flex items-center gap-2 px-6 py-3 bg-black text-primary rounded-xl font-black uppercase text-[11px] tracking-widest shadow-lg hover:bg-primary hover:text-black transition-all">
+              <button onClick={() => setIsScannerOpen(true)} className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-black text-primary rounded-lg md:rounded-xl font-black uppercase text-[9px] md:text-[11px] tracking-widest shadow-lg hover:bg-primary hover:text-black transition-all">
                   <ScanLine size={18} /> Delivery Scanner
               </button>
           )}
       </div>
 
-      <div className="max-w-full px-6 py-4 flex flex-col md:flex-row gap-4 items-center">
+      <div className="max-w-full px-4 md:px-6 py-4 flex flex-col md:flex-row gap-4 items-center">
         <div className="relative flex-1 group w-full">
           <input 
             type="text" 
             placeholder="Search products or shade numbers (e.g. 72, Gold)..." 
-            className="w-full bg-card transition-colors duration-300 border border-border transition-colors duration-300 text-textMain transition-colors duration-300 px-12 py-4 rounded-3xl outline-none font-bold placeholder-gray-400 focus:ring-2 focus:ring-[#b4a460] transition-all shadow-sm"
+            className="w-full bg-card transition-colors duration-300 border border-border transition-colors duration-300 text-textMain transition-colors duration-300 px-9 md:px-12 py-2.5 md:py-4 rounded-xl md:rounded-3xl outline-none font-bold text-xs md:text-sm placeholder:text-xs placeholder:md:text-sm focus:ring-2 focus:ring-[#b4a460] transition-all shadow-sm"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300" size={20} />
+          <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300" size={16} />
         </div>
 
         <div className="relative w-full md:w-auto" onClick={(e) => e.stopPropagation()}>
           <button 
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="bg-black text-primary transition-all duration-300 px-8 py-4 rounded-3xl font-bold flex items-center gap-2 min-w-[220px] justify-between shadow-xl active:scale-95 transition-all"
+            className="bg-black text-primary transition-all duration-300 w-full px-5 md:px-8 py-2.5 md:py-4 rounded-xl md:rounded-3xl font-bold flex items-center gap-2 md:min-w-[220px] justify-between shadow-xl active:scale-95 transition-all"
           >
-            <span className="truncate uppercase text-[11px] tracking-widest">{selectedCategory}</span>
+            <span className="truncate uppercase text-[9px] md:text-[11px] tracking-widest">{selectedCategory}</span>
             <ChevronDown size={18} className={`transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {isDropdownOpen && (
-            <div className="absolute top-full mt-3 w-full bg-card transition-colors duration-300 rounded-2xl shadow-2xl border border-border transition-colors duration-300 py-3 z-[110] animate-in fade-in slide-in-from-top-2">
+            <div className="absolute top-full mt-3 w-full bg-card transition-colors duration-300 rounded-2xl shadow-2xl border border-border transition-colors duration-300 py-2 z-[110] animate-in fade-in slide-in-from-top-2 max-h-60 overflow-y-auto custom-scrollbar">
               {categories.map((cat) => (
                 <button
                   key={cat}
@@ -206,7 +240,7 @@ const Home = () => {
                     setSelectedCategory(cat);
                     setIsDropdownOpen(false);
                   }}
-                  className="w-full text-left px-6 py-3 text-[11px] font-black uppercase tracking-widest hover:bg-primary/10 transition-all duration-300 hover:text-primary transition-all duration-300 flex items-center justify-between transition-colors"
+                  className="w-full text-left pl-6 pr-8 py-3 text-[11px] font-black uppercase tracking-widest hover:bg-primary/10 transition-all duration-300 hover:text-primary transition-all duration-300 flex items-center justify-between transition-colors"
                 >
                   {cat}
                   {selectedCategory === cat && <Check size={14} className="text-primary transition-all duration-300" />}
@@ -217,14 +251,14 @@ const Home = () => {
         </div>
       </div>
 
-      <div className="max-w-full px-6 p-6">
+      <div className="max-w-full p-4 md:p-6">
         {loading ? (
           <div className="h-64 flex flex-col items-center justify-center gap-3">
             <Loader2 className="animate-spin text-primary transition-all duration-300" size={42} />
             <p className="text-textMain/50 transition-colors duration-300 font-bold uppercase text-[10px] tracking-widest">Updating Catalog...</p>
           </div>
         ) : filteredProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {filteredProducts.map(product => (
               <ProductCard 
                 key={product.product_id} 
@@ -243,32 +277,32 @@ const Home = () => {
 
       {selectedProduct && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-md p-4">
-          <div className="bg-card transition-colors duration-300 rounded-[3rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in duration-300">
-            <div className="p-10 space-y-8 text-left">
+          <div className="bg-card transition-colors duration-300 rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in duration-300">
+            <div className="p-5 md:p-10 space-y-4 md:space-y-6 text-left">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-3xl font-serif italic text-textMain transition-colors duration-300 leading-tight">{selectedProduct.product_name}</h3>
+                  <h3 className="text-xl md:text-3xl font-serif italic text-textMain transition-colors duration-300 leading-tight">{selectedProduct.product_name}</h3>
                   <div className="flex items-center gap-2 mt-2">
                     <div className="w-8 h-[2px] bg-primary transition-all duration-300"></div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-textMain/50 transition-colors duration-300">Available Shades</p>
                   </div>
                 </div>
                 <button onClick={() => setSelectedProduct(null)} className="p-3 hover:bg-gray-100 rounded-full transition-all">
-                  <X size={20} className="text-textMain/50 transition-colors duration-300" />
+                  <X size={18} className="text-textMain/50 transition-colors duration-300" />
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 max-h-[400px] overflow-y-auto pr-3 custom-scrollbar">
+              <div className="grid grid-cols-1 gap-3 max-h-[60vh] sm:max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                 {selectedProduct.variants.map((v) => (
-                  <button key={v.variant_id} onClick={() => handleAddToCart(selectedProduct, v)} className="flex justify-between items-center p-6 bg-card transition-colors duration-300 hover:bg-primary/10 transition-all duration-300 border border-border transition-colors duration-300 rounded-3xl group transition-all">
+                  <button key={v.variant_id} onClick={() => handleAddToCart(selectedProduct, v)} className="flex justify-between items-center p-4 md:p-5 bg-card transition-colors duration-300 hover:bg-primary/10 transition-all duration-300 border border-border transition-colors duration-300 rounded-2xl group transition-all">
                     <div className="flex flex-col">
                       <span className="font-black text-[12px] uppercase tracking-wider text-textMain transition-colors duration-300 group-hover:text-primary transition-all duration-300">{v.variant_name}</span>
                       <span className="text-[10px] text-textMain/50 transition-colors duration-300 font-bold mt-1 uppercase">Stock: {v.stock_count || 0}</span>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <span className="font-serif italic text-xl">Rs. {Number(v.price).toLocaleString()}</span>
+                    <div className="flex items-center gap-3 md:gap-4">
+                      <span className="font-serif italic text-lg md:text-xl">Rs. {Number(v.price).toLocaleString()}</span>
                       <div className="p-3 bg-card transition-colors duration-300 rounded-xl shadow-sm group-hover:bg-black group-hover:text-primary transition-all duration-300 transition-all">
-                        <PlusCircle size={20} />
+                        <PlusCircle size={18} />
                       </div>
                     </div>
                   </button>
@@ -282,18 +316,18 @@ const Home = () => {
       {/* 📷 Scanner Modal */}
       {isScannerOpen && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-              <div className="bg-card w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-border">
-                  <div className="p-6 border-b border-border bg-background flex justify-between items-center">
+              <div className="bg-card w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-border">
+                  <div className="p-5 border-b border-border bg-background flex justify-between items-center">
                       <div className="flex items-center gap-3">
                           <div className="p-2 bg-primary/10 text-primary rounded-lg"><QrCode size={24} /></div>
                           <div>
-                              <h3 className="text-lg font-black uppercase text-textMain tracking-tight">Scan Delivery QR</h3>
+                              <h3 className="text-base font-black uppercase text-textMain tracking-tight">Scan Delivery QR</h3>
                               <p className="text-[10px] font-bold text-textMain/50 uppercase tracking-widest">Mark shipped orders as delivered</p>
                           </div>
                       </div>
                       <button onClick={() => setIsScannerOpen(false)} className="p-2 bg-card border border-border rounded-full text-textMain/50 hover:text-red-500 transition-all"><X size={20} /></button>
                   </div>
-                  <div className="p-6 bg-background">
+                  <div className="p-5 bg-background">
                       <div id="delivery-qr-reader" className="w-full rounded-2xl overflow-hidden border-2 border-primary/30 shadow-inner bg-black min-h-[300px]"></div>
                   </div>
               </div>
@@ -303,12 +337,21 @@ const Home = () => {
       {/* 🔑 OTP Modal */}
       {showOtpModal && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-              <div className="bg-card w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-border p-8 text-center">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-primary/20"><Check size={32} className="text-primary" /></div>
-                  <h3 className="text-xl font-black uppercase text-textMain tracking-tight mb-2">Verify Delivery</h3>
-                  <p className="text-xs text-textMain/50 font-bold mb-6">An OTP has been sent to the customer's email. Please enter it below to confirm delivery.</p>
-                  <input type="text" maxLength="6" value={otpInput} onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))} className="w-full bg-background border border-border rounded-xl py-4 px-4 text-center text-2xl tracking-[0.5em] font-black text-textMain outline-none focus:ring-2 focus:ring-primary/20 mb-6" placeholder="------" />
-                  <div className="flex gap-3">
+              <div className="bg-card w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-border p-5 md:p-6 text-center">
+                  <div className="w-14 h-14 md:w-16 md:h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4 border border-primary/20">
+                      <Check size={28} className="text-primary" />
+                  </div>
+                  <h3 className="text-base md:text-lg font-black uppercase text-textMain tracking-tight mb-2">Verify Delivery</h3>
+                  <p className="text-[11px] md:text-xs text-textMain/50 font-bold mb-4 md:mb-6">An OTP has been sent to the customer's email. Please enter it below to confirm delivery.</p>
+                  <input 
+                      type="text" 
+                      maxLength="6" 
+                      value={otpInput} 
+                      onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, ''))} 
+                      className="w-full bg-background border border-border rounded-xl py-3 md:py-4 px-4 text-center text-lg md:text-xl tracking-[0.3em] md:tracking-[0.5em] font-black text-textMain outline-none focus:ring-2 focus:ring-primary/20 mb-4 md:mb-6" 
+                      placeholder="------" 
+                  />
+                  <div className="flex flex-col sm:flex-row gap-3">
                       <button onClick={() => { setShowOtpModal(false); setScannedOrderId(null); setOtpInput(""); }} className="flex-1 py-3 bg-background border border-border text-textMain/70 rounded-xl font-black uppercase text-[10px] tracking-widest hover:text-textMain transition-all">Cancel</button>
                       <button onClick={handleVerifyOTP} disabled={otpInput.length < 6} className="flex-1 py-3 bg-primary text-black rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-[#9a8b50] transition-all disabled:opacity-50">Confirm</button>
                   </div>

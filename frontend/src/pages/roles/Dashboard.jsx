@@ -357,11 +357,11 @@ const Dashboard = () => {
           {/* --- ACTION BUTTONS (Mobile Responsive) --- */}
           <div className="w-full md:w-auto mt-4 md:mt-0">
             <div className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-3">
-              <button className="col-span-2 md:col-auto p-2.5 bg-card border border-border rounded-xl text-textMain/50 shadow-sm relative hover:text-primary transition-all flex items-center justify-center gap-2">
+              {/* <button className="col-span-2 md:col-auto p-2.5 bg-card border border-border rounded-xl text-textMain/50 shadow-sm relative hover:text-primary transition-all flex items-center justify-center gap-2">
                 <Bell size={18} />
                 <span className="md:hidden text-xs font-bold uppercase">Notifications</span>
                 <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-primary rounded-full"></span>
-              </button>
+              </button> */}
               <button onClick={handleDownloadCSV} className="flex items-center justify-center gap-2 bg-[#2ca01c] text-white px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-[#2ca01c]/20 hover:bg-[#238016] transition-all">
                 <FileSpreadsheet size={14} /> QB CSV
               </button>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ShoppingBag, PlusCircle, History, TrendingUp, 
-  Truck, Search, Package, ShoppingCart, X 
+  Truck, Search, Package, ShoppingCart, X, Loader2 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -19,6 +19,7 @@ const Orders = () => {
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null); 
+  const [isCatalogLoading, setIsCatalogLoading] = useState(true);
   const userRole = user?.role;
 
   // load the inverntory
@@ -26,6 +27,7 @@ const Orders = () => {
     const fetchProducts = async () => {
       try {
         // 📡 Offline නම් Local DB එකෙන් Products අදිනවා
+        setIsCatalogLoading(true);
         if (!navigator.onLine) {
             const cachedProducts = await db.products.toArray();
             if (cachedProducts.length > 0) {
@@ -48,6 +50,7 @@ const Orders = () => {
         } catch(e) {}
         toast.error("Inventory sync failed!");
       }
+      setIsCatalogLoading(false);
     };
     if (activeTab === 'create') fetchProducts();
   }, [activeTab]);
@@ -166,24 +169,31 @@ const Orders = () => {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 pt-4 custom-scrollbar bg-background transition-colors duration-300">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4">
-                    {products
-                      .filter(p => p.product_name.toLowerCase().includes(searchTerm.toLowerCase()))
-                      .map(product => (
-                        <div key={product.product_id} className="transform scale-[0.95] origin-top-left transition-transform hover:scale-100">
-                          <ProductCard 
-                            product={product} 
-                            onAddToCart={() => {
-                              if (product.variants && product.variants.length > 0) {
-                                setSelectedProduct(product);
-                              } else {
-                                handleAddToCart(product);
-                              }
-                            }} 
-                          />
-                        </div>
-                    ))}
-                  </div>
+                  {isCatalogLoading ? (
+                    <div className="h-full flex flex-col items-center justify-center gap-3">
+                      <Loader2 className="animate-spin text-primary" size={32} />
+                      <p className="text-xs font-bold uppercase tracking-widest text-textMain/50">Loading Product Catalog...</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4">
+                      {products
+                        .filter(p => p.product_name.toLowerCase().includes(searchTerm.toLowerCase()))
+                        .map(product => (
+                          <div key={product.product_id} className="transform scale-[0.95] origin-top-left transition-transform hover:scale-100">
+                            <ProductCard 
+                              product={product} 
+                              onAddToCart={() => {
+                                if (product.variants && product.variants.length > 0) {
+                                  setSelectedProduct(product);
+                                } else {
+                                  handleAddToCart(product);
+                                }
+                              }} 
+                            />
+                          </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -207,7 +217,7 @@ const Orders = () => {
           </div>
         ) : (
           <div className="bg-card transition-colors duration-300 rounded-[3rem] border border-border shadow-sm p-4 animate-in slide-in-from-bottom-4 duration-500">
-            {activeTab === 'history' && <ViewOrders />}
+            {activeTab === 'history' && <ViewOrders showHeader={false} />}
           </div>
         )}
       </div>

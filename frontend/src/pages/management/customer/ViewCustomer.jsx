@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search, Filter, UserPlus, Building2,
   Phone, MapPin, ArrowRight, Users, Loader2, RefreshCw, UserCircle, Mail,
-  ChevronDown, ChevronLeft, ChevronRight
+  ChevronDown, ChevronLeft, ChevronRight, UserCheck
 } from 'lucide-react';
 import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
@@ -24,6 +24,7 @@ export default function ViewCustomer() {
     const [search,    setSearch]    = useState("");
     const [typeFilter, setTypeFilter] = useState("All");
     const [currentPage, setCurrentPage] = useState(1);
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
     const rowsPerPage = 10;
  
   // Get logged in user role (for Add button visibility)
@@ -82,13 +83,13 @@ export default function ViewCustomer() {
     <div className="w-full bg-background transition-all duration-500 ease-in-out animate-in fade-in">
  
       {/* Top Header Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-5 mb-8 transition-all duration-500 ease-in-out">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 md:mb-8 transition-all duration-500 ease-in-out">
             <div className="flex items-center gap-5">
-                <div className="p-3 bg-primary transition-all duration-500 ease-in-out rounded-2xl text-textMain">
-                    <Users size={26} strokeWidth={2.5} />
+                <div className="p-2.5 md:p-3 bg-primary transition-all duration-500 ease-in-out rounded-2xl text-textMain">
+                    <Users size={22} md:size={26} strokeWidth={2.5} />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-black text-textMain transition-colors duration-500 uppercase tracking-tight">
+                    <h1 className="text-xl md:text-2xl font-black text-textMain transition-colors duration-500 uppercase tracking-tight">
                     Customer Directory
                     </h1>
                     <p className="text-textMain/50 transition-colors duration-300 text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5">
@@ -100,18 +101,18 @@ export default function ViewCustomer() {
             {/* Stats + Add button */}
             <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
                 {/* Total count badge */}
-                <div className="hidden sm:flex bg-card transition-colors duration-300 px-5 py-2.5 rounded-2xl border border-border transition-colors duration-300 items-center gap-3">
+                <div className="hidden sm:flex bg-card transition-colors duration-300 px-4 py-2 md:px-5 md:py-2.5 rounded-2xl border border-border transition-colors duration-300 items-center gap-3">
                     <span className="text-[9px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">
                     Total
                     </span>
-                    <span className="text-lg font-black text-primary transition-all duration-300">
+                    <span className="text-base md:text-lg font-black text-primary transition-all duration-300">
                     {customers.length}
                     </span>
                 </div>
 
                 <button
                     onClick={fetchCustomers}
-                    className="p-3.5 bg-card transition-colors duration-300 hover:bg-card transition-colors duration-300 text-textMain/50 transition-colors duration-300 hover:text-textMain transition-colors duration-300 rounded-2xl transition-all border border-border transition-colors duration-300"
+                    className="p-3 md:p-3.5 bg-card transition-colors duration-300 hover:bg-card transition-colors duration-300 text-textMain/50 transition-colors duration-300 hover:text-textMain transition-colors duration-300 rounded-2xl transition-all border border-border transition-colors duration-300"
                     title="Refresh customers"
                 >
                     <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -123,7 +124,7 @@ export default function ViewCustomer() {
                     return canAdd ? (
                     <button
                         onClick={() => navigate('/add-customer')}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-primary transition-all duration-300 hover:bg-[#9a8b50] text-textMain transition-colors duration-300 px-6 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-primary/10 transition-all active:scale-95"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-primary transition-all duration-300 hover:bg-[#9a8b50] text-textMain transition-colors duration-300 px-5 py-3 md:px-6 md:py-3.5 rounded-2xl font-black text-[10px] md:text-[11px] uppercase tracking-widest shadow-lg shadow-primary/10 transition-all active:scale-95"
                     >
                         <UserPlus size={16} /> <span className="hidden xs:inline">Add Customer</span>
                     </button>
@@ -135,7 +136,7 @@ export default function ViewCustomer() {
         <div className="">
  
             {/* ── Search + Filter Bar ── */}
-            <div className="bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-[1.5rem] p-4 mb-8 shadow-sm flex flex-col lg:flex-row gap-4">
+            <div className="bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-[1.5rem] p-3 md:p-4 mb-6 md:mb-8 shadow-sm flex flex-col lg:flex-row gap-3 md:gap-4">
     
                 {/* Search */}
                 <div className="relative group flex-1">
@@ -147,7 +148,7 @@ export default function ViewCustomer() {
                     placeholder="Search by name, owner or district..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full bg-background transition-colors duration-300 border-none rounded-xl py-3.5 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460]/20 outline-none transition-all text-textMain"
+                    className="w-full bg-background transition-colors duration-300 border-none rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-[#b4a460]/20 outline-none transition-all text-textMain"
                     />
                 </div>
         
@@ -159,27 +160,44 @@ export default function ViewCustomer() {
                     </div>
                     {/* Desktop Filters */}
                     <div className="hidden lg:flex items-center gap-2">
-                        {["All", "Saloon", "Wholesale", "Retail"].map((t) => (
-                        <button key={t} onClick={() => setTypeFilter(t)} className={`px-4 py-2 rounded-lg text-[11px] font-black whitespace-nowrap transition-all border uppercase tracking-wider ${typeFilter === t ? "bg-primary transition-all duration-300 border-primary transition-all duration-300 text-textMain transition-colors duration-300 shadow-md" : "bg-card transition-colors duration-300 border-border transition-colors duration-300 text-textMain/50 transition-colors duration-300 hover:border-primary transition-all duration-300 hover:text-primary transition-all duration-300"}`}>{t}</button>
+                        {["All", "Saloon", "Wholesale", "Retail"].map((s) => (
+                        <button key={s} onClick={() => setTypeFilter(s)} className={`px-4 py-2 rounded-lg text-[11px] font-black whitespace-nowrap transition-all border uppercase tracking-wider ${typeFilter === s ? "bg-primary transition-all duration-300 border-primary transition-all duration-300 text-textMain transition-colors duration-300 shadow-md" : "bg-card transition-colors duration-300 border-border transition-colors duration-300 text-textMain/50 transition-colors duration-300 hover:border-primary transition-all duration-300 hover:text-primary transition-all duration-300"}`}>{s}</button>
                         ))}
                     </div>
                     {/* Mobile Filter */}
-                    <div className="lg:hidden relative flex-1">
-                        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="w-full appearance-none bg-background border border-border rounded-xl py-3.5 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none">
-                            {["All", "Saloon", "Wholesale", "Retail"].map((t) => (<option key={t} value={t}>{t === 'All' ? 'All Customer Types' : t}</option>))}
-                        </select>
-                        <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-textMain/50" />
+                    <div className="lg:hidden relative flex-1" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => setIsFilterOpen(!isFilterOpen)} className="w-full bg-black text-primary px-4 py-3 rounded-xl font-bold flex items-center justify-between">
+                            <span className="truncate uppercase text-[10px] tracking-widest">{typeFilter === 'All' ? 'All Types' : typeFilter}</span>
+                            <ChevronDown size={16} className={`transition-transform duration-300 ${isFilterOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {isFilterOpen && (
+                            <div className="absolute top-full mt-2 w-full bg-card rounded-xl shadow-2xl border border-border py-2 z-10 animate-in fade-in slide-in-from-top-2">
+                                {["All", "Saloon", "Wholesale", "Retail"].map((s) => (
+                                    <button
+                                        key={s}
+                                        onClick={() => {
+                                            setTypeFilter(s);
+                                            setIsFilterOpen(false);
+                                        }}
+                                        className="w-full text-left px-4 py-2.5 text-[11px] font-black uppercase tracking-widest hover:bg-primary/10 hover:text-primary flex items-center justify-between"
+                                    >
+                                        {s}
+                                        {typeFilter === s && <UserCheck size={14} className="text-primary" />}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
             {/*  Results count  */}
-            <p className="text-[11px] text-textMain/50 transition-colors duration-300 font-bold uppercase tracking-widest mb-5">
+            <p className="text-[10px] md:text-[11px] text-textMain/50 transition-colors duration-300 font-bold uppercase tracking-widest mb-5">
             Showing <span className="text-primary transition-all duration-300">{currentRows.length}</span> of <span className="text-primary transition-all duration-300">{filtered.length}</span> customer{filtered.length !== 1 ? "s" : ""}
             </p>
     
             {/* Customer Table */}
-            <div className="bg-card transition-colors duration-300 rounded-[2rem] border border-border transition-colors duration-300 shadow-sm overflow-hidden hidden md:block">
+            <div className="bg-card transition-colors duration-300 rounded-[1.5rem] md:rounded-[2rem] border border-border transition-colors duration-300 shadow-sm overflow-hidden hidden md:block">
                 <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left border-collapse">
         
@@ -234,6 +252,10 @@ export default function ViewCustomer() {
                                         <Building2 size={10} className="text-primary" />
                                         {customer.owner_name} ·{" "}
                                         <span className="text-primary transition-all duration-300">{customer.customer_display_id}</span>
+                                        </p>
+                                        <p className="text-[10px] text-textMain/50 transition-colors duration-300 font-bold flex items-center gap-1 mt-1">
+                                            <UserCheck size={10} className="text-primary/70" />
+                                            {customer.salesRep ? customer.salesRep.name : 'Not Assigned'}
                                         </p>
                                     </div>
                                     </div>
@@ -312,7 +334,7 @@ export default function ViewCustomer() {
             </div>
 
             {/* Customer Cards for Mobile */}
-            <div className="md:hidden space-y-4">
+            <div className="md:hidden space-y-3">
               {loading ? (
                 <div className="text-center py-20 text-textMain/50 text-sm">
                   <Loader2 size={20} className="animate-spin inline-block mr-2" />
@@ -324,42 +346,46 @@ export default function ViewCustomer() {
                 </div>
               ) : (
                 currentRows.map((customer) => (
-                  <div key={customer.customer_id} className="bg-card p-5 rounded-2xl border border-border shadow-sm">
-                    {/* Top Section */}
-                    <div className="flex justify-between items-start pb-4 mb-4 border-b border-border">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center shrink-0">
-                          <span className="text-primary text-xs font-black">
+                  <div key={customer.customer_id} className="bg-card p-4 rounded-2xl border border-border shadow-sm">
+                    {/* Top Section - Mobile */}
+                    <div className="flex justify-between items-start pb-3 mb-3 border-b border-border">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-background border border-border flex items-center justify-center shrink-0">
+                          <span className="text-primary text-[10px] font-black">
                             {(customer.saloon_name || 'NA').slice(0, 2).toUpperCase()}
                           </span>
                         </div>
                         <div>
-                          <p className="text-sm font-black text-textMain">{customer.saloon_name}</p>
-                          <p className="text-[10px] text-textMain/50 font-bold flex items-center gap-1">
+                          <p className="text-[11px] font-black text-textMain">{customer.saloon_name}</p>
+                          <p className="text-[8px] text-textMain/50 font-bold flex items-center gap-1">
                             <UserCircle size={10} className="text-primary" /> {customer.owner_name}
+                          </p>
+                          <p className="text-[8px] text-textMain/50 font-bold flex items-center gap-1 mt-1">
+                            <UserCheck size={10} className="text-primary/70" />
+                            {customer.salesRep ? customer.salesRep.name : 'Not Assigned'}
                           </p>
                         </div>
                       </div>
-                      <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider
+                      <span className={`text-[7px] font-black px-2 py-0.5 rounded-md border uppercase tracking-wider
                         ${typeBadge[customer.type]?.bg} ${typeBadge[customer.type]?.text} ${typeBadge[customer.type]?.border}`}>
                         {customer.type}
                       </span>
                     </div>
 
-                    {/* Details Section */}
-                    <div className="space-y-3 mb-5">
-                      <div className="flex items-center gap-2 text-sm text-textMain/60 font-medium">
-                        <Phone size={14} className="text-primary" />
+                    {/* Details Section - Mobile */}
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center gap-2 text-[10px] text-textMain/60 font-medium">
+                        <Phone size={12} className="text-primary" />
                         <span>{customer.phone1}</span>
                       </div>
                       {customer.email && (
-                          <div className="flex items-center gap-2 text-sm text-textMain/60 font-medium">
-                              <Mail size={14} className="text-primary" />
+                          <div className="flex items-center gap-2 text-[10px] text-textMain/60 font-medium">
+                              <Mail size={12} className="text-primary" />
                               <span>{customer.email}</span>
                           </div>
                       )}
-                      <div className="flex items-center gap-2 text-sm text-textMain/60 font-medium">
-                        <MapPin size={14} className="text-primary" />
+                      <div className="flex items-center gap-2 text-[10px] text-textMain/60 font-medium">
+                        <MapPin size={12} className="text-primary" />
                         <span>{customer.district}</span>
                       </div>
                     </div>
@@ -367,9 +393,9 @@ export default function ViewCustomer() {
                     {/* Action Button */}
                     <button
                       onClick={() => navigate(`/customer/${customer.customer_id}`)}
-                      className="w-full flex items-center justify-center gap-2 bg-background border border-border text-textMain/70 hover:text-primary hover:border-primary text-[10px] font-black uppercase py-3 rounded-xl transition-all"
+                      className="w-full flex items-center justify-center gap-2 bg-background border border-border text-textMain/70 hover:text-primary hover:border-primary text-[9px] font-black uppercase py-2.5 rounded-xl transition-all"
                     >
-                      View Details <ArrowRight size={14} />
+                      View Details <ArrowRight size={12} />
                     </button>
                   </div>
                 ))

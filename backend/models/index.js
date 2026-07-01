@@ -70,6 +70,10 @@ NotificationRead.belongsTo(Notification, { foreignKey: 'notification_id' });
 User.hasMany(NotificationRead, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 NotificationRead.belongsTo(User, { foreignKey: 'user_id' });
 
+// Add association for the initiator of the notification
+Notification.belongsTo(User, { as: 'initiator', foreignKey: 'initiator_id' });
+User.hasMany(Notification, { foreignKey: 'initiator_id', as: 'initiatedNotifications' });
+
 // 13. User and UserBehavior Associations
 User.hasMany(UserBehavior, { foreignKey: 'user_id', as: 'behaviors', onDelete: 'CASCADE' });
 UserBehavior.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
@@ -77,6 +81,8 @@ UserBehavior.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 // වාර්තා කළ පුද්ගලයා (Admin/Manager) කවුදැයි දැනගැනීමට
 User.hasMany(UserBehavior, { foreignKey: 'created_by', as: 'recordedBehaviors' });
 UserBehavior.belongsTo(User, { foreignKey: 'created_by', as: 'recorder' });
+
+
 
 module.exports = {
   sequelize,

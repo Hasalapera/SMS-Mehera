@@ -1,9 +1,21 @@
-const { Order, OrderItem, ProductVariant, Product, User, Customer } = require('../models');
+const { Order, OrderItem, ProductVariant, Product, User, Customer, SalesTarget } = require('../models');
 const sequelize = require('../db/db');
 const { sendEmailInvoice } = require('../utils/sendEmailInvoice'); 
 const crypto = require('crypto');
 const { sendDispatchNotification } = require('../utils/sendDispatchNotification');
+const { decrypt } = require('../utils/cryptoUtils');
 const { sendDeliveryOTP, sendThankYouEmail } = require('../utils/emailSender');
+const { createNotification } = require('./notificationController');
+
+const getOrderNotificationTarget = async (orderLike, fallbackUserId) => {
+  if (!orderLike?.customer_id) return fallbackUserId || null;
+
+  const customer = await Customer.findByPk(orderLike.customer_id, {
+    attributes: ['sales_rep_id']
+  });
+
+  return customer?.sales_rep_id || fallbackUserId || null;
+};
 
 // --- 1. current normal orde eka (SALES REP / OFFLINE) ---
 const placeOrder = async (req, res) => {
@@ -78,6 +90,20 @@ const placeOrder = async (req, res) => {
     
     await transaction.commit(); // ✅ confirm DB operations before sending response
 
+    const notificationTargetUserId = await getOrderNotificationTarget(newOrder, req.user.user_id);
+
+    await createNotification(
+      'order',
+      'Order Submitted',
+      `Order #${newOrder.order_id.substring(0, 8).toUpperCase()} for ${customer_name} was submitted for approval. Total: LKR ${Number(total_amount || 0).toLocaleString()}.`,
+      {
+        reference_id: newOrder.order_id,
+        target_user_id: notificationTargetUserId,
+        severity: 'info',
+        initiator_id: req.user.user_id,
+      }
+    );
+
     res.status(201).json({ success: true, message: "Order placed successfully!", orderId: newOrder.order_id });
   } catch (error) {
     // if there is error rollback it
@@ -147,6 +173,19 @@ const placeOnlineOrder = async (req, res) => {
 
     
     await transaction.commit();
+
+    await createNotification(
+      'order',
+      'Online Order Submitted',
+      `Online order #${newOrder.order_id.substring(0, 8).toUpperCase()} for ${customer_name} was submitted. Total: LKR ${Number(total_amount || 0).toLocaleString()}.`,
+      {
+        reference_id: newOrder.order_id,
+        target_user_id: req.user.user_id,
+        severity: 'info',
+        initiator_id: req.user.user_id,
+      }
+    );
+
     // Send discount details while sending email
     if (email) {
       try {
@@ -199,28 +238,59 @@ const getAllOrders = async (req, res) => {
 
     const orders = await Order.findAll({
       where: filter, // get order from relevant filter 
-      include: [{
-        model: OrderItem,
-        include: [{
-          model: ProductVariant,
-          as: 'variant',
+      include: [
+        {
+          model: OrderItem,
           include: [{
-            model: Product,
-            as: 'product',
-            attributes: ['product_name'] 
+            model: ProductVariant,
+            as: 'variant',
+            include: [{
+              model: Product,
+              as: 'product',
+              attributes: ['product_name'] 
+            }]
           }]
-        }]
-      },
-      {
+        },
+        {
           model: User,
           as: 'creator',
           attributes: ['name', 'role'] 
+        },
+        {
+          model: Customer,
+          as: 'customer',
+          attributes: ['phone1', 'phone2'] // Fetch encrypted phone numbers
         }
-    ],
+      ],
       order: [['created_at', 'DESC']]
     });
 
-    res.status(200).json(orders);
+    // Decrypt phone numbers before sending to the frontend
+    const decryptedOrders = orders.map(order => {
+      const orderJSON = order.toJSON();
+
+      // 💡 Decrypt the primary phone number on the Order model itself
+      if (orderJSON.phone) {
+        try {
+          orderJSON.phone = decrypt(orderJSON.phone);
+        } catch (e) {
+          // Ignore error if it's already plain text
+          console.warn(`Could not decrypt order.phone for order ${orderJSON.order_id}, might be plain text.`);
+        }
+      }
+
+      if (orderJSON.customer && orderJSON.customer.phone1) {
+        try {
+          orderJSON.customer.phone1 = decrypt(orderJSON.customer.phone1);
+        } catch (e) {
+          console.warn(`Could not decrypt phone1 for customer on order ${orderJSON.order_id}`);
+          orderJSON.customer.phone1 = 'Decryption Error';
+        }
+      }
+      return orderJSON;
+    });
+
+    res.status(200).json(decryptedOrders);
   } catch (error) {
     console.error("Fetch Error:", error);
     res.status(500).json({ message: "Failed to fetch orders" });
@@ -232,6 +302,8 @@ const updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
     const { status } = req.body;
+
+    const previousStatus = (await Order.findByPk(orderId, { attributes: ['order_status'], transaction }))?.order_status;
 
     // Order එකයි ඒකෙ Items ටිකයි database එකෙන් ගන්නවා
     const order = await Order.findByPk(orderId, {
@@ -245,7 +317,7 @@ const updateOrderStatus = async (req, res) => {
     }
 
     // 🛡️ Admin order එක 'approved' කරනවා නම් විතරක් Stock Check එක කරනවා
-    if (status === 'approved' && order.order_status !== 'approved') {
+    if (status === 'approved' && previousStatus !== 'approved') {
       const variantsToUpdate = [];
 
       // 1. Stock Validation Phase (හැම item එකක්ම check කරනවා)
@@ -288,7 +360,61 @@ const updateOrderStatus = async (req, res) => {
     order.order_status = status;
     await order.save({ transaction });
 
+    // --- 🎯 Sales Target Update Logic ---
+    const orderAmount = parseFloat(order.total_amount);
+    const repId = order.created_by;
+    const orderMonth = order.created_at.toISOString().slice(0, 7);
+
+    if (repId && orderAmount > 0) {
+      // Condition 1: An order is newly approved
+      if (status === 'approved' && previousStatus !== 'approved') {
+        await SalesTarget.increment('achieved_amount', {
+          by: orderAmount,
+          where: { sales_rep_id: repId, month: orderMonth },
+          transaction
+        });
+      }
+      // Condition 2: A previously approved order is now cancelled or rejected
+      else if ((status === 'cancelled' || status === 'rejected') && previousStatus === 'approved') {
+        await SalesTarget.decrement('achieved_amount', {
+          by: orderAmount,
+          where: { sales_rep_id: repId, month: orderMonth },
+          transaction
+        });
+      }
+
+      // After any change, re-evaluate the 'is_achieved' status
+      const target = await SalesTarget.findOne({
+        where: { sales_rep_id: repId, month: orderMonth },
+        transaction
+      });
+
+      if (target) {
+        const isNowAchieved = parseFloat(target.achieved_amount) >= parseFloat(target.adjusted_target_amount);
+        if (target.is_achieved !== isNowAchieved) {
+          await target.update({ is_achieved: isNowAchieved }, { transaction });
+        }
+      }
+    }
+
     await transaction.commit(); // ✅ සේරම සාර්ථක නම් Database එකට save කරනවා
+
+    const notificationTargetUserId = await getOrderNotificationTarget(order, order.created_by);
+
+    if (notificationTargetUserId) {
+      const severity = ['rejected', 'cancelled'].includes(status) ? 'warning' : 'info';
+      await createNotification(
+        'order',
+        `Order ${status.charAt(0).toUpperCase()}${status.slice(1)}`,
+        `Order #${order.order_id.substring(0, 8).toUpperCase()} for ${order.customer_name} is now ${status}.`,
+        {
+          reference_id: order.order_id,
+          target_user_id: notificationTargetUserId,
+          severity,
+          initiator_id: req.user.user_id
+        }
+      );
+    }
 
     let whatsappUrl = null;
 

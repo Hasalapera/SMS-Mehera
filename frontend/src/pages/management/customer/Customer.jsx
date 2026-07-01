@@ -28,33 +28,33 @@ const Customer = () => {
     <div className="min-h-screen bg-background transition-all duration-300 p-4 sm:p-6 md:p-10 transition-all duration-300">
       
       {/* HEADER SECTION */}
-      <div className="max-w-7xl mx-auto mb-8 md:mb-12 text-left">
+      <div className="max-w-7xl mx-auto mb-6 md:mb-12 text-left">
         <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-1 flex bg-black"></div>
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary transition-all duration-300">
                 Customer Relations
             </span>
         </div>
-        <h1 className="text-3xl md:text-4xl font-serif text-textMain transition-colors duration-300 uppercase tracking-tight">
+        <h1 className="text-2xl md:text-4xl font-serif text-textMain transition-colors duration-300 uppercase tracking-tight">
             Customer <span className="italic text-primary transition-all duration-300">Intelligence</span>
         </h1>
       </div>
 
       {/* TABS NAVIGATION - Orders Style (Fixed and Optimized) */}
-      <div className="max-w-7xl mx-auto mb-8 overflow-x-auto no-scrollbar scroll-smooth">
+      <div className="max-w-7xl mx-auto mb-6 md:mb-8 overflow-x-auto no-scrollbar scroll-smooth">
         <div className="flex gap-2 border-b border-border transition-colors duration-300 min-w-max pb-px">
           {tabs.map((tab) => (
             tab.show && (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-3 px-6 md:px-8 py-4 md:py-5 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 relative whitespace-nowrap ${
+                className={`flex items-center gap-2 md:gap-3 px-4 md:px-8 py-3 md:py-5 text-[9px] font-black uppercase tracking-[0.2em] transition-all duration-300 relative whitespace-nowrap ${
                   activeTab === tab.id 
                   ? 'text-textMain transition-colors duration-300 border-b-2 border-primary transition-all duration-300' 
                   : 'text-textMain/50 transition-colors duration-300 hover:text-textMain/50 transition-colors duration-300'
                 }`}
               >
-                <tab.icon size={16} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
+                <tab.icon size={14} md:size={16} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
                 <span className={`${activeTab === tab.id ? 'block' : 'hidden sm:block'}`}>
                     {tab.label}
                 </span>
@@ -71,7 +71,7 @@ const Customer = () => {
           
           <div className="animate-in fade-in duration-500 w-full h-full">
             {activeTab === 'view' && (
-                <div className="p-0 md:p-2">
+                <div className="p-4 md:p-6">
                     <ViewCustomer />
                 </div>
             )}
