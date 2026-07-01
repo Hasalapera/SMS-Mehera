@@ -48,11 +48,11 @@ const StatNavBar = () => {
 
   const navLinks = [
     { name: 'Home', action: () => handleNavigation('/') },
-    { name: 'Products', action: () => navigate('/products') },
+    { name: 'Products', action: () => handleNavigation('/products') },
     { name: 'Our Brands', action: () => handleNavigation('/brands') },
     { name: 'Workshops', action: () => handleNavigation('/workshops') },
     { name: 'About US', action: () => handleNavigation('/about') }, 
-    { name: 'Contact Us', action: () => navigate('/contact') },
+    { name: 'Contact Us', action: () => handleNavigation('/contact') },
   ];
 
   const getDynamicLogo = () => {

@@ -12,6 +12,7 @@ import {
   UserCheck,
   ClipboardList,
 } from "lucide-react";
+import { Loader2 } from "lucide-react"; // 👈 Loader Icon එක import කරගන්නවා
 import { toast } from "react-hot-toast";
 import api from "../../../api/axiosInstance";
 import { v4 as uuidv4 } from 'uuid'; // 👈 Unique ID සෑදීමට
@@ -26,6 +27,7 @@ const AddOrder = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false); // 👈 Button එක disable කිරීමට state එකක්
   const { token } = useAuth();
 
   const { addNotification } = useNotifications(); // hook for adding notifications
@@ -165,7 +167,10 @@ const AddOrder = () => {
   const handlePlaceOrder = async () => {
     if (!selectedCustomer) return toast.error("Please select a partner!");
     if (cart.length === 0) return toast.error("Selection queue is empty!");
+    if (isPlacingOrder) return; // 🛡️ දැනටමත් process වෙනවා නම්, නැවත click කිරීම වළක්වනවා
 
+    setIsPlacingOrder(true); // ⏳ Process එක පටන් ගත්තා
+    
     try {
       // Discount calculate by %
       const discountPercentage = Number(discount) || 0;
@@ -272,20 +277,22 @@ const AddOrder = () => {
         console.error("Order Error:", err);
         toast.error(err.response?.data?.message || "Something went wrong!");
       }
+    } finally {
+      setIsPlacingOrder(false); // ✅ Process එක ඉවර වුණාම (සාර්ථක වුණත්, අසාර්ථක වුණත්) state එක reset කරනවා
     }
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-6 md:p-10 animate-in fade-in duration-500 pb-20">
+    <div className="w-full max-w-6xl mx-auto p-4 md:p-10 animate-in fade-in duration-500 pb-20">
 
       <div className="space-y-6">
-        <h1 className="text-2xl font-black text-textMain transition-colors duration-300 tracking-tight uppercase">
+        <h1 className="text-xl md:text-2xl font-black text-textMain transition-colors duration-300 tracking-tight uppercase">
           Create <span className="text-primary transition-all duration-300">New Order</span>
         </h1>
 
         {/* STEP 1: PARTNER DETAILS */}
-        <div className="bg-background transition-all duration-300 p-6 rounded-[2rem] border border-border transition-colors duration-300 relative">
-          <div className="flex items-center gap-3 mb-5">
+        <div className="bg-background transition-all duration-300 p-4 md:p-6 rounded-[2rem] border border-border transition-colors duration-300 relative">
+          <div className="flex items-center gap-3 mb-4">
             <div className="w-1.5 h-5 bg-primary transition-all duration-300 rounded-full"></div>
             <h2 className="text-[10px] font-black uppercase text-textMain transition-colors duration-300 tracking-[0.2em]">
               01. Partner Details
@@ -293,7 +300,7 @@ const AddOrder = () => {
           </div>
 
           <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+            <div className="absolute inset-y-0 left-0 pl-4 md:pl-5 flex items-center pointer-events-none">
               <Search
                 className="text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300"
                 size={18}
@@ -302,7 +309,7 @@ const AddOrder = () => {
             <input
               type="text"
               placeholder="Search Saloon or Owner..."
-              className="w-full pl-14 pr-6 py-4 bg-card transition-colors duration-300 border-none rounded-2xl font-bold text-sm outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all shadow-sm"
+              className="w-full pl-12 md:pl-14 pr-4 md:pr-6 py-3 md:py-4 bg-card transition-colors duration-300 border-none rounded-2xl font-bold text-xs md:text-sm outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all shadow-sm"
               value={cusSearch}
               onChange={(e) => handleCustomerSearch(e.target.value)}
             />
@@ -310,11 +317,11 @@ const AddOrder = () => {
 
           {/* Suggestions Dropdown */}
           {suggestions.length > 0 && !selectedCustomer && (
-            <div className="absolute z-50 left-6 right-6 bg-card transition-colors duration-300 shadow-2xl rounded-2xl mt-2 border border-border transition-colors duration-300 overflow-hidden divide-y divide-gray-50">
+            <div className="absolute z-50 left-4 right-4 md:left-6 md:right-6 bg-card transition-colors duration-300 shadow-2xl rounded-2xl mt-2 border border-border transition-colors duration-300 overflow-hidden divide-y divide-gray-50">
               {suggestions.map((c) => (
                 <div
                   key={c.customer_id}
-                  className="px-6 py-4 hover:bg-primary/10 transition-all duration-300 cursor-pointer flex justify-between items-center group"
+                  className="px-4 py-3 md:px-6 md:py-4 hover:bg-primary/10 transition-all duration-300 cursor-pointer flex justify-between items-center group"
                   onClick={() => {
                     setSelectedCustomer(c);
                     setCusSearch(c.saloon_name);
@@ -340,9 +347,9 @@ const AddOrder = () => {
 
           {/* Selected Customer Card */}
           {selectedCustomer && (
-            <div className="mt-5 p-5 bg-card transition-colors duration-300 rounded-2xl border-2 border-primary/10 transition-all duration-300 flex justify-between items-center shadow-sm animate-in zoom-in-95">
+            <div className="mt-4 p-4 md:p-5 bg-card transition-colors duration-300 rounded-2xl border-2 border-primary/10 transition-all duration-300 flex justify-between items-center shadow-sm animate-in zoom-in-95">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center text-primary transition-all duration-300">
+                <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-black flex items-center justify-center text-primary transition-all duration-300">
                   <UserCheck size={20} />
                 </div>
                 <div>
@@ -368,15 +375,15 @@ const AddOrder = () => {
         </div>
 
         {/* STEP 2: QUEUE SELECTION */}
-        <div className="bg-card transition-colors duration-300 p-6 rounded-[2rem] border border-border transition-colors duration-300 min-h-[300px]">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-card transition-colors duration-300 p-4 md:p-6 rounded-[2rem] border border-border transition-colors duration-300 min-h-[300px]">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-5 bg-black rounded-full"></div>
               <h2 className="text-[10px] font-black uppercase text-textMain transition-colors duration-300 tracking-[0.2em]">
                 02. Order Queue
               </h2>
             </div>
-            <span className="text-[9px] font-black bg-gray-100 px-3 py-1 rounded-full text-textMain/50 transition-colors duration-300 uppercase">
+            <span className="text-[9px] font-black bg-background px-3 py-1 rounded-full text-textMain/50 transition-colors duration-300 uppercase border border-border">
               {cart.length} Items
             </span>
           </div>
@@ -387,10 +394,10 @@ const AddOrder = () => {
                 <div
                   //key={item.product_id} // can't use this because we need to differentiate variants of the same product
                   key={item.cartItemId} 
-                  className="p-4 bg-card transition-colors duration-300 rounded-2xl border border-border transition-colors duration-300 flex justify-between items-center group hover:border-primary/30 transition-all duration-300 transition-all"
+                  className="p-3 md:p-4 bg-card transition-colors duration-300 rounded-2xl border border-border transition-colors duration-300 flex justify-between items-center group hover:border-primary/30 transition-all duration-300 transition-all"
                 >
                   <div className="flex-1 min-w-0 mr-4">
-                    <p className="font-black text-[11px] uppercase text-textMain transition-colors duration-300 truncate group-hover:text-primary transition-all duration-300">
+                    <p className="font-black text-[10px] md:text-[11px] uppercase text-textMain transition-colors duration-300 truncate group-hover:text-primary transition-all duration-300">
                       {item.name}
                     </p>
                     {item.variant_name && item.variant_name !== "Standard" && (
@@ -403,9 +410,9 @@ const AddOrder = () => {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3"> {/* ✅ මේ parent div එකෙන් තමයි දෙක අතර gap එක හදන්නේ */}
+                  <div className="flex items-center gap-2 md:gap-3"> {/* ✅ මේ parent div එකෙන් තමයි දෙක අතර gap එක හදන්නේ */}
                     {/* Quantity Controls Div */}
-                    <div className="flex items-center gap-2.5 bg-card transition-colors duration-300 rounded-xl p-1 border border-border transition-colors duration-300">
+                    <div className="flex items-center gap-2 bg-card transition-colors duration-300 rounded-xl p-1 border border-border transition-colors duration-300">
                       <button 
                         onClick={() => decreaseQty(item.cartItemId)}
                         className="hover:bg-gray-200 rounded-lg p-1 transition-colors"
@@ -413,7 +420,7 @@ const AddOrder = () => {
                         <Minus size={14} strokeWidth={3} />
                       </button>
                       
-                      <span className="font-medium min-w-[20px] text-center">{item.qty}</span>
+                      <span className="font-medium min-w-[20px] text-center text-sm">{item.qty}</span>
                       
                       <button 
                         onClick={() => increaseQty(item.cartItemId)}
@@ -436,8 +443,8 @@ const AddOrder = () => {
                 </div>
               ))
             ) : (
-              <div className="py-20 text-center border-2 border-dashed border-border rounded-[2rem] flex flex-col items-center justify-center">
-                <Package size={32} className="text-gray-100 mb-3" />
+              <div className="py-16 md:py-20 text-center border-2 border-dashed border-border rounded-[2rem] flex flex-col items-center justify-center">
+                <Package size={28} md:size={32} className="text-gray-100 mb-3" />
                 <p className="text-[9px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-[0.2em]">
                   Queue is empty
                 </p>
@@ -447,7 +454,7 @@ const AddOrder = () => {
         </div>
 
         {/* --- UPDATED LIGHT THEME SUMMARY SECTION --- */}
-        <div className="bg-card transition-colors duration-300 p-6 rounded-[2.5rem] border-2 border-primary/10 transition-all duration-300 shadow-xl shadow-[#b4a460]/5 relative overflow-hidden sticky top-6">
+        <div className="bg-card transition-colors duration-300 p-4 md:p-6 rounded-[2.5rem] border-2 border-primary/10 transition-all duration-300 shadow-xl shadow-[#b4a460]/5 relative overflow-hidden sticky top-6">
           {/* Background Decoration */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 transition-all duration-300 rounded-full -mr-16 -mt-16 blur-3xl"></div>
 
@@ -466,7 +473,7 @@ const AddOrder = () => {
             </div>
 
             {/* 02. Subtotal Display */}
-            <div className="flex justify-between items-center px-1 pt-2 border-b border-border pb-4">
+            <div className="flex justify-between items-center px-1 pt-2 border-b border-border pb-3">
               <span className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">
                 Gross Subtotal
               </span>
@@ -476,7 +483,7 @@ const AddOrder = () => {
             </div>
 
             {/* 03. Discount Percentage Input */}
-            <div className="p-4 bg-background transition-all duration-300 rounded-2xl border border-dashed border-border transition-colors duration-300">
+            <div className="p-3 md:p-4 bg-background transition-all duration-300 rounded-2xl border border-dashed border-border transition-colors duration-300">
               <div className="flex justify-between items-center mb-3">
                 <span className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">
                   Discount Rate
@@ -493,7 +500,7 @@ const AddOrder = () => {
                     setDiscount(Math.min(100, Math.max(0, e.target.value)))
                   } // keep 0-100 
                   placeholder="0"
-                  className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 pl-4 pr-10 text-sm font-black outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all text-right shadow-sm"
+                  className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-2.5 md:py-3 pl-4 pr-10 text-sm font-black outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all text-right shadow-sm"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-primary transition-all duration-300 text-sm">
                   %
@@ -502,7 +509,7 @@ const AddOrder = () => {
             </div>
 
             {/* --- PAYMENT METHOD SELECTION --- */}
-<div className="p-4 bg-card transition-colors duration-300 rounded-2xl border border-primary/30 transition-all duration-300 shadow-sm mb-4 mt-4">
+<div className="p-3 md:p-4 bg-card transition-colors duration-300 rounded-2xl border border-primary/30 transition-all duration-300 shadow-sm mb-4 mt-4">
   <label className="text-[10px] font-black uppercase tracking-widest text-textMain/50 transition-colors duration-300 block mb-3">
     Settlement Mode
   </label>
@@ -512,7 +519,7 @@ const AddOrder = () => {
         key={mode}
         type="button"
         onClick={() => setPaymentMethod(mode)}
-        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border ${
+        className={`flex-1 py-2.5 md:py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border ${
           paymentMethod === mode
             ? 'bg-primary transition-all duration-300 border-primary transition-all duration-300 text-white shadow-lg shadow-[#b4a460]/20'
             : 'bg-card transition-colors duration-300 border-border transition-colors duration-300 text-textMain/50 transition-colors duration-300 hover:border-primary/30 transition-all duration-300'
@@ -533,7 +540,7 @@ const AddOrder = () => {
                 <span className="text-[10px] font-black text-primary transition-all duration-300">
                   Rs.
                 </span>
-                <span className="text-4xl font-black text-textMain transition-colors duration-300 tracking-tighter leading-none">
+                <span className="text-3xl md:text-4xl font-black text-textMain transition-colors duration-300 tracking-tighter leading-none">
                   {Math.max(
                     0,
                     totalAmount - (totalAmount * (Number(discount) || 0)) / 100,
@@ -554,15 +561,20 @@ const AddOrder = () => {
             <div className="pt-2">
               <button
                 onClick={handlePlaceOrder}
-                disabled={cart.length === 0 || !selectedCustomer}
-                className="w-full py-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.3em] transition-all duration-300 flex items-center justify-center gap-3 shadow-xl group bg-black text-primary transition-all duration-300 border border-black shadow-black/10 hover:bg-primary transition-all duration-300 hover:text-white hover:border-primary transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:bg-gray-100 disabled:text-textMain/50 transition-colors duration-300 disabled:border-border transition-colors duration-300 disabled:shadow-none disabled:scale-100 disabled:cursor-not-allowed"
+                disabled={cart.length === 0 || !selectedCustomer || isPlacingOrder}
+                className="w-full py-4 md:py-5 rounded-2xl font-black uppercase text-[10px] md:text-[11px] tracking-[0.3em] flex items-center justify-center gap-3 shadow-xl group bg-black text-primary border border-black shadow-black/10 hover:bg-primary hover:text-white hover:border-primary hover:scale-[1.02] active:scale-95 transition-all duration-300 disabled:bg-gray-100 dark:disabled:bg-white/5 disabled:text-textMain/40 dark:disabled:text-textMain/30 disabled:border-border dark:disabled:border-white/10 disabled:shadow-none disabled:scale-100 disabled:cursor-not-allowed"
               >
-                <CheckCircle2
-                  size={18}
-                  strokeWidth={3}
-                  className="transition-transform duration-300 group-hover:rotate-12 group-disabled:rotate-0"
-                />
-                Finalize Order
+                {isPlacingOrder ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={18} strokeWidth={3} className="transition-transform duration-300 group-hover:rotate-12 group-disabled:rotate-0" />
+                    <span>Finalize Order</span>
+                  </>
+                )}
               </button>
             </div>
 

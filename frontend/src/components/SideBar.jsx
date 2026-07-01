@@ -168,8 +168,9 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
     }
   };
 
-  const handleLogout = () => {
-      logout();
+  const handleLogout = async () => {
+      await logout();
+      navigate('/', { replace: true });
   };
 
   const getInitials = (name) => {
@@ -302,7 +303,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
                     <>
                       <NavLink to="/addUser" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><UserPlus size={14} /> Add User</NavLink>
                       <NavLink to="/delete-user" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><UserMinus size={14} /> Delete User</NavLink>
-                      <NavLink to="/assign-user" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><UserMinus size={14} /> Assign User</NavLink>
+                      <NavLink to="/assign-user" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><UserMinus size={14} /> Assign Customer</NavLink>
                       <NavLink to="/add-user-behavior" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><PlusCircle size={14} /> Add Behavior</NavLink>
                     </>
                   )}

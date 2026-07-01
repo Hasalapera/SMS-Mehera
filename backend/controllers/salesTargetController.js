@@ -39,9 +39,10 @@ const assignTarget = async (req, res) => {
         `Sales Target ${created ? 'Set' : 'Updated'} by ${assignerName}`,
         `Your sales target for ${month} has been ${action} to LKR ${Number(adjusted_target_amount).toLocaleString()} by ${assignerName}.`,
         {
-            recipient_id: sales_rep_id,
             reference_id: target.id,
-            severity: 'info'
+            target_user_id: sales_rep_id,
+            severity: 'info',
+            initiator_id: req.user.user_id
         }
     );
 

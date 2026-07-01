@@ -23,6 +23,26 @@ const Notification = sequelize.define('Notification', {
         type: DataTypes.UUID,
         allowNull: true,
     },
+    initiator_id: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+            model: 'users',
+            key: 'user_id'
+        }
+    },
+    target_user_id: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+            model: 'users',
+            key: 'user_id'
+        }
+    },
+    target_role: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
     severity: {
         type: DataTypes.ENUM('info', 'warning', 'critical'),
         defaultValue: 'info',

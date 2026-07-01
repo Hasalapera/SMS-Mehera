@@ -265,7 +265,7 @@ const Inbox = () => {
                             {notification.message}
                           </p>
                           <p className="text-[8px] text-textMain/55 dark:text-textMain/60 mt-2 uppercase tracking-widest">
-                            {notification.created_at && new Date(notification.created_at).toLocaleString('en-GB')}
+                            {new Date(notification.createdAt || notification.created_at).toLocaleString('en-GB')}
                           </p>
                         </div>
 

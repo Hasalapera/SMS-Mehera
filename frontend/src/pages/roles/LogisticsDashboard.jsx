@@ -9,6 +9,8 @@ import {
     Globe, Store, RefreshCw, CheckCircle, Printer, ScanLine, QrCode, X,
     Calendar, Loader2, Info
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const LogisticsDashboard = () => {
     const { token } = useAuth();
@@ -56,6 +58,11 @@ const LogisticsDashboard = () => {
             reverseButtons: true,
         });
 
+        // 🛡️ Explicitly handle cancellation
+        if (result.isDismissed) {
+            return; // Stop execution if the user cancels
+        }
+
         if (result.isConfirmed) {
             try {
                 const res = await api.put(`/orders/update-order-status/${orderId}`, 
@@ -70,10 +77,14 @@ const LogisticsDashboard = () => {
                         title: 'Send Notification',
                         text: 'Open WhatsApp to send the tracking & OTP link to the customer.',
                         icon: 'success',
+                        showCancelButton: true,
                         confirmButtonText: 'Open WhatsApp',
+                        cancelButtonText: 'Cancel',
                         allowOutsideClick: false
-                    }).then(() => {
-                        window.open(res.data.whatsappUrl, '_blank');
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.open(res.data.whatsappUrl, '_blank');
+                        }
                     });
                 }
                 
@@ -91,10 +102,48 @@ const LogisticsDashboard = () => {
         onAfterPrint: () => setIsReadyToPrint(false)
     });
 
+    // 💡 PDF Generation for Mobile
+    const generatePdf = async (element, filename) => {
+        if (!element) return;
+        const toastId = toast.loading('Generating PDF...');
+        try {
+            const canvas = await html2canvas(element, {
+                scale: 2, // Higher quality for crisp text
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                foreignObjectRendering: true // Fix for modern CSS color functions like oklch()
+            });
+            const imgData = canvas.toDataURL('image/png');
+            
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'cm',
+                format: [10, 12] // Match the print CSS size
+            });
+
+            pdf.addImage(imgData, 'PNG', 0, 0, 10, 12);
+            pdf.save(filename);
+            toast.success('PDF downloaded!', { id: toastId });
+        } catch (error) {
+            console.error("Error generating PDF", error);
+            toast.error('Failed to generate PDF.', { id: toastId });
+        }
+    };
+
     // ⏳ State එක අප්ඩේට් වෙලා QR එක Load වෙනකම් ඉඳලා Print එක Trigger කිරීම
     useEffect(() => {
         if (isReadyToPrint && orderToPrint) {
-            const timer = setTimeout(() => { triggerPrint(); }, 800);
+            const isMobileDevice = window.innerWidth < 768; // Mobile/Tablet check
+            const timer = setTimeout(() => {
+                if (isMobileDevice) {
+                    // 📱 Mobile: Download as PDF
+                    generatePdf(printRef.current, `ShippingLabel_${orderToPrint?.order_id?.substring(0,8) || 'Mehera'}.pdf`);
+                    setIsReadyToPrint(false); // Reset state
+                } else {
+                    // 🖥️ Desktop: Open print dialog
+                    triggerPrint();
+                }
+            }, 800); // Wait for QR code to load
             return () => clearTimeout(timer);
         }
     }, [isReadyToPrint, orderToPrint, triggerPrint]);
@@ -107,9 +156,68 @@ const LogisticsDashboard = () => {
         onAfterPrint: () => setIsBulkReadyToPrint(false)
     });
 
+    // 💡 Bulk PDF Generation for Mobile
+    const generateBulkPdf = async (element, filename) => {
+        if (!element) return;
+        const toastId = toast.loading('Generating Bulk PDF...');
+        try {
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                windowWidth: element.scrollWidth,
+                windowHeight: element.scrollHeight,
+                foreignObjectRendering: true // Fix for modern CSS color functions like oklch()
+            });
+            const imgData = canvas.toDataURL('image/png');
+            
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+            
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            const ratio = canvasWidth / pdfWidth;
+            const calculatedHeight = canvasHeight / ratio;
+
+            let heightLeft = calculatedHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, calculatedHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position -= pdfHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, calculatedHeight);
+                heightLeft -= pdfHeight;
+            }
+
+            pdf.save(filename);
+            toast.success('Bulk PDF downloaded!', { id: toastId });
+        } catch (error) {
+            console.error("Error generating bulk PDF", error);
+            toast.error('Failed to generate bulk PDF.', { id: toastId });
+        }
+    };
+
     useEffect(() => {
         if (isBulkReadyToPrint && bulkOrdersToPrint.length > 0) {
-            const timer = setTimeout(() => { triggerBulkPrint(); }, 800);
+            const isMobileDevice = window.innerWidth < 768; // Mobile/Tablet check
+            const timer = setTimeout(() => {
+                if (isMobileDevice) {
+                    // 📱 Mobile: Download as PDF
+                    generateBulkPdf(bulkPrintRef.current, `Bulk_ShippingLabels_${new Date().toISOString().slice(0,10)}.pdf`);
+                    setIsBulkReadyToPrint(false); // Reset state
+                } else {
+                    // 🖥️ Desktop: Open print dialog
+                    triggerBulkPrint();
+                }
+            }, 800); // Wait for QR codes to load
             return () => clearTimeout(timer);
         }
     }, [isBulkReadyToPrint, bulkOrdersToPrint, triggerBulkPrint]);
@@ -229,8 +337,8 @@ const LogisticsDashboard = () => {
             {/* Header Section */}
             <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-serif text-textMain transition-colors duration-300 uppercase tracking-tight flex items-center gap-3">
-                        <div className="p-3 bg-black text-primary transition-all duration-300 rounded-2xl shadow-xl"><Truck size={28} /></div>
+                    <h1 className="text-2xl sm:text-3xl font-serif text-textMain transition-colors duration-300 uppercase tracking-tight flex items-center gap-3">
+                        <div className="p-2 sm:p-3 bg-black text-primary transition-all duration-300 rounded-2xl shadow-xl"><Truck size={24} sm:size={28} /></div>
                         Logistics <span className="italic text-primary transition-all duration-300">Dispatch</span>
                     </h1>
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-textMain/50 transition-colors duration-300 mt-2 italic ml-4 sm:ml-16">
@@ -238,10 +346,10 @@ const LogisticsDashboard = () => {
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-3 w-full md:w-auto mt-4 md:mt-0">
-                    <button onClick={handleBulkPrint} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-card text-textMain border border-border transition-all duration-300 rounded-xl font-black text-[11px] uppercase tracking-widest shadow-sm hover:border-primary hover:text-primary shrink-0">
+                    <button onClick={handleBulkPrint} className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-3 sm:px-6 sm:py-3.5 bg-card text-textMain border border-border transition-all duration-300 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest shadow-sm hover:border-primary hover:text-primary">
                         <Printer size={18} /> Bulk Print
                     </button>
-                    <button onClick={() => setIsScannerOpen(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-black text-primary border border-primary transition-all duration-300 rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg hover:bg-primary hover:text-black shrink-0">
+                    <button onClick={() => setIsScannerOpen(true)} className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-3 sm:px-6 sm:py-3.5 bg-black text-primary border border-primary transition-all duration-300 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest shadow-lg hover:bg-primary hover:text-black">
                         <ScanLine size={18} /> Open Scanner
                     </button>
                     <button onClick={() => fetchOrders()} className="p-3.5 bg-card border border-border rounded-xl text-textMain/50 hover:text-primary transition-all shadow-sm shrink-0">
@@ -268,12 +376,12 @@ const LogisticsDashboard = () => {
             ) : (
                 <div className="grid grid-cols-1 gap-6">
                     {displayedOrders.map(order => (
-                        <div key={order.order_id} className="bg-card border border-border rounded-[2rem] p-6 md:p-8 shadow-sm flex flex-col gap-6 hover:shadow-xl hover:border-primary/30 transition-all duration-300">
-                            <div className="flex justify-between items-center border-b border-border pb-4">
+                        <div key={order.order_id} className="bg-card border border-border rounded-[2rem] p-5 sm:p-6 md:p-8 shadow-sm flex flex-col gap-6 hover:shadow-xl hover:border-primary/30 transition-all duration-300">
+                            <div className="flex flex-wrap justify-between items-start gap-y-3 border-b border-border pb-4">
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest text-textMain/50 mb-0.5">Dispatch Ref</p>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <p className="font-mono font-black text-primary text-lg leading-none">#{order.order_id.substring(0, 8).toUpperCase()}</p>
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                        <p className="font-mono font-black text-primary text-base sm:text-lg leading-none">#{order.order_id.substring(0, 8).toUpperCase()}</p>
                                         {order.tracking_id && (
                                             <span className="text-[9px] font-black uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded-md border border-primary/20">
                                                 Trk: {order.tracking_id}
@@ -281,8 +389,8 @@ const LogisticsDashboard = () => {
                                         )}
                                     </div>
                                 </div>
-                                <div className="text-right shrink-0 ml-4">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-textMain/50 flex items-center gap-1.5 justify-end"><Calendar size={12}/> Entry Date</p>
+                                <div className="text-left sm:text-right shrink-0">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-textMain/50 flex items-center gap-1.5 sm:justify-end"><Calendar size={12}/> Entry Date</p>
                                     <p className="font-bold text-textMain text-sm mt-0.5">{new Date(order.created_at).toLocaleDateString('en-GB')}</p>
                                 </div>
                             </div>
@@ -309,10 +417,10 @@ const LogisticsDashboard = () => {
                             </div>
                             <div className="border-t border-border pt-5 flex flex-col sm:flex-row justify-between items-center gap-4">
                                 <p className="text-sm font-black text-textMain uppercase tracking-widest w-full sm:w-auto text-center sm:text-left">
-                                    Net Value: <span className="text-primary text-xl tracking-tighter ml-2 whitespace-nowrap">LKR {Number(order.total_amount).toLocaleString()}</span>
+                                    Net Value: <span className="text-primary text-lg sm:text-xl tracking-tighter ml-2 whitespace-nowrap">LKR {Number(order.total_amount).toLocaleString()}</span>
                                 </p>
-                                <button onClick={() => handlePrintQR(order)} className="w-full sm:w-auto px-8 py-3.5 bg-primary text-black font-black text-[11px] uppercase tracking-widest rounded-xl hover:bg-[#9a8b50] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#b4a460]/20 active:scale-95 shrink-0">
-                                    <Printer size={18}/> Print Label & QR
+                                <button onClick={() => handlePrintQR(order)} className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-3.5 bg-primary text-black font-black text-[10px] sm:text-[11px] uppercase tracking-widest rounded-xl hover:bg-[#9a8b50] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#b4a460]/20 active:scale-95 shrink-0">
+                                    <Printer size={16} sm:size={18}/> Print Label & QR
                                 </button>
                             </div>
                         </div>
@@ -323,18 +431,18 @@ const LogisticsDashboard = () => {
             {/* 📷 Scanner Modal */}
             {isScannerOpen && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-                    <div className="bg-card w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-border">
-                        <div className="p-6 border-b border-border bg-background flex justify-between items-center">
+                    <div className="bg-card w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-border">
+                        <div className="p-4 sm:p-6 border-b border-border bg-background flex justify-between items-start gap-3">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-primary/10 text-primary rounded-lg"><QrCode size={24} /></div>
+                                <div className="p-2 bg-primary/10 text-primary rounded-lg shrink-0"><QrCode size={20} sm:size={24} /></div>
                                 <div>
-                                    <h3 className="text-lg font-black uppercase text-textMain tracking-tight">Scan Dispatch QR</h3>
+                                    <h3 className="text-base sm:text-lg font-black uppercase text-textMain tracking-tight">Scan Dispatch QR</h3>
                                     <p className="text-[10px] font-bold text-textMain/50 uppercase tracking-widest">Scan label to mark as shipped</p>
                                 </div>
                             </div>
-                            <button onClick={() => setIsScannerOpen(false)} className="p-2 bg-card border border-border rounded-full text-textMain/50 hover:text-red-500 transition-all"><X size={20} /></button>
+                            <button onClick={() => setIsScannerOpen(false)} className="p-2 bg-card border border-border rounded-full text-textMain/50 hover:text-red-500 transition-all shrink-0"><X size={18} sm:size={20} /></button>
                         </div>
-                        <div className="p-6 bg-background">
+                        <div className="p-4 sm:p-6 bg-background">
                             <div id="mehera-qr-reader" className="w-full rounded-2xl overflow-hidden border-2 border-primary/30 shadow-inner bg-black min-h-[300px]"></div>
                             <div className="mt-4 flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400">
                                 <Info size={16} className="shrink-0 mt-0.5" />

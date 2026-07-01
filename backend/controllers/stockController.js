@@ -129,7 +129,11 @@ const batchAddStockToVariants = async (req, res) => {
             severity = 'info';
         }
 
-        await createNotification('stock', title, message, update.variant_id, severity);
+        await createNotification('stock', title, message, { 
+          reference_id: update.variant_id, 
+          severity, 
+          initiator_id: req.user.user_id 
+        });
         }
 
         await transaction.commit();
@@ -225,7 +229,11 @@ const batchEditStockForVariants = async (req, res) => {
             severity = 'info';
         }
 
-        await createNotification('stock', title, message, update.variant_id, severity);
+        await createNotification('stock', title, message, { 
+          reference_id: update.variant_id, 
+          severity, 
+          initiator_id: req.user.user_id 
+        });
         }
 
         await transaction.commit();
@@ -305,8 +313,11 @@ const batchRevertStockForVariants = async (req, res) => {
             'stock',
             '↩️ Stock Addition Reverted',
             `${productName} - ${variantName}: ${update.quantity} units addition reverted by ${userInfo}`,
-            update.variant_id,
-            'warning'
+            {
+              reference_id: update.variant_id,
+              severity: 'warning',
+              initiator_id: req.user.user_id,
+            }
         );
         }
 
