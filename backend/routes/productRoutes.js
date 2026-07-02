@@ -13,6 +13,8 @@ const productUploads = upload.fields([
 
 router.post('/addProduct', verifyToken, isAdmin, productUploads, productController.addProduct);
 router.put('/:id', verifyToken, isAdmin, productUploads, productController.updateProduct);
+router.delete('/:id', verifyToken, isAdmin, productController.deleteProduct);
+router.delete('/:id/variants/:variantId', verifyToken, isAdmin, productController.deleteProductVariant);
 router.get('/getProducts', productController.getProducts);
 router.get('/:id', productController.getProductById);
 
