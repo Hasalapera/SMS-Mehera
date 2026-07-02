@@ -23,7 +23,8 @@ const ViewUser = () => {
     { id: 'admin', name: 'Admin' },
     { id: 'manager', name: 'Manager' },
     { id: 'sales_rep', name: 'Sales Rep' },
-    { id: 'online_store_keeper', name: 'Store Keeper' },
+    { id: 'online_store_keeper', name: 'Store Keeper' }, 
+    { id: 'logistics_officer', name: 'Logistics Officer' },
     { id: 'deleted', name: 'Deleted Users' } 
   ];
 

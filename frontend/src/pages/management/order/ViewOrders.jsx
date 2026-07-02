@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNotifications } from "../../context/NotificationContext";
 import { useNavigate } from "react-router-dom";
 import api from "../../../api/axiosInstance";
 import {
@@ -77,7 +78,7 @@ const statusBadge = {
   },
 };
 
-const ViewOrders = () => {
+const ViewOrders = ({ showHeader = true }) => {
   const navigate = useNavigate();
   const { token, logout } = useAuth();
   const { addNotification, setNotificationsFromAPI } = useNotifications();
@@ -139,6 +140,29 @@ const ViewOrders = () => {
       }
     };
 
+  const handleDeleteOrder = async (orderId) => {
+    const result = await MySwal.fire({
+      title: "Are you sure?",
+      text: "This will permanently delete the order. This action cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "No, cancel",
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/orders/delete/${orderId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        toast.success("Order deleted successfully!");
+        fetchOrders(false); // Refresh the list
+      } catch (err) {
+        toast.error(err.response?.data?.message || "Failed to delete order.");
+      }
+    }
+  };
   const handleStatusUpdate = async (orderId, newStatus) => {
     const result = await MySwal.fire({
       title: "Are you sure?",
@@ -212,41 +236,43 @@ const ViewOrders = () => {
   };
 
   return (
-    <div className="w-full mx-auto animate-in fade-in duration-500 pb-10">
+    <div className="w-full mx-auto animate-in fade-in duration-500">
       {/* Header Section */}
-      <div className="bg-background transition-all duration-300 px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b border-border transition-colors duration-300">
-        <div className="flex items-center gap-5">
-          <div className="p-3 bg-primary transition-all duration-300 rounded-2xl text-textMain transition-colors duration-300">
-            <ShoppingBag size={26} strokeWidth={2.5} />
+      {showHeader && (
+        <div className="bg-background transition-all duration-300 px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b border-border transition-colors duration-300">
+          <div className="flex items-center gap-5">
+            <div className="p-3 bg-primary transition-all duration-300 rounded-2xl text-textMain transition-colors duration-300">
+              <ShoppingBag size={26} strokeWidth={2.5} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black text-textMain transition-colors duration-300 uppercase tracking-tight">
+                Order Management
+              </h1>
+              <p className="text-textMain/50 transition-colors duration-300 text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5">
+                Mehera International
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-black text-textMain transition-colors duration-300 uppercase tracking-tight">
-              Order Management
-            </h1>
-            <p className="text-textMain/50 transition-colors duration-300 text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5">
-              Mehera International
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="bg-card transition-colors duration-300 px-5 py-2.5 rounded-2xl border border-border transition-colors duration-300 flex items-center gap-3">
+              <span className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">
+                Total Orders
+              </span>
+              <span className="text-lg font-black text-primary transition-all duration-300">
+                {orders.length}
+              </span>
+            </div>
+            <button
+              onClick={() => fetchOrders(true)}
+              className="p-3 bg-card transition-colors duration-300 text-textMain/50 transition-colors duration-300 rounded-xl border border-border transition-colors duration-300"
+            >
+              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="bg-card transition-colors duration-300 px-5 py-2.5 rounded-2xl border border-border transition-colors duration-300 flex items-center gap-3">
-            <span className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">
-              Total Orders
-            </span>
-            <span className="text-lg font-black text-primary transition-all duration-300">
-              {orders.length}
-            </span>
-          </div>
-          <button
-            onClick={() => fetchOrders(true)}
-            className="p-3 bg-card transition-colors duration-300 text-textMain/50 transition-colors duration-300 rounded-xl border border-border transition-colors duration-300"
-          >
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-          </button>
-        </div>
-      </div>
+      )}
 
-      <div className="p-6 md:p-8">
+      <div className={showHeader ? "p-6 md:p-8" : "pt-2"}>
         {/* Search & Filter Bar */}
         <div className="bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-[1.5rem] p-4 mb-8 shadow-sm flex flex-col lg:flex-row gap-4">
           <div className="relative group flex-1">
@@ -431,10 +457,10 @@ const ViewOrders = () => {
                               className="p-2 text-textMain/50 transition-colors duration-300 hover:text-primary"
                               title="Edit Order"
                             >
-                              <Edit size={18} />
+                              <Edit size={16} />
                             </button>
-                            <button className="p-2 text-textMain/50 transition-colors duration-300 hover:text-red-500">
-                              <Trash2 size={18} />
+                            <button onClick={() => handleDeleteOrder(order.order_id)} className="p-2 text-textMain/50 transition-colors duration-300 hover:text-red-500" title="Delete Order">
+                              <Trash2 size={16} />
                             </button>
                           </div>
                           <div className="absolute inset-x-0 bottom-1 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
@@ -459,7 +485,7 @@ const ViewOrders = () => {
         </div>
 
         {/* Mobile Card View */}
-        <div className="md:hidden space-y-4">
+        <div className="md:hidden space-y-4 max-w-lg mx-auto">
           {loading ? (
             <div className="py-20 text-center font-black uppercase text-[10px] tracking-widest text-textMain/50 transition-colors duration-300">
               Syncing with Registry...
@@ -468,16 +494,16 @@ const ViewOrders = () => {
             currentRows.map((order) => (
               <div
                 key={order.order_id}
-                className="bg-card rounded-2xl p-4 border border-border shadow-sm"
+                className="bg-background rounded-2xl p-4 border border-border"
               >
-                {/* Top part: ID and Status */}
-                <div className="flex justify-between items-start mb-4 pb-4 border-b border-border">
+                {/* Top: Ref, Date, Status */}
+                <div className="flex justify-between items-start mb-3">
                   <div>
-                    <p className="text-[9px] font-black text-textMain/50 uppercase tracking-widest">
-                      Order Ref
-                    </p>
                     <p className="font-mono font-black text-primary text-sm">
                       #{order.order_id.substring(0, 8).toUpperCase()}
+                    </p>
+                    <p className="text-[10px] text-textMain/50 font-bold">
+                      {new Date(order.created_at).toLocaleDateString("en-GB")}
                     </p>
                   </div>
                   <span
@@ -487,58 +513,31 @@ const ViewOrders = () => {
                   </span>
                 </div>
 
-                {/* Middle part: Details */}
-                <div className="space-y-4 mb-4">
-                  <div className="text-sm">
-                    <p className="font-black text-textMain uppercase">
+                {/* Middle: Customer, Placed By */}
+                <div className="space-y-3 my-4 py-4 border-y border-border">
+                  <div>
+                    <p className="text-[9px] font-bold text-textMain/50 uppercase">Client</p>
+                    <p className="font-black text-textMain uppercase text-sm">
                       {order.customer_name}
                     </p>
-                    <p className="text-[10px] text-textMain/50 font-bold flex items-center gap-1.5 mt-1">
-                      <Phone size={12} /> {order.phone}
-                    </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    <div>
-                      <p className="text-[9px] font-bold text-textMain/50 uppercase">
-                        Placed By
-                      </p>
-                      <p className="font-bold text-textMain text-sm">
-                        {order.creator?.name || "Registry Admin"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[9px] font-bold text-textMain/50 uppercase">
-                        Date
-                      </p>
-                      <p className="font-bold text-textMain text-sm">
-                        {new Date(order.created_at).toLocaleDateString("en-GB")}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right border-t border-border pt-3">
-                    <p className="text-[9px] font-bold text-textMain/50 uppercase">
-                      Net Value
-                    </p>
-                    <p className="text-lg font-black text-primary">
-                      LKR {Number(order.total_amount).toLocaleString()}
-                    </p>
+                  <div>
+                    <p className="text-[9px] font-bold text-textMain/50 uppercase">Placed By</p>
+                    <p className="font-bold text-textMain text-sm">{order.creator?.name || "Registry Admin"}</p>
                   </div>
                 </div>
 
-                {/* Bottom part: Actions */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setSelectedOrder(order)}
-                    className="flex-1 flex items-center justify-center gap-2 bg-background border border-border text-textMain/70 hover:text-primary hover:border-primary text-[10px] font-black uppercase py-3 rounded-xl transition-all"
-                  >
-                    View Details <Search size={14} />
-                  </button>
-                  <button
-                    onClick={() => navigate(`/edit-order/${order.order_id}`)}
-                    className="p-3 bg-black text-primary rounded-xl"
-                  >
-                    <Edit size={16} />
-                  </button>
+                {/* Bottom: Value, Actions */}
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-[9px] font-bold text-textMain/50 uppercase">Net Value</p>
+                    <p className="text-lg font-black text-primary">LKR {Number(order.total_amount).toLocaleString()}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setSelectedOrder(order)} className="p-3 bg-card border border-border text-textMain/70 rounded-xl hover:text-primary hover:border-primary transition-all"><Search size={16} /></button>
+                    <button onClick={() => navigate(`/edit-order/${order.order_id}`)} className="p-3 bg-card border border-border text-textMain/70 rounded-xl hover:text-primary hover:border-primary transition-all"><Edit size={16} /></button>
+                    <button onClick={() => handleDeleteOrder(order.order_id)} className="p-3 bg-card border border-border text-textMain/70 rounded-xl hover:text-red-500 hover:border-red-500/50 transition-all"><Trash2 size={16} /></button>
+                  </div>
                 </div>
               </div>
             ))
@@ -548,22 +547,22 @@ const ViewOrders = () => {
         {/* --- ORDER DETAILS POPUP (MODAL) --- */}
         {selectedOrder && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-300">
-            <div className="bg-background w-full max-w-5xl rounded-[2.5rem] shadow-2xl relative animate-in zoom-in-95 duration-300 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-background w-full max-w-4xl rounded-[2.5rem] shadow-2xl relative animate-in zoom-in-95 duration-300 overflow-hidden flex flex-col max-h-[90vh]">
               {/* Close Button */}
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="absolute top-6 right-6 p-2 rounded-full bg-card hover:bg-red-50 text-textMain/50 hover:text-red-500 transition-all z-20"
+                className="absolute top-4 right-4 md:top-6 md:right-6 p-2 rounded-full bg-card hover:bg-red-50 text-textMain/50 hover:text-red-500 transition-all z-20"
               >
-                <X size={24} />
+                <X size={18} md:size={24} />
               </button>
 
-              <div className="p-10 overflow-y-auto no-scrollbar">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center shadow-lg shadow-black/20">
-                    <Hash size={24} className="text-primary" />
+              <div className="p-5 md:p-10 overflow-y-auto no-scrollbar">
+                <div className="flex items-center gap-3 md:gap-4 mb-5 md:mb-8">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-black flex items-center justify-center shadow-lg shadow-black/20">
+                    <Hash size={20} md:size={24} className="text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black uppercase text-textMain tracking-tight">
+                    <h2 className="text-base md:text-2xl font-black uppercase text-textMain tracking-tight">
                       Order Details{" "}
                       <span className="text-primary ml-2">
                         #{selectedOrder.order_id.substring(0, 8).toUpperCase()}
@@ -576,22 +575,22 @@ const ViewOrders = () => {
                 </div>
 
                 {/* --- Row 01: Shipping & Logistics --- */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                  <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-6 md:mb-10">
+                  <div className="space-y-3">
                     <h4 className="text-[10px] font-black uppercase text-primary flex items-center gap-2 tracking-[0.2em]">
                       <MapPin size={14} /> Shipping Destination
                     </h4>
-                    <p className="text-xs font-bold text-textMain/50 bg-card p-6 rounded-[2rem] border border-border italic leading-relaxed shadow-sm">
+                    <p className="text-[11px] md:text-xs font-bold text-textMain/50 bg-card p-4 md:p-6 rounded-[1.5rem] border border-border italic leading-relaxed shadow-sm">
                       {selectedOrder.shipping_address}
                     </p>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <h4 className="text-[10px] font-black uppercase text-primary flex items-center gap-2 tracking-[0.2em]">
                       <Truck size={14} /> Dispatch Logistics
                     </h4>
-                    <div className="bg-card p-6 rounded-[2rem] border border-border space-y-4 shadow-sm">
-                      <div className="flex justify-between items-center border-b border-border pb-3">
+                    <div className="bg-card p-4 md:p-6 rounded-[1.5rem] border border-border space-y-3 shadow-sm">
+                      <div className="flex justify-between items-center border-b border-border pb-3 text-right">
                         <span className="text-[10px] font-black text-textMain/50 uppercase tracking-widest">
                           Courier Service
                         </span>
@@ -599,11 +598,11 @@ const ViewOrders = () => {
                           {selectedOrder.courier_name || "Not Assigned"}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between items-center text-right">
                         <span className="text-[10px] font-black text-textMain/50 uppercase tracking-widest">
                           Tracking ID
                         </span>
-                        <span className="text-[11px] font-black text-primary font-mono">
+                        <span className="text-[10px] md:text-[11px] font-black text-primary font-mono">
                           {selectedOrder.tracking_id || "Pending Registry"}
                         </span>
                       </div>
@@ -612,11 +611,12 @@ const ViewOrders = () => {
                 </div>
 
                 {/* --- Row 02: Items Manifest --- */}
-                <div className="space-y-4 mb-10">
+                <div className="space-y-4 mb-6 md:mb-10">
                   <h4 className="text-[10px] font-black uppercase text-primary flex items-center gap-2 tracking-[0.2em]">
                     <ShoppingCart size={14} /> Itemized Manifest
                   </h4>
-                  <div className="bg-card rounded-[2rem] border border-border overflow-hidden shadow-sm">
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block bg-card rounded-[2rem] border border-border overflow-hidden shadow-sm">
                     <table className="w-full text-left text-[11px]">
                       <thead className="bg-card/50 border-b border-border">
                         <tr className="text-textMain/50 font-black uppercase tracking-widest">
@@ -698,9 +698,55 @@ const ViewOrders = () => {
                     </table>
                   </div>
                 </div>
+                
+                {/* Mobile Card View for Items */}
+                <div className="md:hidden space-y-2">
+                  {(selectedOrder.OrderItems || selectedOrder.items || []).map((item, idx) => {
+                    const variant = item.variant || item.Variant || item.ProductVariant;
+                    const product = variant?.product || variant?.Product;
+                    const pName = product?.product_name || "Registry Item";
+                    const vName = variant?.variant_name || "Standard Edition";
+                    const subtotal = Number(item.qty) * Number(item.price);
+                    return (
+                      <div key={idx} className="bg-card p-3 rounded-2xl border border-border shadow-sm">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <p className="text-[10px] font-black text-textMain uppercase leading-tight">{pName}</p>
+                            <p className="text-[8px] text-textMain/60 font-bold uppercase tracking-tight italic mt-0.5">{vName}</p>
+                          </div>
+                          <p className="text-[10px] font-mono font-black text-primary ml-2">#{item.product_id?.substring(0, 6)}</p>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-border text-center">
+                          <div>
+                            <p className="text-[8px] font-bold text-textMain/50 uppercase">Qty</p>
+                            <p className="text-xs font-black text-textMain">{item.qty}</p>
+                          </div>
+                          <div>
+                            <p className="text-[8px] font-bold text-textMain/50 uppercase">Unit Price</p>
+                            <p className="text-xs font-black text-textMain">{Number(item.price).toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-[8px] font-bold text-textMain/50 uppercase">Subtotal</p>
+                            <p className="text-xs font-black text-primary">{subtotal.toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {/* Mobile Grand Total */}
+                  <div className="flex justify-between items-center bg-card p-3 rounded-2xl border-2 border-primary/20 mt-3">
+                    <span className="text-[10px] font-black text-textMain/50 uppercase tracking-widest">
+                      Manifest Total
+                    </span>
+                    <p className="text-base font-black text-primary tracking-tighter">
+                      LKR {Number(selectedOrder.total_amount).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
 
                 {/* Settlement Info */}
-                <div className="flex flex-col gap-2 mb-10">
+                <div className="flex flex-col gap-2 mb-6 md:mb-10">
                   <div className="flex items-center gap-2">
                     <div className="w-1 h-3 bg-primary rounded-full"></div>
                     <p className="text-[10px] font-black uppercase text-textMain/50 tracking-widest">
@@ -708,7 +754,7 @@ const ViewOrders = () => {
                     </p>
                   </div>
                   <span
-                    className={`px-4 py-2 rounded-xl text-[11px] font-extrabold uppercase tracking-[0.1em] border-2 flex items-center w-fit gap-2 ${
+                    className={`px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-[10px] md:text-[11px] font-extrabold uppercase tracking-[0.1em] border-2 flex items-center w-fit gap-2 ${
                       selectedOrder.payment_method === "credit"
                         ? "bg-amber-50 text-amber-700 border-amber-200"
                         : "bg-emerald-50 text-emerald-700 border-emerald-200"
@@ -722,46 +768,46 @@ const ViewOrders = () => {
                 </div>
 
                 {/* Totals Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8 border-t border-border">
-                  <div className="bg-card p-5 rounded-2xl border border-border shadow-sm flex flex-col justify-center">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 pt-6 md:pt-8 border-t border-border">
+                  <div className="bg-card p-3 md:p-5 rounded-2xl border border-border shadow-sm flex flex-col justify-center">
                     <span className="text-[9px] font-black text-textMain/50 uppercase tracking-widest mb-1">
                       Gross Subtotal
                     </span>
-                    <p className="text-sm font-black text-textMain">
+                    <p className="text-[11px] md:text-sm font-black text-textMain">
                       LKR{" "}
                       {Number(
                         selectedOrder.subtotal || selectedOrder.total_amount,
                       ).toLocaleString()}
                     </p>
                   </div>
-                  <div className="bg-primary/5 p-5 rounded-2xl border border-primary/10 shadow-sm flex flex-col justify-center">
+                  <div className="bg-primary/5 p-3 md:p-5 rounded-2xl border border-primary/10 shadow-sm flex flex-col justify-center">
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-[9px] font-black text-primary uppercase tracking-widest">
                         Discount Applied
                       </span>
-                      <span className="text-[10px] font-black text-primary">
+                      <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-md">
                         {Number(selectedOrder.discount_percentage || 0)}%
                       </span>
                     </div>
-                    <p className="text-sm font-black text-[#8a7b42]">
+                    <p className="text-[11px] md:text-sm font-black text-[#8a7b42]">
                       - LKR{" "}
                       {Number(
                         selectedOrder.discount_amount || 0,
                       ).toLocaleString()}
                     </p>
                   </div>
-                  <div className="bg-black p-5 rounded-2xl shadow-xl flex flex-col justify-center">
+                  <div className="bg-black p-3 md:p-5 rounded-2xl shadow-xl flex flex-col justify-center">
                     <span className="text-[9px] font-black text-textMain/50 uppercase tracking-widest mb-1">
                       Net Payable Amount
                     </span>
-                    <p className="text-xl font-black text-primary tracking-tighter">
+                    <p className="text-base md:text-xl font-black text-primary tracking-tighter">
                       LKR {Number(selectedOrder.total_amount).toLocaleString()}
                     </p>
                   </div>
                 </div>
 
                 {/* Final Actions */}
-                <div className="flex justify-between items-center mt-10 pt-8 border-t border-border">
+                <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-3 mt-6 md:mt-10 pt-6 border-t border-border">
                   {isAdmin && selectedOrder.order_status === "requested" ? (
                     <div className="flex gap-3">
                       <button
@@ -772,7 +818,7 @@ const ViewOrders = () => {
                           );
                           setSelectedOrder(null);
                         }}
-                        className="px-8 py-3 rounded-xl bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/20"
+                        className="px-5 py-2.5 md:px-8 md:py-3 rounded-xl bg-emerald-500 text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/20"
                       >
                         Approve Order
                       </button>
@@ -784,7 +830,7 @@ const ViewOrders = () => {
                           );
                           setSelectedOrder(null);
                         }}
-                        className="px-8 py-3 rounded-xl bg-red-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-md shadow-red-500/20"
+                        className="px-5 py-2.5 md:px-8 md:py-3 rounded-xl bg-red-500 text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-md shadow-red-500/20"
                       >
                         Reject Order
                       </button>
@@ -799,7 +845,7 @@ const ViewOrders = () => {
                         state: { order: selectedOrder },
                       })
                     }
-                    className="flex items-center gap-2 text-[10px] font-black uppercase text-primary hover:text-textMain transition-all"
+                    className="flex items-center gap-2 text-[9px] md:text-[10px] font-black uppercase text-primary hover:text-textMain transition-all w-full sm:w-auto justify-center"
                   >
                     Open Full Master File <ArrowRight size={14} />
                   </button>

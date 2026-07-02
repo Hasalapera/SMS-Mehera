@@ -3,6 +3,8 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import api from '../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../pages/context/AuthContext'; 
+import localDarkLogo from '../assets/logo/main-dark.png';
+import localLightLogo from '../assets/logo/main-light.png';
 
 const Login = () => {
   const { login } = useAuth(); 
@@ -59,7 +61,7 @@ const Login = () => {
       });
 
       // 1. destructure the data coming from the backend.
-      const { user, accessToken, refreshToken, expiresAt, mustChangePassword, user_id, role } = response.data;
+      const { user, accessToken, expiresAt, mustChangePassword, user_id, role } = response.data;
 
       // 2. Case 01: Password eka wenas karanna oninam
       if (mustChangePassword === true) {
@@ -69,8 +71,8 @@ const Login = () => {
               role: role || 'user' 
           };
 
-          //parameters 4ma hari piliwelata yawanawa
-          login(tempUser, accessToken, refreshToken, expiresAt); 
+          // refreshToken is now in an httpOnly cookie, not passed here
+          login(tempUser, accessToken, expiresAt); 
           
           navigate('/change-password', { state: { userId: user_id } });
           return;
@@ -78,8 +80,8 @@ const Login = () => {
       
       // 3. Case 02: normal login
       else {
-          //4 parameters hari piliwelata
-          login(user, accessToken, refreshToken, expiresAt); 
+          // refreshToken is now in an httpOnly cookie, not passed here
+          login(user, accessToken, expiresAt); 
           
           navigate(user.redirectPath || '/dashboard');
           return;
@@ -92,7 +94,7 @@ const Login = () => {
 
   const getDynamicLogo = () => {
     const dbLogo = isDark ? systemSettings?.dark_logo_url : systemSettings?.light_logo_url;
-    return dbLogo || (isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/nzwPbHWj/mehera-logo.png");
+    return dbLogo || (isDark ? localDarkLogo : localLightLogo);
   };
 
   return (
@@ -105,7 +107,7 @@ const Login = () => {
                 src={getDynamicLogo()}
                 alt="Mehera International Logo"
                 className="h-8 md:h-10 w-auto object-contain transition-opacity duration-500 ease-in-out will-change-opacity"
-                onError={(e) => { e.target.src = isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/nzwPbHWj/mehera-logo.png" }}
+                onError={(e) => { e.target.src = isDark ? localDarkLogo : localLightLogo }}
               />
             </div>
             <button onClick={() => navigate('/')} className="flex items-center gap-2 text-textMain/50 hover:text-primary transition-all duration-300 font-bold text-[10px] uppercase tracking-widest group">

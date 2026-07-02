@@ -302,8 +302,9 @@ const Inbox = () => {
                           <p className={`leading-relaxed max-w-2xl ${isThemeHighlightedMessage ? 'text-[11px] md:text-[13px] font-semibold text-textMain/90 dark:text-textMain/95' : 'text-[10px] text-textMain/80 dark:text-textMain/85'}`}>
                             {notification.message}
                           </p>
-                          <p className="text-[10px] md:text-[11px] text-textMain/55 dark:text-textMain/60 mt-2 uppercase tracking-widest font-medium">
-                            {formatNotificationDateTime(notificationDateValue)}
+                          <p className="text-[8px] text-textMain/55 dark:text-textMain/60 mt-2 uppercase tracking-widest">
+                            {new Date(notification.createdAt || notification.created_at).toLocaleString('en-GB')}
+
                           </p>
                         </div>
 

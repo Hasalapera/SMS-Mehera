@@ -35,7 +35,12 @@ const AddUserBehavior = () => {
         const res = await api.get("/users/all-users", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setUsers(res.data.users || []);
+        
+        // Exclude admins and managers from the behavior evaluation list
+        const staffUsers = (res.data.users || []).filter(
+          (u) => u.role !== 'admin' && u.role !== 'manager'
+        );
+        setUsers(staffUsers);
       } catch (err) {
         toast.error("Failed to load users");
       } finally {

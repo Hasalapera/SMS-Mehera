@@ -83,7 +83,7 @@ const ChangePassword = () => {
             <input 
               type={showNewPassword ? "text" : "password"} //The type changes depending on the state.
               placeholder="New Password" 
-              className="w-full bg-black border border-border p-4 rounded-2xl focus:border-primary transition-all duration-300 outline-none transition-all pr-12 text-sm"
+              className="w-full bg-background border border-border text-textMain p-4 rounded-2xl focus:border-primary outline-none transition-all duration-300 pr-12 text-sm"
               onChange={(e) => setNewPassword(e.target.value)}
               required
             />
@@ -101,7 +101,7 @@ const ChangePassword = () => {
             <input 
               type={showConfirmPassword ? "text" : "password"} 
               placeholder="Confirm New Password" 
-              className="w-full bg-black border border-border p-4 rounded-2xl focus:border-primary transition-all duration-300 outline-none transition-all pr-12 text-sm"
+              className="w-full bg-background border border-border text-textMain p-4 rounded-2xl focus:border-primary outline-none transition-all duration-300 pr-12 text-sm"
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />

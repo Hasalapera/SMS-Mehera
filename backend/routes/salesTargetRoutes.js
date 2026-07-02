@@ -14,4 +14,7 @@ router.get('/rep-summary', verifyToken, targetController.getMonthlyRepTarget);
 
 router.get('/rep-details/:id', verifyToken, targetController.getRepLiveDetails);
 
+router.get('/existing-target', verifyToken, targetController.getExistingTarget);
+
+
 module.exports = router;
