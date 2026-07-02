@@ -13,6 +13,8 @@ import { useNavigate, NavLink, useLocation } from 'react-router-dom';
 import ViewOrders from '../pages/management/order/ViewOrders';
 import api from '../api/axiosInstance';
 import { useNotifications } from '../pages/context/NotificationContext';
+import localDarkLogo from '../assets/logo/main-dark.png';
+import localLightLogo from '../assets/logo/main-light.png';
 
 const menuConfig = {
   admin: { 
@@ -168,8 +170,9 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
     }
   };
 
-  const handleLogout = () => {
-      logout();
+  const handleLogout = async () => {
+      await logout();
+      navigate('/', { replace: true });
   };
 
   const getInitials = (name) => {
@@ -196,7 +199,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
 
   const getDynamicLogo = () => {
     const dbLogo = isDark ? systemSettings?.dark_logo_url : systemSettings?.light_logo_url;
-    return dbLogo || (isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/nzwPbHWj/mehera-logo.png");
+    return dbLogo || (isDark ? localDarkLogo : localLightLogo);
   };
 
   return (
@@ -302,7 +305,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
                     <>
                       <NavLink to="/addUser" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><UserPlus size={14} /> Add User</NavLink>
                       <NavLink to="/delete-user" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><UserMinus size={14} /> Delete User</NavLink>
-                      <NavLink to="/assign-user" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><UserMinus size={14} /> Assign User</NavLink>
+                      <NavLink to="/assign-user" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><UserMinus size={14} /> Assign Customer</NavLink>
                       <NavLink to="/add-user-behavior" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><PlusCircle size={14} /> Add Behavior</NavLink>
                     </>
                   )}

@@ -14,6 +14,7 @@ import {
   Calendar,
   DollarSign,
   X,
+  ChevronRight,
   ShoppingCart,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -70,6 +71,7 @@ const OrderHistory = () => {
   const [loading, setLoading] = useState(true);
   const [expandedSalons, setExpandedSalons] = useState({}); // Track expansion per salon
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [viewingTransactionsFor, setViewingTransactionsFor] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -134,21 +136,21 @@ const OrderHistory = () => {
   return (
     <div className="w-full mx-auto p-6 md:p-10 animate-in fade-in duration-500">
       {/* Page Header */}
-      <div className="flex items-center gap-4 mb-10 border-b border-border pb-6">
-        <div className="p-4 bg-white text-primary rounded-2xl shadow-lg border border-border transition-all duration-300">
-          <History size={24} />
+      <div className="flex items-center gap-4 mb-8 md:mb-10 border-b border-border pb-6">
+        <div className="p-3 md:p-4 bg-white text-primary rounded-2xl shadow-lg border border-border transition-all duration-300">
+          <History size={20} md:size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-black uppercase tracking-tight text-primary">
+          <h1 className="text-xl md:text-2xl font-black uppercase tracking-tight text-primary">
             Purchase History
           </h1>
-          <p className="text-[10px] text-textMain/50 font-bold uppercase tracking-widest">
+          <p className="text-[9px] md:text-[10px] text-textMain/50 font-bold uppercase tracking-widest">
             Master Record for {user.name}
           </p>
         </div>
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-4 md:space-y-8">
         {groupedOrders.length === 0 ? (
           <div className="bg-card border border-border p-10 text-center rounded-[2rem] italic text-textMain/40 text-sm shadow-sm">
             No salon transaction records found for your account.
@@ -157,21 +159,21 @@ const OrderHistory = () => {
           groupedOrders.map((salon) => (
             <div
               key={salon.salonName}
-              className={`bg-card border transition-all duration-500 overflow-hidden rounded-[2rem] shadow-sm hover:shadow-md ${
+              className={`bg-card border transition-all duration-500 overflow-hidden rounded-[1.5rem] md:rounded-[2rem] shadow-sm hover:shadow-md ${
                 expandedSalons[salon.salonName]
-                  ? "border-primary shadow-lg shadow-primary/10 scale-[1.01]"
+                  ? "border-primary shadow-lg shadow-primary/10 md:scale-[1.01]"
                   : "border-border"
               }`}
             >
               <div className="grid grid-cols-1 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-border">
-                <div className="p-8 lg:col-span-2">
+                <div className="p-5 md:p-8 lg:col-span-2">
                   <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em] block mb-2">
                     Assigned Entity
                   </span>
-                  <h2 className="text-2xl font-black uppercase text-textMain mb-4">
+                  <h2 className="text-lg md:text-2xl font-black uppercase text-textMain mb-3 md:mb-4">
                     {salon.salonName}
                   </h2>
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-2 md:gap-3">
                     <div className="flex items-center gap-3 text-textMain/60">
                       <MapPin size={14} className="text-primary" />
                       <span className="text-xs font-bold uppercase">
@@ -185,24 +187,24 @@ const OrderHistory = () => {
                   </div>
                 </div>
 
-                <div className="p-8 flex flex-col justify-center bg-primary/5 border-l border-border lg:border-l-0">
+                <div className="p-5 md:p-8 flex flex-col justify-center bg-primary/5 border-l border-border lg:border-l-0">
                   <span className="text-[9px] font-black text-textMain/50 uppercase tracking-[0.2em] mb-1">
                     Salon Lifetime Volume
                   </span>
                   <div className="flex items-baseline gap-2">
                     <span className="text-xs font-black text-primary">LKR</span>
-                    <span className="text-2xl font-black text-textMain">
+                    <span className="text-xl md:text-2xl font-black text-textMain">
                       {salon.totalAmount.toLocaleString()}
                     </span>
                   </div>
                 </div>
 
-                <div className="p-8 flex flex-col justify-center bg-primary/10">
+                <div className="p-5 md:p-8 flex flex-col justify-center bg-primary/10">
                   <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-1">
                     Order Count
                   </span>
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl font-black text-primary">
+                    <span className="text-xl md:text-2xl font-black text-primary">
                       {salon.orderCount}
                     </span>
                     <span className="text-[10px] font-bold text-primary/70 uppercase">
@@ -213,23 +215,27 @@ const OrderHistory = () => {
               </div>
 
               <div className="bg-card border-t border-border p-4 flex justify-center">
+                {/* Desktop Button */}
                 <button
                   onClick={() => toggleSalon(salon.salonName)}
-                  className="flex items-center gap-2 px-10 py-3.5 bg-black text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-black hover:scale-[1.02] active:scale-95 transition-all duration-300 rounded-full shadow-lg shadow-black/5"
+                  className="hidden md:flex items-center gap-2 px-10 py-3.5 bg-black text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-black hover:scale-[1.02] active:scale-95 transition-all duration-300 rounded-full shadow-lg shadow-black/5"
                 >
                   {expandedSalons[salon.salonName]
                     ? "Hide Transactions"
                     : "Show Transactions"}
-                  {expandedSalons[salon.salonName] ? (
-                    <ChevronUp size={14} />
-                  ) : (
-                    <ChevronDown size={14} />
-                  )}
+                  {expandedSalons[salon.salonName] ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
+                {/* Mobile Button */}
+                <button
+                  onClick={() => setViewingTransactionsFor(salon)}
+                  className="flex md:hidden items-center gap-2 px-10 py-3.5 bg-black text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-black active:scale-95 transition-all duration-300 rounded-full shadow-lg shadow-black/5"
+                >
+                  Show Transactions <ChevronRight size={14} />
                 </button>
               </div>
 
               {expandedSalons[salon.salonName] && (
-                <div className="border-t border-border bg-background/50 animate-in slide-in-from-top-4 duration-500 overflow-x-auto">
+                <div className="hidden md:block border-t border-border bg-background/50 animate-in slide-in-from-top-4 duration-500 overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-black/5 text-textMain border-b border-border">
@@ -344,6 +350,78 @@ const OrderHistory = () => {
           ))
         )}
       </div>
+
+      {/* Mobile Transactions Popup */}
+      {viewingTransactionsFor && (
+        <div className="fixed inset-0 z-[150] flex flex-col bg-background md:hidden animate-in fade-in duration-300">
+          {/* Modal Header */}
+          <div className="p-5 border-b border-border flex justify-between items-center">
+            <div>
+              <p className="text-[10px] font-bold text-textMain/50 uppercase tracking-widest">Transactions For</p>
+              <h3 className="text-lg font-black uppercase text-primary tracking-tight">
+                {viewingTransactionsFor.salonName}
+              </h3>
+            </div>
+            <button
+              onClick={() => setViewingTransactionsFor(null)}
+              className="p-2 bg-card border border-border rounded-full text-textMain/50 hover:text-red-500 transition-all"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Modal Body - Transaction Cards */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {viewingTransactionsFor.transactions.map((order) => (
+              <div key={order.order_id} className="bg-card p-4 rounded-2xl border border-border shadow-sm">
+                {/* Top: Ref & Status */}
+                <div className="flex justify-between items-start pb-3 mb-3 border-b border-border">
+                  <div>
+                    <p className="text-[9px] font-black text-textMain/50 uppercase tracking-widest">Ref ID</p>
+                    <p className="font-mono font-black text-primary text-sm">
+                      #{order.order_id.substring(0, 8).toUpperCase()}
+                    </p>
+                  </div>
+                  <span
+                    className={`text-[9px] font-black px-3 py-1.5 rounded-lg border uppercase tracking-tighter
+                      ${statusBadge[order.order_status?.toLowerCase()]?.bg || "bg-gray-100"}
+                      ${statusBadge[order.order_status?.toLowerCase()]?.text || "text-textMain/50"}
+                      ${statusBadge[order.order_status?.toLowerCase()]?.border || "border-border"}
+                    `}
+                  >
+                    {statusBadge[order.order_status?.toLowerCase()]?.label || order.order_status}
+                  </span>
+                </div>
+
+                {/* Middle: Details */}
+                <div className="grid grid-cols-2 gap-4 text-xs mb-4">
+                  <div>
+                    <p className="text-[9px] font-bold text-textMain/50 uppercase mb-1">Placed By</p>
+                    <p className="font-bold text-textMain text-sm truncate">{order.creator?.name || 'Admin'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold text-textMain/50 uppercase mb-1">Date</p>
+                    <p className="font-bold text-textMain text-sm">{new Date(order.created_at).toLocaleDateString("en-GB")}</p>
+                  </div>
+                </div>
+
+                {/* Bottom: Value & Action */}
+                <div className="flex justify-between items-center border-t border-border pt-3">
+                  <div>
+                    <p className="text-[9px] font-bold text-textMain/50 uppercase">Value</p>
+                    <p className="text-base font-black text-primary">
+                      LKR {Number(order.total_amount).toLocaleString()}
+                    </p>
+                  </div>
+                  <button onClick={() => { setViewingTransactionsFor(null); setSelectedTransaction(order); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-background border border-border text-[10px] font-black uppercase text-textMain/70 hover:text-primary hover:border-primary transition-all">
+                    Details <ArrowRight size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* --- TRANSACTION DETAILS POPUP --- */}
       {selectedTransaction && (

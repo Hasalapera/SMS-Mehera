@@ -136,20 +136,33 @@ const ProductSummaryReport = () => {
             {/* 📱 MOBILE VIEW: Cards */}
             <div className="md:hidden space-y-4">
               {displayedProducts.map((stat, idx) => (
-                <div key={stat.id} className="p-5 bg-background transition-colors duration-300 border border-border transition-colors duration-300 rounded-[1.25rem] space-y-4 shadow-sm hover:border-primary/30 transition-all duration-300">
-                  <div className="flex justify-between items-start border-b border-border/60 transition-colors duration-300 pb-3">
-                    <span className="text-[11px] font-black uppercase text-textMain/40 transition-colors duration-300">Rank #{idx + 1}</span>
-                    <span className="px-3 py-1.5 bg-black text-white font-mono font-bold rounded-lg text-[11px]">
-                      {stat.qty} Units
-                    </span>
+                <div key={stat.id} className="bg-card border border-border rounded-2xl shadow-sm p-5 flex flex-col justify-between">
+                  <div className="flex items-start gap-3">
+                      <div className={`flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm ${
+                          idx === 0 ? 'bg-primary text-black' : 
+                          idx === 1 ? 'bg-primary/50 text-primary' : 
+                          idx === 2 ? 'bg-primary/20 text-primary' : 
+                          'bg-card text-textMain/50'
+                      }`}>
+                          {idx + 1}
+                      </div>
+                      <p className="text-[10px] font-black text-textMain/50 uppercase tracking-widest mt-1">
+                        {activeTab === 'best' ? 'Best Selling Item' : 'Slow Moving Item'}
+                      </p>
                   </div>
-                  <div>
-                    <p className="font-bold text-textMain transition-colors duration-300 text-sm leading-snug">{stat.productName}</p>
-                    <p className="text-[10px] text-primary transition-all duration-300 font-bold tracking-wide italic uppercase mt-1">{stat.variantName}</p>
+                  <div className="mt-3 text-left">
+                    <p className="text-sm font-black text-textMain leading-tight break-words" title={stat.productName}>{stat.productName}</p>
+                    <p className="text-[11px] text-primary mt-0.5 break-words" title={stat.variantName}>{stat.variantName}</p>
                   </div>
-                  <div className="pt-2 flex justify-between items-center text-xs">
-                    <span className="text-textMain/50 transition-colors duration-300 font-bold uppercase tracking-widest text-[10px]">Revenue</span>
-                    <span className="font-bold text-textMain transition-colors duration-300">Rs. {stat.revenue.toLocaleString()}.00</span>
+                  <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-4">
+                      <div>
+                          <p className="text-[9px] font-bold text-textMain/50 uppercase tracking-widest">Units Sold</p>
+                          <p className="font-mono font-black text-textMain text-sm mt-1">{stat.qty}</p>
+                      </div>
+                      <div>
+                          <p className="text-[9px] font-bold text-textMain/50 uppercase tracking-widest">Revenue</p>
+                          <p className="font-mono font-black text-primary text-sm mt-1">Rs. {stat.revenue.toLocaleString()}</p>
+                      </div>
                   </div>
                 </div>
               ))}
@@ -164,30 +177,30 @@ const ProductSummaryReport = () => {
             <div className="hidden md:block border border-border transition-colors duration-300 rounded-2xl overflow-x-auto bg-background transition-colors duration-300">
               <table className="w-full text-left whitespace-nowrap min-w-[600px]">
                 <thead className="bg-card/60 transition-colors duration-300 border-b border-border transition-colors duration-300">
-                  <tr className="text-[0.625rem] font-black uppercase text-textMain/50 transition-colors duration-300 tracking-widest">
-                    <th className="px-6 py-4 w-[5rem]">Rank</th>
-                    <th className="px-6 py-4">Product & Variant Particulars</th>
-                    <th className="px-6 py-4 text-center">Total Quantity Sold</th>
-                    <th className="px-6 py-4 text-right">Revenue Generated (LKR)</th>
+                  <tr className="text-[10px] font-black uppercase text-textMain/50 transition-colors duration-300 tracking-widest">
+                    <th className="px-6 py-3 w-[5rem]">Rank</th>
+                    <th className="px-6 py-3">Product & Variant Particulars</th>
+                    <th className="px-6 py-3 text-center">Total Quantity Sold</th>
+                    <th className="px-6 py-3 text-right">Revenue Generated (LKR)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60 transition-colors duration-300">
                   {displayedProducts.map((stat, idx) => (
-                    <tr key={stat.id} className="text-[0.75rem] font-medium text-textMain transition-colors duration-300 hover:bg-card/40 transition-colors duration-300">
-                      <td className="px-6 py-4 font-black text-textMain/40 transition-colors duration-300">
+                    <tr key={stat.id} className="text-xs font-medium text-textMain transition-colors duration-300 hover:bg-card/40 transition-colors duration-300">
+                      <td className="px-6 py-5 font-bold text-textMain/50 transition-colors duration-300">
                         #{idx + 1}
                       </td>
-                      <td className="px-6 py-4">
-                        <p className="font-bold text-textMain transition-colors duration-300">{stat.productName}</p>
-                        <p className="text-[0.625rem] text-primary transition-all duration-300 font-bold tracking-wide italic uppercase mt-0.5">{stat.variantName}</p>
+                      <td className="px-6 py-5">
+                        <p className="font-semibold text-textMain transition-colors duration-300">{stat.productName}</p>
+                        <p className="text-[10px] text-textMain/60 transition-all duration-300 font-medium tracking-wide italic mt-1">{stat.variantName}</p>
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="px-2.5 py-1 bg-black text-white font-mono font-bold rounded-lg text-[0.6875rem]">
+                      <td className="px-6 py-5 text-center">
+                        <span className="px-2.5 py-1 bg-card transition-colors duration-300 text-textMain transition-colors duration-300 font-mono font-bold rounded-lg text-[11px] border border-border transition-colors duration-300">
                           {stat.qty} Units
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right font-sans font-bold text-textMain transition-colors duration-300">
-                        Rs. {stat.revenue.toLocaleString()}.00
+                      <td className="px-6 py-5 text-right font-mono font-bold text-primary transition-all duration-300">
+                        Rs. {stat.revenue.toLocaleString()}
                       </td>
                     </tr>
                   ))}

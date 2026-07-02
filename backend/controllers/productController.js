@@ -1,4 +1,5 @@
-const { Product, ProductVariant, sequelize, Category, Brand } = require('../models');
+const { Product, ProductVariant, sequelize, Category, Brand, User } = require('../models');
+const { createNotification } = require('./notificationController');
 
 
 /**
@@ -12,6 +13,17 @@ const addProduct = async (req, res) => {
     try {
         // frontend url eken ena wistara tika aragannawa
         const { product_name, brand_id, category_id, description, variants } = req.body;
+        const parsedVariants = JSON.parse(variants);
+        const variantCount = parsedVariants.length;
+        const brand = await Brand.findByPk(brand_id, { attributes: ['brand_name'] });
+        const category = await Category.findByPk(category_id, { attributes: ['category_name'] });
+        const loggedInUser = req.user || {};
+        const userRecord = loggedInUser.user_id
+            ? await User.findByPk(loggedInUser.user_id, { attributes: ['name'] })
+            : null;
+        const roleLabel = loggedInUser.role
+            ? loggedInUser.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+            : 'System';
         
         // 1. get main image URL 
         const mainImageUrl = req.files['main_image'] ? req.files['main_image'][0].path : null;
@@ -26,7 +38,6 @@ const addProduct = async (req, res) => {
         });
 
         // 3. handle variants and their images
-        const parsedVariants = JSON.parse(variants);
         const variantImages = req.files['variant_images'] || [];
         // help to map relavant image for relavant variant
         let imageCounter = 0;
@@ -61,6 +72,15 @@ const addProduct = async (req, res) => {
 
         // wait for all variants to be created
         await Promise.all(variantPromises);
+
+        await createNotification(
+            'product',
+            '🆕 New Product Added',
+            `${product_name} (${brand?.brand_name || ''} - ${category?.category_name || ''}) added with ${variantCount} variant(s) by ${userRecord?.name || 'System'} (${roleLabel})`,
+            newProduct.product_id,
+            'info'
+        );
+
         res.status(201).json({ message: "Product added successfully!" });
 
     } catch (err) {

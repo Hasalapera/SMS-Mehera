@@ -1,36 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, NavLink } from 'react-router-dom';
-import { LogOut, Menu, X, ChevronRight, Sun, Moon } from 'lucide-react';
+import { LogOut, Menu, X, ChevronRight, Sun, Moon, Bell } from 'lucide-react';
 import { useAuth } from '../pages/context/AuthContext';
+import { useNotifications } from '../pages/context/NotificationContext';
 import api from '../api/axiosInstance';
-import { getAssetUrl } from '../pages/utils/cloudinaryHelper';
+import localDarkLogo from '../assets/logo/main-dark.png';
+import localLightLogo from '../assets/logo/main-light.png';
 
 const Navbar = () => {
-    const { logout } = useAuth();
+    const { logout, user: currentUser } = useAuth();
+    const { notifications, unreadCount, markAsRead, refreshNotifications } = useNotifications();
     const navigate = useNavigate();
+    const { unreadCount, setNotificationsFromAPI } = useNotifications();
     const [isOpen, setIsOpen] = useState(false);
     const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
     const [systemSettings, setSystemSettings] = useState(null);
-
-    const [currentUser, setCurrentUser] = useState(() => {
-        const stored = localStorage.getItem('user');
-        return stored ? JSON.parse(stored) : null;
-    });
+    const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
 
     useEffect(() => {
-        const handleStorageChange = () => {
-            const updatedUser = JSON.parse(localStorage.getItem('user'));
-            if (updatedUser) setCurrentUser(updatedUser);
-        };
         const handleThemeChange = () => setIsDark(document.documentElement.classList.contains('dark'));
         
-        window.addEventListener('storage', handleStorageChange);
-        window.addEventListener('userUpdate', handleStorageChange);
         window.addEventListener('themeChange', handleThemeChange);
         
         return () => {
-            window.removeEventListener('storage', handleStorageChange);
-            window.removeEventListener('userUpdate', handleStorageChange);
             window.removeEventListener('themeChange', handleThemeChange);
         };
     }, []);
@@ -51,6 +43,33 @@ const Navbar = () => {
         fetchBranding();
     }, []);
 
+    useEffect(() => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        let isMounted = true;
+
+        const fetchNotifications = async () => {
+            try {
+                const config = { headers: { Authorization: `Bearer ${token}` } };
+                const res = await api.get('/notifications', config);
+                if (isMounted) {
+                    setNotificationsFromAPI(res.data.notifications || []);
+                }
+            } catch (err) {
+                console.error('Navbar notification fetch failed:', err.response?.data || err.message);
+            }
+        };
+
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 30000);
+
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
+    }, [setNotificationsFromAPI]);
+
     const toggleTheme = () => {
         if (isDark) {
             document.documentElement.classList.remove('dark');
@@ -64,10 +83,25 @@ const Navbar = () => {
         window.dispatchEvent(new Event('themeChange'));
     };
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        await logout();
         navigate('/', { replace: true });
     };
+
+    // const handleNotificationClick = async (notif) => {
+    //     try {
+    //         if (!notif.is_read) {
+    //             await api.patch(`/notifications/${notif.notification_id}/read`);
+    //             markAsRead(notif.notification_id);
+    //         }
+    //     } catch (err) {
+    //         console.error('Failed to mark notification as read:', err.response?.data || err.message);
+    //     } finally {
+    //         setIsNotifDropdownOpen(false);
+    //         navigate('/inbox');
+    //         refreshNotifications();
+    //     }
+    // };
 
     const navLinks = [
         { name: 'Home', path: '/home' },
@@ -105,11 +139,16 @@ const Navbar = () => {
 
     const getDynamicLogo = () => {
         const dbLogo = isDark ? systemSettings?.dark_logo_url : systemSettings?.light_logo_url;
-        return dbLogo || (isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/nzwPbHWj/mehera-logo.png");
+        return dbLogo || (isDark ? localDarkLogo : localLightLogo);
     };
 
     return (
-        <nav className="bg-card/80 backdrop-blur-md transition-all duration-500 ease-in-out text-textMain shadow-sm sticky top-0 z-[100] border-b border-border">
+        <nav 
+            className="bg-card/80 backdrop-blur-md transition-all duration-500 ease-in-out text-textMain shadow-sm sticky top-0 z-[100] border-b border-border"
+            onClick={() => {
+                if (isNotifDropdownOpen) setIsNotifDropdownOpen(false);
+            }}
+        >
             <div className="max-w-full mx-auto px-10 py-4 flex justify-between items-center h-20">
                 
                 <div className="flex flex-col text-left cursor-pointer" onClick={() => navigate('/home')}>
@@ -126,6 +165,7 @@ const Navbar = () => {
                         <NavLink 
                             key={link.path} 
                             to={link.path} 
+                            end
                             className={({ isActive }) => `px-4 py-2.5 rounded-xl transition-all duration-300 ${isActive ? 'bg-primary/15 text-primary border border-primary/20 shadow-[0_0_15px_rgba(180,164,96,0.15)]' : 'text-textMain/50 hover:text-primary hover:bg-primary/5'}`}
                         >
                             {link.name}
@@ -134,6 +174,60 @@ const Navbar = () => {
                 </div>
 
                 <div className="flex items-center gap-5">
+                    {/* Notification Dropdown */}
+                    <div className="relative" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => setIsNotifDropdownOpen(prev => !prev)} className="relative p-2 text-textMain/50 hover:text-primary transition-all duration-300">
+                            <Bell size={20} />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold ring-2 ring-card">
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                            )}
+                        </button>
+                        {isNotifDropdownOpen && (
+                            <div className="fixed left-3 right-3 top-20 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-4 sm:w-80 bg-card rounded-2xl shadow-2xl border border-border py-2 z-[110] animate-in fade-in slide-in-from-top-2">
+                                <div className="px-4 py-2 border-b border-border flex justify-between items-center">
+                                    <h3 className="text-sm font-bold text-textMain normal-case tracking-normal">Notifications</h3>
+                                    {unreadCount > 0 && <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">{unreadCount} New</span>}
+                                </div>
+                                <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                                    {notifications && notifications.length > 0 ? (
+                                        notifications.slice(0, 7).map(notif => {
+                                            const isCurrentUserInitiator = notif.initiator && currentUser && notif.initiator_id === currentUser.user_id;
+                                            let message = notif.message;
+                                            if (isCurrentUserInitiator && notif.initiator.name) {
+                                                const role = (notif.initiator.role || 'user').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                                                const byLine = `by ${notif.initiator.name} (${role})`;
+                                                if (message.includes(byLine)) {
+                                                    message = message.replace(byLine, 'by you');
+                                                }
+                                            }
+
+                                            return (
+                                            <div key={notif.notification_id} className={`p-3 border-b border-border last:border-b-0 hover:bg-primary/5 cursor-pointer ${!notif.is_read ? 'bg-primary/10' : ''}`}>
+                                                <p className="font-bold text-xs text-textMain truncate normal-case tracking-normal">{notif.title}</p>
+                                                <p className="text-xs text-textMain/70 mt-1 line-clamp-2 normal-case tracking-normal">{message}</p>
+                                                <p className="text-[10px] text-textMain/50 mt-2 normal-case tracking-normal">{new Date(notif.createdAt || notif.created_at).toLocaleString('en-GB')}</p>
+                                            </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="p-8 text-center text-xs text-textMain/50 normal-case tracking-normal">
+                                            You're all caught up.
+                                        </div>
+                                    )}
+                                </div>
+                                {/* {notifications && notifications.length > 0 && (
+                                    <div className="p-2 border-t border-border">
+                                        <button onClick={() => { navigate('/inbox'); setIsNotifDropdownOpen(false); }} className="w-full text-center py-2 text-xs font-bold text-primary hover:bg-primary/10 rounded-lg transition-colors normal-case tracking-normal">
+                                            View All in Inbox
+                                        </button>
+                                    </div>
+                                )} */}
+                            </div>
+                        )}
+                    </div>
+
                     <button onClick={toggleTheme} className="p-2 text-textMain/50 hover:text-primary transition-all duration-300">
                         {isDark ? <Sun size={20} /> : <Moon size={20} />}
                     </button>
@@ -170,7 +264,7 @@ const Navbar = () => {
                 <div className="max-w-full flex flex-col p-6 gap-6">
                     <div className="flex flex-col gap-2">
                         {filteredLinks.map((link) => (
-                            <NavLink key={link.path} to={link.path} onClick={() => setIsOpen(false)} className={({ isActive }) => `flex items-center justify-between p-4 rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all ${isActive ? 'bg-primary/15 text-primary border border-primary/20 shadow-[0_0_15px_rgba(180,164,96,0.15)]' : 'bg-card/5 text-textMain/50 hover:bg-primary/5 hover:text-primary'}`}>
+                            <NavLink key={link.path} to={link.path} end onClick={() => setIsOpen(false)} className={({ isActive }) => `flex items-center justify-between p-4 rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all ${isActive ? 'bg-primary/15 text-primary border border-primary/20 shadow-[0_0_15px_rgba(180,164,96,0.15)]' : 'bg-card/5 text-textMain/50 hover:bg-primary/5 hover:text-primary'}`}>
                                 {link.name} <ChevronRight size={16} />
                             </NavLink>
                         ))}

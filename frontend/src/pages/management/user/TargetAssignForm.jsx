@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Target, Users, Calendar, DollarSign, Loader2, CheckCircle, MapPin } from 'lucide-react';
 import api from '../../../api/axiosInstance'; 
 import { toast } from 'react-hot-toast';
+import { useNotifications } from '../../context/NotificationContext';
 
 const TargetAssignForm = ({ token }) => {
+  const { setNotificationsFromAPI } = useNotifications();
   // 📝 Form States
   const [salesReps, setSalesReps] = useState([]);
   const [selectedRep, setSelectedRep] = useState('');
@@ -16,6 +18,8 @@ const TargetAssignForm = ({ token }) => {
   const [loading, setLoading] = useState(false);
   const [fetchingReps, setFetchingReps] = useState(false);
   const [fetchingRepDetails, setFetchingRepDetails] = useState(false);
+  const [existingTarget, setExistingTarget] = useState(null);
+  const [fetchingTarget, setFetchingTarget] = useState(false);
 
   // Algorithmic weights
   const companyAvgSaloons = 25;
@@ -75,6 +79,41 @@ const TargetAssignForm = ({ token }) => {
     fetchRepDetails();
   }, [selectedRep, token]);
 
+  // 2.5 Fetch existing target when rep or month changes
+  useEffect(() => {
+    const fetchExistingTarget = async () => {
+      if (!selectedRep || !month) {
+        setAdjustedTarget('');
+        setExistingTarget(null);
+        return;
+      }
+
+      try {
+        setFetchingTarget(true);
+        const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+        // This is a new endpoint you will need to create
+        const res = await api.get(`/salesTarget/existing-target?sales_rep_id=${selectedRep}&month=${month}`, config);
+
+        if (res.data?.success) {
+          const target = res.data.target;
+          setExistingTarget(target);
+          setAdjustedTarget(target.adjusted_target_amount);
+        }
+      } catch (err) {
+        if (err.response?.status === 404) {
+          setExistingTarget(null);
+          setAdjustedTarget('');
+        } else {
+          console.error("Failed to fetch existing target:", err);
+        }
+      } finally {
+        setFetchingTarget(false);
+      }
+    };
+
+    fetchExistingTarget();
+  }, [selectedRep, month, token]);
+
   // 3. Form Submit Handler
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -99,9 +138,14 @@ const TargetAssignForm = ({ token }) => {
       const response = await api.post('/salesTarget/assign', payload, config);
 
       if (response.data?.success) {
-        toast.success("Sales target locked successfully!");
-        setSelectedRep('');
-        setAdjustedTarget('');
+        toast.success(response.data.message || "Target saved successfully!");
+        setExistingTarget(response.data.data); // Update state with latest data
+
+        // If it was a new creation, clear the form for the next entry
+        if (response.data.created) {
+          setSelectedRep('');
+          setAdjustedTarget('');
+        }
       }
     } catch (err) {
       console.error(err);
@@ -163,6 +207,7 @@ const TargetAssignForm = ({ token }) => {
               <input
                 type="month"
                 value={month}
+                min={new Date().toISOString().slice(0, 7)} // Prevent selecting past months
                 onChange={(e) => setMonth(e.target.value)}
                 onClick={(e) => e.target.showPicker()}
                 className="w-full bg-background border border-border text-textMain rounded-xl py-3 pl-11 pr-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all cursor-pointer [&::-webkit-calendar-picker-indicator]:dark:invert [&::-webkit-calendar-picker-indicator]:opacity-60"
@@ -193,19 +238,26 @@ const TargetAssignForm = ({ token }) => {
 
           {/* 4. Final Adjusted Target Amount */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">
-              Final Adjusted Target Amount (LKR) <span className="text-red-500">*</span>
+            <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1 flex items-center justify-between">
+              <span>Final Adjusted Target Amount (LKR) <span className="text-red-500">*</span></span>
+              {existingTarget && (
+                <span className="text-green-500 bg-green-500/10 px-2 py-0.5 rounded-md text-[9px] font-bold animate-in fade-in">
+                  Editing Existing
+                </span>
+              )}
             </label>
             <div className="relative group">
               <input
                 type="number"
                 min="0"
-                placeholder="e.g. 120000"
+                placeholder={fetchingTarget ? "Checking for existing target..." : "e.g. 120000"}
                 value={adjustedTarget}
+                disabled={fetchingTarget}
                 onChange={(e) => setAdjustedTarget(e.target.value)}
-                className="w-full bg-background border border-border text-textMain rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold"
+                className="w-full bg-background border border-border text-textMain rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold disabled:opacity-50"
               />
               <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300 pointer-events-none" size={18} />
+              {fetchingTarget && <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 text-primary animate-spin" size={18} />}
             </div>
             <p className="text-[10px] text-textMain/40 ml-1 font-medium italic">
               💡 Configured manually to account for seasonal corporate indices.
@@ -251,11 +303,11 @@ const TargetAssignForm = ({ token }) => {
         <div className="mt-12 flex justify-end">
           <button 
             type="submit" 
-            disabled={loading || fetchingRepDetails}
+            disabled={loading || fetchingRepDetails || fetchingTarget}
             className="bg-primary transition-all duration-300 text-textMain transition-colors duration-300 px-10 py-3 rounded-xl font-bold text-sm shadow-lg shadow-[#b4a460]/20 hover:bg-[#9a8b50] hover:scale-105 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {loading ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle size={18} />}
-            {loading ? 'Locking Document...' : 'Lock Target Document'}
+            {loading ? (existingTarget ? 'Updating...' : 'Locking...') : (existingTarget ? 'Update Target Document' : 'Lock Target Document')}
           </button>
         </div>
       </form>

@@ -323,7 +323,7 @@ const SalesReport = () => {
           </div>
 
           {/* Main Content Area */}
-          <div className="p-[2.5em] space-y-[2rem] flex-grow">
+          <div className="p-[2.5em] space-y-[2rem]">
             <ReportMetrics orders={orders} />
             {orders.length > 0 ? (
               <div className="mehera-table-print-fix">
@@ -396,8 +396,6 @@ const SalesReport = () => {
             padding: 0 !important;
             box-shadow: none !important;
             box-sizing: border-box !important;
-            display: flex !important;
-            flex-direction: column !important;
           }
           .mehera-table-print-fix table {
             page-break-inside: auto !important;

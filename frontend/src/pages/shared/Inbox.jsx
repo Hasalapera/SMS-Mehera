@@ -10,6 +10,7 @@ import {
   Loader2,
   TrendingDown,
   UserPlus,
+  Target,
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -113,9 +114,36 @@ const Inbox = () => {
   const unreadCount = notifications.filter(n => !n.is_read).length;
   const unreadByType = getUnreadByType();
 
+  const formatNotificationDateTime = (value) => {
+    if (!value) return 'Unknown date/time';
+
+    const notificationDate = new Date(value);
+    if (Number.isNaN(notificationDate.getTime())) return 'Unknown date/time';
+
+    const datePart = notificationDate.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+
+    const timePart = notificationDate.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    return `${datePart} at ${timePart}`;
+  };
+
   // Icon, color, and background per notification type/severity
   const getNotificationConfig = (type, severity) => {
     const configs = {
+      product: {
+        icon: Package,
+        color: '#7c3aed',
+        bgColor: 'bg-violet-50/80 dark:bg-violet-900/20',
+        textColor: 'text-violet-800 dark:text-violet-200'
+      },
       stock: {
         icon: Package,
         color: '#b4a460',
@@ -133,6 +161,13 @@ const Inbox = () => {
         color: '#0ea5e9',
         bgColor: 'bg-sky-50/80 dark:bg-sky-900/20',
         textColor: 'text-sky-800 dark:text-sky-200'
+      },
+      target: {
+        icon: Target,
+        // Use primary theme color so styles follow the global CSS variables
+        color: 'var(--theme-primary)',
+        bgColor: 'bg-primary/10 dark:bg-primary/20',
+        textColor: 'text-primary dark:text-primary'
       },
       order: {
         icon: ShoppingCart,
@@ -204,9 +239,11 @@ const Inbox = () => {
         <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
           {[
             { key: 'all', label: 'All', icon: Bell },
-            { key: 'stock', label: 'Stock Alerts', icon: Package },
+              { key: 'stock', label: 'Stock Alerts', icon: Package },
+              { key: 'product', label: 'Products', icon: Package },
             { key: 'customer', label: 'Customers', icon: UserPlus },
             { key: 'user', label: 'Users', icon: Users },
+            { key: 'target', label: 'Targets', icon: Target },
             { key: 'order', label: 'Orders', icon: ShoppingCart },
           ].map(tab => (
             <button
@@ -235,8 +272,9 @@ const Inbox = () => {
             {filteredNotifications.map(notification => {
               const config = getNotificationConfig(notification.type, notification.severity);
               const IconComponent = config.icon;
-              const isThemeHighlightedMessage =
-                ['stock', 'customer', 'user', 'order'].includes(notification.type) || (notification.severity && notification.severity !== 'info');
+              const notificationDateValue = notification.created_at || notification.createdAt;
+                const isThemeHighlightedMessage =
+                ['stock', 'product', 'target', 'customer', 'user', 'order'].includes(notification.type) || (notification.severity && notification.severity !== 'info');
               return (
                 <div
                   key={notification.notification_id}
@@ -265,7 +303,8 @@ const Inbox = () => {
                             {notification.message}
                           </p>
                           <p className="text-[8px] text-textMain/55 dark:text-textMain/60 mt-2 uppercase tracking-widest">
-                            {notification.created_at && new Date(notification.created_at).toLocaleString('en-GB')}
+                            {new Date(notification.createdAt || notification.created_at).toLocaleString('en-GB')}
+
                           </p>
                         </div>
 

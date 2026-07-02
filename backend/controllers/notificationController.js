@@ -1,29 +1,58 @@
-const { Notification, NotificationRead } = require('../models');
+const { Notification, NotificationRead, User } = require('../models');
 const { Op } = require('sequelize');
 
 // Role-based notification type filter
 const getRoleBasedFilter = (role) => {
   if (role === 'admin') return null;
-  if (role === 'manager') return { type: ['stock', 'order', 'user', 'customer'] };
-  if (role === 'sales_rep') return { type: ['stock' ,'order', 'customer'] };
+  if (role === 'manager') return null;
+  if (role === 'sales_rep') return { type: ['stock', 'order', 'customer', 'user'] };
   if (role === 'online_store_keeper') return { type: ['order', 'stock', 'customer'] };
   return { type: ['order'] };
+};
+
+const getVisibleNotificationWhere = (user) => {
+  const roleFilter = getRoleBasedFilter(user.role);
+
+  if (user.role === 'admin' || user.role === 'manager') {
+    return {};
+  }
+
+  const clauses = [
+    {
+      [Op.or]: [
+        { target_user_id: null },
+        { target_user_id: user.user_id },
+      ],
+    },
+    {
+      [Op.or]: [
+        { target_role: null },
+        { target_role: user.role },
+      ],
+    },
+  ];
+
+  if (roleFilter && roleFilter.type) {
+    clauses.unshift({ type: { [Op.in]: roleFilter.type } });
+  }
+
+  return { [Op.and]: clauses };
 };
 
 // GET /api/notifications
 exports.getNotifications = async (req, res) => {
   try {
     const user = req.user;
-    const filter = getRoleBasedFilter(user.role);
-
-    let where = {};
-    if (filter && filter.type) {
-      where.type = { [Op.in]: filter.type };
-    }
+    const where = getVisibleNotificationWhere(user);
 
     // Get notifications filtered by role
     const notifications = await Notification.findAll({
       where,
+      include: [{
+        model: User,
+        as: 'initiator',
+        attributes: ['name', 'role'],
+      }],
       order: [['created_at', 'DESC']],
       limit: 50,
     });
@@ -83,12 +112,7 @@ exports.getNotifications = async (req, res) => {
 exports.getUnreadCount = async (req, res) => {
   try {
     const user = req.user;
-    const filter = getRoleBasedFilter(user.role);
-
-    let where = {};
-    if (filter && filter.type) {
-      where.type = { [Op.in]: filter.type };
-    }
+    const where = getVisibleNotificationWhere(user);
 
     // Get all notifications for this role
     const notifications = await Notification.findAll({ 
@@ -126,7 +150,15 @@ exports.getUnreadCount = async (req, res) => {
 // POST /api/notifications — called from frontend (AddStock, EditStock, etc.)
 exports.createNotificationRoute = async (req, res) => {
   try {
-    const { type, title, message, severity = 'info', reference_id = null } = req.body;
+    const {
+      type,
+      title,
+      message,
+      severity = 'info',
+      reference_id = null,
+      target_user_id = null,
+      target_role = null,
+    } = req.body;
 
     if (!type || !title || !message) {
       return res.status(400).json({ error: 'type, title, and message are required' });
@@ -138,6 +170,9 @@ exports.createNotificationRoute = async (req, res) => {
       message,
       severity,
       reference_id,
+      target_user_id,
+      target_role,
+      initiator_id: req.user.user_id,
     });
 
     res.status(201).json({ success: true, notification });
@@ -154,7 +189,14 @@ exports.markAsRead = async (req, res) => {
     const user = req.user;
 
     // Check notification exists
-    const notification = await Notification.findByPk(id);
+    const notification = await Notification.findOne({
+      where: {
+        [Op.and]: [
+          { notification_id: id },
+          getVisibleNotificationWhere(user),
+        ],
+      }
+    });
     if (!notification) return res.status(404).json({ error: 'Notification not found' });
 
     // Upsert per-user read record
@@ -177,12 +219,7 @@ exports.markAsRead = async (req, res) => {
 exports.markAllAsRead = async (req, res) => {
   try {
     const user = req.user;
-    const filter = getRoleBasedFilter(user.role);
-
-    let where = {};
-    if (filter && filter.type) {
-      where.type = { [Op.in]: filter.type };
-    }
+    const where = getVisibleNotificationWhere(user);
 
     // Get all notifications for this role
     const notifications = await Notification.findAll({ where });
@@ -226,11 +263,27 @@ exports.deleteNotification = async (req, res) => {
 };
 
 // Helper used internally by other controllers (stockController, etc.)
-exports.createNotification = async (type, title, message, reference_id = null, severity = 'info') => {
+exports.createNotification = async (type, title, message, referenceOrOptions = null, severity = 'info', extraOptions = {}) => {
   try {
-    await Notification.create({ type, title, message, reference_id, severity });
+    const options = referenceOrOptions && typeof referenceOrOptions === 'object' && !Array.isArray(referenceOrOptions)
+      ? referenceOrOptions
+      : { ...extraOptions, reference_id: referenceOrOptions, severity };
+
+    const notification = await Notification.create({
+      type,
+      title,
+      message,
+      reference_id: options.reference_id || null,
+      severity: options.severity || 'info',
+      target_user_id: options.target_user_id || options.recipient_id || null,
+      target_role: options.target_role || null,
+      initiator_id: options.initiator_id || null,
+    });
+
+    return notification;
   } catch (err) {
     console.error('Create notification error:', err);
+    return null;
   }
 };
 

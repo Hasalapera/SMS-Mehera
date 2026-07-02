@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors'); 
 const { sequelize } = require('./models');
+const cookieParser = require('cookie-parser');
 const { runMigrations } = require('./utils/migrator');
 
 // Routes Import
@@ -53,6 +54,7 @@ app.use(cors({
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(cookieParser()); // ✅ Add cookie-parser middleware
 
 // Request logging (development only)
 if (NODE_ENV !== 'production') {

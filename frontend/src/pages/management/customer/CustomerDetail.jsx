@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 
@@ -10,7 +10,7 @@ import {
   ArrowLeft, Building2, UserCircle, Phone,
   MapPin, Tag, MessageSquarePlus, Trash2,
   ShoppingBag, CreditCard, Clock, StickyNote, Loader2,
-  Mail, Edit2, Save, X
+  Mail, Edit2, Save, X, UserCheck
 } from 'lucide-react';
 
 const tagConfig = {
@@ -52,9 +52,41 @@ const normalizeStats = (responseData, customer) => {
   };
 };
 
+const formatCustomerUpdateValue = (value) => {
+  if (value === null || value === undefined) return 'Not provided';
+  const text = String(value).trim();
+  return text.length > 0 ? text : 'Not provided';
+};
+
+const buildCustomerUpdateSummary = (originalCustomer, updatedFormData) => {
+  if (!originalCustomer || !updatedFormData) return 'No customer field changes detected';
+
+  const comparisons = [
+    { label: 'Business Name', before: originalCustomer.saloon_name, after: updatedFormData.saloon_name },
+    { label: 'Owner Name', before: originalCustomer.owner_name, after: updatedFormData.owner_name },
+    { label: 'Email', before: originalCustomer.email, after: updatedFormData.email },
+    { label: 'Primary Phone', before: originalCustomer.phone1, after: updatedFormData.phone1 },
+    { label: 'Secondary Phone', before: originalCustomer.phone2, after: updatedFormData.phone2 },
+    { label: 'Address', before: [originalCustomer.lane1, originalCustomer.lane2].filter(Boolean).join(', '), after: [updatedFormData.lane1, updatedFormData.lane2].filter(Boolean).join(', ') },
+    { label: 'District', before: originalCustomer.district, after: updatedFormData.district },
+    { label: 'Type', before: originalCustomer.type, after: updatedFormData.type },
+  ];
+
+  const changes = comparisons.filter(({ before, after }) => formatCustomerUpdateValue(before) !== formatCustomerUpdateValue(after));
+
+  if (changes.length === 0) {
+    return '';
+  }
+
+  return changes
+    .map(({ label, before, after }) => `${label}: ${formatCustomerUpdateValue(before)} -> ${formatCustomerUpdateValue(after)}`)
+    .join('; ');
+};
+
 export default function CustomerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { token, logout } = useAuth();
 
   const { addNotification } = useNotifications();
@@ -72,8 +104,8 @@ export default function CustomerDetail() {
   const [isSavingInfo, setIsSavingInfo] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const canAddNote = ['admin', 'manager', 'sales_rep'].includes(JSON.parse(localStorage.getItem('user') || 'null')?.role);
   const loggedInUser = JSON.parse(localStorage.getItem('user') || 'null');
+  const canAddNote = ['admin', 'manager', 'sales_rep'].includes(loggedInUser?.role);
   const canEditCustomer = loggedInUser?.role === 'admin' || (loggedInUser?.role === 'sales_rep' && customer?.sales_rep_id === loggedInUser?.user_id);
 
   useEffect(() => {
@@ -145,17 +177,20 @@ export default function CustomerDetail() {
       });
       toast.success('Customer updated successfully!');
 
+      const updateSummary = buildCustomerUpdateSummary(customer, editFormData);
+      const notificationMessage = `${formatCustomerUpdateValue(editFormData.saloon_name || customerName)} (${formatCustomerUpdateValue(editFormData.type || customerType)}) - ${formatCustomerUpdateValue(editFormData.district || customer.district)} updated by ${loggedInUser?.name}${updateSummary ? ` | Changes: ${updateSummary}` : ''}`;
+
       // Create notification
       await saveNotificationToDB(
         'customer',
         '✏️ Customer Info Updated',
-        `${editFormData.saloon_name} (${editFormData.type}) - ${editFormData.district} updated by ${loggedInUser?.name}`,
+        notificationMessage,
         'info'
       );
       addNotification({
         type: 'customer',
         title: '✏️ Customer Info Updated',
-        message: `${editFormData.saloon_name} (${editFormData.type}) - ${editFormData.district} updated by ${loggedInUser?.name}`,
+        message: notificationMessage,
         severity: 'info'
       });
 
@@ -170,11 +205,7 @@ export default function CustomerDetail() {
   };
 
   const handleGoBack = () => {
-    if (loggedInUser?.role === 'sales_rep') {
-      navigate(`/profile/${loggedInUser.user_id}`);
-    } else {
-      navigate('/customers');
-    }
+    navigate(-1); // Go back to the previous page
   };
 
   const handleAddNote = async () => {
@@ -297,53 +328,51 @@ export default function CustomerDetail() {
 
    return (
     <div className="w-full min-h-screen bg-background transition-all duration-500 ease-in-out animate-in fade-in">
-      <div className="bg-background transition-all duration-500 ease-in-out px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 border-b border-border">
+      <div className="bg-background transition-all duration-500 ease-in-out px-4 md:px-8 py-6 md:py-7 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-border">
         <div className="flex items-center gap-5">
-          <div className="p-3 bg-primary transition-all duration-500 ease-in-out rounded-2xl text-textMain">
-            <Building2 size={26} strokeWidth={2.5} />
+          <div className="p-2.5 md:p-3 bg-primary rounded-2xl text-textMain">
+            <Building2 size={22} md:size={26} strokeWidth={2.5} />
           </div>
           <div>
-            <p className="text-[10px] font-bold text-textMain/50 transition-colors duration-500 uppercase tracking-widest mb-0.5">
-              Customers <span className="text-primary transition-colors duration-500">/ {customerName}</span>
+            <p className="text-[10px] font-bold text-textMain/50 uppercase tracking-widest mb-0.5">
+              Customers <span className="text-primary">/ {customerName}</span>
             </p>
-            <h1 className="text-2xl font-black text-textMain transition-colors duration-500 uppercase tracking-tight">Customer Detail</h1>
+            <h1 className="text-xl md:text-2xl font-black text-textMain uppercase tracking-tight">Customer Detail</h1>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="bg-card transition-all duration-500 ease-in-out px-5 py-2.5 rounded-2xl border border-border flex items-center gap-3">
-            <span className="text-[10px] font-black text-textMain/50 transition-colors duration-500 uppercase tracking-widest">ID</span>
-            <span className="text-lg font-black text-primary transition-colors duration-500">{customerId}</span>
+          <div className="bg-card px-4 py-2 md:px-5 md:py-2.5 rounded-2xl border border-border flex items-center gap-3">
+            <span className="text-[10px] font-black text-textMain/50 uppercase tracking-widest">ID</span>
+            <span className="text-base md:text-lg font-black text-primary">{customerId}</span>
           </div>
-          <button
-            onClick={handleGoBack}
-            className="p-3 bg-card transition-all duration-500 ease-in-out hover:bg-card text-textMain/50 hover:text-textMain rounded-xl border border-border"
-          >
-            <ArrowLeft size={20} />
+          <button onClick={handleGoBack} className="flex items-center gap-2 text-textMain/60 hover:text-textMain font-bold text-xs uppercase tracking-widest transition-all px-4 py-3 rounded-xl bg-card border border-border">
+            <ArrowLeft size={16} />
+            Back
           </button>
         </div>
       </div>
 
-      <div className="p-6 md:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-2 bg-card transition-all duration-500 ease-in-out rounded-[1.5rem] border border-border shadow-sm overflow-hidden">
-            <div className="px-8 py-5 border-b border-border flex items-center justify-between">
-              <h2 className="text-sm font-black text-textMain transition-colors duration-500 uppercase tracking-widest flex items-center gap-2">
-                <UserCircle size={16} className="text-primary transition-colors duration-500" /> Customer Info
+      <div className="p-4 md:p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
+          <div className="lg:col-span-2 bg-card rounded-[1.5rem] border border-border shadow-sm overflow-hidden">
+            <div className="px-6 md:px-8 py-5 border-b border-border flex items-center justify-between">
+              <h2 className="text-sm font-black text-textMain uppercase tracking-widest flex items-center gap-2">
+                <UserCircle size={16} className="text-primary" /> Customer Info
               </h2>
               <div className="flex items-center gap-3">
                 {canEditCustomer && (
-                  <button onClick={handleEditClick} className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-textMain transition-colors bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 flex items-center gap-1.5">
+                  <button onClick={handleEditClick} className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-primary hover:text-textMain bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 flex items-center gap-1.5">
                     <Edit2 size={12} /> Edit
                   </button>
                 )}
-                <span className={`text-[10px] font-black px-3 py-1 rounded-lg border uppercase tracking-wider ${typeBadge[customerType] || typeBadge.Saloon}`}>
+                <span className={`text-[9px] md:text-[10px] font-black px-3 py-1 rounded-lg border uppercase tracking-wider ${typeBadge[customerType] || typeBadge.Saloon}`}>
                   {customerType}
                 </span>
               </div>
             </div>
 
-            <div className="p-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="p-6 md:p-8 grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6">
               <InfoField icon={Building2} label="Business Name" value={customerName} />
               <InfoField icon={UserCircle} label="Owner Name" value={customer.owner_name || 'N/A'} />
               <InfoField icon={Mail} label="Email Address" value={customer.email || 'N/A'} />
@@ -351,6 +380,7 @@ export default function CustomerDetail() {
               <InfoField icon={Phone} label="Secondary Phone" value={customer.phone2 || 'Not provided'} />
               <InfoField icon={MapPin} label="Address" value={address || 'N/A'} />
               <InfoField icon={MapPin} label="District" value={customer.district || 'N/A'} />
+              <InfoField icon={UserCheck} label="Assigned Sales Rep" value={customer.salesRep ? customer.salesRep.name : 'Not Assigned Yet'} />
             </div>
           </div>
 
@@ -362,41 +392,41 @@ export default function CustomerDetail() {
         </div>
 
         <div className="bg-card transition-colors duration-300 rounded-[1.5rem] border border-border transition-colors duration-300 shadow-sm overflow-hidden">
-          <div className="bg-background transition-all duration-300 px-8 py-5 flex items-center justify-between border-b border-border transition-colors duration-300">
-            <h2 className="text-sm font-black text-textMain transition-colors duration-300 uppercase tracking-widest flex items-center gap-2">
-              <StickyNote size={16} className="text-primary transition-all duration-300" /> Behavior Notes
+          <div className="bg-background px-6 md:px-8 py-5 flex items-center justify-between border-b border-border">
+            <h2 className="text-sm font-black text-textMain uppercase tracking-widest flex items-center gap-2">
+              <StickyNote size={16} className="text-primary" /> Behavior Notes
             </h2>
-            <span className="text-[10px] text-textMain/50 transition-colors duration-300 font-bold">
+            <span className="text-[10px] text-textMain/50 font-bold">
               {notes.length} note{notes.length !== 1 ? 's' : ''}
             </span>
           </div>
 
-          <div className="p-8">
+          <div className="p-4 md:p-8">
             {canAddNote && (
-              <div className="bg-card/50 transition-colors duration-300 border border-border transition-colors duration-300 rounded-2xl p-6 mb-8">
-                <p className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <MessageSquarePlus size={13} className="text-primary transition-all duration-300" /> Add New Note
+              <div className="bg-card/50 border border-border rounded-2xl p-4 md:p-6 mb-6 md:mb-8">
+                <p className="text-[10px] font-black text-textMain/50 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <MessageSquarePlus size={13} className="text-primary" /> Add New Note
                 </p>
 
                 <textarea
-                  rows={3}
+                  rows={2}
                   placeholder="Write a note about this customer..."
                   value={noteText}
                   onChange={(e) => setNoteText(e.target.value)}
-                  className="w-full bg-card transition-colors duration-300 border border-border transition-colors duration-300 focus:border-primary transition-all duration-300 focus:ring-2 focus:ring-[#b4a460]/10 rounded-xl py-3 px-4 text-sm text-textMain outline-none resize-none transition-all mb-4"
+                  className="w-full bg-card border border-border focus:border-primary focus:ring-2 focus:ring-[#b4a460]/10 rounded-xl py-2.5 px-4 text-sm text-textMain outline-none resize-none transition-all mb-4"
                 />
 
                 <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest flex items-center gap-1">
+                    <span className="text-[10px] font-black text-textMain/50 uppercase tracking-widest flex items-center gap-1">
                       <Tag size={11} /> Tag:
                     </span>
                     {Object.entries(tagConfig).map(([key, cfg]) => (
                       <button
                         key={key}
                         onClick={() => setSelectedTag(key)}
-                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border transition-all ${
-                          selectedTag === key ? `${cfg.bg} ${cfg.text} ${cfg.border}` : 'bg-card transition-colors duration-300 text-textMain/50 transition-colors duration-300 border-border transition-colors duration-300 hover:border-primary transition-all duration-300'
+                        className={`px-2.5 py-1.5 rounded-lg text-[9px] md:text-[10px] font-black uppercase tracking-wider border transition-all ${
+                          selectedTag === key ? `${cfg.bg} ${cfg.text} ${cfg.border}` : 'bg-card text-textMain/50 border-border hover:border-primary'
                         }`}
                       >
                         <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${cfg.dot}`} />
@@ -408,7 +438,7 @@ export default function CustomerDetail() {
                   <button
                     onClick={handleAddNote}
                     disabled={!noteText.trim() || savingNote}
-                    className="flex items-center gap-2 bg-black hover:bg-primary transition-all duration-300 text-white hover:text-textMain transition-colors duration-300 px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-primary text-white hover:text-textMain px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     <MessageSquarePlus size={14} /> {savingNote ? 'Saving...' : 'Add Note'}
                   </button>
@@ -417,35 +447,35 @@ export default function CustomerDetail() {
             )}
 
             {notes.length === 0 ? (
-              <div className="text-center py-16 text-textMain/50 transition-colors duration-300">
+              <div className="text-center py-16 text-textMain/50">
                 <p className="text-4xl mb-3">📝</p>
                 <p className="text-sm font-medium">No notes yet. Add the first one!</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {notes.map((note) => {
                   const cfg = tagConfig[note.tag] || tagConfig.general;
                   return (
-                    <div key={note.note_id} className={`rounded-2xl border p-5 transition-all ${cfg.bg} ${cfg.border}`}>
+                    <div key={note.note_id} className={`rounded-2xl border p-4 md:p-5 ${cfg.bg} ${cfg.border}`}>
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
                             <span className={`text-[10px] font-black uppercase tracking-wider ${cfg.text}`}>{cfg.label}</span>
                           </div>
-                          <p className="text-sm text-textMain/70 transition-colors duration-300 font-medium leading-relaxed">{note.note_text}</p>
-                          <p className="text-[10px] text-textMain/50 transition-colors duration-300 font-bold mt-2 uppercase tracking-wider">
+                          <p className="text-xs md:text-sm text-textMain/70 font-medium leading-relaxed">{note.note_text}</p>
+                          <p className="text-[9px] md:text-[10px] text-textMain/50 font-bold mt-2 uppercase tracking-wider">
                             {note.added_by || 'System'}
-                            <span className="mx-1.5 text-textMain/50 transition-colors duration-300">·</span>
-                            <span className="text-primary transition-all duration-300">{(note.role || 'system').replace('_', ' ')}</span>
-                            <span className="mx-1.5 text-textMain/50 transition-colors duration-300">·</span>
+                            <span className="mx-1.5 text-textMain/50">·</span>
+                            <span className="text-primary">{(note.role || 'system').replace('_', ' ')}</span>
+                            <span className="mx-1.5 text-textMain/50">·</span>
                             {formatDate(note.created_at)}
                           </p>
                         </div>
 
                         <button
                           onClick={() => handleDeleteNote(note.note_id)}
-                          className="p-2 rounded-xl bg-card/60 transition-colors duration-300 hover:bg-red-50 text-textMain/50 transition-colors duration-300 hover:text-red-400 transition-all border border-white"
+                          className="p-2 rounded-xl bg-card/60 hover:bg-red-50 text-textMain/50 hover:text-red-400 transition-all border border-white"
                           title="Delete note"
                         >
                           <Trash2 size={14} />
@@ -462,54 +492,54 @@ export default function CustomerDetail() {
 
       {/* ✏️ Edit Customer Modal */}
       {isEditingInfo && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[1000] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
-          <div className="bg-card w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in">
-            <div className="p-6 sm:p-8 border-b border-border flex justify-between items-center bg-background">
-              <h2 className="text-xl font-black text-textMain uppercase tracking-tight flex items-center gap-3">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[1000] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-card w-full max-w-md md:max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in">
+            <div className="p-5 md:p-8 border-b border-border flex justify-between items-center bg-background">
+              <h2 className="text-lg md:text-xl font-black text-textMain uppercase tracking-tight flex items-center gap-3">
                 <div className="p-2 bg-primary/10 rounded-xl text-primary"><Edit2 size={20} /></div>
                 Edit Customer Info
               </h2>
               <button onClick={() => setIsEditingInfo(false)} className="p-2 hover:bg-red-500/10 text-textMain/50 hover:text-red-500 rounded-full transition-colors">
-                <X size={20} />
+                <X size={18} md:size={20} />
               </button>
             </div>
             
-            <div className="p-6 sm:p-8 overflow-y-auto custom-scrollbar space-y-5 flex-1">
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="p-5 md:p-8 overflow-y-auto custom-scrollbar space-y-4 md:space-y-5 flex-1">
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-textMain/50 tracking-widest">Type</label>
-                    <select value={editFormData.type} onChange={e => setEditFormData({...editFormData, type: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none">
+                    <label className="text-[9px] md:text-[10px] font-black uppercase text-textMain/50 tracking-widest">Type</label>
+                    <select value={editFormData.type} onChange={e => setEditFormData({...editFormData, type: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 md:py-3 text-sm focus:border-primary outline-none">
                       <option value="Saloon">Saloon</option>
                       <option value="Wholesale">Wholesale</option>
                       <option value="Retail">Retail</option>
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-textMain/50 tracking-widest">Business Name</label>
-                    <input type="text" value={editFormData.saloon_name} onChange={e => setEditFormData({...editFormData, saloon_name: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none" />
+                    <label className="text-[9px] md:text-[10px] font-black uppercase text-textMain/50 tracking-widest">Business Name</label>
+                    <input type="text" value={editFormData.saloon_name} onChange={e => setEditFormData({...editFormData, saloon_name: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 md:py-3 text-sm focus:border-primary outline-none" />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-textMain/50 tracking-widest">Owner Name</label>
-                    <input type="text" value={editFormData.owner_name} onChange={e => setEditFormData({...editFormData, owner_name: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none" />
+                    <label className="text-[9px] md:text-[10px] font-black uppercase text-textMain/50 tracking-widest">Owner Name</label>
+                    <input type="text" value={editFormData.owner_name} onChange={e => setEditFormData({...editFormData, owner_name: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 md:py-3 text-sm focus:border-primary outline-none" />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-textMain/50 tracking-widest">Email Address</label>
-                    <input type="email" value={editFormData.email} onChange={e => setEditFormData({...editFormData, email: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none" />
+                    <label className="text-[9px] md:text-[10px] font-black uppercase text-textMain/50 tracking-widest">Email Address</label>
+                    <input type="email" value={editFormData.email} onChange={e => setEditFormData({...editFormData, email: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 md:py-3 text-sm focus:border-primary outline-none" />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-textMain/50 tracking-widest">Primary Phone</label>
-                    <input type="text" value={editFormData.phone1} onChange={e => setEditFormData({...editFormData, phone1: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none" />
+                    <label className="text-[9px] md:text-[10px] font-black uppercase text-textMain/50 tracking-widest">Primary Phone</label>
+                    <input type="text" value={editFormData.phone1} onChange={e => setEditFormData({...editFormData, phone1: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 md:py-3 text-sm focus:border-primary outline-none" />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black uppercase text-textMain/50 tracking-widest">Secondary Phone</label>
-                    <input type="text" value={editFormData.phone2} onChange={e => setEditFormData({...editFormData, phone2: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none" />
+                    <label className="text-[9px] md:text-[10px] font-black uppercase text-textMain/50 tracking-widest">Secondary Phone</label>
+                    <input type="text" value={editFormData.phone2} onChange={e => setEditFormData({...editFormData, phone2: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 md:py-3 text-sm focus:border-primary outline-none" />
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
-                    <label className="text-[10px] font-black uppercase text-textMain/50 tracking-widest">Address / District</label>
+                    <label className="text-[9px] md:text-[10px] font-black uppercase text-textMain/50 tracking-widest">Address / District</label>
                     <div className="grid grid-cols-3 gap-2">
-                        <input type="text" placeholder="Lane 01" value={editFormData.lane1} onChange={e => setEditFormData({...editFormData, lane1: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none" />
-                        <input type="text" placeholder="Lane 02" value={editFormData.lane2} onChange={e => setEditFormData({...editFormData, lane2: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none" />
-                        <select value={editFormData.district} onChange={e => setEditFormData({...editFormData, district: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none">
+                        <input type="text" placeholder="Lane 01" value={editFormData.lane1} onChange={e => setEditFormData({...editFormData, lane1: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 md:py-3 text-sm focus:border-primary outline-none" />
+                        <input type="text" placeholder="Lane 02" value={editFormData.lane2} onChange={e => setEditFormData({...editFormData, lane2: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 md:py-3 text-sm focus:border-primary outline-none" />
+                        <select value={editFormData.district} onChange={e => setEditFormData({...editFormData, district: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 md:py-3 text-sm focus:border-primary outline-none">
                             <option value="">Select District</option>
                             {["Colombo", "Gampaha", "Kalutara", "Kandy", "Matale", "Nuwara Eliya", "Galle", "Matara", "Hambantota", "Jaffna", "Kilinochchi", "Mannar", "Vavuniya", "Mullaitivu", "Batticaloa", "Ampara", "Trincomalee", "Kurunegala", "Puttalam", "Anuradhapura", "Polonnaruwa", "Badulla", "Moneragala", "Ratnapura", "Kegalle"].map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
@@ -517,9 +547,9 @@ export default function CustomerDetail() {
                   </div>
                </div>
             </div>
-            <div className="p-6 border-t border-border bg-background flex justify-end gap-3">
-              <button onClick={() => setIsEditingInfo(false)} className="px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] text-textMain/60 hover:bg-card transition-all">Cancel</button>
-              <button onClick={handleUpdateCustomer} disabled={isSavingInfo} className="px-8 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] bg-primary text-black hover:bg-[#9a8b50] flex items-center gap-2 transition-all disabled:opacity-50">
+            <div className="p-5 md:p-6 border-t border-border bg-background flex justify-end gap-3">
+              <button onClick={() => setIsEditingInfo(false)} className="px-6 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] text-textMain/60 hover:bg-card transition-all">Cancel</button>
+              <button onClick={handleUpdateCustomer} disabled={isSavingInfo} className="px-8 py-2.5 rounded-xl font-black uppercase tracking-widest text-[10px] bg-primary text-black hover:bg-[#9a8b50] flex items-center gap-2 transition-all disabled:opacity-50">
                 {isSavingInfo ? <Loader2 size={14} className="animate-spin"/> : <Save size={14} />} Save Changes
               </button>
             </div>
@@ -532,23 +562,23 @@ export default function CustomerDetail() {
 
 
 const InfoField = ({ icon: Icon, label, value }) => (
-  <div className="space-y-1.5">
-    <p className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest flex items-center gap-1.5">
-      <Icon size={11} className="text-primary transition-all duration-300" /> {label}
+  <div className="space-y-1">
+    <p className="text-[9px] md:text-[10px] font-black text-textMain/50 uppercase tracking-widest flex items-center gap-1.5">
+      <Icon size={11} className="text-primary" /> {label}
     </p>
-    <p className="text-sm font-bold text-textMain transition-colors duration-300 px-1">{value}</p>
+    <p className="text-xs md:text-sm font-bold text-textMain px-1">{value}</p>
   </div>
 );
 
 const StatCard = ({ icon: Icon, label, value, sub }) => (
-  <div className="bg-card transition-colors duration-300 rounded-[1.5rem] border border-border transition-colors duration-300 shadow-sm p-6 flex items-center gap-4">
-    <div className="p-3 bg-black rounded-xl">
-      <Icon size={18} className="text-primary transition-all duration-300" />
+  <div className="bg-card rounded-[1.5rem] border border-border shadow-sm p-4 md:p-6 flex items-center gap-4">
+    <div className="p-2.5 md:p-3 bg-black rounded-xl">
+      <Icon size={16} md:size={18} className="text-primary" />
     </div>
     <div>
-      <p className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">{label}</p>
-      <p className="text-lg font-black text-textMain transition-colors duration-300">{value}</p>
-      <p className="text-[10px] text-textMain/50 transition-colors duration-300">{sub}</p>
+      <p className="text-[10px] font-black text-textMain/50 uppercase tracking-widest">{label}</p>
+      <p className="text-base md:text-lg font-black text-textMain">{value}</p>
+      <p className="text-[10px] text-textMain/50">{sub}</p>
     </div>
   </div>
 );

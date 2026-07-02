@@ -42,7 +42,7 @@ const UserProfile = () => {
   const navigate = useNavigate();
   const { token, logout, login } = useAuth();
 
-  const { addNotification } = useNotifications();
+  const { addNotification, setNotificationsFromAPI } = useNotifications();
   //helper
   const saveNotificationToDB = async (type, title, message, severity) => {
   try {
@@ -54,6 +54,47 @@ const UserProfile = () => {
     console.error('Failed to save notification:', err);
   }
 };
+
+  const refreshNotifications = async () => {
+    try {
+      const res = await api.get('/notifications', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotificationsFromAPI(res.data.notifications || []);
+    } catch (err) {
+      console.error('Failed to refresh notifications:', err);
+    }
+  };
+
+  const formatProfileValue = (value) => {
+    if (value === null || value === undefined) return 'Not provided';
+    const text = String(value).trim();
+    return text.length > 0 ? text : 'Not provided';
+  };
+
+  const buildProfileUpdateSummary = (previousUser, updatedFormData) => {
+    if (!previousUser || !updatedFormData) return '';
+
+    const changes = [];
+    const previousDob = previousUser.dob ? String(previousUser.dob).split('T')[0] : '';
+
+    const comparisons = [
+      { label: 'Full Name', before: previousUser.name || previousUser.full_name, after: updatedFormData.full_name },
+      { label: 'Contact No', before: previousUser.contact_no, after: updatedFormData.contact_no },
+      { label: 'Date of Birth', before: previousDob, after: updatedFormData.dob },
+      { label: 'NIC No', before: previousUser.nic_no, after: updatedFormData.nic_no },
+      { label: 'Address', before: previousUser.address, after: updatedFormData.address },
+      { label: 'Gender', before: previousUser.gender, after: updatedFormData.gender },
+    ];
+
+    comparisons.forEach(({ label, before, after }) => {
+      if (formatProfileValue(before) !== formatProfileValue(after)) {
+        changes.push(`${label}: ${formatProfileValue(before)} -> ${formatProfileValue(after)}`);
+      }
+    });
+
+    return changes.join('; ');
+  };
 
   const [isEditing, setIsEditing] = useState(false);
   const [showPassModal, setShowPassModal] = useState(false);
@@ -209,6 +250,7 @@ const UserProfile = () => {
         message: `${district} district assigned to ${user?.name} by ${loggedInUser?.name}`,
         severity: 'info'
       });
+      await refreshNotifications();
 
     } catch (err) {
       toast.error("Failed to add area");
@@ -238,6 +280,7 @@ const UserProfile = () => {
         message: `${district} district removed from ${user?.name} by ${loggedInUser?.name}`,
         severity: 'warning'
       });
+      await refreshNotifications();
 
     } catch (err) {
       toast.error("Failed to remove area");
@@ -246,6 +289,7 @@ const UserProfile = () => {
 
   const handleUpdateProfile = async () => {
     setIsUpdating(true);
+    const previousUser = user;
     const uploadData = new FormData();
     uploadData.append("user_id", user.user_id); // The ID of the user being edited
     uploadData.append("name", formData.full_name);
@@ -297,9 +341,11 @@ const UserProfile = () => {
         toast.success("Profile updated!");
 
         // Notification
+        const updateSummary = buildProfileUpdateSummary(previousUser, formData);
+        const profileName = formData.full_name || previousUser?.name || previousUser?.full_name || 'User';
         const notifMessage = isOwnProfile
-          ? `${loggedInUser?.name} updated their own profile`
-          : `${user?.name}'s profile was updated by ${loggedInUser?.name}`;
+          ? `${profileName} updated their own profile${updateSummary ? ` | Changes: ${updateSummary}` : ''}`
+          : `${profileName}'s profile was updated by ${loggedInUser?.name}${updateSummary ? ` | Changes: ${updateSummary}` : ''}`;
 
         await saveNotificationToDB('user', '✏️ Profile Updated', notifMessage, 'info');
         addNotification({ type: 'user', title: '✏️ Profile Updated', message: notifMessage, severity: 'info' });
@@ -363,9 +409,9 @@ const UserProfile = () => {
       )}
 
       {/* Header Card */}
-      <div className="flex flex-col md:flex-row items-center gap-8 mb-10 bg-card p-8 rounded-[2rem] shadow-sm border border-border">
+      <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8 mb-8 md:mb-10 bg-card p-6 md:p-8 rounded-[2rem] shadow-sm border border-border">
         <div className="relative group">
-          <div className="w-32 h-32 rounded-3xl overflow-hidden ring-4 ring-primary/20 shadow-xl bg-background">
+          <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl overflow-hidden ring-4 ring-primary/20 shadow-xl bg-background">
             <img
               src={formData.picture_url}
               alt="User"
@@ -406,12 +452,12 @@ const UserProfile = () => {
               className="text-2xl font-serif text-textMain border-b-2 border-primary outline-none bg-transparent w-full max-w-md"
             />
           ) : (
-            <h1 className="text-3xl font-serif text-textMain mb-1">
+            <h1 className="text-2xl md:text-3xl font-serif text-textMain mb-1">
               {formData.full_name}
             </h1>
           )}
           <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-2">
-            <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-bold uppercase border border-primary/20">
+            <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-[9px] md:text-[10px] font-bold uppercase border border-primary/20">
               {user.role}
             </span>
             <span
@@ -422,10 +468,10 @@ const UserProfile = () => {
           </div>
         </div>
         {(isOwnProfile || isAdmin) && (
-          <div className="flex flex-col sm:flex-row md:flex-col gap-2">
+          <div className="flex flex-col sm:flex-row md:flex-col gap-2 w-full md:w-auto">
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className={`px-6 py-3 rounded-2xl font-bold text-sm shadow-lg min-w-[160px] transition-all ${isEditing ? "bg-card border border-border text-textMain/60" : "bg-primary text-black hover:bg-black hover:text-white"}`}
+              className={`w-full md:min-w-[160px] px-6 py-3 rounded-2xl font-bold text-sm shadow-lg transition-all ${isEditing ? "bg-card border border-border text-textMain/60" : "bg-primary text-black hover:bg-black hover:text-white"}`}
             >
               {isEditing ? (
                 <>
@@ -441,7 +487,7 @@ const UserProfile = () => {
             {isOwnProfile && !isEditing && (
               <button
                 onClick={() => setShowPassModal(true)}
-                className="px-6 py-3 bg-card text-textMain border border-border rounded-2xl font-bold text-sm shadow-md min-w-[160px] hover:bg-background"
+                className="w-full md:min-w-[160px] px-6 py-3 bg-card text-textMain border border-border rounded-2xl font-bold text-sm shadow-md hover:bg-background"
               >
                 <KeyRound size={16} className="inline mr-2" /> Security
               </button>
@@ -451,19 +497,19 @@ const UserProfile = () => {
       </div>
 
       {/* Main Grid: Identity Registry (with Audit Logs) vs Operational Districts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-start">
         {/* Left Column (lg:col-span-2) */}
         <div className="lg:col-span-2">
           <section className="bg-card rounded-[2.5rem] shadow-sm border border-border overflow-hidden">
             {/* Identity Part */}
-            <div className="p-10 border-b border-border">
-              <h2 className="text-xl font-serif mb-8 flex items-center gap-3 text-textMain">
+            <div className="p-6 md:p-10 border-b border-border">
+              <h2 className="text-lg md:text-xl font-serif mb-6 md:mb-8 flex items-center gap-3 text-textMain">
                 <div className="p-2 bg-primary/10 rounded-lg text-primary">
                   <User size={22} />
                 </div>
                 Identity Registry
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6 md:gap-x-10 md:gap-y-8">
                 <InfoItem
                   icon={Mail}
                   label="Registry Email"
@@ -514,17 +560,15 @@ const UserProfile = () => {
                   }
                 />
                 <div className="space-y-2">
-                  <p className="text-[10px] uppercase text-textMain/60 font-bold tracking-[0.1em] flex items-center gap-2">
+                  <p className="text-[9px] md:text-[10px] uppercase text-textMain/60 font-bold tracking-[0.1em] flex items-center gap-2">
                     <User size={14} className="text-primary" /> Gender
                   </p>
                   {isEditing ? (
                     <select
                       name="gender"
                       value={formData.gender}
-                      onChange={(e) =>
-                        setFormData({ ...formData, gender: e.target.value })
-                      }
-                      className="w-full p-4 bg-background border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-textMain font-bold appearance-none"
+                      onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                      className="w-full p-3 md:p-4 bg-background border border-border rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-textMain font-bold appearance-none"
                     >
                       <option value="">Select Gender</option>
                       <option value="male">Male</option>
@@ -532,7 +576,7 @@ const UserProfile = () => {
                       <option value="other">Other</option>
                     </select>
                   ) : (
-                    <p className="text-sm font-bold text-textMain px-1 uppercase">
+                    <p className="text-xs md:text-sm font-bold text-textMain px-1 uppercase">
                       {formData.gender || "Not Recorded"}
                     </p>
                   )}
@@ -542,7 +586,7 @@ const UserProfile = () => {
                 <button
                   onClick={handleUpdateProfile}
                   disabled={isUpdating}
-                  className="mt-8 px-10 py-4 bg-black text-white font-bold rounded-2xl hover:bg-primary transition-all flex items-center gap-3"
+                  className="mt-8 px-8 py-3 md:px-10 md:py-4 bg-black text-white font-bold rounded-2xl hover:bg-primary transition-all flex items-center gap-3"
                 >
                   {isUpdating ? (
                     <Loader2 className="animate-spin" size={20} />
@@ -555,17 +599,17 @@ const UserProfile = () => {
             </div>
 
             {/* 📍 Audit Logs - Nested inside the same Registry container */}
-            <div className="p-10 bg-background/50">
-              <h2 className="text-lg font-serif mb-6 flex items-center gap-3 text-textMain">
+            <div className="p-6 md:p-10 bg-background/50">
+              <h2 className="text-base md:text-lg font-serif mb-6 flex items-center gap-3 text-textMain">
                 <Shield size={20} className="text-primary" /> Audit Logs
               </h2>
               <div className="flex flex-col sm:flex-row gap-8">
                 <div className="flex gap-4 items-center">
-                  <div className="p-3 bg-card rounded-2xl shadow-sm text-primary">
+                  <div className="p-2.5 md:p-3 bg-card rounded-2xl shadow-sm text-primary">
                     <Clock size={20} />
                   </div>
                   <div>
-                    <p className="text-[9px] uppercase text-textMain/60 font-bold tracking-[0.1em]">
+                    <p className="text-[8px] md:text-[9px] uppercase text-textMain/60 font-bold tracking-[0.1em]">
                       Joined Registry
                     </p>
                     <p className="text-sm font-bold text-textMain">
@@ -576,10 +620,10 @@ const UserProfile = () => {
                   </div>
                 </div>
                 <div className="flex-1">
-                  <p className="text-[9px] uppercase text-textMain/60 font-bold tracking-[0.1em] mb-1">
+                  <p className="text-[8px] md:text-[9px] uppercase text-textMain/60 font-bold tracking-[0.1em] mb-1">
                     Node UUID
                   </p>
-                  <code className="text-[10px] text-textMain/60 font-mono bg-card px-3 py-1 rounded-lg border border-border">
+                  <code className="text-[9px] md:text-[10px] text-textMain/60 font-mono bg-card px-3 py-1 rounded-lg border border-border break-all">
                     {user.user_id}
                   </code>
                 </div>
@@ -589,11 +633,11 @@ const UserProfile = () => {
         </div>
 
         {/* Right Column (lg:col-span-1) - Operational Districts */}
-        <div className="lg:col-span-1 flex flex-col gap-8">
+        <div className="lg:col-span-1 flex flex-col gap-6 md:gap-8">
           {isSalesRepProfile && (
             <>
-            <section className="bg-card p-10 rounded-[2.5rem] shadow-sm border border-border">
-              <div className="flex items-center justify-between mb-8">
+            <section className="bg-card p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-border">
+              <div className="flex items-center justify-between mb-6 md:mb-8">
                 <h2 className="text-lg font-serif flex items-center gap-3 text-textMain">
                   <MapPin size={20} className="text-primary" /> Operational
                   Areas
@@ -608,14 +652,14 @@ const UserProfile = () => {
                 )}
               </div>
 
-              <div className="flex flex-wrap gap-2 mb-6">
+              <div className="flex flex-wrap gap-2 mb-6 max-h-40 overflow-y-auto custom-scrollbar pr-2">
                 {userAreas.length > 0 ? (
                   userAreas.map((area, idx) => (
                     <div
                       key={idx}
                       className="flex items-center gap-2 bg-background border border-border px-4 py-2 rounded-xl"
                     >
-                      <span className="text-[10px] font-black text-textMain/70 uppercase">
+                      <span className="text-[9px] md:text-[10px] font-black text-textMain/70 uppercase">
                         {area.district_name}
                       </span>
                       {isAdmin && isEditingAreas && (
@@ -636,11 +680,11 @@ const UserProfile = () => {
               </div>
 
               {isAdmin && isEditingAreas && (
-                <div className="mt-8 pt-8 border-t border-border">
+                <div className="mt-6 pt-6 border-t border-border">
                   <p className="text-[9px] font-black text-primary uppercase mb-4 tracking-widest">
                     Add New Area
                   </p>
-                  <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
                     {districtsList
                       .filter(
                         (d) => !userAreas.some((ua) => ua.district_name === d),
@@ -660,8 +704,8 @@ const UserProfile = () => {
             </section>
 
             {/* 🚀 Monthly Progress Section */}
-            <section className="bg-card p-8 rounded-[2.5rem] shadow-sm border border-border animate-in slide-in-from-bottom-4 duration-500">
-              <div className="flex items-center justify-between mb-6">
+            <section className="bg-card p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-border animate-in slide-in-from-bottom-4 duration-500">
+              <div className="flex items-center justify-between mb-5 md:mb-6">
                 <h2 className="text-lg font-serif flex items-center gap-3 text-textMain">
                   <TrendingUp size={20} className="text-primary" /> Current Progress
                 </h2>
@@ -673,19 +717,19 @@ const UserProfile = () => {
               {loadingProgress ? (
                 <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-primary" size={24} /></div>
               ) : (
-                <div className="space-y-6">
-                  <div className="space-y-4">
+                <div className="space-y-5 md:space-y-6">
+                  <div className="space-y-3 md:space-y-4">
                     <div className="flex justify-between items-center border-b border-border pb-3">
-                      <span className="text-[11px] font-bold text-textMain/50 uppercase tracking-widest">Allocation Quota</span>
-                      <span className="text-sm font-black text-textMain">Rs. {progressData.target.toLocaleString()}</span>
+                      <span className="text-[10px] md:text-[11px] font-bold text-textMain/50 uppercase tracking-widest">Allocation Quota</span>
+                      <span className="text-xs md:text-sm font-black text-textMain">Rs. {progressData.target.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center border-b border-border pb-3">
-                      <span className="text-[11px] font-bold text-textMain/50 uppercase tracking-widest">Live Achieved</span>
-                      <span className="text-sm font-black text-emerald-500">Rs. {progressData.achieved.toLocaleString()}</span>
+                      <span className="text-[10px] md:text-[11px] font-bold text-textMain/50 uppercase tracking-widest">Live Achieved</span>
+                      <span className="text-xs md:text-sm font-black text-emerald-500">Rs. {progressData.achieved.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center pb-3">
-                      <span className="text-[11px] font-bold text-textMain/50 uppercase tracking-widest">Remaining Deficit</span>
-                      <span className={`text-sm font-black ${deficitAmount === 0 ? "text-primary" : "text-textMain/50"}`}>
+                      <span className="text-[10px] md:text-[11px] font-bold text-textMain/50 uppercase tracking-widest">Remaining Deficit</span>
+                      <span className={`text-xs md:text-sm font-black ${deficitAmount === 0 ? "text-primary" : "text-textMain/50"}`}>
                         {deficitAmount === 0 ? "Target Achieved!" : `Rs. ${deficitAmount.toLocaleString()}`}
                       </span>
                     </div>
@@ -693,8 +737,8 @@ const UserProfile = () => {
 
                   <div className="space-y-2 pt-2">
                     <div className="flex justify-between items-end">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-textMain/40">Completion Index</span>
-                      <span className="text-2xl font-black text-primary tracking-tighter leading-none">{progressPercentage.toFixed(1)}%</span>
+                      <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-textMain/40">Completion Index</span>
+                      <span className="text-xl md:text-2xl font-black text-primary tracking-tighter leading-none">{progressPercentage.toFixed(1)}%</span>
                     </div>
                     <div className="w-full bg-background border border-border h-3 rounded-full overflow-hidden p-0.5 shadow-inner">
                       <div 
@@ -711,13 +755,13 @@ const UserProfile = () => {
         </div>
       </div>
 
-      {/* Spacing Gap before Portfolio */}
-      <div className="my-10" />
+      {/* Spacing Gap before Portfolio - mobile friendly */}
+      <div className="my-6 md:my-10" />
 
       {/* Customer Portfolio Table */}
       {isSalesRepProfile && (isAdmin || isOwnProfile) && (
-        <section className="bg-card p-10 rounded-[2.5rem] shadow-sm border border-border animate-in fade-in duration-700">
-          <div className="flex items-center justify-between mb-8">
+        <section className="bg-card p-6 md:p-10 rounded-[2.5rem] shadow-sm border border-border animate-in fade-in duration-700">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 md:mb-8">
             <h2 className="text-xl font-serif flex items-center gap-3 text-textMain">
               <Users size={24} className="text-primary" /> Customer Portfolio
             </h2>
@@ -734,8 +778,9 @@ const UserProfile = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-separate border-spacing-y-2">
+          {/* Desktop Table */}
+          <div className="hidden md:block max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
+            <table className="w-full text-left border-separate" style={{ borderSpacing: '0 0.5rem' }}>
               <thead>
                 <tr className="text-[10px] font-black text-textMain/60 uppercase tracking-[0.2em]">
                   <th className="px-6 py-4">Client / Saloon</th>
@@ -745,21 +790,12 @@ const UserProfile = () => {
                 </tr>
               </thead>
               <tbody>
-                {loadingCustomers ? (
-                  <tr>
-                    <td colSpan="4" className="text-center py-20">
-                      <Loader2
-                        className="animate-spin mx-auto text-primary"
-                        size={30}
-                      />
-                    </td>
-                  </tr>
-                ) : customers.length > 0 ? (
+                {customers.length > 0 ? (
                   customers.map((cust) => (
                     <tr
                       key={cust.customer_id}
                       className="group hover:translate-x-1 transition-all cursor-pointer hover:bg-primary/5"
-                      onClick={() => navigate(`/customer/${cust.customer_id}`)}
+                      onClick={() => navigate(`/customer/${cust.customer_id}`, { state: { fromUserProfile: true } })}
                     >
                       <td className="px-6 py-5 bg-background rounded-l-2xl border-y border-l border-border">
                         <p className="text-sm font-bold text-textMain">
@@ -794,6 +830,111 @@ const UserProfile = () => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile List */}
+          <div className="md:hidden space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-1">
+            {customers.length > 0 ? (
+              customers.map((cust) => (
+                <div
+                  key={cust.customer_id}
+                  onClick={() => navigate(`/customer/${cust.customer_id}`, { state: { fromUserProfile: true } })}
+                  className="p-4 bg-background rounded-2xl border border-border active:bg-primary/5"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="text-sm font-bold text-textMain">{cust.saloon_name}</p>
+                      <p className="text-[10px] text-textMain/60">{cust.owner_name}</p>
+                    </div>
+                    <span className="text-[10px] font-black uppercase text-green-600 bg-green-500/10 px-3 py-1 rounded-lg border border-green-500/20 shrink-0">
+                      Mapped
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-textMain/60 font-medium border-t border-border pt-2 mt-2">
+                    <p className="font-bold uppercase">{cust.district}</p>
+                    <p>{cust.phone1 || cust.phone2 || "N/A"}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-16 text-textMain/40 font-bold uppercase text-xs italic">No portfolio data.</div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Spacing Gap before Behaviors */}
+      {(isAdmin || isOwnProfile) && behaviors.length > 0 && <div className="my-10" />}
+
+      {/* Behavior Notes Section */}
+      {(isAdmin || isOwnProfile) && behaviors.length > 0 && (
+        <section className="bg-card p-10 rounded-[2.5rem] shadow-sm border border-border animate-in fade-in duration-700">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-xl font-serif flex items-center gap-3 text-textMain">
+              <ClipboardList size={24} className="text-primary" /> Behavior & Performance Records
+            </h2>
+            <span className="text-[10px] font-black uppercase text-textMain/60 tracking-widest">
+              Total Records: {behaviors.length}
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            {behaviors.map((behavior) => {
+              let icon = <Activity size={16} />;
+              let colorClass = "text-textMain/60 border-border bg-background";
+              
+              switch(behavior.behavior_category) {
+                case 'Excellent':
+                  icon = <Star size={16} />;
+                  colorClass = "text-green-600 border-green-500/20 bg-green-500/10";
+                  break;
+                case 'Good':
+                  icon = <ThumbsUp size={16} />;
+                  colorClass = "text-blue-600 border-blue-500/20 bg-blue-500/10";
+                  break;
+                case 'Average':
+                  icon = <Activity size={16} />;
+                  colorClass = "text-yellow-600 border-yellow-500/20 bg-yellow-500/10";
+                  break;
+                case 'Poor':
+                  icon = <ThumbsDown size={16} />;
+                  colorClass = "text-orange-600 border-orange-500/20 bg-orange-500/10";
+                  break;
+                case 'Warning':
+                  icon = <AlertTriangle size={16} />;
+                  colorClass = "text-red-600 border-red-500/20 bg-red-500/10";
+                  break;
+              }
+
+              const bgClass = colorClass.split(' ').find(c => c.startsWith('bg-'));
+              const borderClass = colorClass.split(' ').find(c => c.startsWith('border-'));
+              const textClass = colorClass.split(' ').find(c => c.startsWith('text-'));
+
+              return (
+                <div key={behavior.note_id} className={`rounded-2xl border p-4 md:p-5 transition-all ${bgClass} ${borderClass}`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className={`flex items-center gap-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-wider ${textClass}`}>
+                          {icon} {behavior.behavior_category}
+                        </span>
+                        <span className="text-[8px] md:text-[9px] font-black text-textMain/50 uppercase tracking-widest px-2 py-1 rounded-md bg-background border border-border">
+                          Status: {behavior.current_status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-textMain/80 font-medium leading-relaxed">{behavior.note}</p>
+                      <p className="text-[10px] text-textMain/50 font-bold mt-4 uppercase tracking-wider flex items-center gap-2">
+                        <span>Recorded by {behavior.recorder?.name || 'System'}</span>
+                        <span className="w-1 h-1 rounded-full bg-textMain/20"></span>
+                        <span className="text-primary">{behavior.recorder?.role?.replace('_', ' ') || 'Admin'}</span>
+                        <span className="w-1 h-1 rounded-full bg-textMain/20"></span>
+                        <span>{new Date(behavior.created_at || behavior.createdAt).toLocaleDateString("en-GB")}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
@@ -876,8 +1017,8 @@ const UserProfile = () => {
 
       {/* Password Modal */}
       {showPassModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[1000] flex items-center justify-center p-6 animate-in fade-in duration-300">
-          <div className="bg-card w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl animate-in zoom-in">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[1000] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-card w-full max-w-md rounded-[2.5rem] p-6 md:p-10 shadow-2xl animate-in zoom-in">
             <div className="flex justify-between items-center mb-10">
               <h2 className="text-2xl font-serif text-textMain flex items-center gap-3">
                 <Lock size={24} className="text-primary" /> Security
@@ -932,8 +1073,8 @@ const InfoItem = ({
   onChange,
   type = "text",
 }) => (
-  <div className="space-y-2">
-    <p className="text-[10px] uppercase text-textMain/60 font-bold tracking-[0.1em] flex items-center gap-2">
+  <div className="space-y-1.5">
+    <p className="text-[9px] md:text-[10px] uppercase text-textMain/60 font-bold tracking-[0.1em] flex items-center gap-2">
       <Icon size={14} className="text-primary" /> {label}
     </p>
     {isEditable ? (
@@ -941,10 +1082,10 @@ const InfoItem = ({
         type={type}
         value={value || ""}
         onChange={onChange}
-        className="w-full p-4 bg-background border border-border text-textMain rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all [&::-webkit-calendar-picker-indicator]:dark:invert [&::-webkit-calendar-picker-indicator]:opacity-60" 
+        className="w-full p-3 md:p-4 bg-background border border-border text-textMain rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all [&::-webkit-calendar-picker-indicator]:dark:invert [&::-webkit-calendar-picker-indicator]:opacity-60" 
       />
     ) : (
-      <p className="text-sm font-bold text-textMain px-1">
+      <p className="text-xs md:text-sm font-bold text-textMain px-1">
         {value || "Not Recorded"}
       </p>
     )}
@@ -955,7 +1096,7 @@ const PasswordInput = ({ label, name, value, onChange }) => {
   const [showPassword, setShowPassword] = useState(false);
   return (
     <div className="space-y-2 text-left">
-      <p className="text-[10px] uppercase text-textMain/60 font-bold tracking-[0.1em]">
+      <p className="text-[9px] md:text-[10px] uppercase text-textMain/60 font-bold tracking-[0.1em]">
         {label}
       </p>
       <div className="relative">
@@ -964,7 +1105,7 @@ const PasswordInput = ({ label, name, value, onChange }) => {
           name={name}
           value={value}
           onChange={onChange}
-          className="w-full p-4 pr-12 bg-background border border-border rounded-2xl text-sm focus:border-primary outline-none"
+          className="w-full p-3.5 md:p-4 pr-12 bg-background border border-border rounded-2xl text-sm focus:border-primary outline-none"
         />
         <button
           type="button"
