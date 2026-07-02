@@ -25,6 +25,7 @@ import {
   Edit,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
 import { toast } from "react-hot-toast";
 import { MySwal } from "../../utils/swalConfig";
 
@@ -80,7 +81,7 @@ const statusBadge = {
 const ViewOrders = ({ showHeader = true }) => {
   const navigate = useNavigate();
   const { token, logout } = useAuth();
-  const { addNotification } = useNotifications();
+  const { addNotification, setNotificationsFromAPI } = useNotifications();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -129,15 +130,15 @@ const ViewOrders = ({ showHeader = true }) => {
   // change page function
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  const saveNotificationToDB = async (type, title, message, severity) => {
-        try {
-            await api.post(`/notifications`, { type, title, message, severity },
-            { headers: { Authorization: `Bearer ${token}` } }
-            );
-        } catch (err) {
-            console.error('Failed to save notification:', err);
-        }
-  };
+    const saveNotificationToDB = async (type, title, message, severity, reference_id = null) => {
+      try {
+        await api.post(`/notifications`, { type, title, message, severity, reference_id },
+        { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } catch (err) {
+        console.error('Failed to save notification:', err);
+      }
+    };
 
   const handleDeleteOrder = async (orderId) => {
     const result = await MySwal.fire({
@@ -196,19 +197,35 @@ const ViewOrders = ({ showHeader = true }) => {
 
                 const config = statusConfig[newStatus] || { title: `📋 Order ${newStatus}`, severity: 'info' };
                 const orderRef = `#${orderId.substring(0, 8).toUpperCase()}`;
+                const orderObj = orders.find((o) => o.order_id === orderId) || {};
+                const customerName = orderObj.customer_name || 'Unknown Customer';
+                const amount = orderObj.total_amount ? `LKR ${Number(orderObj.total_amount).toLocaleString()}` : '';
+
+                const messageText = amount
+                  ? `Order ${orderRef} for ${customerName} (${amount}) was marked as ${newStatus} by ${loggedUser?.name}`
+                  : `Order ${orderRef} for ${customerName} was marked as ${newStatus} by ${loggedUser?.name}`;
 
                 await saveNotificationToDB(
                 'order',
                 config.title,
-                `Order ${orderRef} has been marked as ${newStatus} by ${loggedUser?.name}`,
-                config.severity
+                messageText,
+                config.severity,
+                orderId
                 );
+
                 addNotification({
                 type: 'order',
                 title: config.title,
-                message: `Order ${orderRef} has been marked as ${newStatus} by ${loggedUser?.name}`,
-                severity: config.severity
+                message: messageText,
+                severity: config.severity,
+                reference_id: orderId,
                 });
+
+                // Sync the context from the server so backend-created stock alerts update the badge immediately.
+                const notificationRes = await api.get('/notifications', {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                setNotificationsFromAPI(notificationRes.data.notifications || []);
 
                 fetchOrders(false); 
             } catch (err) {

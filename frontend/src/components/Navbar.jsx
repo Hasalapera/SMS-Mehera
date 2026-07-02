@@ -11,6 +11,7 @@ const Navbar = () => {
     const { logout, user: currentUser } = useAuth();
     const { notifications, unreadCount, markAsRead, refreshNotifications } = useNotifications();
     const navigate = useNavigate();
+    const { unreadCount, setNotificationsFromAPI } = useNotifications();
     const [isOpen, setIsOpen] = useState(false);
     const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
     const [systemSettings, setSystemSettings] = useState(null);
@@ -41,6 +42,33 @@ const Navbar = () => {
         };
         fetchBranding();
     }, []);
+
+    useEffect(() => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        let isMounted = true;
+
+        const fetchNotifications = async () => {
+            try {
+                const config = { headers: { Authorization: `Bearer ${token}` } };
+                const res = await api.get('/notifications', config);
+                if (isMounted) {
+                    setNotificationsFromAPI(res.data.notifications || []);
+                }
+            } catch (err) {
+                console.error('Navbar notification fetch failed:', err.response?.data || err.message);
+            }
+        };
+
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 30000);
+
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
+    }, [setNotificationsFromAPI]);
 
     const toggleTheme = () => {
         if (isDark) {

@@ -2,6 +2,7 @@
 const { User, Order, UserArea, Customer, SalesTarget, sequelize} = require('../models');
 const { createNotification } = require('./notificationController');
 const { Op } = require('sequelize');
+const { createNotification } = require('./notificationController');
 
 
 /**

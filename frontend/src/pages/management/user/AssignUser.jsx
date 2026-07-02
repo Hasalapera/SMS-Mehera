@@ -8,10 +8,12 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { MySwal } from "../../utils/swalConfig";
+import { useNotifications } from "../../context/NotificationContext";
 
 const AssignUser = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("accessToken");
+  const { setNotificationsFromAPI } = useNotifications();
   const districtsList = ["Colombo", "Gampaha", "Kalutara", "Kandy", "Matale", "Nuwara Eliya", "Galle", "Matara", "Hambantota", "Jaffna", "Kilinochchi", "Mannar", "Vavuniya", "Mullaitivu", "Batticaloa", "Ampara", "Trincomalee", "Kurunegala", "Puttalam", "Anuradhapura", "Polonnaruwa", "Badulla", "Moneragala", "Ratnapura", "Kegalle"];
   const [activePopover, setActivePopover] = useState(null);
 
@@ -94,6 +96,13 @@ const AssignUser = () => {
     }
   };
 
+  const refreshNotifications = async () => {
+    const notificationRes = await api.get("/notifications", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setNotificationsFromAPI(notificationRes.data.notifications || []);
+  };
+
   const toggleCustomerSelection = (customer) => {
     let updated = tempSelected.find((c) => c.customer_id === customer.customer_id)
       ? tempSelected.filter((c) => c.customer_id !== customer.customer_id)
@@ -113,6 +122,9 @@ const AssignUser = () => {
       toast.success("Assignment Successful!");
       setAssignedCustomers([...assignedCustomers, ...tempSelected]);
       setCustomers(customers.map((c) => customerIds.includes(c.customer_id) ? { ...c, sales_rep_id: selectedRep.user_id } : c));
+
+      await refreshNotifications();
+
       setTempSelected([]);
       localStorage.removeItem("pendingAssignments");
     } catch (err) {
@@ -157,6 +169,9 @@ const AssignUser = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         toast.success("Transferred successfully");
+
+        await refreshNotifications();
+
         // Update local list
         setInactiveRepCustomers(prev => prev.filter(c => c.customer_id !== customerId));
         fetchInitialData(); // Refresh UI
@@ -222,6 +237,7 @@ const AssignUser = () => {
             ? { ...r, areas: [...r.areas, { district_name: district }] } 
             : r
         ));
+        await refreshNotifications();
         
         } catch (err) {
         toast.error(err.response?.data?.error || "Failed to assign area");
@@ -255,6 +271,7 @@ const AssignUser = () => {
             ? { ...r, areas: [...r.areas, { district_name: district }] } 
             : r
             ));
+            await refreshNotifications();
         } catch (err) {
             toast.error("Assignment failed");
         }

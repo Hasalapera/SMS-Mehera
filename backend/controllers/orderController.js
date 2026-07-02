@@ -348,6 +348,37 @@ const updateOrderStatus = async (req, res) => {
       for (const update of variantsToUpdate) {
         update.variant.stock_count -= update.qtyToDeduct;
         await update.variant.save({ transaction });
+
+        const remainingStock = Number(update.variant.stock_count || 0);
+        const productName = update.variant.product?.product_name || 'Unknown Product';
+        const variantName = update.variant.variant_name || 'Standard';
+        const criticalLevel = Number(update.variant.critical_stock_level || 5);
+
+        if (remainingStock <= 0) {
+          await createNotification(
+            'stock',
+            '🔴 Out of Stock Alert',
+            `${productName} - ${variantName} is now OUT OF STOCK after order approval.`,
+            update.variant.variant_id,
+            'critical'
+          );
+        } else if (remainingStock <= criticalLevel) {
+          await createNotification(
+            'stock',
+            '🔴 Critical Stock Level',
+            `${productName} - ${variantName} is now at CRITICAL stock level (${remainingStock} units) after order approval.`,
+            update.variant.variant_id,
+            'critical'
+          );
+        } else if (remainingStock < 10) {
+          await createNotification(
+            'stock',
+            '🟡 Low Stock Alert',
+            `${productName} - ${variantName} is now LOW stock (${remainingStock} units) after order approval.`,
+            update.variant.variant_id,
+            'warning'
+          );
+        }
       }
     }
 
