@@ -1,3 +1,4 @@
+// backend/controllers/orderController.js
 const { Order, OrderItem, ProductVariant, Product, User, Customer, SalesTarget } = require('../models');
 const sequelize = require('../db/db');
 const { sendEmailInvoice } = require('../utils/sendEmailInvoice'); 
@@ -6,6 +7,7 @@ const { sendDispatchNotification } = require('../utils/sendDispatchNotification'
 const { decrypt } = require('../utils/cryptoUtils');
 const { sendDeliveryOTP, sendThankYouEmail } = require('../utils/emailSender');
 const { createNotification } = require('./notificationController');
+const { Op } = require('sequelize'); // 💡 [ADDED]: Sequelize Operators, Like operations සඳහා
 
 const getOrderNotificationTarget = async (orderLike, fallbackUserId) => {
   if (!orderLike?.customer_id) return fallbackUserId || null;
@@ -71,7 +73,7 @@ const placeOrder = async (req, res) => {
       discount_amount: discount_amount || 0,      
       total_amount: total_amount || 0, 
       payment_method: payment_method || 'cash',   
-     order_status: 'requested',
+      order_status: 'requested',
       created_by: req.user.user_id,
       order_type: 'offline'
     }, { transaction });
@@ -451,11 +453,11 @@ const updateTrackingInfo = async (req, res) => {
   }
 };
 
-// 🛡️ 🎯 [THE CRITICAL FIX]: Courier & Landing Page Direct Scan Confirm Delivery Request 
+// 🛡️ Courier & Landing Page Direct Scan Confirm Delivery Request 
 const confirmDeliveryWithOTP = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { token, otp } = req.body; // 💡 Token එක ආවොත් ලින්ක් එකෙන්, නැත්නම් ලෑන්ඩින් පේජ් එකෙන් හිස්ව එනවා
+    const { token, otp } = req.body; 
 
     const order = await Order.findByPk(orderId, {
       include: [{ model: Customer, as: 'customer' }]
@@ -467,8 +469,6 @@ const confirmDeliveryWithOTP = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Order is already marked as delivered.' });
     }
 
-    // 🚀 [THE SMART OVERRIDE]: ලෑන්ඩින් පේජ් එකෙන් කෙලින්ම එද්දී token එකක් නැති නිසා, OTP එක විතරක් චෙක් කරනවා.
-    // ලින්ක් එකෙන් ආවොත් ටෝකන් එකයි OTP දෙකම චෙක් කරනවා.
     if (token) {
         if (order.delivery_token !== token || order.delivery_otp !== otp) {
             return res.status(400).json({ success: false, message: 'Invalid Link or Incorrect OTP!' });
@@ -515,7 +515,7 @@ const initiateDeliveryOTP = async (req, res) => {
     sendDeliveryOTP(emailToUse, order.customer_name || order.customer?.saloon_name, order.order_id, otp).catch(console.error);
     res.status(200).json({ success: true, message: 'OTP sent to customer email' });
   } catch (error) {
-    console.error("Initiate Delivery Error:", error);
+    console.error("Init Delivery Error:", error);
     res.status(500).json({ success: false, message: 'Failed to initiate delivery' });
   }
 };
@@ -541,6 +541,45 @@ const verifyDeliveryOTPByRep = async (req, res) => {
   }
 };
 
+const getOrderById = async (req, res) => {
+  try {
+    const { orderId } = req.params; 
+    const searchTerm = orderId.trim();
+
+    let order = null;
+
+    // 1. UUID එකක් නම්
+    if (searchTerm.length === 36) {
+      order = await Order.findByPk(searchTerm, {
+        // 🎯 [ADDED order_type]: ෆ්‍රොන්ටෙන්ඩ් එකට ඕඩර් වර්ගය හඳුනාගන්න මේක එකතු කලා
+        attributes: ['order_id', 'customer_name', 'order_status', 'tracking_id', 'order_type']
+      });
+    }
+
+    // 2. Short ID එකක් නම්
+    if (!order) {
+      order = await Order.findOne({
+        where: sequelize.where(
+          sequelize.cast(sequelize.col('order_id'), 'text'),
+          { [Op.like]: `${searchTerm.toLowerCase()}%` }
+        ),
+        // 🎯 [ADDED order_type]: මෙතනටත් එකතු කලා මචං
+        attributes: ['order_id', 'customer_name', 'order_status', 'tracking_id', 'order_type']
+      });
+    }
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order reference not found in registry" });
+    }
+
+    return res.status(200).json(order);
+
+  } catch (error) {
+    console.error("Fetch Single Order Error:", error);
+    return res.status(500).json({ success: false, message: "Server error tracing order reference" });
+  }
+};
+
 module.exports = { 
     placeOrder, 
     placeOnlineOrder, 
@@ -549,5 +588,6 @@ module.exports = {
     updateTrackingInfo, 
     confirmDeliveryWithOTP, 
     initiateDeliveryOTP, 
-    verifyDeliveryOTPByRep 
+    verifyDeliveryOTPByRep,
+    getOrderById
 };

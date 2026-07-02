@@ -1,8 +1,9 @@
 // src/pages/OrderVerificationHub.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { QrCode, ScanLine, EyeOff, CheckCircle, Search, Truck, Clock, Package, Smartphone } from 'lucide-react';
+import { QrCode, ScanLine, EyeOff, CheckCircle, Search, Truck, Clock, Package, Smartphone, Award, Globe, Copy, Check } from 'lucide-react';
 import api from '../api/axiosInstance';
 import Swal from 'sweetalert2';
+import toast from 'react-hot-toast'; // 💡 ක්ලික් කලාම "Copied!" ඇලර්ට් එක දෙන්න
 import StatNavBar from '../components/StatNavBar';
 import Footer from '../components/Footer';
 
@@ -20,9 +21,10 @@ const OrderVerificationHub = () => {
   const [searchOrderId, setSearchOrderId] = useState('');
   const [orderStatusData, setOrderStatusData] = useState(null);
   const [searching, setSearching] = useState(false);
+  const [isCopied, setIsCopied] = useState(false); // 💡 කොපි අයිකන් එක මාරු කරන්න
 
   useEffect(() => {
-    window.scrollTo(0, 0); // 🚀 පේජ් එක ලෝඩ් වෙද්දීම උඩටම ස්ක්‍රෝල් කරවනවා
+    window.scrollTo(0, 0); 
   }, []);
 
   useEffect(() => {
@@ -106,23 +108,52 @@ const OrderVerificationHub = () => {
     if (!searchOrderId.trim()) return;
     setSearching(true);
     setOrderStatusData(null);
+    setIsCopied(false); // සර්ච් කරද්දි කොපි ස්ටේට් එක රීසෙට් කරනවා
     try {
       const res = await api.get(`/orders/${searchOrderId.trim()}`);
       setOrderStatusData(res.data);
     } catch (err) {
-      Swal.fire({ title: 'Not Found', text: 'Could not find any details for this Order ID.', icon: 'warning', confirmButtonColor: '#000000' });
+      Swal.fire({ title: 'Not Found', text: 'Could not find any details for this Order Reference.', icon: 'warning', confirmButtonColor: '#000000' });
     } finally {
       setSearching(false);
     }
   };
 
+  // 🎯 [NEW]: Tracking ID එක Clipboard එකට Copy කරවන ශ්‍රිතය
+  const handleCopyTrackingId = (text) => {
+    navigator.clipboard.writeText(text);
+    setIsCopied(true);
+    toast.success('Tracking ID copied to clipboard!');
+    
+    // තත්පර 2කින් අයිකන් එක ආයෙත් පරණ තත්ත්වයට ගන්නවා මචං
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 2000);
+  };
+
   const getStatusBadge = (status) => {
-    const base = "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ";
-    if (status === 'requested') return base + "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20";
-    if (status === 'approved') return base + "bg-blue-500/10 text-blue-500 border border-blue-500/20";
-    if (status === 'shipped') return base + "bg-purple-500/10 text-purple-500 border border-purple-500/20";
-    if (status === 'delivered') return base + "bg-green-500/10 text-green-500 border border-green-500/20";
-    return base + "bg-gray-500/10 text-gray-500 border border-gray-500/20";
+    const base = "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-block ";
+    if (status === 'requested') return <span className={`${base} bg-yellow-500/10 text-yellow-500 border border-yellow-500/20`}>Requested</span>;
+    if (status === 'approved') return <span className={`${base} bg-blue-500/10 text-blue-500 border border-blue-500/20`}>Approved</span>;
+    if (status === 'shipped') return <span className={`${base} bg-purple-500/10 text-purple-500 border border-purple-500/20`}>Shipped</span>;
+    if (status === 'delivered') return <span className={`${base} bg-green-500/10 text-green-500 border border-green-500/20`}>Delivered</span>;
+    return <span className={`${base} bg-gray-500/10 text-gray-500 border border-gray-500/20`}>{status}</span>;
+  };
+
+  const getOrderTypeBadge = (type) => {
+    const base = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest mt-1.5 border ";
+    if (type === 'online') {
+      return (
+        <span className={`${base} bg-sky-500/10 text-sky-500 border-sky-500/20 shadow-sm`}>
+          <Globe size={11} /> Online Order
+        </span>
+      );
+    }
+    return (
+      <span className={`${base} bg-[#b4a460]/10 text-primary border-primary/20 shadow-sm`}>
+        <Award size={11} /> Professional Order
+      </span>
+    );
   };
 
   return (
@@ -228,12 +259,15 @@ const OrderVerificationHub = () => {
 
                 {orderStatusData && (
                   <div className="bg-background/40 rounded-3xl border border-border p-5 sm:p-6 space-y-6 animate-in fade-in duration-300 w-full shadow-inner">
+                    
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
-                      <div>
+                      <div className="flex flex-col items-start text-left">
                         <h4 className="text-[10px] font-black text-textMain/40 uppercase tracking-widest">Consignee Name</h4>
                         <p className="text-sm font-black text-textMain mt-0.5 uppercase tracking-tight">{orderStatusData.customer_name}</p>
+                        {getOrderTypeBadge(orderStatusData.order_type)}
                       </div>
-                      <div className="sm:text-right">
+                      
+                      <div className="sm:text-right text-left">
                         <h4 className="text-[10px] font-black text-textMain/40 uppercase tracking-widest mb-1.5">Manifest Status</h4>
                         {getStatusBadge(orderStatusData.order_status)}
                       </div>
@@ -266,10 +300,23 @@ const OrderVerificationHub = () => {
                       })}
                     </div>
 
+                    {/* 🎯 [FIXED & ADDED COPY BUTTON AREA]: Courier Tracking ID එක ළඟින් Click-to-Copy බටන් එකක් හැදුවා මචං */}
                     {orderStatusData.tracking_id && (
-                      <div className="bg-card p-4 rounded-xl border border-border flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-xs">
+                      <div className="bg-card p-4 rounded-xl border border-border flex flex-col sm:flex-row justify-between sm:items-center gap-3 text-xs">
                         <span className="font-black text-textMain/40 uppercase tracking-widest text-[9px]">Courier Waybill Tracking:</span>
-                        <span className="font-mono font-black text-primary text-sm tracking-wider">{orderStatusData.tracking_id}</span>
+                        <div className="flex items-center gap-2 bg-background/50 pl-3 pr-2 py-1.5 rounded-lg border border-border w-full sm:w-auto justify-between sm:justify-start">
+                          <span className="font-mono font-black text-primary text-sm tracking-wider truncate max-w-[200px]">
+                            {orderStatusData.tracking_id}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyTrackingId(orderStatusData.tracking_id)}
+                            className="p-1.5 hover:bg-primary/10 rounded-md text-textMain/60 hover:text-primary transition-all active:scale-90"
+                            title="Copy Waybill Number"
+                          >
+                            {isCopied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
