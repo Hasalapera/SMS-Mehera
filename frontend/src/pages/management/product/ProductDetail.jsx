@@ -10,6 +10,7 @@ import {
   X,
   Image as ImageIcon,
   AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import api from "../../../api/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
@@ -19,6 +20,8 @@ const formatStatus = (status) => {
   if (!status) return "Unknown";
   return status.charAt(0).toUpperCase() + status.slice(1);
 };
+
+const getVariantDeletedAt = (variant = {}) => variant.deletedAt || variant.deleted_at || null;
 
 const createVariantDraft = (variant = {}) => ({
   variant_id: variant.variant_id || null,
@@ -40,7 +43,9 @@ const createEditForm = (source = {}) => ({
   status: source.status || "active",
   main_image: null,
   variants: Array.isArray(source.variants) && source.variants.length > 0
-    ? source.variants.map((variant) => createVariantDraft(variant))
+    ? source.variants
+      .filter((variant) => !getVariantDeletedAt(variant))
+        .map((variant) => createVariantDraft(variant))
     : [createVariantDraft()],
 });
 
@@ -55,6 +60,9 @@ export default function ProductDetail() {
   const [isEditing, setIsEditing] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deletingVariantId, setDeletingVariantId] = useState(null);
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
   const [editForm, setEditForm] = useState(null);
@@ -144,6 +152,10 @@ export default function ProductDetail() {
     setMainImagePreview(null);
   };
 
+  const handleCancelDeleteMode = () => {
+    setIsDeleteMode(false);
+  };
+
   const handleEditFieldChange = (e) => {
     const { name, value } = e.target;
     setEditForm((current) => ({ ...current, [name]: value }));
@@ -200,6 +212,153 @@ export default function ProductDetail() {
         variants: current.variants.filter((_, currentIndex) => currentIndex !== index),
       };
     });
+  };
+
+  const syncVariantRemoval = (variantId) => {
+    setProduct((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        variants: (current.variants || []).map((variant) => (
+          variant.variant_id === variantId
+            ? { ...variant, deletedAt: variant.deletedAt || variant.deleted_at || new Date().toISOString(), deleted_at: variant.deleted_at || variant.deletedAt || new Date().toISOString() }
+            : variant
+        )),
+      };
+    });
+
+    setEditForm((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        variants: (current.variants || []).filter((variant) => variant.variant_id !== variantId),
+      };
+    });
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!product) return;
+
+    const toastId = toast.custom((t) => (
+      <div className="w-[320px] max-w-[calc(100vw-2rem)] rounded-3xl border border-border bg-card p-4 shadow-2xl">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 rounded-full bg-red-500/10 p-2 text-red-500">
+            <Trash2 size={16} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-black text-textMain">Delete {product.product_name} and all of its variants?</p>
+            <p className="mt-1 text-[11px] font-medium text-textMain/60">
+              This will soft-delete the product and every related variant.
+            </p>
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  toast.dismiss(toastId);
+                  try {
+                    setDeleting(true);
+                    const response = await api.delete(`/products/${id}`, {
+                      headers: {
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                      },
+                    });
+
+                    toast.success(response.data?.message || 'Product deleted successfully');
+                    navigate('/inventory');
+                  } catch (err) {
+                    toast.error(err.response?.data?.error || 'Failed to delete product');
+                  } finally {
+                    setDeleting(false);
+                    setIsDeleteMode(false);
+                  }
+                }}
+                className="rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-primary/90"
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.dismiss(toastId)}
+                className="rounded-xl border border-border bg-background px-3 py-2 text-[10px] font-black uppercase tracking-widest text-textMain/60 hover:bg-card"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => toast.dismiss(toastId)}
+            className="text-textMain/40 hover:text-textMain"
+            aria-label="Close confirmation"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity });
+  };
+
+  const handleDeleteVariant = async (variantId) => {
+    if (!variantId) return;
+
+    const variant = (product?.variants || []).find((item) => item.variant_id === variantId);
+
+    const toastId = toast.custom((t) => (
+      <div className="w-[320px] max-w-[calc(100vw-2rem)] rounded-3xl border border-border bg-card p-4 shadow-2xl">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 rounded-full bg-red-500/10 p-2 text-red-500">
+            <Trash2 size={16} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-black text-textMain">Delete variant {variant?.variant_name || ''}?</p>
+            <p className="mt-1 text-[11px] font-medium text-textMain/60">
+              This will soft-delete the selected variant from the product.
+            </p>
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  toast.dismiss(toastId);
+                  try {
+                    setDeletingVariantId(variantId);
+                    const response = await api.delete(`/products/${id}/variants/${variantId}`, {
+                      headers: {
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                      },
+                    });
+
+                    toast.success(response.data?.message || 'Variant deleted successfully');
+                    syncVariantRemoval(variantId);
+                  } catch (err) {
+                    toast.error(err.response?.data?.error || 'Failed to delete variant');
+                  } finally {
+                    setDeletingVariantId(null);
+                  }
+                }}
+                className="rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-primary/90"
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.dismiss(toastId)}
+                className="rounded-xl border border-border bg-background px-3 py-2 text-[10px] font-black uppercase tracking-widest text-textMain/60 hover:bg-card"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => toast.dismiss(toastId)}
+            className="text-textMain/40 hover:text-textMain"
+            aria-label="Close confirmation"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   const handleSaveProduct = async (e) => {
@@ -346,6 +505,7 @@ export default function ProductDetail() {
   }
 
   const variants = Array.isArray(product.variants) ? product.variants : [];
+  const activeVariantCount = variants.filter((variant) => !getVariantDeletedAt(variant)).length;
   const firstVariantPrice = variants.length > 0 ? Number(variants[0].price || 0) : 0;
   const totalStock = variants.reduce((sum, item) => sum + Number(item.stock_count || 0), 0);
 
@@ -522,16 +682,40 @@ export default function ProductDetail() {
             <ArrowLeft size={16} /> Back to Inventory
           </button>
 
-          {canEditProduct && (
-            <button
-              type="button"
-              onClick={handleOpenEdit}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-black px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-primary shadow-2xl shadow-black/20 transition-all hover:scale-105 active:scale-95 md:self-start w-full md:w-auto"
-            >
-              <Pencil size={16} />
-              Edit Product
-            </button>
-          )}
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end w-full md:w-auto">
+            {canEditProduct && (
+              <button
+                type="button"
+                onClick={handleOpenEdit}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-black px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-primary shadow-2xl shadow-black/20 transition-all hover:scale-105 active:scale-95 w-full sm:w-auto"
+              >
+                <Pencil size={16} />
+                Edit Product
+              </button>
+            )}
+
+            {canEditProduct && !isDeleteMode && (
+              <button
+                type="button"
+                onClick={() => setIsDeleteMode(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-red-500 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-2xl shadow-red-500/20 transition-all hover:scale-105 active:scale-95 w-full sm:w-auto"
+              >
+                <Trash2 size={16} />
+                Delete Product
+              </button>
+            )}
+
+            {canEditProduct && isDeleteMode && (
+              <button
+                type="button"
+                onClick={handleCancelDeleteMode}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-textMain/70 transition-all hover:scale-105 active:scale-95 w-full sm:w-auto"
+              >
+                <X size={16} />
+                Exit Delete Mode
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -539,8 +723,19 @@ export default function ProductDetail() {
           <div className="bg-card rounded-4xl shadow-md p-8 border border-border">
             <div className="flex flex-col gap-6">
               <div className="flex items-center justify-center">
-                <div className="bg-background rounded-[2.5rem] w-full h-72 flex items-center justify-center p-6 border border-border shadow-inner">
+                <div className="bg-background rounded-[2.5rem] w-full h-72 flex items-center justify-center p-6 border border-border shadow-inner relative overflow-hidden">
                   <img src={product.image_url || "https://placehold.co/400x400/C0B26D/white?text=No+Image"} alt={product.product_name} className="w-full h-full object-contain mix-blend-normal" />
+                  {canEditProduct && isDeleteMode && (
+                    <button
+                      type="button"
+                      onClick={handleDeleteProduct}
+                      disabled={deleting}
+                      className="absolute top-4 right-4 inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-red-500/20 transition-all hover:scale-105 disabled:opacity-70"
+                    >
+                      {deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -577,33 +772,44 @@ export default function ProductDetail() {
           </div>
 
           {/*RIGHT SIDE: Variants Table */}
-          {variants.length > 0 && (
-            <div className="bg-card rounded-4xl shadow-md overflow-hidden border border-border flex flex-col">
-              <div className="bg-primary px-8 py-5 flex items-center justify-between">
-                <h2 className="text-sm font-black text-black uppercase tracking-widest">Product Variations</h2>
-                <span className="text-[10px] font-bold text-black/60">{variants.length} Variants</span>
-              </div>
+          <div className="bg-card rounded-4xl shadow-md overflow-hidden border border-border flex flex-col">
+            <div className="bg-primary px-8 py-5 flex items-center justify-between">
+              <h2 className="text-sm font-black text-black uppercase tracking-widest">Product Variations</h2>
+              <span className="text-[10px] font-bold text-black/60">{activeVariantCount} Active / {variants.length} Total</span>
+            </div>
 
-              <div className="overflow-x-auto flex-1">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-card border-b border-border sticky top-0">
-                      <th className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">Variant</th>
-                      <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">SKU</th>
-                      <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">Price</th>
-                      <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">Stock</th>
-                      {canAddToOrder && <th className="px-4 py-4 text-[9px] text-center font-black uppercase tracking-[0.2em] text-textMain/50">Action</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {variants.map((variant) => (
-                      <tr key={variant.variant_id} className="border-b border-border hover:bg-background">
+            <div className="overflow-x-auto flex-1">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-card border-b border-border sticky top-0">
+                    <th className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">Variant</th>
+                    <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">SKU</th>
+                    <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">Price</th>
+                    <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">Stock</th>
+                    {isDeleteMode && <th className="px-4 py-4 text-[9px] text-center font-black uppercase tracking-[0.2em] text-textMain/50">Delete</th>}
+                    {canAddToOrder && <th className="px-4 py-4 text-[9px] text-center font-black uppercase tracking-[0.2em] text-textMain/50">Action</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {variants.length > 0 ? (
+                    variants.map((variant) => (
+                      <tr
+                        key={variant.variant_id}
+                        className={`border-b border-border ${getVariantDeletedAt(variant) ? 'opacity-40 grayscale pointer-events-none' : 'hover:bg-background'}`}
+                      >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-14 h-14 bg-background rounded-lg flex items-center justify-center p-2 shrink-0 border border-border">
                               <img src={variant.image_url || product.image_url} alt="v" className="max-h-full max-w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
                             </div>
-                            <span className="font-bold text-sm text-textMain">{variant.variant_name}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-sm text-textMain">{variant.variant_name}</span>
+                              {getVariantDeletedAt(variant) && (
+                                <span className="rounded-full bg-red-500/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-red-500">
+                                  Deleted
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="px-4 py-4 text-[10px] font-mono font-bold text-textMain/50 uppercase">{variant.sku}</td>
@@ -613,8 +819,21 @@ export default function ProductDetail() {
                             {variant.stock_count}
                           </span>
                         </td>
+                        {isDeleteMode && !getVariantDeletedAt(variant) && (
+                          <td className="px-4 py-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteVariant(variant.variant_id)}
+                              disabled={deletingVariantId === variant.variant_id}
+                              className="inline-flex items-center justify-center rounded-full bg-red-500 px-3 py-2 text-white shadow-lg shadow-red-500/20 transition-all hover:scale-105 disabled:opacity-70"
+                              title="Delete variant"
+                            >
+                              {deletingVariantId === variant.variant_id ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
+                            </button>
+                          </td>
+                        )}
                         <td className="px-6 py-4 text-right">
-                          {canAddToOrder && (
+                          {canAddToOrder && !getVariantDeletedAt(variant) && (
                             <button 
                               onClick={() => handleAddToCart(variant)}
                               disabled={Number(variant.stock_count) <= 0}
@@ -630,12 +849,21 @@ export default function ProductDetail() {
                           )}
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={canAddToOrder ? (isDeleteMode ? 6 : 5) : (isDeleteMode ? 5 : 4)}
+                        className="px-6 py-14 text-center text-textMain/40 text-sm italic"
+                      >
+                        No variants available.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
