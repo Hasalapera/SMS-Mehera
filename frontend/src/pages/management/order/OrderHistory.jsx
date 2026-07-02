@@ -99,9 +99,16 @@ const OrderHistory = () => {
     orders.forEach((order) => {
       const key = order.customer_name || "Unknown Salon";
       if (!groups[key]) {
+        const addressParts = [
+          order.customer?.lane1,
+          order.customer?.lane2,
+          order.customer?.district,
+        ];
+        const fullAddress = addressParts.filter(Boolean).join(", ") || order.shipping_address || "N/A";
+
         groups[key] = {
           salonName: key,
-          district: order.district || "N/A",
+          address: fullAddress,
           phone: order.phone || "N/A",
           totalAmount: 0,
           orderCount: 0,
@@ -173,12 +180,10 @@ const OrderHistory = () => {
                   <h2 className="text-lg md:text-2xl font-black uppercase text-textMain mb-3 md:mb-4">
                     {salon.salonName}
                   </h2>
-                  <div className="flex flex-col gap-2 md:gap-3">
-                    <div className="flex items-center gap-3 text-textMain/60">
-                      <MapPin size={14} className="text-primary" />
-                      <span className="text-xs font-bold uppercase">
-                        {salon.district}
-                      </span>
+                  <div className="flex flex-col gap-3 md:gap-4">
+                    <div className="flex items-start gap-3 text-textMain/60">
+                      <MapPin size={14} className="text-primary mt-0.5 shrink-0" />
+                      <span className="text-xs font-bold">{salon.address}</span>
                     </div>
                     <div className="flex items-center gap-3 text-textMain/60">
                       <Phone size={14} className="text-primary" />
