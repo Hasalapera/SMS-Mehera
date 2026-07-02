@@ -122,7 +122,7 @@ const getProductById = async (req, res) => {
             include: [
                 { model: Category, as: 'category' },
                 { model: Brand, as: 'brand' },
-                { model: ProductVariant, as: 'variants' }
+                { model: ProductVariant, as: 'variants', paranoid: false }
             ]
         });
 
@@ -243,7 +243,7 @@ const updateProduct = async (req, res) => {
     }
 };
 
-// Delete a product (soft delete)
+// Deactivate a product so it stays visible in inventory but becomes unclickable
 const deleteProduct = async (req, res) => {
     try {
         // Get the product ID from the request parameters
@@ -257,14 +257,45 @@ const deleteProduct = async (req, res) => {
             return res.status(404).json({ error: "Product not found" });
         }
 
-        // Soft delete the product (set deletedAt timestamp)
-        await product.destroy();
+        // Mark the product inactive instead of deleting it so inventory can still show it
+        await product.update({ 
+            status: 'inactive', 
+        });
 
         // Return success response
-        res.status(200).json({ message: "Product deleted successfully" });
+        res.status(200).json({ message: "Product deactivated successfully" });
 
     } catch (err) {
         console.error("Delete Product Error:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const deleteProductVariant = async (req, res) => {
+    try {
+        const { id, variantId } = req.params;
+
+        const product = await Product.findByPk(id);
+        if (!product) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+
+        const variant = await ProductVariant.findOne({
+            where: {
+                variant_id: variantId,
+                product_id: id,
+            }
+        });
+
+        if (!variant) {
+            return res.status(404).json({ error: 'Variant not found' });
+        }
+
+        await variant.destroy();
+
+        res.status(200).json({ message: 'Variant deleted successfully' });
+    } catch (err) {
+        console.error('Delete Variant Error:', err.message);
         res.status(500).json({ error: err.message });
     }
 };
@@ -274,5 +305,6 @@ module.exports = {
     getProducts,
     getProductById,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    deleteProductVariant
 };
