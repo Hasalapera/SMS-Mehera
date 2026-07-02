@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, X, Sun, Moon } from 'lucide-react';
 import api from '../api/axiosInstance';
+import localDarkLogo from '../assets/logo/main-dark.png';
+import localLightLogo from '../assets/logo/main-light.png';
 
 const StatNavBar = () => {
   const navigate = useNavigate();
@@ -48,16 +50,16 @@ const StatNavBar = () => {
 
   const navLinks = [
     { name: 'Home', action: () => handleNavigation('/') },
-    { name: 'Products', action: () => navigate('/products') },
+    { name: 'Products', action: () => handleNavigation('/products') },
     { name: 'Our Brands', action: () => handleNavigation('/brands') },
     { name: 'Workshops', action: () => handleNavigation('/workshops') },
     { name: 'About US', action: () => handleNavigation('/about') }, 
-    { name: 'Contact Us', action: () => navigate('/contact') },
+    { name: 'Contact Us', action: () => handleNavigation('/contact') },
   ];
 
   const getDynamicLogo = () => {
     const dbLogo = isDark ? systemSettings?.dark_logo_url : systemSettings?.light_logo_url;
-    return dbLogo || (isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/nzwPbHWj/mehera-logo.png");
+    return dbLogo || (isDark ? localDarkLogo : localLightLogo);
   };
 
   return (

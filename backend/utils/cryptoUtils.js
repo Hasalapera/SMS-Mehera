@@ -14,6 +14,16 @@ const encrypt = (text) => {
 
 const decrypt = (text) => {
     if (!text) return text;
+
+    // 💡 FIX: Check if the text is a valid hex string and has a plausible length for encrypted data.
+    // An unencrypted 10-digit phone number will fail this check and be returned directly.
+    // A valid AES-256-CBC encrypted string will be a hex string of at least 32 characters.
+    const isLikelyEncrypted = /^[0-9a-fA-F]+$/.test(text) && text.length >= 32;
+
+    if (!isLikelyEncrypted) {
+        return text; // 🛡️ It's likely plain text, return it as is without trying to decrypt.
+    }
+
     try {
         let encryptedText = Buffer.from(text, 'hex');
         let decipher = crypto.createDecipheriv(algorithm, key, iv);
@@ -21,8 +31,8 @@ const decrypt = (text) => {
         decrypted = Buffer.concat([decrypted, decipher.final()]);
         return decrypted.toString();
     } catch (err) {
-        console.error("Decryption Error:", err.message); 
-        return text; 
+        console.warn("Decryption failed for a seemingly encrypted string, returning original hex:", text, "| Error:", err.message); 
+        return text; // If decryption still fails, return the original hex string to prevent crashes.
     }
 };
 

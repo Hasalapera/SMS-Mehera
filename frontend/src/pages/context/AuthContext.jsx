@@ -14,20 +14,17 @@ export const AuthProvider = ({ children }) => {
     });
     
     const [token, setToken] = useState(localStorage.getItem('accessToken') || null);
-    const [refreshTokenState, setRefreshTokenState] = useState(localStorage.getItem('refreshToken') || null);
     const [loading, setLoading] = useState(true);
     const [isTokenExpiring, setIsTokenExpiring] = useState(false);
 
     // LOGIN
-    const login = (userData, userToken, refreshUserToken, expiresAt) => {
+    const login = (userData, userToken, expiresAt) => {
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('accessToken', userToken);
-        localStorage.setItem('refreshToken', refreshUserToken);
         localStorage.setItem('expiresAt', expiresAt);
         
         setUser(userData);
         setToken(userToken);
-        setRefreshTokenState(refreshUserToken);
         setIsTokenExpiring(false);
         
         console.log('✅ User logged in:', userData.email);
@@ -50,16 +47,8 @@ export const AuthProvider = ({ children }) => {
     // PROACTIVE REFRESH ACCESS TOKEN
     const refreshAccessTokenFn = async () => {
         try {
-            const storedRefreshToken = localStorage.getItem('refreshToken');
-            
-            if (!storedRefreshToken) {
-                throw new Error('No refresh token');
-            }
-
-            // Using pure api bypasses the response interceptor for this specific route.
-            const response = await api.post('/users/refresh-token', {
-                refreshToken: storedRefreshToken
-            });
+            // The httpOnly refresh token is sent automatically by the browser
+            const response = await api.post('/users/refresh-token');
 
             const { accessToken, expiresAt } = response.data;
 
@@ -106,7 +95,7 @@ export const AuthProvider = ({ children }) => {
     * Me function eka use karanne secure widihata session eka close karanna.
     * Logout unama old token use karala protected routes access karanna bari wenawa.
     */
-    const logout = async (target = '/') => { 
+    const logout = async (target) => { 
         try {
             await api.post('/users/logout');
         } catch (err) {
@@ -115,16 +104,17 @@ export const AuthProvider = ({ children }) => {
             // Clear all session data
             localStorage.removeItem('user');
             localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
             localStorage.removeItem('expiresAt');
             
             setUser(null);
             setToken(null);
-            setRefreshTokenState(null);
             setIsTokenExpiring(false);
             
-            // Redirect
-            window.location.href = target;
+            // If a target path is provided, perform a hard redirect.
+            // This is used for forced logouts (e.g., token expiry).
+            if (target) {
+                window.location.href = target;
+            }
         }
     };
 
@@ -228,7 +218,7 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider 
-            value={{ user, token, refreshToken: refreshTokenState, login, logout, loading, isTokenExpiring }}
+            value={{ user, token, login, logout, loading, isTokenExpiring }}
         >
             {!loading && children}
         </AuthContext.Provider>

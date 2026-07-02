@@ -66,22 +66,13 @@ const loginUser = async (req, res) => {
             { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d' }
         );
 
-        // Set HttpOnly cookies
-        const accessTokenMaxAge = 15 * 60 * 1000; // 15 minutes
+        // Set HttpOnly cookie for the refresh token
         const refreshTokenMaxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
-
-        res.cookie('accessToken', accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Lax',
-            maxAge: accessTokenMaxAge,
-            path: '/'
-        });
 
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Lax',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // ✅ Use 'none' for cross-site production, 'lax' for dev
             maxAge: refreshTokenMaxAge,
             path: '/'
         });
@@ -90,6 +81,17 @@ const loginUser = async (req, res) => {
         const safeUser = user.toJSON(); // convert complex instance into simple js object 
         delete safeUser.password; // remove password (frontend ekata yawana eka walakwanawa)
 
+        // Decrypt contact number before sending to frontend
+        if (safeUser.contact_no) {
+            try { 
+                let dec = decrypt(safeUser.contact_no); 
+                if (dec && dec.length > 20) {
+                    try { dec = decrypt(dec); } catch(e) {}
+                }
+                safeUser.contact_no = dec;
+            } catch (e) { console.warn("Login: Contact decryption failed"); }
+        }
+
         // Decoded tokens
         const accessDecoded = jwt.decode(accessToken);
         const refreshDecoded = jwt.decode(refreshToken);
@@ -97,8 +99,7 @@ const loginUser = async (req, res) => {
         res.status(200).json({
             success: true,
             message: "Logged in successfully",
-            accessToken,
-            refreshToken, // ⚠️ give for localStorage 
+            accessToken, // Access token is sent to be stored in memory
             user: safeUser,
             expiresAt: accessDecoded.exp,
             refreshExpiresAt: refreshDecoded.exp
@@ -117,8 +118,8 @@ const loginUser = async (req, res) => {
 // renew the access token using refresh token
 const refreshAccessToken = async (req, res) => {
     try {
-        // refreesh token eka check karanawa
-        const { refreshToken } = req.body;
+        // Get refresh token from httpOnly cookie
+        const { refreshToken } = req.cookies;
 
         if (!refreshToken) {
             return res.status(401).json({ 
@@ -137,15 +138,6 @@ const refreshAccessToken = async (req, res) => {
                 process.env.JWT_SECRET,
                 { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
             );
-
-            // Set new cookie
-            res.cookie('accessToken', newAccessToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'Lax',
-                maxAge: 15 * 60 * 1000,
-                path: '/'
-            });
 
             const decoded2 = jwt.decode(newAccessToken);
 
@@ -173,14 +165,6 @@ const refreshAccessToken = async (req, res) => {
 };
 
 const logoutUser = (req, res) => {
-    // clear the access token
-    res.clearCookie('accessToken', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax',
-        path: '/'
-    });
-
     // clear the refresh token
     res.clearCookie('refreshToken', {
         httpOnly: true,

@@ -1,5 +1,7 @@
 const sequelize = require('../db/db');
 const { DataTypes } = require('sequelize');
+
+// Models Import කිරීම
 const User = require('./User');
 const UserArea = require('./UserArea');
 const Product = require('./Product');
@@ -10,11 +12,12 @@ const Customer = require('./Customer');
 const CustomerNote = require('./CustomerNote');
 const Order = require('./Order');
 const OrderItem = require('./OrderItem');
-const Workshop = require('./Workshop'); // ✅ Workshop Model එක පිළිවෙළට එකතු කළා
-const SettingModel = require('./Setting');
-const Setting = SettingModel(sequelize, DataTypes);
-const NotificationModel = require('./Notification');
-const Notification = NotificationModel(sequelize, DataTypes);
+const Workshop = require('./Workshop'); 
+const SalesTarget = require('./SalesTarget');
+const Setting = require('./Setting');
+const Notification = require('./Notification');
+const NotificationRead = require('./NotificationRead');
+const UserBehavior = require('./UserBehavior');
 
 // 1. User Associations
 User.hasMany(UserArea, { foreignKey: 'user_id', as: 'areas', onDelete: 'CASCADE' });
@@ -56,6 +59,31 @@ Customer.belongsTo(User, { foreignKey: 'sales_rep_id', as: 'salesRep' });
 Order.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' }); 
 Customer.hasMany(Order, { foreignKey: 'customer_id' });
 
+// 11. User and SalesTarget Associations
+User.hasMany(SalesTarget, { foreignKey: 'sales_rep_id', as: 'targets', onDelete: 'CASCADE' });
+SalesTarget.belongsTo(User, { foreignKey: 'sales_rep_id', as: 'salesRep' });
+
+// 12. Notification and NotificationRead Associations
+Notification.hasMany(NotificationRead, { foreignKey: 'notification_id', as: 'reads', onDelete: 'CASCADE' });
+NotificationRead.belongsTo(Notification, { foreignKey: 'notification_id' });
+
+User.hasMany(NotificationRead, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+NotificationRead.belongsTo(User, { foreignKey: 'user_id' });
+
+// Add association for the initiator of the notification
+Notification.belongsTo(User, { as: 'initiator', foreignKey: 'initiator_id' });
+User.hasMany(Notification, { foreignKey: 'initiator_id', as: 'initiatedNotifications' });
+
+// 13. User and UserBehavior Associations
+User.hasMany(UserBehavior, { foreignKey: 'user_id', as: 'behaviors', onDelete: 'CASCADE' });
+UserBehavior.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// වාර්තා කළ පුද්ගලයා (Admin/Manager) කවුදැයි දැනගැනීමට
+User.hasMany(UserBehavior, { foreignKey: 'created_by', as: 'recordedBehaviors' });
+UserBehavior.belongsTo(User, { foreignKey: 'created_by', as: 'recorder' });
+
+
+
 module.exports = {
   sequelize,
   User,
@@ -70,5 +98,8 @@ module.exports = {
   OrderItem,
   Setting,
   Notification,
-  Workshop 
+  NotificationRead,
+  Workshop,
+  SalesTarget,
+  UserBehavior 
 };

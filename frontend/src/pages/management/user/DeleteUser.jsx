@@ -3,11 +3,14 @@ import { Trash2, AlertTriangle, UserX, Search, ShieldCheck, Loader2 } from 'luci
 import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 import {MySwal} from '../../utils/swalConfig';
+import { useNotifications } from '../../context/NotificationContext';
 
 const DeleteUser = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const { addNotification } = useNotifications();
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
 
@@ -36,6 +39,18 @@ const DeleteUser = () => {
   };
 
   useEffect(() => { fetchUsers(); }, []);
+  //helper for notification
+  const saveNotificationToDB = async (type, title, message, severity) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      await api.post('/notifications',
+        { type, title, message, severity },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (err) {
+      console.error('Failed to save notification:', err);
+    }
+  };
 
   const handleSoftDelete = async (userId, userName) => {
     // 1. 🛡️ Confirmation Prompt (SweetAlert)
@@ -72,6 +87,21 @@ const DeleteUser = () => {
           );
 
           toast.success(`${userName} archived successfully!`);
+
+          // Create notification
+          await saveNotificationToDB(
+            'user',
+            '🗃️ User Account Archived',
+            `${userName}'s account has been archived by ${currentUser?.name || 'Admin'}`,
+            'warning'
+          );
+          addNotification({
+            type: 'user',
+            title: '🗃️ User Account Archived',
+            message: `${userName}'s account has been archived by ${currentUser?.name || 'Admin'}`,
+            severity: 'warning'
+          });
+
           fetchUsers();
 
         } catch (err) {
@@ -111,7 +141,7 @@ const DeleteUser = () => {
             />
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-left">
             <thead>
               <tr className="text-[11px] font-bold text-textMain/50 transition-colors duration-500 uppercase tracking-wider border-b border-border">
@@ -156,6 +186,53 @@ const DeleteUser = () => {
           </table>
         </div>
       </div>
+
+      {/* --- MOBILE CARD VIEW --- */}
+      <div className="md:hidden mt-6 space-y-4">
+        {loading ? (
+          <div className="text-center py-10"><Loader2 className="animate-spin mx-auto text-primary" /></div>
+        ) : filteredUsers.length > 0 ? (
+          filteredUsers.map(user => (
+            <div key={user.user_id} className="bg-card p-5 rounded-2xl border border-border shadow-sm space-y-4">
+              {/* User Info Section */}
+              <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center font-bold text-primary shrink-0">
+                    {user.name.charAt(0)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-textMain truncate">{user.name}</p>
+                    <p className="text-[11px] text-textMain/50 truncate">{user.email}</p>
+                  </div>
+              </div>
+
+              {/* Role and Action Section */}
+              <div className="flex items-center justify-between gap-3 pt-4 border-t border-border">
+                  <span className="text-[9px] font-bold px-2.5 py-1 bg-primary/10 text-[#8a7b42] rounded-md border border-primary/20 uppercase shrink-0 truncate">
+                      {user.role.replace(/_/g, ' ')}
+                  </span>
+                  <button 
+                      onClick={() => handleSoftDelete(user.user_id, user.name)}
+                      className="flex items-center justify-center gap-2 bg-red-500/10 text-red-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
+                      title="Archive User"
+                  >
+                      <Trash2 size={14} />
+                      Archive
+                  </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-16 text-textMain/40 italic">
+            No users found matching your search.
+          </div>
+        )}
+      </div>
+
+      {filteredUsers.length === 0 && !loading && (
+        <div className="hidden md:block text-center py-16 text-textMain/40 italic bg-card rounded-b-3xl border-t border-border">
+          No users found matching your search.
+        </div>
+      )}
 
       {/* Warning Box */}
       <div className="mt-8 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex gap-3 items-start transition-all duration-500 ease-in-out">

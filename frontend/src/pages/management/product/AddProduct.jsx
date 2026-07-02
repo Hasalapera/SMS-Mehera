@@ -6,7 +6,13 @@ import {
 import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 
+import { useNotifications } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
+
 const AddProduct = () => {
+  const { user } = useAuth();   
+  const { setNotificationsFromAPI } = useNotifications();
+
   const [loading, setLoading] = useState(false);
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -87,6 +93,18 @@ const AddProduct = () => {
     }
   };
 
+  const refreshNotifications = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await api.get('/notifications', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotificationsFromAPI(res.data.notifications || []);
+    } catch (err) {
+      console.error('Failed to refresh notifications:', err);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -115,6 +133,8 @@ const AddProduct = () => {
         }
       });
       toast.success("Product added successfully!");
+      await refreshNotifications();
+
     } catch (err) {
       toast.error(err.response?.data?.error || "Error uploading product");
     } finally {

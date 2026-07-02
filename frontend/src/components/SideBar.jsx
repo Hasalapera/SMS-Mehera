@@ -6,12 +6,15 @@ import {
   BarChart2, Settings, HelpCircle, LogOut, ChevronDown, 
   ChevronRight, Menu, Inbox, SlidersHorizontal, PlusCircle, 
   ChevronLeft, UserPlus, UserMinus, UserCog, List, FileText, 
-  Download, History, PackageX, ShoppingBasket, ReceiptText, Tag, Boxes, X,
-  PackagePlus, PackageSearch, SquarePen, Sun, Moon, Sparkles
+  Download, History, ShoppingBasket, ReceiptText, Tag, Boxes, X,
+  PackagePlus, PackageSearch, SquarePen, Sun, Moon, Sparkles, Target, TrendingUp, AlertTriangle, Award
 } from 'lucide-react';
 import { useNavigate, NavLink, useLocation } from 'react-router-dom';
 import ViewOrders from '../pages/management/order/ViewOrders';
 import api from '../api/axiosInstance';
+import { useNotifications } from '../pages/context/NotificationContext';
+import localDarkLogo from '../assets/logo/main-dark.png';
+import localLightLogo from '../assets/logo/main-light.png';
 
 const menuConfig = {
   admin: { 
@@ -28,7 +31,8 @@ const menuConfig = {
     canViewOrders: true, 
     canManageStocks: true,
     canViewStocks: true,
-    canManageWorkshops: true 
+    canManageWorkshops: true,
+    canViewRanking: true
   },
   manager: { 
     canFullManageUsers: false, 
@@ -45,7 +49,26 @@ const menuConfig = {
     canFullManageOrders: false,
     canManageStocks: false,
     canViewStocks: true,
-    canManageWorkshops: true 
+    canManageWorkshops: true,
+    canViewRanking: true
+  },
+  sales_rep: {
+    canViewReports: false,
+    canViewRanking: true,
+    canViewStocks: true,
+    canViewOrders: true,
+  },
+  online_store_keeper: {
+    canViewReports: false,
+    canViewRanking: true,
+    canViewStocks: true,
+    canViewOrders: true,
+  },
+  logistics_officer: {
+    canViewReports: false,
+    canViewRanking: true,
+    canViewStocks: true,
+    canViewOrders: true,
   }
 };
 
@@ -68,13 +91,15 @@ const NavItem = ({ to, icon: Icon, label, isCollapsed, badge, onClick, isOpen })
   );
 
   if (to) return <NavLink to={to} className={activeClasses}>{renderContent()}</NavLink>;
-  return <button onClick={onClick} className={`${commonClasses} text-textMain/50 transition-colors duration-300 hover:bg-card hover:text-primary transition-all`}>{renderContent()}</button>;
+  return <button onClick={onClick} className={`${commonClasses} text-textMain/50 transition-all duration-300 hover:bg-card hover:text-primary`}>{renderContent()}</button>;
 };
 
 const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setIsMobileOpen }) => {
   const [openSubMenu, setOpenSubMenu] = useState(''); 
   const navigate = useNavigate();
-  const {logout} = useAuth();
+  const { logout, token } = useAuth();
+  const { unreadCount } = useNotifications();
+  const { setNotificationsFromAPI } = useNotifications();
   const [systemSettings, setSystemSettings] = useState(null);
   const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
   
@@ -104,6 +129,22 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
   }, []);
 
   useEffect(() => {
+    if (!token) return;
+
+    const fetchNotifications = async () => {
+      try {
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const res = await api.get('/notifications', config);
+        setNotificationsFromAPI(res.data.notifications || []);
+      } catch (err) {
+        console.error('Sidebar notification fetch failed:', err.response?.data || err.message);
+      }
+    };
+
+    fetchNotifications();
+  }, [token, setNotificationsFromAPI]);
+
+  useEffect(() => {
     if (isMobileOpen) setIsMobileOpen(false);
   }, [location]);
 
@@ -129,8 +170,9 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
     }
   };
 
-  const handleLogout = () => {
-      logout();
+  const handleLogout = async () => {
+      await logout();
+      navigate('/', { replace: true });
   };
 
   const getInitials = (name) => {
@@ -157,7 +199,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
 
   const getDynamicLogo = () => {
     const dbLogo = isDark ? systemSettings?.dark_logo_url : systemSettings?.light_logo_url;
-    return dbLogo || (isDark ? "https://i.postimg.cc/t4ZsLpWn/mehera-logo-white.png" : "https://i.postimg.cc/nzwPbHWj/mehera-logo.png");
+    return dbLogo || (isDark ? localDarkLogo : localLightLogo);
   };
 
   return (
@@ -195,7 +237,7 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
         <div className="space-y-1">
           {!isSidebarCollapsed && <p className="text-[10px] uppercase text-textMain/50 font-black mb-2 ml-2 tracking-widest">Menu</p>}
           <NavItem to={`/dashboard`} icon={LayoutDashboard} label="Dashboard" isCollapsed={isSidebarCollapsed} />
-          <NavItem to="/inbox" icon={Inbox} label="Inbox" badge="10" isCollapsed={isSidebarCollapsed} />
+          <NavItem to="/inbox" icon={Inbox} label="Inbox" badge={unreadCount > 0 ? String(unreadCount) : ''} isCollapsed={isSidebarCollapsed} />
         </div>
 
         <div className="space-y-1">
@@ -231,38 +273,23 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
             </div>
           )}
 
-          {/* Workshops Section */}
-          {permissions.canManageWorkshops && (
-            <div className="space-y-1">
-              <NavItem 
-                icon={Sparkles} 
-                label="Workshops" 
-                isCollapsed={isSidebarCollapsed} 
-                onClick={() => handleToggleSubMenu('workshops')} 
-                isOpen={openSubMenu === 'workshops'} 
-              />
-              {!isSidebarCollapsed && openSubMenu === 'workshops' && (
-                <div className="ml-9 space-y-1 border-l border-border pl-2">
-                  <NavLink 
-                    to="/manage-workshops" 
-                    className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}
-                  >
-                    <List size={14} /> Workshop Console
-                  </NavLink>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Reports */}
-          {permissions.canViewReports && (
+          {(permissions.canViewReports || permissions.canViewRanking) && (
             <>
               <NavItem icon={BarChart2} label="Reports" isCollapsed={isSidebarCollapsed} onClick={() => handleToggleSubMenu('reports')} isOpen={openSubMenu === 'reports'} />
               {!isSidebarCollapsed && openSubMenu === 'reports' && (
                 <div className="ml-9 space-y-1 border-l border-border pl-2">
-                  <NavLink to="/sales-report" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><FileText size={14} /> Sales </NavLink>
-                  <NavLink to="/reports/daily-summary" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><FileText size={14} /> Daily Summary</NavLink>
-                  <NavLink to="/reports/qb-export" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><Download size={14} /> QB Export</NavLink>
+                  {permissions.canViewReports && (
+                    <>
+                      <NavLink to="/sales-report" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><FileText size={14} /> Sales Summary </NavLink>
+                      <NavLink to="/current-progress" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><TrendingUp size={14} /> Current Progress </NavLink>
+                      <NavLink to="/product-summary" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><Package size={14} /> Product Summary </NavLink>
+                      <NavLink to="/critical-stock" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-red-500 font-bold' : 'text-textMain/50 hover:text-red-500'}`}><AlertTriangle size={14} className="text-red-500" /> Critical Stock </NavLink>
+                    </>
+                  )}
+                  {permissions.canViewRanking && (
+                    <NavLink to="/rep-ranking" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-[#b4a460] font-bold' : 'text-textMain/50 hover:text-[#b4a460]'}`}><Award size={14} /> Rep Ranking </NavLink>
+                  )}
                 </div>
               )}
             </>
@@ -278,8 +305,14 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
                     <>
                       <NavLink to="/addUser" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><UserPlus size={14} /> Add User</NavLink>
                       <NavLink to="/delete-user" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><UserMinus size={14} /> Delete User</NavLink>
-                      <NavLink to="/assign-user" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><UserMinus size={14} /> Assign User</NavLink>
+                      <NavLink to="/assign-user" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><UserMinus size={14} /> Assign Customer</NavLink>
+                      <NavLink to="/add-user-behavior" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><PlusCircle size={14} /> Add Behavior</NavLink>
                     </>
+                  )}
+                  {(userRole === 'admin' || userRole === 'manager') && (
+                    <NavLink to="/assign-targets" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}>
+                      <Target size={14} /> Assign Targets
+                    </NavLink>
                   )}
                   <NavLink to="/all-users" className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}><List size={14} /> User List </NavLink>
                 </div>
@@ -344,6 +377,29 @@ const SideBar = ({ isSidebarCollapsed, setIsSidebarCollapsed, isMobileOpen, setI
                 </div>
               )}
             </>
+          )}
+
+          {/* Workshops Section */}
+          {permissions.canManageWorkshops && (
+            <div className="space-y-1">
+              <NavItem 
+                icon={Sparkles} 
+                label="Workshops" 
+                isCollapsed={isSidebarCollapsed} 
+                onClick={() => handleToggleSubMenu('workshops')} 
+                isOpen={openSubMenu === 'workshops'} 
+              />
+              {!isSidebarCollapsed && openSubMenu === 'workshops' && (
+                <div className="ml-9 space-y-1 border-l border-border pl-2">
+                  <NavLink 
+                    to="/manage-workshops" 
+                    className={({ isActive }) => `flex items-center gap-2 p-2 text-[11px] transition-colors ${isActive ? 'text-primary font-bold' : 'text-textMain/50 hover:text-primary'}`}
+                  >
+                    <List size={14} /> Workshop Console
+                  </NavLink>
+                </div>
+              )}
+            </div>
           )}
         </div>
 

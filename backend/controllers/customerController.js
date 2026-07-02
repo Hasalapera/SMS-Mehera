@@ -2,11 +2,12 @@
 const { Customer, CustomerNote, User, UserArea, sequelize } = require('../models'); // Take Sequelize models
 const { Op } = require('sequelize'); // 👈 Sequelize Operators
 const { encrypt, decrypt } = require('../utils/cryptoUtils'); // For encrypting/decrypting contact numbers
+const { createNotification } = require('./notificationController');
 
 
 const createCustomer = async (req, res) => {
     try {
-        const { type, saloon_name, owner_name, phone1, phone2, lane1, lane2, district, additional_note, customer_display_id } = req.body;
+        const { type, saloon_name, owner_name, email, phone1, phone2, lane1, lane2, district, additional_note, customer_display_id } = req.body;
 
         if (!saloon_name || !owner_name || !phone1 || !lane1 || !district) {
             return res.status(400).json({ error: "Required fields are missing." });
@@ -16,6 +17,7 @@ const createCustomer = async (req, res) => {
             type,
             saloon_name,
             owner_name,
+            email,
             phone1: encrypt(phone1), // Encrypt phone number before saving to DB
             phone2: phone2 ? encrypt(phone2) : null, // Encrypt if provided
             lane1,
@@ -34,7 +36,11 @@ const createCustomer = async (req, res) => {
 
 const getAllCustomers = async (req, res) => {
     try {
-        const customers = await Customer.findAll();
+        const customers = await Customer.findAll({
+            include: [{
+                model: User, as: 'salesRep', attributes: ['name']
+            }]
+        });
 
         const decryptedCustomers = customers.map(c => {
             const customer = c.toJSON();
@@ -56,7 +62,11 @@ const getCustomer = async (req, res) => {
     try {
         const { id } = req.params;
         const customerData = await Customer.findByPk(id, {
-            include: [{ model: CustomerNote, as: 'notes', separate: true, order: [['created_at', 'DESC']] }]
+            include: [
+                { model: CustomerNote, as: 'notes', separate: true, order: [['created_at', 'DESC']] },
+                // 🧑‍💼 Include the assigned Sales Rep's details
+                { model: User, as: 'salesRep', attributes: ['name', 'user_id'] }
+            ]
         });
 
         // make the cutsomer deatils write
@@ -146,24 +156,48 @@ const getCustomerCount = async (req, res) => {
 // Customer Search Function
 const searchCustomers = async (req, res) => {
     try {
-        const { q } = req.query; // the words come from the search bar
+        const { q } = req.query;
+        const { user_id, role } = req.user; // Get user from auth middleware
 
         if (!q) {
             return res.status(200).json([]);
         }
 
+        // Base search condition for names
+        const searchCondition = {
+            [Op.or]: [
+                { saloon_name: { [Op.iLike]: `%${q}%` } },
+                { owner_name: { [Op.iLike]: `%${q}%` } },
+                // ⚠️ Searching by phone number is not feasible here as it's encrypted.
+            ]
+        };
+
+        // Role-based filtering
+        let whereClause = { ...searchCondition };
+        if (role === 'sales_rep') {
+            whereClause.sales_rep_id = user_id;
+        }
+        // Admins, managers, etc., can search all customers.
+
         const customers = await Customer.findAll({
-            where: {
-                [Op.or]: [
-                    { saloon_name: { [Op.iLike]: `%${q}%` } }, // Saloon name search
-                    { owner_name: { [Op.iLike]: `%${q}%` } },  // Owner name search
-                    { phone1: { [Op.iLike]: `%${q}%` } }       // Phone number search
-                ]
-            },
-            limit: 10 // results limit up to 10 shows
+            where: whereClause,
+            limit: 10
         });
 
-        res.status(200).json(customers);
+        // Decrypt phone numbers before sending to frontend
+        const decryptedCustomers = customers.map(c => {
+            const customer = c.toJSON();
+            try {
+                if (customer.phone1) customer.phone1 = decrypt(customer.phone1);
+                if (customer.phone2) customer.phone2 = decrypt(customer.phone2);
+            } catch (e) {
+                console.warn(`Could not decrypt phone for customer ${customer.customer_id}`);
+            }
+            return customer;
+        });
+
+        res.status(200).json(decryptedCustomers);
+
     } catch (err) {
         console.error("Search Error:", err.message);
         res.status(500).json({ error: "An error occurred while searching." });
@@ -213,6 +247,19 @@ const assignSalesRep = async (req, res) => {
             { where: { customer_id: { [Op.in]: customerIds } } }
         );
 
+        const assignedNames = customersToAssign.map(c => c.saloon_name).join(', ');
+        await createNotification(
+            'customer',
+            `${customerIds.length} Customer${customerIds.length > 1 ? 's' : ''} Assigned`,
+            `${assignedNames} ${customerIds.length > 1 ? 'have' : 'has'} been assigned to you.`,
+            {
+                reference_id: customerIds.length === 1 ? customerIds[0] : null,
+                target_user_id: sales_rep_id,
+                severity: 'info',
+                initiator_id: req.user.user_id
+            }
+        );
+
         res.status(200).json({ 
             message: `Successfully assigned ${customerIds.length} customers to ${salesRep.name}!` 
         });
@@ -253,6 +300,20 @@ const reassignCustomers = async (req, res) => {
         );
 
         await transaction.commit();
+
+        if (updatedCount > 0) {
+            await createNotification(
+                'customer',
+                `${updatedCount} Customers Reassigned`,
+                `${updatedCount} customers have been reassigned to your customer list.`,
+                {
+                    target_user_id: toRepId,
+                    severity: 'info',
+                    initiator_id: req.user.user_id
+                }
+            );
+        }
+
         res.status(200).json({ 
             message: `Successfully reassigned ${updatedCount} customers to ${toRep.name}.`,
             note: "Customers in other districts were not moved."
@@ -378,6 +439,39 @@ const getReplacementCandidates = async (req, res) => {
     }
 };
 
+// Update Customer Details
+const updateCustomer = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updateData = { ...req.body };
+        const user = req.user;
+
+        const customer = await Customer.findByPk(id);
+        if (!customer) {
+            return res.status(404).json({ error: "Customer not found" });
+        }
+
+        // Sales Reps can only edit their own customers
+        if (user.role === 'sales_rep' && customer.sales_rep_id !== user.user_id) {
+            return res.status(403).json({ error: "You can only update your assigned customers." });
+        }
+
+        if (updateData.phone1) updateData.phone1 = encrypt(updateData.phone1);
+        if (updateData.phone2) updateData.phone2 = encrypt(updateData.phone2);
+
+        await customer.update(updateData);
+
+        const updatedCustomer = customer.toJSON();
+        updatedCustomer.phone1 = updatedCustomer.phone1 ? decrypt(updatedCustomer.phone1) : null;
+        updatedCustomer.phone2 = updatedCustomer.phone2 ? decrypt(updatedCustomer.phone2) : null;
+
+        res.status(200).json({ message: "Customer updated successfully", customer: updatedCustomer });
+    } catch (err) {
+        console.error("Update Customer Error:", err.message);
+        res.status(500).json({ error: "Failed to update customer" });
+    }
+};
+
 module.exports = {  createCustomer, 
                     getAllCustomers, 
                     getCustomer, 
@@ -391,4 +485,5 @@ module.exports = {  createCustomer,
                     getCustomersByRep, 
                     getUnassignedCustomers,
                     getDeletedSalesReps,
-                    getReplacementCandidates };
+                    getReplacementCandidates,
+                    updateCustomer };

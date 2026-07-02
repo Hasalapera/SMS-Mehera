@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ShoppingCart, User, Package, Plus, Minus, Trash2, 
-  CheckCircle2, MapPin, Phone, UserPlus, Smartphone, Map, Mail, Percent
+  CheckCircle2, MapPin, Phone, UserPlus, Smartphone, Map, Mail, Percent, Loader2
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import api from '../../../api/axiosInstance';
@@ -10,6 +10,8 @@ import { useAuth } from '../../context/AuthContext';
 const AddOnlineOrder = () => {
   const [cart, setCart] = useState([]);
   const [discount, setDiscount] = useState(0); // 👈 Discount state එක් කරන්න
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [errors, setErrors] = useState({});
   const { token } = useAuth();
 
   const districts = [
@@ -44,6 +46,14 @@ const AddOnlineOrder = () => {
   }, []);
 
   const updateQty = (id, delta) => {
+    if (delta > 0) {
+      const item = cart.find(i => i.cartItemId === id);
+      if (item && item.stock_count !== undefined && item.qty + delta > item.stock_count) {
+        toast.error(`Only ${item.stock_count} units available in stock!`);
+        return;
+      }
+    }
+
     const newCart = cart.map(item => 
       item.cartItemId === id ? { ...item, qty: Math.max(1, item.qty + delta) } : item
     );
@@ -69,6 +79,18 @@ const AddOnlineOrder = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setCustomerInfo(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handlePhoneChange = (e) => {
+    const { name, value } = e.target;
+    const numericValue = value.replace(/\D/g, ''); // Allow only digits
+    setCustomerInfo(prev => ({ ...prev, [name]: numericValue }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
   const isValidEmail = (email) => {
@@ -76,20 +98,38 @@ const AddOnlineOrder = () => {
   };
 
   const handlePlaceOnlineOrder = async () => {
-    if (!customerInfo.name || !customerInfo.primaryPhone || !customerInfo.district || !customerInfo.address || !customerInfo.email) {
-      toast.error("All marked fields (*) including Email are required!");
-      return;
+    const newErrors = {};
+    if (!customerInfo.name.trim()) newErrors.name = "Full Name is required.";
+    if (!customerInfo.address.trim()) newErrors.address = "Delivery Address is required.";
+    if (!customerInfo.district) newErrors.district = "Please select a district.";
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!customerInfo.email.trim()) {
+        newErrors.email = "Email address is required for invoice.";
+    } else if (!emailRegex.test(customerInfo.email)) {
+        newErrors.email = "Please enter a valid email address.";
     }
 
-    if (!isValidEmail(customerInfo.email)) {
-      toast.error("Please enter a valid email address!");
-      return;
+    const phoneRegex = /^0[0-9]{9}$/;
+    if (!customerInfo.primaryPhone.trim()) {
+        newErrors.primaryPhone = "Primary phone number is required.";
+    } else if (!phoneRegex.test(customerInfo.primaryPhone)) {
+        newErrors.primaryPhone = "Phone number must be 10 digits and start with 0.";
     }
 
     if (cart.length === 0) {
       toast.error("Add at least one product to the order!");
       return;
     }
+
+    if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        toast.error("Please correct the errors before submitting.");
+        return;
+    }
+
+    if (isPlacingOrder) return;
+    setIsPlacingOrder(true);
 
     try {
       const orderData = {
@@ -130,26 +170,27 @@ const AddOnlineOrder = () => {
       }
     } catch (error) {
       toast.error(error.response?.data?.message || "Internal Server Error");
+    } finally {
+      setIsPlacingOrder(false);
     }
   };
 
   return (
     <div className="flex flex-col h-full font-sans text-left bg-card transition-colors duration-300">
-      <Toaster position="top-right" />
       
-      <div className="p-6 border-b border-border bg-card/20 transition-colors duration-300">
+      <div className="p-4 md:p-6 border-b border-border bg-card/20 transition-colors duration-300">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-black text-primary transition-all duration-300 rounded-2xl shadow-lg">
-            <ShoppingCart size={20} />
+          <div className="p-2.5 md:p-3 bg-black text-primary transition-all duration-300 rounded-2xl shadow-lg">
+            <ShoppingCart size={18} md:size={20} />
           </div>
           <div>
-            <h2 className="text-sm font-black uppercase tracking-widest text-textMain transition-colors duration-300">Online Registry</h2>
+            <h2 className="text-xs md:text-sm font-black uppercase tracking-widest text-textMain transition-colors duration-300">Online Registry</h2>
             <p className="text-[9px] font-bold text-textMain/50 transition-colors duration-300 mt-1 uppercase">Retail Entry Form</p>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 no-scrollbar">
         
         {/* CUSTOMER REGISTRY SECTION */}
         <div className="space-y-4">
@@ -165,46 +206,54 @@ const AddOnlineOrder = () => {
               <input 
                 type="text" name="name" value={customerInfo.name} onChange={handleInputChange}
                 placeholder="Full Name *" 
-                className="w-full pl-12 pr-4 py-4 bg-card transition-colors duration-300 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none"
+                className={`w-full pl-12 pr-4 py-3 md:py-4 bg-card transition-colors duration-300 border rounded-2xl text-[11px] md:text-xs font-bold focus:ring-2 outline-none ${errors.name ? 'border-red-500 focus:ring-red-500/20' : 'border-transparent focus:ring-[#b4a460]/20'}`}
               />
             </div>
+            {errors.name && <p className="text-red-500 text-[10px] mt-1 ml-2 font-bold">{errors.name}</p>}
             
             {/* Contacts */}
             <div className="grid grid-cols-2 gap-3">
-                <div className="relative group">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300" size={16} />
-                  <input 
-                    type="text" name="primaryPhone" value={customerInfo.primaryPhone} onChange={handleInputChange}
-                    placeholder="Contact No 1 *" 
-                    className="w-full pl-12 pr-4 py-4 bg-card transition-colors duration-300 border-none rounded-2xl text-[10px] font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none"
-                  />
+                <div>
+                  <div className="relative group">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300" size={16} />
+                    <input 
+                      type="tel" name="primaryPhone" value={customerInfo.primaryPhone} onChange={handlePhoneChange} maxLength="10"
+                      placeholder="Contact No 1 *" 
+                      className={`w-full pl-12 pr-4 py-3 md:py-4 bg-card transition-colors duration-300 border rounded-2xl text-[10px] font-bold focus:ring-2 outline-none ${errors.primaryPhone ? 'border-red-500 focus:ring-red-500/20' : 'border-transparent focus:ring-[#b4a460]/20'}`}
+                    />
+                  </div>
+                  {errors.primaryPhone && <p className="text-red-500 text-[10px] mt-1 ml-2 font-bold">{errors.primaryPhone}</p>}
                 </div>
                 <div className="relative group">
                   <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300" size={16} />
                   <input 
-                    type="text" name="secondaryPhone" value={customerInfo.secondaryPhone} onChange={handleInputChange}
+                    type="tel" name="secondaryPhone" value={customerInfo.secondaryPhone} onChange={handlePhoneChange} maxLength="10"
                     placeholder="Contact No 2 (Optional)" 
-                    className="w-full pl-12 pr-4 py-4 bg-card transition-colors duration-300 border-none rounded-2xl text-[10px] font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none"
+                    className="w-full pl-12 pr-4 py-3 md:py-4 bg-card transition-colors duration-300 border-transparent rounded-2xl text-[10px] font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none"
                   />
                 </div>
             </div>
 
             {/* Email Field */}
-            <div className="relative group">
+            <div>
+              <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={16} />
                 <input 
                     type="email" name="email" value={customerInfo.email} onChange={handleInputChange}
                     placeholder="Email Address * (Required for Invoice)" 
-                    className="w-full pl-12 pr-4 py-4 bg-card transition-colors duration-300 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none"
+                    className={`w-full pl-12 pr-4 py-3 md:py-4 bg-card transition-colors duration-300 border rounded-2xl text-[11px] md:text-xs font-bold focus:ring-2 outline-none ${errors.email ? 'border-red-500 focus:ring-red-500/20' : 'border-transparent focus:ring-[#b4a460]/20'}`}
                 />
+              </div>
+              {errors.email && <p className="text-red-500 text-[10px] mt-1 ml-2 font-bold">{errors.email}</p>}
             </div>
 
             {/* District Dropdown */}
-            <div className="relative group">
+            <div>
+              <div className="relative group">
                 <Map className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={16} />
                 <select 
                     name="district" value={customerInfo.district} onChange={handleInputChange}
-                    className="w-full pl-12 pr-10 py-4 bg-card transition-colors duration-300 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none appearance-none"
+                    className={`w-full pl-12 pr-10 py-3 md:py-4 bg-card transition-colors duration-300 border rounded-2xl text-[11px] md:text-xs font-bold focus:ring-2 outline-none appearance-none ${errors.district ? 'border-red-500 focus:ring-red-500/20' : 'border-transparent focus:ring-[#b4a460]/20'}`}
                 >
                     <option value="">Select District *</option>
                     {districts.map(d => <option key={d} value={d}>{d}</option>)}
@@ -212,17 +261,22 @@ const AddOnlineOrder = () => {
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-textMain/50 transition-colors duration-300">
                     <Plus size={12} className="rotate-45" />
                 </div>
+              </div>
+              {errors.district && <p className="text-red-500 text-[10px] mt-1 ml-2 font-bold">{errors.district}</p>}
             </div>
 
             {/* Address */}
-            <div className="relative group">
-              <MapPin className="absolute left-4 top-4 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={16} />
-              <textarea 
-                name="address" value={customerInfo.address} onChange={handleInputChange}
-                placeholder="Delivery Address *" 
-                rows="3"
-                className="w-full pl-12 pr-4 py-4 bg-card transition-colors duration-300 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-[#b4a460]/20 outline-none resize-none shadow-inner"
-              />
+            <div>
+              <div className="relative group">
+                <MapPin className="absolute left-4 top-4 text-textMain/50 transition-colors duration-300 group-focus-within:text-primary transition-all duration-300" size={16} />
+                <textarea 
+                  name="address" value={customerInfo.address} onChange={handleInputChange}
+                  placeholder="Delivery Address *" 
+                  rows="3"
+                  className={`w-full pl-12 pr-4 py-3 md:py-4 bg-card transition-colors duration-300 border rounded-2xl text-[11px] md:text-xs font-bold focus:ring-2 outline-none resize-none shadow-inner ${errors.address ? 'border-red-500 focus:ring-red-500/20' : 'border-transparent focus:ring-[#b4a460]/20'}`}
+                />
+              </div>
+              {errors.address && <p className="text-red-500 text-[10px] mt-1 ml-2 font-bold">{errors.address}</p>}
             </div>
           </div>
         </div>
@@ -231,15 +285,18 @@ const AddOnlineOrder = () => {
         <div className="space-y-4 pt-4 border-t border-border">
           <div className="flex items-center gap-2 mb-2">
             <Package size={14} className="text-primary transition-all duration-300" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-textMain/50 transition-colors duration-300">Order Queue ({cart.length})</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-textMain/50 transition-colors duration-300">
+              Order Queue
+              <span className="ml-1 text-primary">({cart.length})</span>
+            </span>
           </div>
 
           {cart.length > 0 ? (
             <div className="space-y-3">
               {cart.map((item) => (
-                <div key={item.cartItemId} className="p-4 bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-[2rem] flex items-center justify-between group hover:border-primary/30 transition-all duration-300 transition-all shadow-sm">
+                <div key={item.cartItemId} className="p-3 md:p-4 bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-[2rem] flex items-center justify-between group hover:border-primary/30 transition-all duration-300 transition-all shadow-sm">
                   <div className="flex-1 overflow-hidden pr-4">
-                    <h4 className="text-[11px] font-black uppercase text-textMain transition-colors duration-300 leading-tight truncate">{item.name}</h4>
+                    <h4 className="text-[10px] md:text-[11px] font-black uppercase text-textMain transition-colors duration-300 leading-tight truncate">{item.name}</h4>
                     {item.variant_name && item.variant_name !== 'Standard' && (
                       <p className="text-[9px] text-primary transition-all duration-300 font-black uppercase mt-0.5">{item.variant_name}</p>
                     )}
@@ -251,14 +308,14 @@ const AddOnlineOrder = () => {
                       <span className="text-xs font-black w-5 text-center">{item.qty}</span>
                       <button onClick={() => updateQty(item.cartItemId, 1)} className="p-1.5 hover:bg-card transition-colors duration-300 rounded-lg transition-all shadow-sm"><Plus size={10} /></button>
                     </div>
-                    <button onClick={() => removeItem(item.cartItemId)} className="p-2.5 text-textMain/50 transition-colors duration-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={14} /></button>
+                    <button onClick={() => removeItem(item.cartItemId)} className="p-2 md:p-2.5 text-textMain/50 transition-colors duration-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={14} /></button>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="py-12 bg-card/50 transition-colors duration-300 rounded-[2.5rem] border border-dashed border-border transition-colors duration-300 flex flex-col items-center justify-center text-textMain/50 transition-colors duration-300">
-              <ShoppingCart size={32} className="mb-2 opacity-10" />
+            <div className="py-10 md:py-12 bg-card/50 transition-colors duration-300 rounded-[2.5rem] border border-dashed border-border transition-colors duration-300 flex flex-col items-center justify-center text-textMain/50 transition-colors duration-300">
+              <ShoppingCart size={28} md:size={32} className="mb-2 opacity-10" />
               <p className="text-[9px] font-black uppercase tracking-[0.2em]">Queue is empty</p>
             </div>
           )}
@@ -266,16 +323,16 @@ const AddOnlineOrder = () => {
       </div>
 
       {/* 👇 UPDATED FOOTER WITH DISCOUNT */}
-      <div className="p-8 border-t border-border transition-colors duration-300 bg-card transition-colors duration-300 space-y-6">
+      <div className="p-4 md:p-8 border-t border-border transition-colors duration-300 bg-card transition-colors duration-300 space-y-6">
         
         {/* Subtotal Display */}
-        <div className="flex justify-between items-center pb-4 border-b border-border">
+        <div className="flex justify-between items-center pb-3 border-b border-border">
           <span className="text-[10px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">Gross Subtotal</span>
           <span className="text-sm font-black text-textMain transition-colors duration-300">Rs. {totalAmount.toLocaleString()}</span>
         </div>
 
         {/* Discount Input */}
-        <div className="p-4 bg-background transition-all duration-300 rounded-2xl border border-dashed border-border transition-colors duration-300">
+        <div className="p-3 md:p-4 bg-background transition-all duration-300 rounded-2xl border border-dashed border-border transition-colors duration-300">
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-2">
               <Percent size={14} className="text-primary transition-all duration-300" />
@@ -289,7 +346,7 @@ const AddOnlineOrder = () => {
               value={discount}
               onChange={(e) => setDiscount(Math.min(100, Math.max(0, e.target.value)))}
               placeholder="0"
-              className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 pl-4 pr-10 text-sm font-black outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all text-right shadow-sm"
+              className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-2.5 md:py-3 pl-4 pr-10 text-sm font-black outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all text-right shadow-sm"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-primary transition-all duration-300 text-sm">%</span>
           </div>
@@ -308,7 +365,7 @@ const AddOnlineOrder = () => {
             <p className="text-[9px] font-black text-textMain/50 transition-colors duration-300 uppercase tracking-widest">Grand Total</p>
             <div className="flex items-baseline gap-1">
               <span className="text-[10px] font-black text-primary transition-all duration-300">LKR</span>
-              <span className="text-3xl font-black tracking-tighter text-textMain transition-colors duration-300">{finalAmount.toLocaleString()}</span>
+              <span className="text-2xl md:text-3xl font-black tracking-tighter text-textMain transition-colors duration-300">{finalAmount.toLocaleString()}</span>
             </div>
           </div>
           <span className="text-[8px] font-black uppercase px-4 py-1.5 rounded-full bg-primary/10 transition-all duration-300 text-primary transition-all duration-300">
@@ -319,11 +376,20 @@ const AddOnlineOrder = () => {
         {/* Submit Button */}
         <button 
           onClick={handlePlaceOnlineOrder}
-          disabled={cart.length === 0 || !customerInfo.name || !customerInfo.primaryPhone || !customerInfo.district || !customerInfo.email}
-          className="w-full py-5 bg-black text-primary transition-all duration-300 rounded-[1.5rem] font-black uppercase text-[11px] tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-gray-900 transition-all disabled:bg-gray-100 disabled:text-textMain/50 transition-colors duration-300 shadow-xl shadow-[#b4a460]/10"
+          disabled={cart.length === 0 || isPlacingOrder}
+          className="w-full py-4 md:py-5 bg-black text-primary rounded-[1.5rem] font-black uppercase text-[10px] md:text-[11px] tracking-[0.3em] flex items-center justify-center gap-3 hover:bg-gray-900 shadow-xl shadow-[#b4a460]/10 transition-all duration-300 disabled:bg-gray-100 dark:disabled:bg-white/5 disabled:text-textMain/40 dark:disabled:text-textMain/30 disabled:cursor-not-allowed"
         >
-          <CheckCircle2 size={18} />
-          Complete Online Order
+          {isPlacingOrder ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              <span>Processing...</span>
+            </>
+          ) : (
+            <>
+              <CheckCircle2 size={18} />
+              Complete Online Order
+            </>
+          )}
         </button>
       </div>
     </div>

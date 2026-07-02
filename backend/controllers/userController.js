@@ -1,7 +1,9 @@
-const { User, UserArea, Customer, sequelize } = require('../models');
+const { User, UserArea, Customer, Order, UserBehavior, sequelize } = require('../models');
 const bcrypt = require('bcrypt');
 const { sendWelcomeEmail } = require('../utils/emailSender');
 const { encrypt, decrypt } = require('../utils/cryptoUtils');
+const { Op } = require('sequelize');
+const { createNotification } = require('./notificationController');
 
 
 const addUserByAdmin = async (req, res) => {
@@ -141,7 +143,12 @@ const getAllUsers = async (req, res) => {
         const decryptedUsers = users.map(user => {
             const userData = user.toJSON();
             if (userData.contact_no) {
-                userData.contact_no = decrypt(userData.contact_no); // Decrypt contact number before sending to frontend
+                try {
+                    let dec = decrypt(userData.contact_no);
+                    // Handle accidental double-encryption
+                    if (dec && dec.length > 20) { try { dec = decrypt(dec); } catch(e) {} }
+                    userData.contact_no = dec;
+                } catch(e) { console.warn("GetAllUsers: Contact decryption failed"); }
             }
             return userData;
         });
@@ -286,7 +293,14 @@ const getUserProfile = async (req, res) => {
         const { id } = req.params;
         const user = await User.findOne({
             where: { user_id: id },
-            include: [{ model: UserArea, as: 'areas', attributes: ['district_name'] }],
+            include: [
+                { model: UserArea, as: 'areas', attributes: ['district_name'] },
+                { 
+                    model: UserBehavior, 
+                    as: 'behaviors',
+                    include: [{ model: User, as: 'recorder', attributes: ['name', 'role'] }]
+                }
+            ],
             attributes: { exclude: ['password', 'default_password'] },
             paranoid: false 
         });
@@ -295,18 +309,40 @@ const getUserProfile = async (req, res) => {
 
         const userData = user.toJSON();
         
+        // 🧑‍💼 Fetch assigned customers if the user is a Sales Rep
+        let assignedCustomers = [];
+        if (userData.role === 'sales_rep') {
+            const rawCustomers = await Customer.findAll({
+                where: { sales_rep_id: id }
+            });
+            
+            // 🔐 Decrypt customer phone numbers before sending to the frontend
+            assignedCustomers = rawCustomers.map(c => {
+                const customer = c.toJSON();
+                try {
+                    if (customer.phone1) customer.phone1 = decrypt(customer.phone1);
+                    if (customer.phone2) customer.phone2 = decrypt(customer.phone2);
+                } catch (e) { console.warn("Customer phone decryption failed in profile"); }
+                return customer;
+            });
+        }
+        
         // 🔐 Safe Decryption Block
         if (userData.contact_no) {
             try {
                 // Try to decrypt the number
-                userData.contact_no = decrypt(userData.contact_no);
+                let dec = decrypt(userData.contact_no);
+                if (dec && dec.length > 20) {
+                    try { dec = decrypt(dec); } catch(e) {}
+                }
+                userData.contact_no = dec;
             } catch (decryptErr) {
                 // If it's already plain text, fallback to the raw value without crashing
                 console.warn("Decryption failed, using raw contact_no:", decryptErr.message);
             }
         }
         
-        res.status(200).json({ user: userData });
+        res.status(200).json({ user: userData, customers: assignedCustomers });
     } catch (err) {
         // 🪵 Debugging වලට ලේසි වෙන්න සර්වර් කන්සෝල් එකේ error එක ප්‍රින්ට් කරමු
         console.error("Get Profile Error:", err.message); 
@@ -325,6 +361,18 @@ const addUserArea = async (req, res) => {
     if (existing) return res.status(400).json({ error: "District already assigned" });
 
     await UserArea.create({ user_id: id, district_name: district });
+
+        const assignedUser = await User.findByPk(id, { attributes: ['name'] });
+        const actorName = req.user?.name || req.user?.full_name || 'System';
+
+        await createNotification(
+            'customer',
+            '📍 District Assigned',
+            `${district} was assigned to ${assignedUser?.name || 'the selected representative'} by ${actorName}`,
+            id,
+            'info'
+        );
+
     res.status(201).json({ message: "District added successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -413,8 +461,14 @@ const updateProfile = async (req, res) => {
         }
 
         const updateData = {};
-        if (req.body.contact_no) {
-            updateData.contact_no = encrypt(req.body.contact_no); 
+        if (req.body.contact_no && req.body.contact_no !== 'null' && req.body.contact_no !== 'undefined') {
+            const incomingContact = req.body.contact_no.trim();
+            // Prevent double encryption if the frontend sent back an already encrypted string
+            if (incomingContact.length > 20) {
+                updateData.contact_no = incomingContact;
+            } else {
+                updateData.contact_no = encrypt(incomingContact); 
+            }
         }
         
         const incomingName = req.body.name || req.body.full_name;
@@ -445,7 +499,14 @@ const updateProfile = async (req, res) => {
 
         const userData = updatedUserInstance.toJSON(); 
         if (userData.contact_no) {
-            userData.contact_no = decrypt(userData.contact_no);
+            try {
+                let dec = decrypt(userData.contact_no);
+                // Handle accidental double-encryption
+                if (dec && dec.length > 20) {
+                    try { dec = decrypt(dec); } catch(e) {}
+                }
+                userData.contact_no = dec;
+            } catch(e) { console.warn("UpdateProfile: Contact decryption failed"); }
         }
 
         res.status(200).json({
@@ -569,6 +630,124 @@ const getSalesReps = async (req, res) => {
     }
 };
 
+/**
+ * Get Top Performers purely based on Sales Reps' explicitly assigned areas and customers
+ */
+const getTopPerformers = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+
+        // 1. Fetch active sales reps and their areas
+        const reps = await User.findAll({
+            where: { role: 'sales_rep', is_active: true },
+            include: [{ model: UserArea, as: 'areas' }]
+        });
+
+        let dateFilter = {};
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            dateFilter = { created_at: { [Op.between]: [start, end] } };
+        }
+
+        const topPerformers = [];
+
+        for (const rep of reps) {
+            // 2. Fetch ALL valid orders placed by this rep (regardless of assigned areas)
+            const repOrders = await Order.findAll({
+                where: {
+                    created_by: rep.user_id,
+                    order_status: { [Op.in]: ['approved', 'shipped', 'delivered'] },
+                    ...dateFilter
+                },
+                include: [{
+                    model: Customer,
+                    as: 'customer'
+                }]
+            });
+
+            let totalSales = 0;
+            const districtSales = {};
+
+            repOrders.forEach(o => {
+                const amt = parseFloat(o.total_amount) || 0;
+                const dist = o.customer?.district || o.district || 'Global';
+                totalSales += amt;
+                districtSales[dist] = (districtSales[dist] || 0) + amt;
+            });
+
+            if (totalSales > 0) {
+                let topArea = 'Multiple Regions';
+                let maxSales = -1;
+                for (const [dist, amt] of Object.entries(districtSales)) {
+                    if (amt > maxSales) { maxSales = amt; topArea = dist; }
+                }
+
+                topPerformers.push({
+                    user_id: rep.user_id,
+                    name: rep.name,
+                    role: rep.role,
+                    image: rep.profile_image,
+                    sales: totalSales,
+                    topArea: topArea
+                });
+            }
+        }
+
+        // Sort by total sales and return top 5
+        topPerformers.sort((a, b) => b.sales - a.sales);
+        res.status(200).json({ success: true, performers: topPerformers.slice(0, 5) });
+
+    } catch (err) {
+        console.error("Top Performers Error:", err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+/**
+ * Records a new behavior for a user (staff member)
+ * and updates their active status accordingly.
+ */
+const addUserBehavior = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const { id } = req.params; // Staff Member ID
+        const { behavior, note, status } = req.body;
+        const created_by = req.user.user_id; // The Admin/Manager who is recording this
+
+        const user = await User.findByPk(id, { transaction });
+        if (!user) {
+            await transaction.rollback();
+            return res.status(404).json({ message: "Staff member not found." });
+        }
+
+        // Record the behavior entry
+        await UserBehavior.create({
+            user_id: id,
+            behavior_category: behavior,
+            note: note,
+            current_status: status,
+            role: user.role,
+            created_by: created_by
+        }, { transaction });
+
+        // Update the user's active status dynamically based on the form input
+        const isActive = (status === 'active' || status === 'new');
+        if (user.is_active !== isActive) {
+            await user.update({ is_active: isActive }, { transaction });
+        }
+
+        await transaction.commit();
+        res.status(201).json({ message: "Behavior recorded successfully!" });
+    } catch (err) {
+        await transaction.rollback();
+        console.error("Add User Behavior Error:", err);
+        res.status(500).json({ message: "Failed to record behavior.", error: err.message });
+    }
+};
+
 module.exports = {
     addUserByAdmin,
     updatePassword,
@@ -582,5 +761,7 @@ module.exports = {
     getSalesReps,
     verifySession,
     addUserArea,
-    removeUserArea
+    removeUserArea,
+    getTopPerformers,
+    addUserBehavior
 };

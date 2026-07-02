@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../../api/axiosInstance';
+import api from '../../../api/axiosInstance'; // Uses existing axios instance
 import { 
-  Plus, Search, Package, AlertCircle,
-  Loader2, ArrowLeft, RefreshCw, Trash2, CheckCircle2, ClipboardList, Undo2, Sparkles
+  Package,
+  Loader2, ArrowLeft, RefreshCw, Trash2, CheckCircle2, ClipboardList, Undo2, Sparkles,
+  X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext'; // Import context
+import StockProductBrowser from '../../../components/StockProductBrowser';
 
 const AddStock = () => {
-  const { token, logout } = useAuth();
+  const { token, logout, user } = useAuth();
+  const { addNotification } = useNotifications(); // Get addNotification
   const navigate = useNavigate();
 
-  // States
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,6 +66,7 @@ const AddStock = () => {
         variant_name: v.variant_name,
         price: Number(v.price || 0),
         stock_count: Number(v.stock_count || 0),
+        critical_stock_level: Number(v.critical_stock_level || 5), // Keep for notification logic
         qtyToAdd: ''
       })),
       bulkQty: ''
@@ -72,16 +76,96 @@ const AddStock = () => {
   };
 
   const removeProductFromQueue = (productId) => {
-    const shouldRemove = window.confirm('Remove this product from the stock queue?');
-    if (!shouldRemove) return;
-    setSelectedProducts((prev) => prev.filter((p) => p.product_id !== productId));
+    const toastId = toast.custom((t) => (
+      <div className="w-[320px] max-w-[calc(100vw-2rem)] rounded-3xl border border-border bg-card p-4 shadow-2xl">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 rounded-full bg-red-500/10 p-2 text-red-500">
+            <Trash2 size={16} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-black text-textMain">Remove from queue?</p>
+            <p className="mt-1 text-[11px] font-medium text-textMain/60">
+              Remove this product from the stock queue?
+            </p>
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProducts((prev) => prev.filter((p) => p.product_id !== productId));
+                  toast.dismiss(toastId);
+                  toast.success('Product removed from queue');
+                }}
+                className="rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-primary/90"
+              >
+                Remove
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.dismiss(toastId)}
+                className="rounded-xl border border-border bg-background px-3 py-2 text-[10px] font-black uppercase tracking-widest text-textMain/60 hover:bg-card"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => toast.dismiss(toastId)}
+            className="text-textMain/40 hover:text-textMain"
+            aria-label="Close confirmation"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   const clearAllQueue = () => {
     if (selectedProducts.length === 0) return;
-    const shouldClear = window.confirm('Clear all products from the stock queue?');
-    if (!shouldClear) return;
-    setSelectedProducts([]);
+    const toastId = toast.custom((t) => (
+      <div className="w-[320px] max-w-[calc(100vw-2rem)] rounded-3xl border border-border bg-card p-4 shadow-2xl">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 rounded-full bg-red-500/10 p-2 text-red-500">
+            <Trash2 size={16} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-black text-textMain">Clear entire queue?</p>
+            <p className="mt-1 text-[11px] font-medium text-textMain/60">
+              Clear all products from the stock queue?
+            </p>
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProducts([]);
+                  toast.dismiss(toastId);
+                  toast.success('Stock queue cleared');
+                }}
+                className="rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-primary/90"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.dismiss(toastId)}
+                className="rounded-xl border border-border bg-background px-3 py-2 text-[10px] font-black uppercase tracking-widest text-textMain/60 hover:bg-card"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => toast.dismiss(toastId)}
+            className="text-textMain/40 hover:text-textMain"
+            aria-label="Close confirmation"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   const handleVariantQtyChange = (productId, variantId, value) => {
@@ -149,6 +233,8 @@ const AddStock = () => {
     try {
       setIsApplying(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
+
+      // Apply stock update to backend
       const response = await api.patch(
         '/stock/variants/batch-add-stock',
         { updates },
@@ -161,14 +247,67 @@ const AddStock = () => {
       const totalUnits = Number(summary.totalUnits || 0);
 
       toast.success(`Stock updated for ${updatedVariants} variant(s)`);
+
       setLastAppliedSummary({
         updatedVariants,
         totalUnits,
         updates: appliedUpdates.map((u) => ({ variant_id: u.variant_id, quantity: Number(u.quantity) })),
-        appliedAt: new Date().toLocaleString()
+        appliedAt: new Date().toLocaleString(),
+        // Save names for revert notification
+        variantDetails: selectedProducts.flatMap(product =>
+          product.variants
+            .filter(v => Number(v.qtyToAdd) > 0)
+            .map(v => ({
+              variant_id: v.variant_id,
+              variant_name: v.variant_name,
+              product_name: product.product_name,
+              quantity: Number(v.qtyToAdd)
+            }))
+        )
       });
+
+      // Create notifications for each updated variant
+      for (const product of selectedProducts) {
+        for (const variant of product.variants) {
+          const qty = Number(variant.qtyToAdd);
+          if (!Number.isInteger(qty) || qty <= 0) continue;
+
+          // Calculate new stock after addition
+          const newStock = variant.stock_count + qty;
+          const criticalLevel = variant.critical_stock_level || 5;
+          const userInfo = `${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`;
+
+          let title = '';
+          let message = '';
+          let severity = 'info';
+
+          if (newStock <= 0) {
+            title = '🔴 Still Out of Stock';
+            message = `${product.product_name} - ${variant.variant_name} is still OUT OF STOCK after update by ${userInfo}`;
+            severity = 'critical';
+          } else if (newStock <= criticalLevel) {
+            title = '🔴 Critical Stock Level';
+            message = `${product.product_name} - ${variant.variant_name} is at CRITICAL level (${newStock} units) - updated by ${userInfo}`;
+            severity = 'critical';
+          } else if (newStock < 10) {
+            title = '🟡 Low Stock Alert';
+            message = `${product.product_name} - ${variant.variant_name} is LOW (${newStock} units after adding ${qty}) - updated by ${userInfo}`;
+            severity = 'warning';
+          } else {
+            title = '📦 Stock Added';
+            message = `${product.product_name} - ${variant.variant_name} updated to ${newStock} units (+${qty} added) by ${userInfo}`;
+            severity = 'info';
+          }
+
+
+          // Add to context (shows immediately in Inbox without refresh)
+          addNotification({ type: 'stock', title, message, severity });
+        }
+      }
+
       setSelectedProducts([]);
       fetchProducts();
+
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to apply stock updates');
     } finally {
@@ -193,6 +332,17 @@ const AddStock = () => {
 
       const reverted = Number(response.data?.summary?.revertedVariants || lastAppliedSummary.updates.length);
       toast.success(`Reverted stock update for ${reverted} variant(s)`);
+      
+      // Create revert notification per variant with names
+      for (const detail of (lastAppliedSummary.variantDetails || [])) {
+        addNotification({
+          type: 'stock',
+          title: '↩️ Stock Addition Reverted',
+          message: `${detail.product_name} - ${detail.variant_name}: ${detail.quantity} units addition has been reverted by ${user.name}`,
+          severity: 'warning'
+        });
+      }
+      
       setLastAppliedSummary(null);
       fetchProducts();
     } catch (err) {
@@ -201,12 +351,6 @@ const AddStock = () => {
       setIsUndoing(false);
     }
   };
-
-  const filteredProducts = products.filter(product => {
-    const pName = product.product_name?.toLowerCase() || '';
-    const search = searchTerm.toLowerCase();
-    return pName.includes(search);
-  });
 
   if (loading) {
     return (
@@ -220,7 +364,7 @@ const AddStock = () => {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 animate-in fade-in duration-500 transition-colors duration-300">
+    <div className="w-full max-w-7xl mx-auto p-6 animate-in fade-in duration-500">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4">
@@ -236,7 +380,7 @@ const AddStock = () => {
         <div className="flex gap-3">
           <button 
             onClick={() => { setLoading(true); fetchProducts().then(() => setLoading(false)); }}
-            className="p-3 bg-card border border-border rounded-xl text-textMain/50 hover:text-textMain hover:shadow-md transition-all active:scale-90 transition-colors duration-300"
+            className="p-3 bg-card border border-border rounded-xl text-textMain/50 hover:text-textMain hover:shadow-md transition-all active:scale-90 duration-300"
           >
             <RefreshCw size={20} />
           </button>
@@ -246,20 +390,6 @@ const AddStock = () => {
           >
             <ArrowLeft size={18} /> Back
           </button>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="bg-card border border-border rounded-[2.5rem] shadow-sm p-6 mb-8 transition-colors duration-300">
-        <div className="flex items-center gap-4">
-          <Search size={20} className="text-textMain/50 transition-colors duration-300" />
-          <input 
-            type="text"
-            placeholder="Search by product name..."
-            className="flex-1 bg-transparent outline-none text-textMain font-semibold text-sm placeholder:text-textMain/40 transition-colors duration-300"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
         </div>
       </div>
 
@@ -290,35 +420,12 @@ const AddStock = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7">
-          <div className="bg-card border border-border rounded-4xl shadow-sm overflow-hidden transition-colors duration-300">
-            <div className="p-5 border-b border-border bg-card/50 flex items-center justify-between transition-colors duration-300">
-              <h3 className="font-black text-[11px] uppercase tracking-widest text-textMain/50 transition-colors duration-300">Product Rows</h3>
-              <span className="text-[10px] font-black text-primary uppercase tracking-widest">Click Product To Queue</span>
-            </div>
-
-            <div className="divide-y divide-border">
-              {filteredProducts.map((product) => (
-                <button
-                  key={product.product_id}
-                  onClick={() => addProductToQueue(product)}
-                  className="w-full p-5 text-left hover:bg-background transition-colors duration-300"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-black text-textMain uppercase tracking-tight transition-colors duration-300">{product.product_name}</p>
-                      <p className="text-[11px] text-textMain/50 font-semibold mt-1 transition-colors duration-300">
-                        Category: {product.category?.category_name || 'N/A'}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-textMain/50 font-black uppercase tracking-widest transition-all duration-300">Variants</p>
-                      <p className="text-lg font-black text-primary">{product.variants?.length || 0}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+          <StockProductBrowser
+            products={products}
+            onSelectProduct={addProductToQueue}
+            title="Product Rows"
+            actionLabel="Click Product To Queue"
+          />
         </div>
 
         <div className="lg:col-span-5">
@@ -339,7 +446,7 @@ const AddStock = () => {
               </div>
             </div>
 
-            <div className="max-h-[560px] overflow-y-auto p-4 space-y-4">
+            <div className="max-h-140 overflow-y-auto p-4 space-y-4">
               {selectedProducts.length === 0 ? (
                 <div className="py-16 text-center border-2 border-dashed border-border rounded-3xl">
                   <Package size={34} className="mx-auto text-textMain/20 mb-3 transition-colors duration-300" />
@@ -415,16 +522,6 @@ const AddStock = () => {
         </div>
       </div>
 
-      {/* Empty State */}
-      {filteredProducts.length === 0 && (
-        <div className="bg-card border border-dashed border-border rounded-[3rem] py-24 text-center transition-colors duration-300">
-          <div className="bg-background w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Package className="text-textMain/20" size={48} />
-          </div>
-          <h3 className="text-2xl font-black text-textMain">No Products Found</h3>
-          <p className="text-textMain/50 text-sm mt-2 font-medium">Try adjusting your search terms.</p>
-        </div>
-      )}
     </div>
   );
 };

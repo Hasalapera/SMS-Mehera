@@ -73,4 +73,13 @@ const isAdminOrManager = (req, res, next) => {
     });
 };
 
-module.exports = { verifyToken, isAdmin, isAdminOrManager };
+const isAuthorized = (allowedRoles) => {
+    return (req, res, next) => {
+        if (!req.user || !allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({ message: "Access denied. You don't have permission." });
+        }
+        next();
+    };
+};
+
+module.exports = { verifyToken, isAdmin, isAdminOrManager, isAuthorized };

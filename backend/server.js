@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors'); 
 const { sequelize } = require('./models');
+const cookieParser = require('cookie-parser');
 const { runMigrations } = require('./utils/migrator');
 
 // Routes Import
@@ -20,6 +21,8 @@ const errorHandler = require('./middlewares/errorMiddleware');
 const settingRoutes = require('./routes/settingRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const workshopRoutes = require('./routes/workshopRoutes');
+const salesTargetRoutes = require('./routes/salesTargetRoutes');
+
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -30,14 +33,28 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // =====================================================
 
 // 1. CORS මුලින්ම තියෙන්න ඕනේ හැම රූට් එකකටම කලින් 🛠️
+const allowedOrigins = [
+  'https://www.mehera.lk',
+  'https://sms-mehera-frontend.onrender.com',
+  'http://localhost:5173' // Development සඳහා
+];
+
 app.use(cors({
-  origin: 'http://localhost:5173', 
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], 
+  origin: function (origin, callback) {
+    // origin එක undefined නම් (postman වැනි tool වලින් එන ඒවා) ඉඩ දෙන්න
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   credentials: true
 }));
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(cookieParser()); // ✅ Add cookie-parser middleware
 
 // Request logging (development only)
 if (NODE_ENV !== 'production') {
@@ -72,6 +89,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/settings', settingRoutes); 
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/report', reportRoutes);
+app.use('/api/salesTarget', salesTargetRoutes);
 
 // ✅ Workshop Route එක අනිත් රූට්ස් තියෙන තැනටම පිළිවෙළට දැම්මා
 app.use('/api/workshops', workshopRoutes);

@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../../api/axiosInstance';
 import { 
-  Plus, Search, Package, AlertCircle,
-  Loader2, ArrowLeft, RefreshCw, Trash2, CheckCircle2, ClipboardList, Undo2, Sparkles, Edit3
+  Package,
+  Loader2, ArrowLeft, RefreshCw, Trash2, CheckCircle2, ClipboardList, Undo2, Sparkles, Edit3,
+  X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
+import StockProductBrowser from '../../../components/StockProductBrowser';
 
 const EditStock = () => {
-  const { token, logout } = useAuth();
+  const { token, logout, user } = useAuth();
+  const { addNotification } = useNotifications(); // Get addNotification from context
+  const userInfo = `${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`;
+
   const navigate = useNavigate();
 
   // States
@@ -63,7 +69,8 @@ const EditStock = () => {
         variant_name: v.variant_name,
         price: Number(v.price || 0),
         stock_count: Number(v.stock_count || 0),
-        newStockQty: String(v.stock_count) // set current stock as default
+        critical_stock_level: Number(v.critical_stock_level || 5),
+        newStockQty: String(v.stock_count)
       })),
       bulkQty: ''
     };
@@ -72,16 +79,96 @@ const EditStock = () => {
   };
 
   const removeProductFromQueue = (productId) => {
-    const shouldRemove = window.confirm('Remove this product from the edit queue?');
-    if (!shouldRemove) return;
-    setSelectedProducts((prev) => prev.filter((p) => p.product_id !== productId));
+    const toastId = toast.custom((t) => (
+      <div className="w-[320px] max-w-[calc(100vw-2rem)] rounded-3xl border border-border bg-card p-4 shadow-2xl">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 rounded-full bg-red-500/10 p-2 text-red-500">
+            <Trash2 size={16} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-black text-textMain">Remove from edit queue?</p>
+            <p className="mt-1 text-[11px] font-medium text-textMain/60">
+              Remove this product from the edit queue?
+            </p>
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProducts((prev) => prev.filter((p) => p.product_id !== productId));
+                  toast.dismiss(toastId);
+                  toast.success('Product removed from edit queue');
+                }}
+                className="rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-primary/90"
+              >
+                Remove
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.dismiss(toastId)}
+                className="rounded-xl border border-border bg-background px-3 py-2 text-[10px] font-black uppercase tracking-widest text-textMain/60 hover:bg-card"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => toast.dismiss(toastId)}
+            className="text-textMain/40 hover:text-textMain"
+            aria-label="Close confirmation"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   const clearAllQueue = () => {
     if (selectedProducts.length === 0) return;
-    const shouldClear = window.confirm('Clear all products from the edit queue?');
-    if (!shouldClear) return;
-    setSelectedProducts([]);
+    const toastId = toast.custom((t) => (
+      <div className="w-[320px] max-w-[calc(100vw-2rem)] rounded-3xl border border-border bg-card p-4 shadow-2xl">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 rounded-full bg-red-500/10 p-2 text-red-500">
+            <Trash2 size={16} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-black text-textMain">Clear entire edit queue?</p>
+            <p className="mt-1 text-[11px] font-medium text-textMain/60">
+              Clear all products from the edit queue?
+            </p>
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProducts([]);
+                  toast.dismiss(toastId);
+                  toast.success('Edit queue cleared');
+                }}
+                className="rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-primary/90"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.dismiss(toastId)}
+                className="rounded-xl border border-border bg-background px-3 py-2 text-[10px] font-black uppercase tracking-widest text-textMain/60 hover:bg-card"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => toast.dismiss(toastId)}
+            className="text-textMain/40 hover:text-textMain"
+            aria-label="Close confirmation"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   const handleVariantQtyChange = (productId, variantId, value) => {
@@ -182,10 +269,63 @@ const EditStock = () => {
           oldStock: Number(u.oldStock),
           newStock: Number(u.newStock)
         })),
-        appliedAt: new Date().toLocaleString()
+        appliedAt: new Date().toLocaleString(),
+        // Save names for revert notification
+        variantDetails: selectedProducts.flatMap(product =>
+          product.variants
+            .filter(v => Number(v.newStockQty) !== Number(v.stock_count))
+            .map(v => ({
+              variant_id: v.variant_id,
+              variant_name: v.variant_name,
+              product_name: product.product_name,
+              oldStock: Number(v.stock_count),
+              newStock: Number(v.newStockQty)
+            }))
+        )
       });
+
+      // Create notifications for each updated variant
+      for (const product of selectedProducts) {
+        for (const variant of product.variants) {
+          const newStock = Number(variant.newStockQty);
+          const oldStock = Number(variant.stock_count);
+
+          // Only notify if quantity actually changed
+          if (newStock === oldStock) continue;
+
+          const criticalLevel = variant.critical_stock_level || 5;
+          const difference = newStock - oldStock;
+          const sign = difference > 0 ? '+' : '';
+
+          let title = '';
+          let message = '';
+          let severity = 'info';
+
+          if (newStock <= 0) {
+            title = '🔴 Out of Stock Alert';
+            message = `${product.product_name} - ${variant.variant_name} is now OUT OF STOCK (0 units) - updated by ${userInfo}`;
+            severity = 'critical';
+          } else if (newStock <= criticalLevel) {
+            title = '🔴 Critical Stock Level';
+            message = `${product.product_name} - ${variant.variant_name} dropped to CRITICAL level (${newStock} units) - updated by ${userInfo}`;
+            severity = 'critical';
+          } else if (newStock < 10) {
+            title = '🟡 Low Stock Alert';
+            message = `${product.product_name} - ${variant.variant_name} is LOW (${newStock} units, ${sign}${difference} change) - updated by ${userInfo}`;
+            severity = 'warning';
+          } else {
+            title = '📦 Stock Updated';
+            message = `${product.product_name} - ${variant.variant_name} set to ${newStock} units (${sign}${difference} change) - updated by ${userInfo}`;
+            severity = 'info';
+          }
+
+          addNotification({ type: 'stock', title, message, severity });
+        }
+      }
+
       setSelectedProducts([]);
       fetchProducts();
+
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to apply stock updates');
     } finally {
@@ -210,13 +350,24 @@ const EditStock = () => {
       }));
 
       const response = await api.patch(
-        '/stock/variants/batch-edit-stock',  //✅ Use edit endpoint
+        '/stock/variants/batch-edit-stock',  // Use edit endpoint
         { updates: revertUpdates },
         config
       );
 
       const reverted = Number(response.data?.summary?.updatedVariants || lastAppliedSummary.updates.length);
       toast.success(`Reverted stock update for ${reverted} variant(s)`);
+
+      // Create revert notification per variant with names
+      for (const detail of (lastAppliedSummary.variantDetails || [])) {
+        addNotification({
+          type: 'stock',
+          title: '↩️ Stock Edit Reverted',
+          message: `${detail.product_name} - ${detail.variant_name}: reverted from ${detail.newStock} back to ${detail.oldStock} units by ${userInfo}`,
+          severity: 'warning'
+        });
+      }
+
       setLastAppliedSummary(null);
       fetchProducts();
     } catch (err) {
@@ -226,12 +377,6 @@ const EditStock = () => {
       setIsUndoing(false);
     }
   };
-
-  const filteredProducts = products.filter(product => {
-    const pName = product.product_name?.toLowerCase() || '';
-    const search = searchTerm.toLowerCase();
-    return pName.includes(search);
-  });
 
   if (loading) {
     return (
@@ -245,7 +390,7 @@ const EditStock = () => {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 animate-in fade-in duration-500 transition-colors duration-300">
+    <div className="w-full max-w-7xl mx-auto p-6 animate-in fade-in duration-500 transition-colors">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4">
@@ -271,20 +416,6 @@ const EditStock = () => {
           >
             <ArrowLeft size={18} /> Back
           </button>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="bg-card border border-border rounded-[2.5rem] shadow-sm p-6 mb-8 transition-colors duration-300">
-        <div className="flex items-center gap-4">
-          <Search size={20} className="text-textMain/40" />
-          <input 
-            type="text"
-            placeholder="Search by product name..."
-            className="flex-1 bg-transparent outline-none text-textMain font-semibold text-sm placeholder:text-textMain/40"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
         </div>
       </div>
 
@@ -317,35 +448,12 @@ const EditStock = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Product List */}
         <div className="lg:col-span-7">
-          <div className="bg-card border border-border rounded-4xl shadow-sm overflow-hidden transition-colors duration-300">
-            <div className="p-5 border-b border-border bg-card/50 flex items-center justify-between">
-              <h3 className="font-black text-[11px] uppercase tracking-widest text-textMain/50">Product Rows</h3>
-              <span className="text-[10px] font-black text-primary uppercase tracking-widest">Click To Edit Stock</span>
-            </div>
-
-            <div className="divide-y divide-border">
-              {filteredProducts.map((product) => (
-                <button
-                  key={product.product_id}
-                  onClick={() => addProductToQueue(product)}
-                  className="w-full p-5 text-left hover:bg-background transition-colors"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-black text-textMain uppercase tracking-tight transition-colors duration-300">{product.product_name}</p>
-                      <p className="text-[11px] text-textMain/50 font-semibold mt-1 transition-colors duration-300">
-                        Category: {product.category?.category_name || 'N/A'}
-                      </p>
-                    </div>
-                    <div className="text-right transition-colors duration-300">
-                      <p className="text-[10px] text-textMain/50 font-black uppercase tracking-widest">Variants</p>
-                      <p className="text-lg font-black text-primary">{product.variants?.length || 0}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+          <StockProductBrowser
+            products={products}
+            onSelectProduct={addProductToQueue}
+            title="Product Rows"
+            actionLabel="Click To Edit Stock"
+          />
         </div>
 
         {/* Right: Edit Queue */}
@@ -367,7 +475,7 @@ const EditStock = () => {
               </div>
             </div>
 
-            <div className="max-h-[560px] overflow-y-auto p-4 space-y-4">
+            <div className="max-h-140 overflow-y-auto p-4 space-y-4">
               {selectedProducts.length === 0 ? (
                 <div className="py-16 text-center border-2 border-dashed border-border rounded-3xl">
                   <Package size={34} className="mx-auto text-textMain/20 mb-3" />
@@ -450,16 +558,6 @@ const EditStock = () => {
         </div>
       </div>
 
-      {/* Empty State */}
-      {filteredProducts.length === 0 && (
-        <div className="bg-card border border-dashed border-border rounded-[3rem] py-24 text-center transition-colors duration-300">
-          <div className="bg-background w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Package className="text-textMain/20" size={48} />
-          </div>
-          <h3 className="text-2xl font-black text-textMain">No Products Found</h3>
-          <p className="text-textMain/50 text-sm mt-2 font-medium">Try adjusting your search terms.</p>
-        </div>
-      )}
     </div>
   );
 };
