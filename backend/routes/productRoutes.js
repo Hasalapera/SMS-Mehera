@@ -12,6 +12,7 @@ const productUploads = upload.fields([
 ]);
 
 router.post('/addProduct', verifyToken, isAdmin, productUploads, productController.addProduct);
+router.put('/:id', verifyToken, isAdmin, productUploads, productController.updateProduct);
 router.get('/getProducts', productController.getProducts);
 router.get('/:id', productController.getProductById);
 

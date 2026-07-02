@@ -143,28 +143,98 @@ const getProductById = async (req, res) => {
 };
 
 
-// Update product details (excluding variants for simplicity)
+const parseVariantsInput = (variants) => {
+    if (!variants) return [];
+
+    if (Array.isArray(variants)) {
+        return variants;
+    }
+
+    if (typeof variants === 'string') {
+        return JSON.parse(variants);
+    }
+
+    return [];
+};
+
+// Update product details and variants in one request
 const updateProduct = async (req, res) => {
     try {
-        // For simplicity, we are only updating the main product details here. Variants can be updated through a separate endpoint if needed.
         const { id } = req.params;
-        // Get the update data from the request body
-        const updateData = req.body;
+        const { product_name, brand_id, category_id, description, status, variants } = req.body;
+        const parsedVariants = parseVariantsInput(variants);
 
-        // If there's a new main image, get its URL
-        const product = await Product.findByPk(id);
-        
-        // If product not found, return 404
+        const product = await Product.findByPk(id, {
+            include: [{ model: ProductVariant, as: 'variants' }]
+        });
+
         if (!product) {
             return res.status(404).json({ error: "Product not found" });
         }
 
-        // If a new main image is uploaded, update the image_url
-        await product.update(updateData);
+        const mainImageUrl = req.files?.['main_image']?.[0]?.path;
+        const variantImages = req.files?.['variant_images'] || [];
+        let imageCounter = 0;
+
+        await sequelize.transaction(async (transaction) => {
+            await product.update({
+                product_name,
+                brand_id,
+                category_id,
+                description,
+                status,
+                ...(mainImageUrl ? { image_url: mainImageUrl } : {})
+            }, { transaction });
+
+            const existingVariants = product.variants || [];
+            const existingVariantMap = new Map(existingVariants.map((variant) => [variant.variant_id, variant]));
+            const submittedVariantIds = new Set();
+
+            for (const variant of parsedVariants) {
+                const variantId = variant.variant_id || null;
+                const variantImageUrl = variant.hasImage
+                    ? (variantImages[imageCounter] ? variantImages[imageCounter].path : null)
+                    : (variant.existing_image_url || null);
+
+                if (variant.hasImage) {
+                    imageCounter += 1;
+                }
+
+                const payload = {
+                    product_id: product.product_id,
+                    sku: variant.sku,
+                    variant_name: variant.variant_name,
+                    price: variant.price,
+                    stock_count: variant.stock_count,
+                    critical_stock_level: variant.critical_stock_level,
+                    image_url: variantImageUrl
+                };
+
+                if (variantId && existingVariantMap.has(variantId)) {
+                    submittedVariantIds.add(variantId);
+                    await existingVariantMap.get(variantId).update(payload, { transaction });
+                } else {
+                    await ProductVariant.create(payload, { transaction });
+                }
+            }
+
+            const variantsToDelete = existingVariants.filter((variant) => !submittedVariantIds.has(variant.variant_id));
+            for (const variant of variantsToDelete) {
+                await variant.destroy({ transaction });
+            }
+        });
+
+        const updatedProduct = await Product.findByPk(id, {
+            include: [
+                { model: Category, as: 'category' },
+                { model: Brand, as: 'brand' },
+                { model: ProductVariant, as: 'variants' }
+            ]
+        });
 
         res.status(200).json({
             message: "Product updated successfully",
-            product
+            product: updatedProduct
         });
 
     } catch (err) {
