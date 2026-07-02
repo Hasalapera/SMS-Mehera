@@ -228,11 +228,16 @@ const placeOnlineOrder = async (req, res) => {
 const getAllOrders = async (req, res) => {
   try {
     // 🕵️ get user id and role from middleware
-    const { user_id, role } = req.user; 
+    const { user_id, role } = req.user;
+    const { customerId } = req.query; // 👈 Get customerId from query
     let filter = {};
 
-    // 🛡️ Admin, Manager, සහ Logistics Officer හැර අනිත් අයට පේන්නේ තමන් දාපු orders විතරයි
-    if (role !== 'admin' && role !== 'manager' && role !== 'logistics_officer') {
+    // 🛡️ If a specific customer ID is requested, filter by it. This takes precedence.
+    if (customerId) {
+      filter = { customer_id: customerId };
+    }
+    // 🛡️ Otherwise, for general lists, filter by creator for non-privileged roles.
+    else if (role !== 'admin' && role !== 'manager' && role !== 'logistics_officer') {
       filter = { created_by: user_id };
     }
 
@@ -259,7 +264,7 @@ const getAllOrders = async (req, res) => {
         {
           model: Customer,
           as: 'customer',
-          attributes: ['phone1', 'phone2'] // Fetch encrypted phone numbers
+          attributes: ['phone1', 'phone2', 'lane1', 'lane2', 'district'] // Fetch encrypted phone numbers and address
         }
       ],
       order: [['created_at', 'DESC']]
@@ -348,37 +353,6 @@ const updateOrderStatus = async (req, res) => {
       for (const update of variantsToUpdate) {
         update.variant.stock_count -= update.qtyToDeduct;
         await update.variant.save({ transaction });
-
-        const remainingStock = Number(update.variant.stock_count || 0);
-        const productName = update.variant.product?.product_name || 'Unknown Product';
-        const variantName = update.variant.variant_name || 'Standard';
-        const criticalLevel = Number(update.variant.critical_stock_level || 5);
-
-        if (remainingStock <= 0) {
-          await createNotification(
-            'stock',
-            '🔴 Out of Stock Alert',
-            `${productName} - ${variantName} is now OUT OF STOCK after order approval.`,
-            update.variant.variant_id,
-            'critical'
-          );
-        } else if (remainingStock <= criticalLevel) {
-          await createNotification(
-            'stock',
-            '🔴 Critical Stock Level',
-            `${productName} - ${variantName} is now at CRITICAL stock level (${remainingStock} units) after order approval.`,
-            update.variant.variant_id,
-            'critical'
-          );
-        } else if (remainingStock < 10) {
-          await createNotification(
-            'stock',
-            '🟡 Low Stock Alert',
-            `${productName} - ${variantName} is now LOW stock (${remainingStock} units) after order approval.`,
-            update.variant.variant_id,
-            'warning'
-          );
-        }
       }
     }
 
