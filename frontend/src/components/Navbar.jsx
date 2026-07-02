@@ -11,7 +11,7 @@ const Navbar = () => {
     const { logout, user: currentUser } = useAuth();
     const { notifications, unreadCount, markAsRead, refreshNotifications } = useNotifications();
     const navigate = useNavigate();
-    const { unreadCount, setNotificationsFromAPI } = useNotifications();
+    //const { unreadCount, setNotificationsFromAPI } = useNotifications();
     const [isOpen, setIsOpen] = useState(false);
     const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
     const [systemSettings, setSystemSettings] = useState(null);
