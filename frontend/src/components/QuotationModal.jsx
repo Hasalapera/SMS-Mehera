@@ -7,7 +7,7 @@ import { useAuth } from '../pages/context/AuthContext';
 
 const QuotationModal = ({ isOpen, onClose }) => {
     const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [cart, setCart] = useState([]);
     
@@ -22,6 +22,7 @@ const QuotationModal = ({ isOpen, onClose }) => {
     const [customPhone, setCustomPhone] = useState('');
     
     const [discount, setDiscount] = useState(0);
+    const [mobileTab, setMobileTab] = useState('inventory');
     
     const navigate = useNavigate();
     const { user, token } = useAuth();
@@ -40,6 +41,7 @@ const QuotationModal = ({ isOpen, onClose }) => {
             setCustomPhone('');
             setDiscount(0);
             setSearch('');
+            setMobileTab('inventory');
         }
     }, [isOpen]);
 
@@ -172,11 +174,34 @@ const QuotationModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Body Split */}
-                <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+                <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
+
+                    {/* Mobile Tabs */}
+                    <div className="lg:hidden flex border-b border-border shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setMobileTab('inventory')}
+                            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors ${mobileTab === 'inventory' ? 'bg-background text-primary' : 'bg-card/50 text-textMain/50'}`}
+                        >
+                            <Package size={16} /> Inventory
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setMobileTab('quotation')}
+                            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 relative transition-colors ${mobileTab === 'quotation' ? 'bg-background text-primary' : 'bg-card/50 text-textMain/50'}`}
+                        >
+                            <FileText size={16} /> Quotation
+                            {cart.length > 0 && (
+                                <span className="absolute top-2 right-2 w-5 h-5 bg-primary text-black text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in">
+                                    {cart.length}
+                                </span>
+                            )}
+                        </button>
+                    </div>
                     
                     {/* LEFT PANEL: PRODUCTS */}
-                    <div className="lg:w-[55%] flex flex-col h-full border-b lg:border-b-0 lg:border-r border-border bg-background">
-                        <div className="p-5 border-b border-border bg-card/50">
+                    <div className={`lg:w-[55%] flex-col border-b lg:border-b-0 lg:border-r border-border bg-background min-h-0 ${mobileTab === 'inventory' ? 'flex flex-1' : 'hidden lg:flex'}`}>
+                        <div className="p-5 border-b border-border bg-card/50 shrink-0">
                             <div className="relative">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50" size={16} />
                                 <input type="text" placeholder="Search inventory..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full bg-background border border-border rounded-xl py-3 pl-11 pr-4 text-xs font-bold outline-none focus:border-primary" />
@@ -212,8 +237,8 @@ const QuotationModal = ({ isOpen, onClose }) => {
                     </div>
 
                     {/* RIGHT PANEL: CART & SETTINGS */}
-                    <div className="lg:w-[45%] flex flex-col h-full bg-card overflow-y-auto custom-scrollbar">
-                        <div className="p-6 space-y-6">
+                    <div className={`lg:w-[45%] flex-col bg-card overflow-y-auto custom-scrollbar min-h-0 ${mobileTab === 'quotation' ? 'flex flex-1' : 'hidden lg:flex'}`}>
+                        <div className="p-4 md:p-6 space-y-6">
                             
                             {/* Customer Details */}
                             <div className="space-y-3">
