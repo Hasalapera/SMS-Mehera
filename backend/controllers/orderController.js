@@ -22,20 +22,19 @@ const placeOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const { 
-      order_id,              // 👈 Frontend එකෙන් එවන Unique ID එක
+      order_id,              
       customer_id, 
       customer_name, 
       shipping_address, 
       phone, 
-      subtotal,              // Total
-      discount_percentage,   // % 
+      subtotal,              
+      discount_percentage,   
       discount_amount,       
-      total_amount,          // final total after discount
+      total_amount,          
       items,
-      payment_method         // 'cash' or 'credit' 
+      payment_method         
     } = req.body;
 
-    // 🛡️ Idempotency Check: Prevent duplicate offline syncs
     if (order_id) {
       const existingOrder = await Order.findByPk(order_id, { transaction });
       if (existingOrder) {
@@ -44,7 +43,6 @@ const placeOrder = async (req, res) => {
       }
     }
 
-    // 🛡️ Stock Validation Phase before creating order
     for (const item of items) {
       const variant = await ProductVariant.findByPk(item.variant_id, { 
         include: [{ model: Product, as: 'product', attributes: ['product_name'] }],
@@ -63,16 +61,16 @@ const placeOrder = async (req, res) => {
     }
 
     const newOrder = await Order.create({
-      order_id: order_id || undefined, // 👈 Frontend ID එක තියෙනවානම් ඒක පාවිච්චි කරනවා, නැත්නම් DB එකෙන් Generate කරනවා
+      order_id: order_id || undefined, 
       customer_id, 
       customer_name,     
       shipping_address,
       phone,
-      subtotal: subtotal || 0,                    // store sub total
-      discount_percentage: discount_percentage || 0, // % store 
-      discount_amount: discount_amount || 0,      // store discount amount
+      subtotal: subtotal || 0,                    
+      discount_percentage: discount_percentage || 0, 
+      discount_amount: discount_amount || 0,      
       total_amount: total_amount || 0, 
-      payment_method: payment_method || 'cash',   // store payment method
+      payment_method: payment_method || 'cash',   
      order_status: 'requested',
       created_by: req.user.user_id,
       order_type: 'offline'
@@ -88,7 +86,7 @@ const placeOrder = async (req, res) => {
 
     await OrderItem.bulkCreate(orderItemsData, { transaction });
     
-    await transaction.commit(); // ✅ confirm DB operations before sending response
+    await transaction.commit(); 
 
     const notificationTargetUserId = await getOrderNotificationTarget(newOrder, req.user.user_id);
 
@@ -106,7 +104,6 @@ const placeOrder = async (req, res) => {
 
     res.status(201).json({ success: true, message: "Order placed successfully!", orderId: newOrder.order_id });
   } catch (error) {
-    // if there is error rollback it
     if (transaction && !transaction.finished) await transaction.rollback();
     console.error("Order Error:", error);
     res.status(500).json({ success: false, message: "Failed to place order" });
@@ -131,7 +128,6 @@ const placeOnlineOrder = async (req, res) => {
       items 
     } = req.body;
 
-    // 🛡️ Stock Validation Phase before creating online order
     for (const item of items) {
       const variant = await ProductVariant.findByPk(item.variant_id, { 
         include: [{ model: Product, as: 'product', attributes: ['product_name'] }],
@@ -170,7 +166,6 @@ const placeOnlineOrder = async (req, res) => {
     }));
 
     await OrderItem.bulkCreate(orderItemsData, { transaction });
-
     
     await transaction.commit();
 
@@ -186,10 +181,8 @@ const placeOnlineOrder = async (req, res) => {
       }
     );
 
-    // Send discount details while sending email
     if (email) {
       try {
-        
         await sendEmailInvoice(email, {
           order_id: newOrder.order_id,
           customer_name,
@@ -204,17 +197,13 @@ const placeOnlineOrder = async (req, res) => {
         });
         console.log(`✅ Invoice sent to ${email}`);
       } catch (emailErr) {
-        
         console.error("❌ Email process failed but order is saved:", emailErr.message);
       }
     }
 
     res.status(201).json({ success: true, message: "Online Order placed successfully!", orderId: newOrder.order_id });
-
   } catch (error) {
-    
     if (transaction && !transaction.finished) await transaction.rollback();
-    
     console.error("Online Order Error:", error);
     res.status(500).json({ 
       success: false, 
@@ -227,22 +216,19 @@ const placeOnlineOrder = async (req, res) => {
 // --- 3. get all orders ---
 const getAllOrders = async (req, res) => {
   try {
-    // 🕵️ get user id and role from middleware
     const { user_id, role } = req.user;
-    const { customerId } = req.query; // 👈 Get customerId from query
+    const { customerId } = req.query; 
     let filter = {};
 
-    // 🛡️ If a specific customer ID is requested, filter by it. This takes precedence.
     if (customerId) {
       filter = { customer_id: customerId };
     }
-    // 🛡️ Otherwise, for general lists, filter by creator for non-privileged roles.
     else if (role !== 'admin' && role !== 'manager' && role !== 'logistics_officer') {
       filter = { created_by: user_id };
     }
 
     const orders = await Order.findAll({
-      where: filter, // get order from relevant filter 
+      where: filter, 
       include: [
         {
           model: OrderItem,
@@ -264,23 +250,19 @@ const getAllOrders = async (req, res) => {
         {
           model: Customer,
           as: 'customer',
-          attributes: ['phone1', 'phone2', 'lane1', 'lane2', 'district'] // Fetch encrypted phone numbers and address
+          attributes: ['phone1', 'phone2', 'lane1', 'lane2', 'district'] 
         }
       ],
       order: [['created_at', 'DESC']]
     });
 
-    // Decrypt phone numbers before sending to the frontend
     const decryptedOrders = orders.map(order => {
       const orderJSON = order.toJSON();
-
-      // 💡 Decrypt the primary phone number on the Order model itself
       if (orderJSON.phone) {
         try {
           orderJSON.phone = decrypt(orderJSON.phone);
         } catch (e) {
-          // Ignore error if it's already plain text
-          console.warn(`Could not decrypt order.phone for order ${orderJSON.order_id}, might be plain text.`);
+          console.warn(`Could not decrypt order.phone for order ${orderJSON.order_id}`);
         }
       }
 
@@ -310,7 +292,6 @@ const updateOrderStatus = async (req, res) => {
 
     const previousStatus = (await Order.findByPk(orderId, { attributes: ['order_status'], transaction }))?.order_status;
 
-    // Order එකයි ඒකෙ Items ටිකයි database එකෙන් ගන්නවා
     const order = await Order.findByPk(orderId, {
       include: [{ model: OrderItem }],
       transaction
@@ -321,11 +302,9 @@ const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
 
-    // 🛡️ Admin order එක 'approved' කරනවා නම් විතරක් Stock Check එක කරනවා
     if (status === 'approved' && previousStatus !== 'approved') {
       const variantsToUpdate = [];
 
-      // 1. Stock Validation Phase (හැම item එකක්ම check කරනවා)
       for (const item of order.OrderItems) {
         const variant = await ProductVariant.findByPk(item.variant_id, { 
           include: [{ model: Product, as: 'product', attributes: ['product_name'] }],
@@ -334,7 +313,6 @@ const updateOrderStatus = async (req, res) => {
 
         if (!variant) continue;
 
-        // ⚠️ Stock මදි නම් මෙතනින්ම නවත්තලා Error එකක් යවනවා (Rollback කරනවා)
         if (variant.stock_count < item.qty) {
           await transaction.rollback();
           const productName = variant.product?.product_name || 'Unknown Product';
@@ -345,33 +323,28 @@ const updateOrderStatus = async (req, res) => {
           });
         }
 
-        // ඔක්කොම හරි නම් update කරන්න ලිස්ට් එකට දාගන්නවා
         variantsToUpdate.push({ variant, qtyToDeduct: item.qty });
       }
 
-      // 2. Stock Deduction Phase (ඔක්කොම items වල stock තියෙනවා නම් විතරක් අඩු කරනවා)
       for (const update of variantsToUpdate) {
         update.variant.stock_count -= update.qtyToDeduct;
         await update.variant.save({ transaction });
       }
     }
 
-    // 🛡️ Online Order එක Shipped කරද්දි One-time Link එකට Token එකයි OTP එකයි හදනවා
     if (status === 'shipped' && order.order_type === 'online') {
       order.delivery_token = crypto.randomBytes(16).toString('hex');
-      order.delivery_otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+      order.delivery_otp = Math.floor(100000 + Math.random() * 900000).toString(); 
     }
 
     order.order_status = status;
     await order.save({ transaction });
 
-    // --- 🎯 Sales Target Update Logic ---
     const orderAmount = parseFloat(order.total_amount);
     const repId = order.created_by;
     const orderMonth = order.created_at.toISOString().slice(0, 7);
 
     if (repId && orderAmount > 0) {
-      // Condition 1: An order is newly approved
       if (status === 'approved' && previousStatus !== 'approved') {
         await SalesTarget.increment('achieved_amount', {
           by: orderAmount,
@@ -379,7 +352,6 @@ const updateOrderStatus = async (req, res) => {
           transaction
         });
       }
-      // Condition 2: A previously approved order is now cancelled or rejected
       else if ((status === 'cancelled' || status === 'rejected') && previousStatus === 'approved') {
         await SalesTarget.decrement('achieved_amount', {
           by: orderAmount,
@@ -388,7 +360,6 @@ const updateOrderStatus = async (req, res) => {
         });
       }
 
-      // After any change, re-evaluate the 'is_achieved' status
       const target = await SalesTarget.findOne({
         where: { sales_rep_id: repId, month: orderMonth },
         transaction
@@ -402,7 +373,7 @@ const updateOrderStatus = async (req, res) => {
       }
     }
 
-    await transaction.commit(); // ✅ සේරම සාර්ථක නම් Database එකට save කරනවා
+    await transaction.commit(); 
 
     const notificationTargetUserId = await getOrderNotificationTarget(order, order.created_by);
 
@@ -423,9 +394,7 @@ const updateOrderStatus = async (req, res) => {
 
     let whatsappUrl = null;
 
-    // 🚀 Parallel Process: Send WhatsApp & Email asynchronously
     if (status === 'shipped' && order.order_type === 'online') {
-      // Full details ටික අරගෙන තමයි යවන්නේ Product Names එක්කම
       const fullOrder = await Order.findByPk(orderId, {
         include: [{
           model: OrderItem,
@@ -433,7 +402,6 @@ const updateOrderStatus = async (req, res) => {
         }]
       });
 
-      // 🟢 Generate WhatsApp Link Details
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       const confirmLink = `${frontendUrl}/confirm-delivery/${order.order_id}/${order.delivery_token}`;
       
@@ -483,11 +451,11 @@ const updateTrackingInfo = async (req, res) => {
   }
 };
 
-// 🛡️ Courier Confirm Delivery Request 
+// 🛡️ 🎯 [THE CRITICAL FIX]: Courier & Landing Page Direct Scan Confirm Delivery Request 
 const confirmDeliveryWithOTP = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { token, otp } = req.body;
+    const { token, otp } = req.body; // 💡 Token එක ආවොත් ලින්ක් එකෙන්, නැත්නම් ලෑන්ඩින් පේජ් එකෙන් හිස්ව එනවා
 
     const order = await Order.findByPk(orderId, {
       include: [{ model: Customer, as: 'customer' }]
@@ -495,23 +463,27 @@ const confirmDeliveryWithOTP = async (req, res) => {
 
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
-    // 1. දැනටමත් Delivered ද බලන්න
     if (order.order_status === 'delivered') {
-      return res.status(400).json({ success: false, message: 'Order is already delivered.' });
+      return res.status(400).json({ success: false, message: 'Order is already marked as delivered.' });
     }
 
-    // 2. Token සහ OTP පරීක්ෂා කරන්න
-    if (!order.delivery_token || order.delivery_token !== token || order.delivery_otp !== otp) {
-      return res.status(400).json({ success: false, message: 'Invalid Link or Incorrect OTP!' });
+    // 🚀 [THE SMART OVERRIDE]: ලෑන්ඩින් පේජ් එකෙන් කෙලින්ම එද්දී token එකක් නැති නිසා, OTP එක විතරක් චෙක් කරනවා.
+    // ලින්ක් එකෙන් ආවොත් ටෝකන් එකයි OTP දෙකම චෙක් කරනවා.
+    if (token) {
+        if (order.delivery_token !== token || order.delivery_otp !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid Link or Incorrect OTP!' });
+        }
+    } else {
+        if (order.delivery_otp !== otp) {
+            return res.status(400).json({ success: false, message: 'Incorrect Secure Delivery OTP Code!' });
+        }
     }
 
-    // 3. Status Update කරලා Token/OTP අයින් කරන්න
     order.order_status = 'delivered';
-    order.delivery_token = null; // Token එක අයින් කරනවා
-    order.delivery_otp = null;   // OTP එක අයින් කරනවා
+    order.delivery_token = null; 
+    order.delivery_otp = null;   
     await order.save();
 
-    // 4. Thank you email එක යවන්න
     const emailToUse = order.email || (order.customer && order.customer.email);
     if (emailToUse) {
       sendThankYouEmail(emailToUse, order.customer_name || order.customer?.saloon_name, order.order_id).catch(console.error);
@@ -569,4 +541,13 @@ const verifyDeliveryOTPByRep = async (req, res) => {
   }
 };
 
-module.exports = { placeOrder, placeOnlineOrder, getAllOrders, updateOrderStatus, updateTrackingInfo, confirmDeliveryWithOTP, initiateDeliveryOTP, verifyDeliveryOTPByRep };
+module.exports = { 
+    placeOrder, 
+    placeOnlineOrder, 
+    getAllOrders, 
+    updateOrderStatus, 
+    updateTrackingInfo, 
+    confirmDeliveryWithOTP, 
+    initiateDeliveryOTP, 
+    verifyDeliveryOTPByRep 
+};
