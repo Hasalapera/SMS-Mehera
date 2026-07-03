@@ -7,7 +7,7 @@ const { sendDispatchNotification } = require('../utils/sendDispatchNotification'
 const { decrypt } = require('../utils/cryptoUtils');
 const { sendDeliveryOTP, sendThankYouEmail } = require('../utils/emailSender');
 const { createNotification } = require('./notificationController');
-const { Op } = require('sequelize'); // 💡 [ADDED]: Sequelize Operators, Like operations සඳහා
+const { Op } = require('sequelize');
 
 const getOrderNotificationTarget = async (orderLike, fallbackUserId) => {
   if (!orderLike?.customer_id) return fallbackUserId || null;
@@ -19,7 +19,7 @@ const getOrderNotificationTarget = async (orderLike, fallbackUserId) => {
   return customer?.sales_rep_id || fallbackUserId || null;
 };
 
-// --- 1. current normal orde eka (SALES REP / OFFLINE) ---
+// --- 1. CURRENT NORMAL ORDER (SALES REP / OFFLINE) ---
 const placeOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
@@ -87,7 +87,6 @@ const placeOrder = async (req, res) => {
     }));
 
     await OrderItem.bulkCreate(orderItemsData, { transaction });
-    
     await transaction.commit(); 
 
     const notificationTargetUserId = await getOrderNotificationTarget(newOrder, req.user.user_id);
@@ -112,7 +111,7 @@ const placeOrder = async (req, res) => {
   }
 };
 
-// --- 2. ONLINE/RETAIL ORDER  ---
+// --- 2. ONLINE/RETAIL ORDER ---
 const placeOnlineOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
@@ -168,7 +167,6 @@ const placeOnlineOrder = async (req, res) => {
     }));
 
     await OrderItem.bulkCreate(orderItemsData, { transaction });
-    
     await transaction.commit();
 
     await createNotification(
@@ -207,15 +205,11 @@ const placeOnlineOrder = async (req, res) => {
   } catch (error) {
     if (transaction && !transaction.finished) await transaction.rollback();
     console.error("Online Order Error:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Failed to place online order",
-      error: error.message 
-    });
+    res.status(500).json({ success: false, message: "Failed to place online order", error: error.message });
   }
 };
 
-// --- 3. get all orders ---
+// --- 3. GET ALL ORDERS ---
 const getAllOrders = async (req, res) => {
   try {
     const { user_id, role } = req.user;
@@ -261,17 +255,13 @@ const getAllOrders = async (req, res) => {
     const decryptedOrders = orders.map(order => {
       const orderJSON = order.toJSON();
       if (orderJSON.phone) {
-        try {
-          orderJSON.phone = decrypt(orderJSON.phone);
-        } catch (e) {
+        try { orderJSON.phone = decrypt(orderJSON.phone); } catch (e) {
           console.warn(`Could not decrypt order.phone for order ${orderJSON.order_id}`);
         }
       }
 
       if (orderJSON.customer && orderJSON.customer.phone1) {
-        try {
-          orderJSON.customer.phone1 = decrypt(orderJSON.customer.phone1);
-        } catch (e) {
+        try { orderJSON.customer.phone1 = decrypt(orderJSON.customer.phone1); } catch (e) {
           console.warn(`Could not decrypt phone1 for customer on order ${orderJSON.order_id}`);
           orderJSON.customer.phone1 = 'Decryption Error';
         }
@@ -286,13 +276,12 @@ const getAllOrders = async (req, res) => {
   }
 };
 
+// --- 4. UPDATE ORDER STATUS (WITH 5-STAGE ONLINE ENGINE) ---
 const updateOrderStatus = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
     const { orderId } = req.params;
     const { status } = req.body;
-
-    const previousStatus = (await Order.findByPk(orderId, { attributes: ['order_status'], transaction }))?.order_status;
 
     const order = await Order.findByPk(orderId, {
       include: [{ model: OrderItem }],
@@ -304,6 +293,9 @@ const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
 
+    const previousStatus = order.order_status;
+
+    // Stock deduction logic on Approval
     if (status === 'approved' && previousStatus !== 'approved') {
       const variantsToUpdate = [];
 
@@ -334,7 +326,8 @@ const updateOrderStatus = async (req, res) => {
       }
     }
 
-    if (status === 'shipped' && order.order_type === 'online') {
+    // 🎯 OTP and Secure Token Generation happens at 'shipped' state for online orders
+    if (status === 'shipped' && order.order_type === 'online' && !order.delivery_otp) {
       order.delivery_token = crypto.randomBytes(16).toString('hex');
       order.delivery_otp = Math.floor(100000 + Math.random() * 900000).toString(); 
     }
@@ -342,31 +335,20 @@ const updateOrderStatus = async (req, res) => {
     order.order_status = status;
     await order.save({ transaction });
 
+    // Target tracking mechanics
     const orderAmount = parseFloat(order.total_amount);
     const repId = order.created_by;
     const orderMonth = order.created_at.toISOString().slice(0, 7);
 
     if (repId && orderAmount > 0) {
       if (status === 'approved' && previousStatus !== 'approved') {
-        await SalesTarget.increment('achieved_amount', {
-          by: orderAmount,
-          where: { sales_rep_id: repId, month: orderMonth },
-          transaction
-        });
+        await SalesTarget.increment('achieved_amount', { by: orderAmount, where: { sales_rep_id: repId, month: orderMonth }, transaction });
       }
       else if ((status === 'cancelled' || status === 'rejected') && previousStatus === 'approved') {
-        await SalesTarget.decrement('achieved_amount', {
-          by: orderAmount,
-          where: { sales_rep_id: repId, month: orderMonth },
-          transaction
-        });
+        await SalesTarget.decrement('achieved_amount', { by: orderAmount, where: { sales_rep_id: repId, month: orderMonth }, transaction });
       }
 
-      const target = await SalesTarget.findOne({
-        where: { sales_rep_id: repId, month: orderMonth },
-        transaction
-      });
-
+      const target = await SalesTarget.findOne({ where: { sales_rep_id: repId, month: orderMonth }, transaction });
       if (target) {
         const isNowAchieved = parseFloat(target.achieved_amount) >= parseFloat(target.adjusted_target_amount);
         if (target.is_achieved !== isNowAchieved) {
@@ -377,26 +359,21 @@ const updateOrderStatus = async (req, res) => {
 
     await transaction.commit(); 
 
+    // Notification Hub dispatch trigger
     const notificationTargetUserId = await getOrderNotificationTarget(order, order.created_by);
-
     if (notificationTargetUserId) {
-      const severity = ['rejected', 'cancelled'].includes(status) ? 'warning' : 'info';
+      const severity = ['rejected', 'cancelled', 'returned'].includes(status) ? 'warning' : 'info';
       await createNotification(
         'order',
         `Order ${status.charAt(0).toUpperCase()}${status.slice(1)}`,
         `Order #${order.order_id.substring(0, 8).toUpperCase()} for ${order.customer_name} is now ${status}.`,
-        {
-          reference_id: order.order_id,
-          target_user_id: notificationTargetUserId,
-          severity,
-          initiator_id: req.user.user_id
-        }
+        { reference_id: order.order_id, target_user_id: notificationTargetUserId, severity, initiator_id: req.user.user_id }
       );
     }
 
+    // 🚀 [WHATSAPP DISPATCH SHIFT]: Alert text triggers when order shifts to 'handed_over' state
     let whatsappUrl = null;
-
-    if (status === 'shipped' && order.order_type === 'online') {
+    if (status === 'handed_over' && order.order_type === 'online') {
       const fullOrder = await Order.findByPk(orderId, {
         include: [{
           model: OrderItem,
@@ -411,7 +388,7 @@ const updateOrderStatus = async (req, res) => {
           `- ${item.variant?.product?.product_name || 'Product'} (${item.variant?.variant_name || 'Std'}) x${item.qty}`
       ).join('\n');
 
-      const messageText = `📦 *MEHERA INTERNATIONAL - DISPATCH ALERT* 📦\n\n*English:*\nYour order has been dispatched!\nOrder Ref: #${order.order_id.substring(0, 8).toUpperCase()}\nCustomer: ${order.customer_name}\nAddress: ${order.shipping_address}\nTotal Amount: LKR ${Number(order.total_amount).toLocaleString()}\n\n*Items:*\n${itemsList}\n\nWhen the courier arrives, click the link below and enter this OTP to confirm delivery:\n*OTP:* ${order.delivery_otp}\n*Link:* ${confirmLink}\n\n---\n*සිංහල:*\nඔබගේ ඇණවුම පිටත් කර යවා ඇත!\nඇණවුම් අංකය: #${order.order_id.substring(0, 8).toUpperCase()}\nපාරිභෝගිකයා: ${order.customer_name}\nලිපිනය: ${order.shipping_address}\nමුළු මුදල: LKR ${Number(order.total_amount).toLocaleString()}\n\nකුරියර් සේවාව පැමිණි පසු, භාණ්ඩ ලැබුණු බව තහවුරු කිරීමට පහත ලින්ක් එක ක්ලික් කර මෙම OTP අංකය ඇතුළත් කරන්න:\n*OTP අංකය:* ${order.delivery_otp}\n*ලින්ක් එක:* ${confirmLink}\n\n---\n*தமிழ்:*\nஉங்கள் ஆர்டர் அனுப்பப்பட்டது!\nஆர்டர் எண்: #${order.order_id.substring(0, 8).toUpperCase()}\nவாடிக்கையாளர்: ${order.customer_name}\nமுகவரி: ${order.shipping_address}\nமொத்த தொகை: LKR ${Number(order.total_amount).toLocaleString()}\n\nகூரியர் வந்ததும், டெலிவரியை உறுதிப்படுத்த கீழே உள்ள இணைப்பைக் கிளிக் செய்து இந்த OTP ஐ உள்ளிடவும்:\n*OTP:* ${order.delivery_otp}\n*இணைப்பு:* ${confirmLink}`;
+      const messageText = `📦 *MEHERA INTERNATIONAL - DISPATCH ALERT* 📦\n\nYour order Ref #${order.order_id.substring(0, 8).toUpperCase()} has been handed over to ${order.courier_name || 'Courier'}.\nTracking Ref: ${order.tracking_id}\n\nUpon delivery, input OTP to confirm:\n*OTP Code:* ${order.delivery_otp}\n*Verify Link:* ${confirmLink}\n\n---\nකුරියර් සේවාව පැමිණි පසු, භාණ්ඩ ලැබුණු බව තහවුරු කිරීමට මෙම OTP අංකය ඇතුළත් කරන්න:\n*OTP අංකය:* ${order.delivery_otp}`;
 
       let cleanNumber = order.phone.replace(/\D/g, '');
       if (cleanNumber.startsWith('0')) {
@@ -421,7 +398,6 @@ const updateOrderStatus = async (req, res) => {
       }
 
       whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(messageText)}`;
-
       sendDispatchNotification(fullOrder).catch(console.error);
     }
 
@@ -433,10 +409,11 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
+// --- 5. UPDATE COURIER TRACKING LEDGER ---
 const updateTrackingInfo = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { tracking_id } = req.body;
+    const { tracking_id, courier_name } = req.body; 
 
     const order = await Order.findByPk(orderId);
     if (!order) {
@@ -444,16 +421,19 @@ const updateTrackingInfo = async (req, res) => {
     }
 
     order.tracking_id = tracking_id;
+    if (courier_name) {
+      order.courier_name = courier_name; 
+    }
+    
     await order.save();
-
-    res.status(200).json({ success: true, message: "Tracking ID updated successfully", order });
+    res.status(200).json({ success: true, message: "Tracking & Courier info updated", order });
   } catch (error) {
     console.error("Tracking Update Error:", error);
     res.status(500).json({ success: false, message: "Failed to update tracking info" });
   }
 };
 
-// 🛡️ Courier & Landing Page Direct Scan Confirm Delivery Request 
+// --- 6. CONFIRM DELIVERY VIA OTP ---
 const confirmDeliveryWithOTP = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -499,24 +479,20 @@ const confirmDeliveryWithOTP = async (req, res) => {
 const initiateDeliveryOTP = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const order = await Order.findByPk(orderId, {
-      include: [{ model: Customer, as: 'customer' }]
-    });
+    const order = await Order.findByPk(orderId, { include: [{ model: Customer, as: 'customer' }] });
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
-    if (order.order_status !== 'shipped') return res.status(400).json({ success: false, message: 'Order is not in shipped status' });
     
     const emailToUse = order.email || (order.customer && order.customer.email);
-    if (!emailToUse) return res.status(400).json({ success: false, message: 'No email associated with this order to send OTP.' });
+    if (!emailToUse) return res.status(400).json({ success: false, message: 'No email associated.' });
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     order.delivery_otp = otp;
     await order.save();
 
     sendDeliveryOTP(emailToUse, order.customer_name || order.customer?.saloon_name, order.order_id, otp).catch(console.error);
-    res.status(200).json({ success: true, message: 'OTP sent to customer email' });
+    res.status(200).json({ success: true, message: 'OTP sent successfully' });
   } catch (error) {
-    console.error("Init Delivery Error:", error);
-    res.status(500).json({ success: false, message: 'Failed to initiate delivery' });
+    res.status(500).json({ success: false });
   }
 };
 
@@ -525,8 +501,7 @@ const verifyDeliveryOTPByRep = async (req, res) => {
     const { orderId } = req.params;
     const { otp } = req.body;
     const order = await Order.findByPk(orderId, { include: [{ model: Customer, as: 'customer' }] });
-    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
-    if (order.order_status !== 'shipped') return res.status(400).json({ success: false, message: 'Order is not in shipped status' });
+    if (!order) return res.status(404).json({ success: false });
     if (order.delivery_otp !== otp) return res.status(400).json({ success: false, message: 'Invalid OTP!' });
 
     order.order_status = 'delivered';
@@ -534,49 +509,42 @@ const verifyDeliveryOTPByRep = async (req, res) => {
 
     const emailToUse = order.email || (order.customer && order.customer.email);
     if (emailToUse) sendThankYouEmail(emailToUse, order.customer_name || order.customer?.saloon_name, order.order_id).catch(console.error);
-    res.status(200).json({ success: true, message: 'Order marked as delivered successfully!' });
+    res.status(200).json({ success: true });
   } catch (error) {
-    console.error("Verify Delivery Error:", error);
-    res.status(500).json({ success: false, message: 'Failed to verify OTP' });
+    res.status(500).json({ success: false });
   }
 };
 
+// --- 7. GET ORDER BY ID (TRACING ENGINE) ---
 const getOrderById = async (req, res) => {
   try {
     const { orderId } = req.params; 
     const searchTerm = orderId.trim();
-
     let order = null;
 
-    // 1. UUID එකක් නම්
+    const selectAttributes = ['order_id', 'customer_name', 'order_status', 'tracking_id', 'order_type', 'courier_name'];
+
     if (searchTerm.length === 36) {
-      order = await Order.findByPk(searchTerm, {
-        // 🎯 [ADDED order_type]: ෆ්‍රොන්ටෙන්ඩ් එකට ඕඩර් වර්ගය හඳුනාගන්න මේක එකතු කලා
-        attributes: ['order_id', 'customer_name', 'order_status', 'tracking_id', 'order_type']
-      });
+      order = await Order.findByPk(searchTerm, { attributes: selectAttributes });
     }
 
-    // 2. Short ID එකක් නම්
     if (!order) {
       order = await Order.findOne({
         where: sequelize.where(
           sequelize.cast(sequelize.col('order_id'), 'text'),
           { [Op.like]: `${searchTerm.toLowerCase()}%` }
         ),
-        // 🎯 [ADDED order_type]: මෙතනටත් එකතු කලා මචං
-        attributes: ['order_id', 'customer_name', 'order_status', 'tracking_id', 'order_type']
+        attributes: selectAttributes
       });
     }
 
     if (!order) {
-      return res.status(404).json({ success: false, message: "Order reference not found in registry" });
+      return res.status(404).json({ success: false, message: "Order reference not found" });
     }
-
     return res.status(200).json(order);
-
   } catch (error) {
-    console.error("Fetch Single Order Error:", error);
-    return res.status(500).json({ success: false, message: "Server error tracing order reference" });
+    console.error(error);
+    return res.status(500).json({ success: false, message: "Server error tracing order" });
   }
 };
 
