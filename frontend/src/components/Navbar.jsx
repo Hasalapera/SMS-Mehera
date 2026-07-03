@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, NavLink } from 'react-router-dom';
-import { LogOut, Menu, X, ChevronRight, Sun, Moon, Bell } from 'lucide-react';
+import { LogOut, Menu, X, ChevronRight, Sun, Moon, Bell, Check } from 'lucide-react';
 import { useAuth } from '../pages/context/AuthContext';
 import { useNotifications } from '../pages/context/NotificationContext';
 import api from '../api/axiosInstance';
 import localDarkLogo from '../assets/logo/main-dark.png';
 import localLightLogo from '../assets/logo/main-light.png';
+import { toast } from 'react-hot-toast';
 
 const Navbar = () => {
     const { logout, user: currentUser } = useAuth();
@@ -15,6 +16,7 @@ const Navbar = () => {
     const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
     const [systemSettings, setSystemSettings] = useState(null);
     const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
+    const notifDropdownRef = useRef(null);
 
     useEffect(() => {
         const handleThemeChange = () => setIsDark(document.documentElement.classList.contains('dark'));
@@ -25,6 +27,21 @@ const Navbar = () => {
             window.removeEventListener('themeChange', handleThemeChange);
         };
     }, []);
+
+    // Effect to close notification dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (notifDropdownRef.current && !notifDropdownRef.current.contains(event.target)) {
+                setIsNotifDropdownOpen(false);
+            }
+        };
+
+        if (isNotifDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isNotifDropdownOpen]);
 
     useEffect(() => {
         const fetchBranding = async () => {
@@ -60,20 +77,21 @@ const Navbar = () => {
         navigate('/', { replace: true });
     };
 
-    // const handleNotificationClick = async (notif) => {
-    //     try {
-    //         if (!notif.is_read) {
-    //             await api.patch(`/notifications/${notif.notification_id}/read`);
-    //             markAsRead(notif.notification_id);
-    //         }
-    //     } catch (err) {
-    //         console.error('Failed to mark notification as read:', err.response?.data || err.message);
-    //     } finally {
-    //         setIsNotifDropdownOpen(false);
-    //         navigate('/inbox');
-    //         refreshNotifications();
-    //     }
-    // };
+    const handleMarkAsReadInDropdown = async (e, notificationId) => {
+        e.stopPropagation(); // Prevent dropdown from closing
+        try {
+            const token = localStorage.getItem('accessToken');
+            if (!token) return;
+    
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            await api.patch(`/notifications/${notificationId}/read`, {}, config);
+            markAsRead(notificationId); // Update context state
+            toast.success('Marked as read');
+        } catch (err) {
+            console.error('Failed to mark notification as read:', err);
+            toast.error('Failed to mark as read');
+        }
+    };
 
     const navLinks = [
         { name: 'Home', path: '/home' },
@@ -116,11 +134,7 @@ const Navbar = () => {
 
     return (
         <nav 
-            className="bg-card/80 backdrop-blur-md transition-all duration-500 ease-in-out text-textMain shadow-sm sticky top-0 z-[100] border-b border-border"
-            onClick={() => {
-                if (isNotifDropdownOpen) setIsNotifDropdownOpen(false);
-            }}
-        >
+            className="bg-card/80 backdrop-blur-md transition-all duration-500 ease-in-out text-textMain shadow-sm sticky top-0 z-[100] border-b border-border">
             <div className="max-w-full mx-auto px-10 py-4 flex justify-between items-center h-20">
                 
                 <div className="flex flex-col text-left cursor-pointer" onClick={() => navigate('/home')}>
@@ -147,7 +161,7 @@ const Navbar = () => {
 
                 <div className="flex items-center gap-5">
                     {/* Notification Dropdown */}
-                    <div className="relative" onClick={(e) => e.stopPropagation()}>
+                    <div ref={notifDropdownRef} className="relative">
                         <button onClick={() => setIsNotifDropdownOpen(prev => !prev)} className="relative p-2 text-textMain/50 hover:text-primary transition-all duration-300">
                             <Bell size={20} />
                             {unreadCount > 0 && (
@@ -164,7 +178,7 @@ const Navbar = () => {
                                 </div>
                                 <div className="max-h-80 overflow-y-auto custom-scrollbar">
                                     {notifications && notifications.length > 0 ? (
-                                        notifications.slice(0, 7).map(notif => {
+                                        notifications.map(notif => {
                                             const isCurrentUserInitiator = notif.initiator && currentUser && notif.initiator_id === currentUser.user_id;
                                             let message = notif.message;
                                             if (isCurrentUserInitiator && notif.initiator.name) {
@@ -176,11 +190,26 @@ const Navbar = () => {
                                             }
 
                                             return (
-                                            <div key={notif.notification_id} className={`p-3 border-b border-border last:border-b-0 hover:bg-primary/5 cursor-pointer ${!notif.is_read ? 'bg-primary/10' : ''}`}>
-                                                <p className="font-bold text-xs text-textMain truncate normal-case tracking-normal">{notif.title}</p>
-                                                <p className="text-xs text-textMain/70 mt-1 line-clamp-2 normal-case tracking-normal">{message}</p>
-                                                <p className="text-[10px] text-textMain/50 mt-2 normal-case tracking-normal">{new Date(notif.createdAt || notif.created_at).toLocaleString('en-GB')}</p>
-                                            </div>
+                                                <div 
+                                                    key={notif.notification_id} 
+                                                    // onClick={() => { navigate('/inbox'); setIsNotifDropdownOpen(false); }}
+                                                    className={`p-3 border-b border-border last:border-b-0 hover:bg-primary/5 cursor-pointer flex items-start gap-3 ${!notif.is_read ? 'bg-primary/10' : ''}`}
+                                                >
+                                                    <div className="flex-1">
+                                                        <p className="font-bold text-xs text-textMain truncate normal-case tracking-normal">{notif.title}</p>
+                                                        <p className="text-xs text-textMain/70 mt-1 line-clamp-2 normal-case tracking-normal">{message}</p>
+                                                        <p className="text-[10px] text-textMain/50 mt-2 normal-case tracking-normal">{new Date(notif.createdAt || notif.created_at).toLocaleString('en-GB')}</p>
+                                                    </div>
+                                                    {!notif.is_read && (
+                                                        <button 
+                                                            onClick={(e) => handleMarkAsReadInDropdown(e, notif.notification_id)}
+                                                            className="p-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors shrink-0"
+                                                            title="Mark as read"
+                                                        >
+                                                            <Check size={14} strokeWidth={3} />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             );
                                         })
                                     ) : (
@@ -189,13 +218,13 @@ const Navbar = () => {
                                         </div>
                                     )}
                                 </div>
-                                {/* {notifications && notifications.length > 0 && (
+                                {notifications && notifications.length > 0 && (
                                     <div className="p-2 border-t border-border">
-                                        <button onClick={() => { navigate('/inbox'); setIsNotifDropdownOpen(false); }} className="w-full text-center py-2 text-xs font-bold text-primary hover:bg-primary/10 rounded-lg transition-colors normal-case tracking-normal">
+                                        {/* <button onClick={() => { navigate('/inbox'); setIsNotifDropdownOpen(false); }} className="w-full text-center py-2 text-xs font-bold text-primary hover:bg-primary/10 rounded-lg transition-colors normal-case tracking-normal">
                                             View All in Inbox
-                                        </button>
+                                        </button> */}
                                     </div>
-                                )} */}
+                                )}
                             </div>
                         )}
                     </div>

@@ -10,23 +10,115 @@ import {
     Globe, Store, RefreshCw, CheckCircle, Printer, ScanLine, QrCode, X,
     Calendar, Loader2, Info, AlertTriangle
 } from 'lucide-react';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf'; // For creating PDF documents
+import html2canvas from 'html2canvas-pro';
+import QRCodeLib from 'qrcode'; // Use the 'qrcode' library for canvas-based generation
+
+// --- PDF Generation Utilities ---
+
+/**
+ * A utility to wait for the next browser paint, ensuring the DOM is ready.
+ * This is crucial for libraries like html2canvas that read from the DOM.
+ */
+const waitForPaint = () => new Promise(resolve => requestAnimationFrame(resolve));
+
+/**
+ * A utility to introduce a small delay.
+ * @param {number} ms - Milliseconds to sleep.
+ */
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Waits for all media elements (images, SVGs) and fonts within a given element to be fully loaded.
+ * This is essential for ensuring that html2canvas captures the complete and final state of the content.
+ * @param {HTMLElement} element - The container element to check for media.
+ */
+const prepareForCanvasCapture = async (element) => {
+    // Wait for the next browser paint to ensure the DOM is up-to-date.
+    await waitForPaint();
+
+    // A small extra delay can help with complex layouts or SVGs rendered by React.
+    await sleep(200);
+
+    // Wait for all fonts to be loaded and ready.
+    if (document.fonts) {
+        await document.fonts.ready;
+    }
+
+    // Wait for all images to be loaded (if any).
+    const images = Array.from(element.querySelectorAll("img"));
+    await Promise.all(
+        images.map(img => {
+            if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
+            return new Promise((resolve) => {
+                img.onload = resolve;
+                img.onerror = resolve; // Don't block on failed images.
+            });
+        })
+    );
+};
+
+const generateQrDataUrl = (value, size = 400) => {
+    return QRCodeLib.toDataURL(value, {
+        errorCorrectionLevel: 'H',
+        width: size,
+        margin: 1,
+    });
+};
+
+/**
+ * A robust QR Code component that renders to a canvas and displays as an image.
+ * This avoids SVG and external URL issues with html2canvas.
+ * @param {object} props - Component props.
+ * @param {string} props.value - The value to encode in the QR code.
+ * @param {number} [props.size=144] - The size of the QR code in pixels.
+ * @param {string} [props.className=""] - Additional classes for the image element.
+ */
+const CanvasQRCode = ({ value, size = 144, className = "" }) => {
+    const [dataUrl, setDataUrl] = useState('');
+    const [error, setError] = useState(false);
+
+    useEffect(() => {
+        if (value) {
+            QRCodeLib.toDataURL(value, {
+                errorCorrectionLevel: 'H',
+                width: size * 2, // Render at 2x resolution for better quality
+                margin: 1,
+            })
+            .then(url => {
+                setDataUrl(url);
+                setError(false);
+            })
+            .catch(err => {
+                console.error('QR Code generation failed:', err);
+                setError(true);
+            });
+        }
+    }, [value, size]);
+
+    if (error) return <div style={{ width: size, height: size }} className="flex items-center justify-center bg-red-100 text-xs text-red-600 p-2 text-center">QR Gen Error</div>;
+    if (!dataUrl) return <div style={{ width: size, height: size }} className="flex items-center justify-center bg-gray-100 text-xs">...</div>;
+
+    return <img src={dataUrl} alt={`QR Code for ${value}`} width={size} height={size} className={className} />;
+};
 
 const LogisticsDashboard = () => {
     const { token } = useAuth();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('online');
-    
+
     const [orderToPrint, setOrderToPrint] = useState(null);
     const [isReadyToPrint, setIsReadyToPrint] = useState(false);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const printRef = useRef(null);
-    
+
     const [bulkOrdersToPrint, setBulkOrdersToPrint] = useState([]);
     const [isBulkReadyToPrint, setIsBulkReadyToPrint] = useState(false);
     const bulkPrintRef = useRef(null);
+
+    const isMobileDevice = window.innerWidth < 768; // Mobile/Tablet check
+
 
     const fetchOrders = async (showLoader = true) => {
         if (!token) return;
@@ -102,8 +194,21 @@ const LogisticsDashboard = () => {
 
     const generatePdf = async (element, filename) => {
         if (!element) return;
-        const toastId = toast.loading('Generating PDF...');
+        console.log('Capture size:', element.offsetWidth, element.offsetHeight);
+        const toastId = toast.loading("Generating PDF...");
         try {
+            // 1. Wait for all content (images, fonts, SVGs) to be fully rendered.
+            await prepareForCanvasCapture(element);
+            
+            // 2. Capture the element with html2canvas.
+            // const canvas = await html2canvas(element, {
+            //     scale: 3, // Higher scale for better quality
+            //     useCORS: true,
+            //     allowTaint: true,
+            //     backgroundColor: "#ffffff",
+            //     foreignObjectRendering: true, // Crucial for rendering modern CSS and SVGs
+            // });
+
             const canvas = await html2canvas(element, {
                 scale: 2,
                 useCORS: true,
@@ -114,10 +219,11 @@ const LogisticsDashboard = () => {
             const pdf = new jsPDF({ orientation: 'portrait', unit: 'cm', format: [10, 12] });
             pdf.addImage(imgData, 'PNG', 0, 0, 10, 12);
             pdf.save(filename);
-            toast.success('PDF downloaded!', { id: toastId });
-        } catch (error) {
-            console.error("Error generating PDF", error);
-            toast.error('Failed to generate PDF.', { id: toastId });
+
+            toast.success("PDF Downloaded!", { id: toastId });
+        } catch (err) {
+            console.error("PDF Generation Error:", err);
+            toast.error("Failed to generate PDF.", { id: toastId });
         }
     };
 
@@ -144,6 +250,9 @@ const LogisticsDashboard = () => {
         onAfterPrint: () => setIsBulkReadyToPrint(false)
     });
 
+    /**
+     * Generates a multi-page PDF for bulk labels from a tall DOM element.
+     */
     const generateBulkPdf = async (element, filename) => {
         if (!element) return;
         const toastId = toast.loading('Generating Bulk PDF...');
@@ -158,7 +267,8 @@ const LogisticsDashboard = () => {
             let heightLeft = calculatedHeight;
             let position = 0;
 
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, calculatedHeight);
+            // Add the first page
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
             heightLeft -= pdfHeight;
             while (heightLeft > 0) {
                 position -= pdfHeight; pdf.addPage();
@@ -448,7 +558,7 @@ const LogisticsDashboard = () => {
                             </div>
                             
                             <div className="flex justify-center items-center w-full mb-4">
-                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${orderToPrint.order_id}&margin=0`} alt="QR" className="w-36 h-36" />
+                                <img src={orderToPrint.qrDataUrl} alt="QR" className="w-36 h-36" />
                             </div>
                             
                             <p className="text-[10px] font-mono font-black tracking-widest mb-4 bg-black text-white px-3 py-1">
@@ -493,7 +603,7 @@ const LogisticsDashboard = () => {
                                     </div>
                                     
                                     <div className="flex justify-center items-center w-full mb-2">
-                                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${order.order_id}&margin=0`} alt="QR" className="w-24 h-24" />
+                                        <img src={order.qrDataUrl} alt="QR" className="w-24 h-24" />
                                     </div>
                                     
                                     <p className="text-[7px] font-mono font-black tracking-widest mb-2 bg-black text-white px-2 py-0.5">

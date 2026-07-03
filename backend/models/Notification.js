@@ -8,7 +8,7 @@ const Notification = sequelize.define('Notification', {
         primaryKey: true,
     },
     type: {
-        type: DataTypes.ENUM('stock', 'customer', 'user', 'order'),
+        type: DataTypes.ENUM('stock', 'product', 'customer', 'user', 'order', 'target'),
         allowNull: false,
     },
     title: {

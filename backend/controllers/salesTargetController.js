@@ -2,7 +2,6 @@
 const { User, Order, UserArea, Customer, SalesTarget, sequelize} = require('../models');
 const { createNotification } = require('./notificationController');
 const { Op } = require('sequelize');
-// const { createNotification } = require('./notificationController');
 
 
 /**
@@ -32,16 +31,32 @@ const assignTarget = async (req, res) => {
       await target.update({ active_customer_count, density_factor: densityFactor, base_target_amount, adjusted_target_amount });
     }
 
-    // 🔔 Notify the sales rep about the target assignment/update
     const assignerName = req.user?.name || 'An administrator';
     const action = created ? 'set' : 'updated';
+    const salesRep = await User.findByPk(sales_rep_id, { attributes: ['name'] });
+    const formattedAmount = Number(adjusted_target_amount).toLocaleString();
+
+    // 🔔 Notification for the Sales Rep
     await createNotification(
-        'user',
-        `Sales Target ${created ? 'Set' : 'Updated'} by ${assignerName}`,
-        `Your sales target for ${month} has been ${action} to LKR ${Number(adjusted_target_amount).toLocaleString()} by ${assignerName}.`,
+        'target',
+        `Sales Target ${action}`,
+        `Your sales target for ${month} has been ${action} to LKR ${formattedAmount} by ${assignerName}.`,
         {
             reference_id: target.id,
             target_user_id: sales_rep_id,
+            severity: 'info',
+            initiator_id: req.user.user_id
+        }
+    );
+
+    // 🔔 Notification for the Admin who assigned it
+    await createNotification(
+        'target',
+        `Target Assigned to ${salesRep.name}`,
+        `You ${action} a sales target of LKR ${formattedAmount} for ${salesRep.name} for the month of ${month}.`,
+        {
+            reference_id: target.id,
+            target_user_id: req.user.user_id, // Target self
             severity: 'info',
             initiator_id: req.user.user_id
         }
