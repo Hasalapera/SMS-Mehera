@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/productController');
-const { isAdmin, isAdminOrManager, verifyToken } = require('../middlewares/authMiddleware');
+const { isAdmin, isAdminOrManager, verifyToken, verifyTokenOptional } = require('../middlewares/authMiddleware');
 
 const multer = require('multer');
 const { productDynamicStorage } = require('../config/cloudinary'); 
@@ -15,8 +15,8 @@ router.post('/addProduct', verifyToken, isAdmin, productUploads, productControll
 router.put('/:id', verifyToken, isAdmin, productUploads, productController.updateProduct);
 router.delete('/:id', verifyToken, isAdmin, productController.deleteProduct);
 router.delete('/:id/variants/:variantId', verifyToken, isAdmin, productController.deleteProductVariant);
-router.get('/getProducts', productController.getProducts);
-router.get('/:id', productController.getProductById);
+router.get('/getProducts', verifyTokenOptional, productController.getProducts);
+router.get('/:id', verifyTokenOptional, productController.getProductById);
 
 
 

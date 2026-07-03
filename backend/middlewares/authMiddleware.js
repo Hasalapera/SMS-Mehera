@@ -82,4 +82,23 @@ const isAuthorized = (allowedRoles) => {
     };
 };
 
-module.exports = { verifyToken, isAdmin, isAdminOrManager, isAuthorized };
+const verifyTokenOptional = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const tokenFromHeader = authHeader && authHeader.split(' ')[1];
+    const tokenFromCookie = req.cookies?.accessToken;
+    const token = tokenFromHeader || tokenFromCookie;
+
+    if (!token) {
+        return next();
+    }
+    
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (err) {
+        next();
+    }
+};
+
+module.exports = { verifyToken, isAdmin, isAdminOrManager, isAuthorized, verifyTokenOptional };

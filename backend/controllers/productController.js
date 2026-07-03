@@ -92,15 +92,23 @@ const addProduct = async (req, res) => {
 // Get all products with their variants, category, and brand
 const getProducts = async (req, res) => {
     try {
-        // Use eager loading to get associated category, brand, and variants in one query
-        const products = await Product.findAll({
-            paranoid: false,
+        const user = req.user;
+        const queryOptions = {
             include: [
                 { model: Category, as: 'category' },
                 { model: Brand, as: 'brand' },
                 { model: ProductVariant, as: 'variants', paranoid: false }
             ]
-        });
+        };
+
+        if (user && (user.role === 'admin' || user.role === 'manager')) {
+            queryOptions.paranoid = false;
+        } else {
+            queryOptions.where = { status: 'active' };
+        }
+
+        // Use eager loading to get associated category, brand, and variants in one query
+        const products = await Product.findAll(queryOptions);
 
         res.status(200).json({
             message: "Products retrieved successfully",
@@ -117,16 +125,24 @@ const getProducts = async (req, res) => {
 const getProductById = async (req, res) => {
     try {
         const { id } = req.params;
+        const user = req.user;
 
-        // Use eager loading to get associated category, brand, and variants in one query
-        const product = await Product.findByPk(id, {
-            paranoid: false,
+        const queryOptions = {
             include: [
                 { model: Category, as: 'category' },
                 { model: Brand, as: 'brand' },
                 { model: ProductVariant, as: 'variants', paranoid: false }
             ]
-        });
+        };
+
+        if (user && (user.role === 'admin' || user.role === 'manager')) {
+            queryOptions.paranoid = false;
+        } else {
+            queryOptions.where = { status: 'active' };
+        }
+
+        // Use eager loading to get associated category, brand, and variants in one query
+        const product = await Product.findByPk(id, queryOptions);
 
         // If product not found, return 404
         if (!product) {
