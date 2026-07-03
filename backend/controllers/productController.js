@@ -12,7 +12,18 @@ const addProduct = async (req, res) => {
     try {
         // frontend url eken ena wistara tika aragannawa
         const { product_name, brand_id, category_id, description, variants } = req.body;
-        
+        const parsedVariants = JSON.parse(variants);
+        const variantCount = parsedVariants.length;
+        const brand = await Brand.findByPk(brand_id, { attributes: ['brand_name'] });
+        const category = await Category.findByPk(category_id, { attributes: ['category_name'] });
+        const loggedInUser = req.user || {};
+        const userRecord = loggedInUser.user_id
+            ? await User.findByPk(loggedInUser.user_id, { attributes: ['name'] })
+            : null;
+        const roleLabel = loggedInUser.role
+            ? loggedInUser.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+            : 'System';
+
         // 1. get main image URL 
         const mainImageUrl = req.files['main_image'] ? req.files['main_image'][0].path : null;
 
@@ -22,7 +33,7 @@ const addProduct = async (req, res) => {
             brand_id,
             category_id,
             description,
-            image_url: mainImageUrl 
+            image_url: mainImageUrl
         });
 
         // 3. handle variants and their images
@@ -86,14 +97,23 @@ const addProduct = async (req, res) => {
 // Get all products with their variants, category, and brand
 const getProducts = async (req, res) => {
     try {
-        // Use eager loading to get associated category, brand, and variants in one query
-        const products = await Product.findAll({
+        const user = req.user;
+        const queryOptions = {
             include: [
                 { model: Category, as: 'category' },
                 { model: Brand, as: 'brand' },
-                { model: ProductVariant, as: 'variants' }
+                { model: ProductVariant, as: 'variants', paranoid: false }
             ]
-        });
+        };
+
+        if (user && (user.role === 'admin' || user.role === 'manager')) {
+            queryOptions.paranoid = false;
+        } else {
+            queryOptions.where = { status: 'active' };
+        }
+
+        // Use eager loading to get associated category, brand, and variants in one query
+        const products = await Product.findAll(queryOptions);
 
         res.status(200).json({
             message: "Products retrieved successfully",
@@ -110,15 +130,24 @@ const getProducts = async (req, res) => {
 const getProductById = async (req, res) => {
     try {
         const { id } = req.params;
+        const user = req.user;
 
-        // Use eager loading to get associated category, brand, and variants in one query
-        const product = await Product.findByPk(id, {
+        const queryOptions = {
             include: [
                 { model: Category, as: 'category' },
                 { model: Brand, as: 'brand' },
                 { model: ProductVariant, as: 'variants' }
             ]
-        });
+        };
+
+        if (user && (user.role === 'admin' || user.role === 'manager')) {
+            queryOptions.paranoid = false;
+        } else {
+            queryOptions.where = { status: 'active' };
+        }
+
+        // Use eager loading to get associated category, brand, and variants in one query
+        const product = await Product.findByPk(id, queryOptions);
 
         // If product not found, return 404
         if (!product) {
@@ -142,8 +171,13 @@ const updateProduct = async (req, res) => {
     try {
         // For simplicity, we are only updating the main product details here. Variants can be updated through a separate endpoint if needed.
         const { id } = req.params;
-        // Get the update data from the request body
-        const updateData = req.body;
+        const { product_name, brand_id, category_id, description, status, variants } = req.body;
+        const parsedVariants = parseVariantsInput(variants);
+
+        const product = await Product.findByPk(id, {
+            paranoid: false,
+            include: [{ model: ProductVariant, as: 'variants', paranoid: false }]
+        });
 
         // If there's a new main image, get its URL
         const product = await Product.findByPk(id);
@@ -153,8 +187,75 @@ const updateProduct = async (req, res) => {
             return res.status(404).json({ error: "Product not found" });
         }
 
-        // If a new main image is uploaded, update the image_url
-        await product.update(updateData);
+        const mainImageUrl = req.files?.['main_image']?.[0]?.path;
+        const variantImages = req.files?.['variant_images'] || [];
+        let imageCounter = 0;
+
+        await sequelize.transaction(async (transaction) => {
+            if (status === 'active') {
+                await product.restore({ transaction });
+                await ProductVariant.restore({ where: { product_id: product.product_id }, transaction });
+            }
+
+            await product.update({
+                product_name,
+                brand_id,
+                category_id,
+                description,
+                status,
+                ...(mainImageUrl ? { image_url: mainImageUrl } : {})
+            }, { transaction });
+
+            const existingVariants = product.variants || [];
+            const existingVariantMap = new Map(existingVariants.map((variant) => [variant.variant_id, variant]));
+            const submittedVariantIds = new Set();
+
+            for (const variant of parsedVariants) {
+                const variantId = variant.variant_id || null;
+                const variantImageUrl = variant.hasImage
+                    ? (variantImages[imageCounter] ? variantImages[imageCounter].path : null)
+                    : (variant.existing_image_url || null);
+
+                if (variant.hasImage) {
+                    imageCounter += 1;
+                }
+
+                const payload = {
+                    product_id: product.product_id,
+                    sku: variant.sku,
+                    variant_name: variant.variant_name,
+                    price: variant.price,
+                    stock_count: variant.stock_count,
+                    critical_stock_level: variant.critical_stock_level,
+                    image_url: variantImageUrl
+                };
+
+                if (variantId && existingVariantMap.has(variantId)) {
+                    submittedVariantIds.add(variantId);
+                    const existingModel = existingVariantMap.get(variantId);
+                    if (existingModel.deletedAt) {
+                        await existingModel.restore({ transaction });
+                    }
+                    await existingModel.update(payload, { transaction });
+                } else {
+                    await ProductVariant.create(payload, { transaction });
+                }
+            }
+
+            const variantsToDelete = existingVariants.filter((variant) => !submittedVariantIds.has(variant.variant_id));
+            for (const variant of variantsToDelete) {
+                await variant.destroy({ transaction });
+            }
+        });
+
+        const updatedProduct = await Product.findByPk(id, {
+            paranoid: false,
+            include: [
+                { model: Category, as: 'category' },
+                { model: Brand, as: 'brand' },
+                { model: ProductVariant, as: 'variants', paranoid: false }
+            ]
+        });
 
         res.status(200).json({
             message: "Product updated successfully",
@@ -174,15 +275,22 @@ const deleteProduct = async (req, res) => {
         const { id } = req.params;
 
         // Find the product by ID
-        const product = await Product.findByPk(id);
-        
+        const product = await Product.findByPk(id, { paranoid: false });
+
         // If product not found, return 404
         if (!product) {
             return res.status(404).json({ error: "Product not found" });
         }
 
-        // Soft delete the product (set deletedAt timestamp)
+        // Mark the product inactive, soft-delete it (updating deleted_at), and soft-delete its variants
+        await product.update({
+            status: 'inactive',
+        });
         await product.destroy();
+
+        await ProductVariant.destroy({
+            where: { product_id: id }
+        });
 
         // Return success response
         res.status(200).json({ message: "Product deleted successfully" });

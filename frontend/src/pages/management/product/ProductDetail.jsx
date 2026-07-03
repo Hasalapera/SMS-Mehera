@@ -33,6 +33,7 @@ const createVariantDraft = (variant = {}) => ({
   variant_image: null,
   preview: variant.image_url || null,
   existing_image_url: variant.image_url || null,
+  isDeleted: !!getVariantDeletedAt(variant),
 });
 
 const createEditForm = (source = {}) => ({
@@ -43,9 +44,7 @@ const createEditForm = (source = {}) => ({
   status: source.status || "active",
   main_image: null,
   variants: Array.isArray(source.variants) && source.variants.length > 0
-    ? source.variants
-      .filter((variant) => !getVariantDeletedAt(variant))
-        .map((variant) => createVariantDraft(variant))
+    ? source.variants.map((variant) => createVariantDraft(variant))
     : [createVariantDraft()],
 });
 
@@ -202,8 +201,9 @@ export default function ProductDetail() {
 
   const removeVariantField = (index) => {
     setEditForm((current) => {
-      if (!current || current.variants.length <= 1) {
-        toast.error("At least one variant is required!");
+      const activeVariants = current.variants.filter((v, i) => !v.isDeleted && i !== index);
+      if (activeVariants.length === 0) {
+        toast.error("At least one active variant is required!");
         return current;
       }
 
@@ -211,6 +211,14 @@ export default function ProductDetail() {
         ...current,
         variants: current.variants.filter((_, currentIndex) => currentIndex !== index),
       };
+    });
+  };
+
+  const restoreVariantField = (index) => {
+    setEditForm((current) => {
+      const updatedVariants = [...current.variants];
+      updatedVariants[index] = { ...updatedVariants[index], isDeleted: false };
+      return { ...current, variants: updatedVariants };
     });
   };
 
@@ -380,7 +388,9 @@ export default function ProductDetail() {
         data.append('main_image', editForm.main_image);
       }
 
-      data.append('variants', JSON.stringify(editForm.variants.map((variant) => ({
+      const variantsToSave = editForm.variants.filter(v => !v.isDeleted);
+      
+      data.append('variants', JSON.stringify(variantsToSave.map((variant) => ({
         variant_id: variant.variant_id,
         sku: variant.sku,
         variant_name: variant.variant_name,
@@ -391,7 +401,7 @@ export default function ProductDetail() {
         existing_image_url: variant.existing_image_url,
       }))));
 
-      editForm.variants.forEach((variant) => {
+      variantsToSave.forEach((variant) => {
         if (variant.variant_image) {
           data.append('variant_images', variant.variant_image);
         }
@@ -549,7 +559,7 @@ export default function ProductDetail() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="bg-background p-4 rounded-2xl border border-border">
                       <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Status</p>
                       <select name="status" value={editForm.status} onChange={handleEditFieldChange} className="w-full bg-card text-textMain border border-border rounded-xl px-3 py-2 font-black uppercase text-[10px] tracking-widest outline-none focus:ring-2 focus:ring-primary/30">
@@ -574,10 +584,6 @@ export default function ProductDetail() {
                           <option key={brand.brand_id} value={brand.brand_id} className="bg-card text-textMain">{brand.brand_name}</option>
                         ))}
                       </select>
-                    </div>
-                    <div className="bg-background p-4 rounded-2xl border border-border">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Starting Price</p>
-                      <span className="text-lg font-serif italic text-primary">{firstVariantPrice > 0 ? `Rs. ${firstVariantPrice.toLocaleString()}` : "N/A"}</span>
                     </div>
                   </div>
 
@@ -611,8 +617,29 @@ export default function ProductDetail() {
                   </div>
 
                   {editForm.variants.map((variant, index) => (
-                    <div key={variant.variant_id || index} className="bg-background rounded-3xl border border-border p-4">
-                      <div className="flex flex-col md:grid md:grid-cols-[96px_minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,0.9fr)] gap-4 items-start">
+                    <div key={variant.variant_id || index} className={`bg-background rounded-3xl border border-border p-4 ${variant.isDeleted ? 'opacity-50 grayscale' : ''}`}>
+                      {variant.isDeleted ? (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 bg-card rounded-xl flex items-center justify-center border border-border overflow-hidden">
+                              <img src={variant.preview || "https://placehold.co/100x100"} alt="Deleted Variant" className="w-full h-full object-contain" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-black text-textMain">{variant.variant_name || "Unnamed Variant"}</p>
+                              <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest mt-1">Deleted Variant</p>
+                            </div>
+                          </div>
+                          <button type="button" onClick={() => restoreVariantField(index)} className="rounded-full bg-green-500/10 px-5 py-2 text-[10px] font-black uppercase tracking-widest text-green-600 hover:bg-green-500 hover:text-white transition-all shadow-md">
+                            Activate
+                          </button>
+                        </div>
+                      ) : (
+                      <>
+                      <div className="flex flex-col md:grid md:grid-cols-[96px_minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,0.9fr)] gap-4 items-start relative">
+                        {/* Remove Variant Button */}
+                        <button type="button" onClick={() => removeVariantField(index)} className="absolute -top-6 -right-2 md:top-0 md:right-0 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:scale-110 active:scale-95 transition-all z-10" title="Remove Variant">
+                          <X size={14} strokeWidth={3} />
+                        </button>
                         <div className="w-20 h-20 bg-card rounded-2xl flex items-center justify-center p-2 shrink-0 border border-border overflow-hidden relative">
                           {variant.preview ? (
                             <img src={variant.preview} alt="Variant" className="w-full h-full object-contain" />
@@ -653,8 +680,20 @@ export default function ProductDetail() {
                         <span className="inline-flex items-center gap-2"><ImageIcon size={12} /> Tap image to replace</span>
                         <span className="inline-flex items-center gap-2"><AlertTriangle size={12} /> Critical level required</span>
                       </div>
+                      </>
+                      )}
                     </div>
                   ))}
+                  
+                  <div className="flex justify-center mt-6">
+                    <button 
+                      type="button" 
+                      onClick={addVariantField} 
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-card border-2 border-dashed border-primary px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-primary shadow-sm hover:bg-primary hover:text-black transition-all hover:scale-105 active:scale-95 w-full md:w-auto"
+                    >
+                      <PlusCircle size={16} /> Add Another Variant
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -744,7 +783,7 @@ export default function ProductDetail() {
                 <h2 className="text-2xl font-serif italic text-textMain leading-tight">{product.product_name}</h2>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-background p-4 rounded-2xl border border-border">
                   <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Status</p>
                   <span className={`text-[10px] font-black uppercase tracking-widest ${product.status === "active" ? "text-green-600" : "text-red-600"}`}>
@@ -754,10 +793,6 @@ export default function ProductDetail() {
                 <div className="bg-background p-4 rounded-2xl border border-border">
                   <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Category</p>
                   <span className="text-[11px] font-bold text-textMain uppercase">{product.category?.category_name || "-"}</span>
-                </div>
-                <div className="bg-background p-4 rounded-2xl border border-border">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Starting Price</p>
-                  <span className="text-lg font-serif italic text-primary">{firstVariantPrice > 0 ? `Rs. ${firstVariantPrice.toLocaleString()}` : "N/A"}</span>
                 </div>
                 <div className="bg-background p-4 rounded-2xl border border-border">
                   <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Total Network Stock</p>
@@ -795,7 +830,7 @@ export default function ProductDetail() {
                     variants.map((variant) => (
                       <tr
                         key={variant.variant_id}
-                        className={`border-b border-border ${getVariantDeletedAt(variant) ? 'opacity-40 grayscale pointer-events-none' : 'hover:bg-background'}`}
+                        className={`border-b border-border ${(getVariantDeletedAt(variant) || product.status === 'inactive') ? 'opacity-40 grayscale pointer-events-none' : 'hover:bg-background'}`}
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
