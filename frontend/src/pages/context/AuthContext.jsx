@@ -27,6 +27,9 @@ export const AuthProvider = ({ children }) => {
         setToken(userToken);
         setIsTokenExpiring(false);
         
+        // 🚀 Notify other parts of the app (like NotificationContext) that auth state has changed.
+        window.dispatchEvent(new Event('auth-changed'));
+
         console.log('✅ User logged in:', userData.email);
     };
 
@@ -109,6 +112,9 @@ export const AuthProvider = ({ children }) => {
             setUser(null);
             setToken(null);
             setIsTokenExpiring(false);
+
+            // 🚀 Notify other parts of the app that auth state has changed.
+            window.dispatchEvent(new Event('auth-changed'));
             
             // If a target path is provided, perform a hard redirect.
             // This is used for forced logouts (e.g., token expiry).

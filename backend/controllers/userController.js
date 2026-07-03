@@ -61,6 +61,32 @@ const addUserByAdmin = async (req, res) => {
 
             await transaction.commit();
 
+            const actorName = req.user?.name || 'An administrator';
+
+            // For the new user
+            await createNotification(
+                'user',
+                'Welcome to Mehera!',
+                `Your account has been created by ${actorName}. Please check your email for login credentials.`,
+                {
+                    target_user_id: user.user_id,
+                    severity: 'info',
+                    initiator_id: req.user.user_id
+                }
+            );
+
+            // For the admin
+            await createNotification(
+                'user',
+                'New User Created',
+                `You created a new user account for ${name} with the role of ${role}.`,
+                {
+                    target_user_id: req.user.user_id,
+                    severity: 'info',
+                    initiator_id: req.user.user_id
+                }
+            );
+
             let emailSent = true;
             try {
                 await sendWelcomeEmail(email, name, defaultPassword, role);

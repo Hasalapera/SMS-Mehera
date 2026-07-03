@@ -18,6 +18,4 @@ router.delete('/:id/variants/:variantId', verifyToken, isAdmin, productControlle
 router.get('/getProducts', verifyTokenOptional, productController.getProducts);
 router.get('/:id', verifyTokenOptional, productController.getProductById);
 
-
-
 module.exports = router;
