@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const { sendWelcomeEmail } = require('../utils/emailSender');
 const { encrypt, decrypt } = require('../utils/cryptoUtils');
 const { Op } = require('sequelize');
+const { createNotification } = require('./notificationController');
 
 
 const addUserByAdmin = async (req, res) => {
@@ -59,6 +60,36 @@ const addUserByAdmin = async (req, res) => {
             }
 
             await transaction.commit();
+
+            let actorString = 'an administrator';
+            if (req.user && req.user.name && req.user.role) {
+                const roleFormatted = req.user.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                actorString = `${req.user.name} (${roleFormatted})`;
+            }
+
+            // For the new user
+            await createNotification(
+                'user',
+                'Welcome to Mehera!',
+                `Your account has been created by ${actorString}. Please check your email for login credentials.`,
+                {
+                    target_user_id: user.user_id,
+                    severity: 'info',
+                    initiator_id: req.user.user_id
+                }
+            );
+
+            // For the admin
+            await createNotification(
+                'user',
+                'New User Created',
+                `You created a new user account for ${name} with the role of ${role}.`,
+                {
+                    target_user_id: req.user.user_id,
+                    severity: 'info',
+                    initiator_id: req.user.user_id
+                }
+            );
 
             let emailSent = true;
             try {
@@ -360,6 +391,18 @@ const addUserArea = async (req, res) => {
     if (existing) return res.status(400).json({ error: "District already assigned" });
 
     await UserArea.create({ user_id: id, district_name: district });
+
+        const assignedUser = await User.findByPk(id, { attributes: ['name'] });
+        const actorName = req.user?.name || req.user?.full_name || 'System';
+
+        await createNotification(
+            'customer',
+            '📍 District Assigned',
+            `${district} was assigned to ${assignedUser?.name || 'the selected representative'} by ${actorName}`,
+            id,
+            'info'
+        );
+
     res.status(201).json({ message: "District added successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });

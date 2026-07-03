@@ -1,3 +1,4 @@
+// src/App.jsx
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./pages/context/AuthContext";
 import {
@@ -5,7 +6,7 @@ import {
   useNotifications,
 } from "./pages/context/NotificationContext";
 import DashboardLayout from "./components/DashboardLayout";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import api from "../src/api/axiosInstance";
 
 //sales management
@@ -24,6 +25,7 @@ import ViewStock from "./pages/management/stock/ViewStock";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import ChangePassword from "./pages/ChangePassword";
+import OrderVerificationHub from './pages/OrderVerificationHub';
 
 // Shared Pages (Now in shared folder)
 import Inbox from "./pages/shared/Inbox";
@@ -157,6 +159,9 @@ function App() {
         }}
       />
       <Routes>
+        {/* ========================================================================= */}
+        {/* 🔓 PUBLIC ROUTES - කස්ටමර්ලට කෙලින්ම පිවිසිය හැකි සෙක්ෂන් එක */}
+        {/* ========================================================================= */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route
@@ -170,12 +175,19 @@ function App() {
         <Route path="/about" element={<AboutUs />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/products" element={<Products />} />
+        
+        {/* 🎯 [THE EXACT FIXED ROUTE]: DashboardLayout එකෙන් එළියට දමා සාර්ථකව Public Route එකක් කළා මචං! */}
+        <Route path="/verify-order" element={<OrderVerificationHub />} />
+
         <Route
           path="/confirm-delivery/:orderId/:token"
           element={<ConfirmDelivery />}
         />
         <Route path="/product/:id" element={<ProductDetail />} />
 
+        {/* ========================================================================= */}
+        {/* 🔒 PROTECTED ROUTES - STAFF LOGIN වූ පසු පමණක් පෙනෙන සෙක්ෂන් එක */}
+        {/* ========================================================================= */}
         <Route element={user ? <DashboardLayout /> : <Navigate to="/" />}>
           <Route path="/inbox" element={<Inbox />} />
           <Route path="/profile/:id" element={<UserProfile />} />
@@ -435,11 +447,7 @@ function App() {
           <Route
             path="/addProduct"
             element={
-              userRole === "admin" ? (
-                <AddProduct />
-              ) : (
-                <Navigate to="/dashboard" />
-              )
+              userRole === "admin" ? <AddProduct /> : <Navigate to="/dashboard" />
             }
           />
           <Route
@@ -504,7 +512,7 @@ function App() {
             }
           />
 
-          {/* Stock management (🛠️ varUserRole -> userRole ලෙස නිවැරදි කරන ලදි) */}
+          {/* Stock management */}
           <Route
             path="/addStock"
             element={
@@ -514,11 +522,7 @@ function App() {
           <Route
             path="/editStock"
             element={
-              userRole === "admin" ? (
-                <EditStock />
-              ) : (
-                <Navigate to="/dashboard" />
-              )
+              userRole === "admin" ? <EditStock /> : <Navigate to="/dashboard" />
             }
           />
           <Route
@@ -603,28 +607,39 @@ function App() {
   );
 }
 
-// Add this ABOVE export default
 function NotificationCleaner() {
   const { user } = useAuth();
   const { clearNotifications } = useNotifications();
+  const previousUserIdRef = useRef(null);
 
   useEffect(() => {
-    clearNotifications();
+    const currentUserId = user?.user_id ?? null;
+
+    if (!currentUserId) {
+      if (previousUserIdRef.current !== null) {
+        clearNotifications();
+      }
+    } else if (
+      previousUserIdRef.current !== null &&
+      previousUserIdRef.current !== currentUserId
+    ) {
+      clearNotifications();
+    }
+
+    previousUserIdRef.current = currentUserId;
   }, [user]);
 
-  return null; // Renders nothing
+  return null; 
 }
 
 function AppWithNotifications() {
   return (
     <NotificationProvider>
-      <NotificationCleaner /> {/* Handles clearing */}
-      <OfflineSyncManager /> {/* 🔄 Background Auto-Sync */}
+      <NotificationCleaner /> 
+      <OfflineSyncManager /> 
       <App />
     </NotificationProvider>
   );
 }
 
 export default AppWithNotifications;
-
-//export default App;

@@ -10,6 +10,7 @@ import {
   Loader2,
   TrendingDown,
   UserPlus,
+  Target,
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -113,9 +114,36 @@ const Inbox = () => {
   const unreadCount = notifications.filter(n => !n.is_read).length;
   const unreadByType = getUnreadByType();
 
+  const formatNotificationDateTime = (value) => {
+    if (!value) return 'Unknown date/time';
+
+    const notificationDate = new Date(value);
+    if (Number.isNaN(notificationDate.getTime())) return 'Unknown date/time';
+
+    const datePart = notificationDate.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+
+    const timePart = notificationDate.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    return `${datePart} at ${timePart}`;
+  };
+
   // Icon, color, and background per notification type/severity
   const getNotificationConfig = (type, severity) => {
     const configs = {
+      product: {
+        icon: Package,
+        color: '#7c3aed',
+        bgColor: 'bg-violet-50/80 dark:bg-violet-900/20',
+        textColor: 'text-violet-800 dark:text-violet-200'
+      },
       stock: {
         icon: Package,
         color: '#b4a460',
@@ -133,6 +161,13 @@ const Inbox = () => {
         color: '#0ea5e9',
         bgColor: 'bg-sky-50/80 dark:bg-sky-900/20',
         textColor: 'text-sky-800 dark:text-sky-200'
+      },
+      target: {
+        icon: Target,
+        // Use primary theme color so styles follow the global CSS variables
+        color: 'var(--theme-primary)',
+        bgColor: 'bg-primary/10 dark:bg-primary/20',
+        textColor: 'text-primary dark:text-primary'
       },
       order: {
         icon: ShoppingCart,
@@ -201,27 +236,29 @@ const Inbox = () => {
 
       <div className="p-6 md:p-8">
         {/* Filter Tabs */}
-        <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
+        <div className="grid grid-cols-2 gap-2 mb-6 sm:flex sm:flex-wrap sm:gap-2.5 md:mb-8">
           {[
             { key: 'all', label: 'All', icon: Bell },
             { key: 'stock', label: 'Stock Alerts', icon: Package },
+            { key: 'product', label: 'Products', icon: Package },
             { key: 'customer', label: 'Customers', icon: UserPlus },
             { key: 'user', label: 'Users', icon: Users },
+            { key: 'target', label: 'Targets', icon: Target },
             { key: 'order', label: 'Orders', icon: ShoppingCart },
           ].map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveFilter(tab.key)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap focus:outline-none ${
+              className={`min-w-0 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-[8px] font-black uppercase tracking-[0.12em] transition-all focus:outline-none sm:w-auto sm:justify-start sm:gap-2 sm:px-3.5 sm:py-2.5 sm:text-[9px] md:px-4 md:text-[10px] ${
                 activeFilter === tab.key
                     ? 'bg-primary text-black shadow-lg shadow-[#b4a460]/20'
                     : 'bg-card text-textMain border border-border hover:border-primary/30'
               }`}
             >
-              <tab.icon size={14} />
-              {tab.label}
+              <tab.icon className="h-3.5 w-3.5 shrink-0 md:h-4 md:w-4" />
+              <span className="min-w-0 truncate">{tab.label}</span>
               {tab.key !== 'all' && unreadByType[tab.key] > 0 && (
-                  <span className="ml-1 px-2 py-0.5 bg-primary/20 rounded-full text-[8px] font-black text-primary">
+                <span className="shrink-0 rounded-full bg-primary/20 px-1.5 py-0.5 text-[7px] font-black text-primary md:px-2 md:text-[8px]">
                   {unreadByType[tab.key]}
                 </span>
               )}
@@ -236,7 +273,7 @@ const Inbox = () => {
               const config = getNotificationConfig(notification.type, notification.severity);
               const IconComponent = config.icon;
               const isThemeHighlightedMessage =
-                ['stock', 'customer', 'user', 'order'].includes(notification.type) || (notification.severity && notification.severity !== 'info');
+                ['stock', 'product', 'target', 'customer', 'user', 'order'].includes(notification.type) || (notification.severity && notification.severity !== 'info');
               return (
                 <div
                   key={notification.notification_id}
@@ -265,7 +302,7 @@ const Inbox = () => {
                             {notification.message}
                           </p>
                           <p className="text-[8px] text-textMain/55 dark:text-textMain/60 mt-2 uppercase tracking-widest">
-                            {new Date(notification.createdAt || notification.created_at).toLocaleString('en-GB')}
+                            {formatNotificationDateTime(notification.createdAt || notification.created_at)}
                           </p>
                         </div>
 

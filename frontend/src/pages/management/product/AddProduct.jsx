@@ -10,8 +10,8 @@ import { useNotifications } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
 
 const AddProduct = () => {
-  const { addNotification } = useNotifications(); 
   const { user } = useAuth();   
+  const { setNotificationsFromAPI } = useNotifications();
 
   const [loading, setLoading] = useState(false);
   const [brands, setBrands] = useState([]);
@@ -93,17 +93,17 @@ const AddProduct = () => {
     }
   };
 
-  const saveNotificationToDB = async (type, title, message, severity) => {
-  try {
-    const token = localStorage.getItem('accessToken');
-    await api.post('/notifications',
-      { type, title, message, severity },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-  } catch (err) {
-    console.error('Failed to save notification:', err);
-  }
-};
+  const refreshNotifications = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await api.get('/notifications', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotificationsFromAPI(res.data.notifications || []);
+    } catch (err) {
+      console.error('Failed to refresh notifications:', err);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -133,24 +133,21 @@ const AddProduct = () => {
         }
       });
       toast.success("Product added successfully!");
-
-      // Create notification
-      const variantCount = formData.variants.length;
-      const brandName = brands.find(b => b.brand_id === formData.brand_id)?.brand_name || '';
-      const categoryName = categories.find(c => c.category_id === formData.category_id)?.category_name || '';
-
-      await saveNotificationToDB(
-        'stock',
-        '🆕 New Product Added',
-        `${formData.product_name} (${brandName} - ${categoryName}) added with ${variantCount} variant(s) by ${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`,
-        'info'
-      );
-      addNotification({
-        type: 'stock',
-        title: '🆕 New Product Added',
-        message: `${formData.product_name} (${brandName} - ${categoryName}) added with ${variantCount} variant(s) by ${user?.name} (${user?.role?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())})`,
-        severity: 'info'
+      
+      // Clear form data and image preview
+      setFormData({
+        product_name: '',
+        brand_id: '',
+        category_id: '',
+        description: '',
+        main_image: null,
+        variants: [
+          { sku: '', variant_name: '', price: '', stock_count: '', critical_stock_level: 5, variant_image: null, preview: null }
+        ]
       });
+      setMainImagePreview(null);
+
+      await refreshNotifications();
 
     } catch (err) {
       toast.error(err.response?.data?.error || "Error uploading product");

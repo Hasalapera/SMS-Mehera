@@ -9,8 +9,8 @@ import { useAuth } from '../../context/AuthContext';
 import {
   ArrowLeft, Building2, UserCircle, Phone,
   MapPin, Tag, MessageSquarePlus, Trash2,
-  ShoppingBag, CreditCard, Clock, StickyNote, Loader2,
-  Mail, Edit2, Save, X, UserCheck
+  ShoppingBag, CreditCard, Clock, StickyNote, Loader2, Mail,
+  Edit2, Save, X, UserCheck, ClipboardList, ArrowRight
 } from 'lucide-react';
 
 const tagConfig = {
@@ -25,11 +25,44 @@ const typeBadge = {
   Retail: 'bg-primary/10 transition-all duration-500 ease-in-out text-[#8a7b42] border-primary/20',
 };
 
+const statusBadge = {
+  requested: {
+    label: "Requested", bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-200",
+  },
+  approved: {
+    label: "Approved", bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-200",
+  },
+  rejected: {
+    label: "Rejected", bg: "bg-red-50", text: "text-red-500", border: "border-red-200",
+  },
+  processing: {
+    label: "Processing", bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-200",
+  },
+  shipped: {
+    label: "Shipped", bg: "bg-purple-50", text: "text-purple-600", border: "border-purple-200",
+  },
+  delivered: {
+    label: "Delivered", bg: "bg-gray-900", text: "text-white", border: "border-border transition-colors duration-300",
+  },
+  cancelled: { label: "Cancelled", bg: "bg-gray-100", text: "text-textMain/50 transition-colors duration-300", border: "border-border transition-colors duration-300" },
+};
+
 const formatDate = (dateStr) => {
   if (!dateStr) return 'N/A';
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return 'N/A';
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return 'N/A';
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return 'N/A';
+  return date.toLocaleString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+    hour12: true
+  }).replace(',', ' at');
 };
 
 const normalizeCustomer = (responseData) => {
@@ -72,6 +105,7 @@ export default function CustomerDetail() {
   const [editFormData, setEditFormData] = useState({});
   const [isSavingInfo, setIsSavingInfo] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [orders, setOrders] = useState([]);
 
   const loggedInUser = JSON.parse(localStorage.getItem('user') || 'null');
   const canAddNote = ['admin', 'manager', 'sales_rep'].includes(loggedInUser?.role);
@@ -86,23 +120,46 @@ export default function CustomerDetail() {
 
       try {
         setLoading(true);
-        const response = await api.get(`/customers/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
+
+        const customerPromise = api.get(`/customers/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
         });
 
-        const normalizedCustomer = normalizeCustomer(response.data);
+        const ordersPromise = api.get('/orders/all', {
+            params: { customerId: id },
+            headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const [customerResponse, ordersResponse] = await Promise.all([
+            customerPromise,
+            ordersPromise
+        ]);
+
+        // Process customer data
+        const normalizedCustomer = normalizeCustomer(customerResponse.data);
         setCustomer(normalizedCustomer);
-        setNotes(normalizeNotes(response.data, normalizedCustomer));
-        setStats(normalizeStats(response.data, normalizedCustomer));
+        setNotes(normalizeNotes(customerResponse.data, normalizedCustomer));
+        setStats(normalizeStats(customerResponse.data, normalizedCustomer));
         setError(null);
+
+        // Process orders data
+        setOrders(ordersResponse.data);
+
       } catch (err) {
+        console.error("Error fetching customer data:", err);
         if (err.response?.status === 401) {
           logout();
           return;
         }
-        setError(err.response?.status === 404 ? 'Customer not found' : 'Failed to load customer');
-        setCustomer(null);
-        setNotes([]);
+        if (err.config?.url.includes('/customers/')) {
+            setError(err.response?.status === 404 ? 'Customer not found' : 'Failed to load customer');
+            setCustomer(null);
+            setNotes([]);
+        }
+        if (err.config?.url.includes('/orders/all')) {
+            toast.error("Failed to load order history.");
+            setOrders([]);
+        }
       } finally {
         setLoading(false);
       }
@@ -290,7 +347,28 @@ export default function CustomerDetail() {
   const customerId = customer.customer_display_id || customer.customer_id || 'N/A';
   const customerType = customer.type || 'Saloon';
   const address = [customer.lane1, customer.lane2].filter(Boolean).join(', ');
-  const totalSpent = Number(stats.totalSpent || 0);
+  
+  // Calculate total spent from approved, shipped, or delivered orders
+  const totalSpent = orders
+    .filter(order => ['approved', 'shipped', 'delivered'].includes(order.order_status?.toLowerCase()))
+    .reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
+
+  // දකුණු පසින් පෙන්වන අනුමත කළ ඇණවුම් ගණන (approved, shipped, delivered)
+  const approvedOrdersCount = orders.filter(order =>
+    ['approved', 'shipped', 'delivered'].includes(order.order_status?.toLowerCase())
+  ).length;
+
+  // ප්‍රතික්ෂේප කළ ඇණවුම් ගණන (rejected)
+  const rejectedOrdersCount = orders.filter(order =>
+    order.order_status?.toLowerCase() === 'rejected'
+  ).length;
+
+  // rejected සහ cancelled හැර අනෙකුත් සියලුම ඇණවුම් ගණන
+  const totalOrdersCount = orders.filter(order =>
+    ['requested', 'approved', 'shipped', 'delivered'].includes(order.order_status?.toLowerCase())
+  ).length;
+
+  const lastOrder = orders.length > 0 ? orders[0] : null;
 
    return (
     <div className="w-full min-h-screen bg-background transition-all duration-500 ease-in-out animate-in fade-in">
@@ -351,10 +429,122 @@ export default function CustomerDetail() {
           </div>
 
           <div className="flex flex-col gap-4">
-            <StatCard icon={ShoppingBag} label="Total Orders" value={stats.totalOrders} sub="all time" />
+            <StatCard icon={ShoppingBag} label="Total Orders" value={totalOrdersCount} sub="all time">
+              <div>
+                <div className="text-right">
+                  <p className="text-base md:text-lg font-black text-emerald-500">{approvedOrdersCount}</p>
+                  <p className="text-[9px] font-bold text-emerald-500/70 uppercase tracking-wider">Approved</p>
+                </div>
+                {rejectedOrdersCount > 0 && (
+                  <div className="text-right mt-1">
+                    <p className="text-sm font-black text-red-500">{rejectedOrdersCount}</p>
+                    <p className="text-[8px] font-bold text-red-500/70 uppercase tracking-wider">Rejected</p>
+                  </div>
+                )}
+              </div>
+            </StatCard>
             <StatCard icon={CreditCard} label="Total Spent" value={`${totalSpent.toLocaleString()} LKR`} sub="all time" />
-            <StatCard icon={Clock} label="Last Order" value={formatDate(stats.lastOrderDate)} sub="most recent" />
+            <StatCard
+              icon={Clock}
+              label="Last Order"
+              value={lastOrder ? `#${lastOrder.order_id.substring(0, 8).toUpperCase()}` : 'N/A'}
+              sub={lastOrder ? formatDateTime(lastOrder.created_at) : 'No orders yet'}
+            >
+              {lastOrder && (
+                <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider ${statusBadge[lastOrder.order_status?.toLowerCase()]?.bg || "bg-card"} ${statusBadge[lastOrder.order_status?.toLowerCase()]?.text || "text-textMain/50"} ${statusBadge[lastOrder.order_status?.toLowerCase()]?.border || "border-border"}`}>
+                  {lastOrder.order_status}
+                </span>
+              )}
+            </StatCard>
           </div>
+        </div>
+
+        {/* Order History Section */}
+        <div className="bg-card transition-colors duration-300 rounded-[1.5rem] border border-border shadow-sm overflow-hidden mb-6">
+            <div className="bg-background px-6 md:px-8 py-5 flex items-center justify-between border-b border-border">
+                <h2 className="text-sm font-black text-textMain uppercase tracking-widest flex items-center gap-2">
+                    <ClipboardList size={16} className="text-primary" /> Order History
+                </h2>
+                <span className="text-[10px] text-textMain/50 font-bold">
+                    {orders.length} order{orders.length !== 1 ? 's' : ''}
+                </span>
+            </div>
+
+            {loading ? (
+                <div className="py-16 flex items-center justify-center gap-3 text-textMain/50 font-medium">
+                    <Loader2 className="animate-spin text-primary" size={20} /> Loading order history...
+                </div>
+            ) : orders.length === 0 ? (
+                <div className="text-center py-16 text-textMain/50">
+                    <p className="text-4xl mb-3">📦</p>
+                    <p className="text-sm font-medium">This customer has no order history yet.</p>
+                </div>
+            ) : (
+                <div>
+                    {/* Desktop Table */}
+                    <div className={`overflow-x-auto w-full custom-scrollbar hidden md:block ${orders.length > 5 ? 'max-h-[450px] overflow-y-auto' : ''}`}>
+                        <table className="min-w-full text-left">
+                            <thead className="border-b border-border">
+                                <tr>
+                                    {["Reference", "Date", "Amount", "Status", "Placed By", ""].map((h) => (
+                                        <th key={h} className={`px-6 py-3 text-[10px] font-black text-textMain/50 uppercase tracking-widest ${h === '' ? 'text-right' : ''}`}>{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                                {orders.map((order) => (
+                                    <tr key={order.order_id} className="group hover:bg-card/50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <p className="text-xs font-mono font-bold text-textMain">#{order.order_id.substring(0, 8).toUpperCase()}</p>
+                                        </td>
+                                        <td className="px-6 py-4 text-xs font-medium text-textMain/80">
+                                            {formatDate(order.created_at)}
+                                        </td>
+                                        <td className="px-6 py-4 text-xs font-bold text-textMain">
+                                            LKR {Number(order.total_amount).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider ${statusBadge[order.order_status?.toLowerCase()]?.bg || "bg-card"} ${statusBadge[order.order_status?.toLowerCase()]?.text || "text-textMain/50"} ${statusBadge[order.order_status?.toLowerCase()]?.border || "border-border"}`}>
+                                                {order.order_status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-xs font-medium text-textMain/80">
+                                            {order.creator?.name || 'Online Store'}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button onClick={() => navigate(`/order/${order.order_id}`)} className="text-xs font-bold text-primary hover:underline opacity-50 group-hover:opacity-100 transition-opacity flex items-center gap-1 justify-end">
+                                                View <ArrowRight size={12} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Mobile Cards */}
+                    <div className={`md:hidden space-y-3 p-4 ${orders.length > 5 ? 'max-h-[450px] overflow-y-auto' : ''}`}>
+                        {orders.map((order) => (
+                            <div key={order.order_id} className="bg-card/50 border border-border rounded-2xl p-4">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div>
+                                        <p className="font-mono font-black text-primary text-sm">#{order.order_id.substring(0, 8).toUpperCase()}</p>
+                                        <p className="text-[10px] text-textMain/50 font-bold">{formatDate(order.created_at)}</p>
+                                    </div>
+                                    <span className={`text-[9px] font-black px-3 py-1.5 rounded-lg border uppercase tracking-widest ${statusBadge[order.order_status?.toLowerCase()]?.bg || "bg-card"} ${statusBadge[order.order_status?.toLowerCase()]?.text || "text-textMain/50"} ${statusBadge[order.order_status?.toLowerCase()]?.border || "border-border"}`}>{order.order_status}</span>
+                                </div>
+                                <div className="flex justify-between items-center pt-3 border-t border-border">
+                                    <div>
+                                        <p className="text-[9px] font-bold text-textMain/50 uppercase">Net Value</p>
+                                        <p className="text-lg font-black text-primary">LKR {Number(order.total_amount).toLocaleString()}</p>
+                                    </div>
+                                    <button onClick={() => navigate(`/order/${order.order_id}`)} className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-bold flex items-center gap-1.5">View <ArrowRight size={12} /></button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
 
         <div className="bg-card transition-colors duration-300 rounded-[1.5rem] border border-border transition-colors duration-300 shadow-sm overflow-hidden">
@@ -418,7 +608,7 @@ export default function CustomerDetail() {
                 <p className="text-sm font-medium">No notes yet. Add the first one!</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className={`space-y-3 ${notes.length > 5 ? 'max-h-[450px] overflow-y-auto pr-2' : ''}`}>
                 {notes.map((note) => {
                   const cfg = tagConfig[note.tag] || tagConfig.general;
                   return (
@@ -536,15 +726,20 @@ const InfoField = ({ icon: Icon, label, value }) => (
   </div>
 );
 
-const StatCard = ({ icon: Icon, label, value, sub }) => (
+const StatCard = ({ icon: Icon, label, value, sub, children }) => (
   <div className="bg-card rounded-[1.5rem] border border-border shadow-sm p-4 md:p-6 flex items-center gap-4">
-    <div className="p-2.5 md:p-3 bg-black rounded-xl">
+    <div className="p-2.5 md:p-3 bg-black rounded-xl shrink-0">
       <Icon size={16} md:size={18} className="text-primary" />
     </div>
-    <div>
-      <p className="text-[10px] font-black text-textMain/50 uppercase tracking-widest">{label}</p>
-      <p className="text-base md:text-lg font-black text-textMain">{value}</p>
-      <p className="text-[10px] text-textMain/50">{sub}</p>
+    <div className="flex-1 overflow-hidden">
+      <p className="text-[10px] font-black text-textMain/50 uppercase tracking-widest truncate">{label}</p>
+      <div className="flex items-center justify-between gap-2 mt-1">
+        <div>
+          <p className="text-base md:text-lg font-black text-textMain leading-tight">{value}</p>
+          <p className="text-[10px] text-textMain/50">{sub}</p>
+        </div>
+        {children}
+      </div>
     </div>
   </div>
 );

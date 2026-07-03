@@ -36,7 +36,28 @@ const createCustomer = async (req, res) => {
 
 const getAllCustomers = async (req, res) => {
     try {
+        let filter = {};
+
+        // 🛡️ Filter for Sales Representatives: Only show their assigned customers / regions
+        if (req.user && req.user.role === 'sales_rep') {
+            const repAreas = await UserArea.findAll({
+                where: { user_id: req.user.user_id }
+            });
+            const districtNames = repAreas.map(a => a.district_name);
+
+            filter = {
+                [Op.or]: [
+                    { sales_rep_id: req.user.user_id },
+                    {
+                        sales_rep_id: null,
+                        district: { [Op.in]: districtNames }
+                    }
+                ]
+            };
+        }
+
         const customers = await Customer.findAll({
+            where: filter,
             include: [{
                 model: User, as: 'salesRep', attributes: ['name']
             }]
@@ -175,9 +196,26 @@ const searchCustomers = async (req, res) => {
         // Role-based filtering
         let whereClause = { ...searchCondition };
         if (role === 'sales_rep') {
-            whereClause.sales_rep_id = user_id;
+            const repAreas = await UserArea.findAll({
+                where: { user_id }
+            });
+            const districtNames = repAreas.map(a => a.district_name);
+
+            whereClause = {
+                [Op.and]: [
+                    searchCondition,
+                    {
+                        [Op.or]: [
+                            { sales_rep_id: user_id },
+                            {
+                                sales_rep_id: null,
+                                district: { [Op.in]: districtNames }
+                            }
+                        ]
+                    }
+                ]
+            };
         }
-        // Admins, managers, etc., can search all customers.
 
         const customers = await Customer.findAll({
             where: whereClause,
