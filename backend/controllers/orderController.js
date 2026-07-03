@@ -7,7 +7,7 @@ const { sendDispatchNotification } = require('../utils/sendDispatchNotification'
 const { decrypt } = require('../utils/cryptoUtils');
 const { sendDeliveryOTP, sendThankYouEmail } = require('../utils/emailSender');
 const { createNotification } = require('./notificationController');
-const { Op } = require('sequelize');
+const { Op, fn, col, where, cast } = require('sequelize');
 
 const getOrderNotificationTarget = async (orderLike, fallbackUserId) => {
   if (!orderLike?.customer_id) return fallbackUserId || null;
@@ -525,31 +525,68 @@ const verifyDeliveryOTPByRep = async (req, res) => {
 
 const getOrderById = async (req, res) => {
   try {
-    const { orderId } = req.params; 
-    const searchTerm = orderId.trim();
+    const rawId = req.params.orderId;
 
-    let order = null;
-    const selectAttributes = ['order_id', 'customer_name', 'order_status', 'tracking_id', 'order_type', 'courier_name'];
+    const id = String(rawId || "")
+      .trim()
+      .replace(/^#/, "")
+      .replace(/^ORD-/i, "");
 
-    if (searchTerm.length === 36) {
-      order = await Order.findByPk(searchTerm, { attributes: selectAttributes });
-    }
-
-    if (!order) {
-      order = await Order.findOne({
-        where: sequelize.where(sequelize.cast(sequelize.col('order_id'), 'text'), { [Op.like]: `${searchTerm.toLowerCase()}%` }),
-        attributes: selectAttributes
+    if (!id) {
+      return res.status(400).json({
+        message: "Order reference is required.",
       });
     }
 
+    let whereClause;
+
+    // Short reference search: E6523D85
+    if (id.length < 36) {
+      whereClause = where(
+        fn("UPPER", cast(col("order_id"), "TEXT")),
+        {
+          [Op.like]: `${id.toUpperCase()}%`,
+        }
+      );
+    } else {
+      // Full UUID search
+      whereClause = { order_id: id };
+    }
+
+    const order = await Order.findOne({
+      where: whereClause,
+      include: [
+        { model: Customer, as: "customer" },
+        { model: User, as: "creator", attributes: ["name", "role"] },
+        {
+          model: OrderItem,
+          as: "OrderItems",
+          include: [
+            {
+              model: ProductVariant,
+              as: "variant",
+              include: [
+                { model: Product, as: "product" }
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
     if (!order) {
-      return res.status(404).json({ success: false, message: "Order reference not found in registry" });
+      return res.status(404).json({
+        message: "Order not found with the provided reference.",
+      });
     }
 
     return res.status(200).json(order);
-  } catch (error) {
-    console.error("Fetch Single Order Error:", error);
-    return res.status(500).json({ success: false, message: "Server error tracing order reference" });
+  } catch (err) {
+    console.error("Get Order By ID Error:", err);
+    return res.status(500).json({
+      error: "Internal Server Error",
+      details: err.message,
+    });
   }
 };
 
@@ -786,5 +823,6 @@ module.exports = {
   initiateDeliveryOTP, 
   verifyDeliveryOTPByRep,
   deleteOrder,
-  updateOrder
+  updateOrder,
+  getOrderById
 };

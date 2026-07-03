@@ -108,21 +108,38 @@ const OrderVerificationHub = () => {
   // Handle Trace Status Query
   const handleCheckStatus = async (e) => {
     e.preventDefault();
-    if (!searchOrderId.trim()) return;
-    
+
+    const cleanOrderRef = searchOrderId
+      .trim()
+      .replace(/^#/, "")
+      .replace(/^ORD-/i, "")
+      .replace(/^\/+|\/+$/g, "");
+
+    if (!cleanOrderRef) {
+      Swal.fire({
+        title: "Missing Order Reference",
+        text: "Please enter a valid Order Reference Number.",
+        icon: "warning",
+        confirmButtonColor: "#000000",
+      });
+      return;
+    }
+
     setSearching(true);
     setOrderStatusData(null);
     setIsCopied(false);
-    
+
     try {
-      const res = await api.get(`/orders/${searchOrderId.trim()}`);
+      const res = await api.get(`/orders/${encodeURIComponent(cleanOrderRef)}`);
       setOrderStatusData(res.data);
     } catch (err) {
       Swal.fire({
-        title: 'Not Found',
-        text: 'Could not find any details for this Order Reference Number.',
-        icon: 'warning',
-        confirmButtonColor: '#000000'
+        title: "Not Found",
+        text:
+          err.response?.data?.message ||
+          "Could not find any details for this Order Reference Number.",
+        icon: "warning",
+        confirmButtonColor: "#000000",
       });
     } finally {
       setSearching(false);
