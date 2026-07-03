@@ -1,6 +1,5 @@
-const { Product, ProductVariant, sequelize, Category, Brand, User } = require('../models');
+const { Product, ProductVariant, sequelize, Category, Brand } = require('../models');
 const { createNotification } = require('./notificationController');
-
 
 /**
  * Handles Product and Variant creation with image uploading.
@@ -13,17 +12,6 @@ const addProduct = async (req, res) => {
     try {
         // frontend url eken ena wistara tika aragannawa
         const { product_name, brand_id, category_id, description, variants } = req.body;
-        const parsedVariants = JSON.parse(variants);
-        const variantCount = parsedVariants.length;
-        const brand = await Brand.findByPk(brand_id, { attributes: ['brand_name'] });
-        const category = await Category.findByPk(category_id, { attributes: ['category_name'] });
-        const loggedInUser = req.user || {};
-        const userRecord = loggedInUser.user_id
-            ? await User.findByPk(loggedInUser.user_id, { attributes: ['name'] })
-            : null;
-        const roleLabel = loggedInUser.role
-            ? loggedInUser.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-            : 'System';
         
         // 1. get main image URL 
         const mainImageUrl = req.files['main_image'] ? req.files['main_image'][0].path : null;
@@ -38,6 +26,7 @@ const addProduct = async (req, res) => {
         });
 
         // 3. handle variants and their images
+        const parsedVariants = JSON.parse(variants);
         const variantImages = req.files['variant_images'] || [];
         // help to map relavant image for relavant variant
         let imageCounter = 0;
@@ -73,14 +62,19 @@ const addProduct = async (req, res) => {
         // wait for all variants to be created
         await Promise.all(variantPromises);
 
-        await createNotification(
-            'product',
-            '🆕 New Product Added',
-            `${product_name} (${brand?.brand_name || ''} - ${category?.category_name || ''}) added with ${variantCount} variant(s) by ${userRecord?.name || 'System'} (${roleLabel})`,
-            newProduct.product_id,
-            'info'
-        );
-
+        // Create a global notification for the new product
+        if (req.user) { // Ensure user is logged in
+            await createNotification(
+                'product',
+                'New Product Added',
+                `A new product "${newProduct.product_name}" was added to the inventory by ${req.user.name}.`,
+                {
+                    reference_id: newProduct.product_id,
+                    initiator_id: req.user.user_id,
+                    severity: 'info'
+                }
+            );
+        }
         res.status(201).json({ message: "Product added successfully!" });
 
     } catch (err) {
@@ -122,7 +116,7 @@ const getProductById = async (req, res) => {
             include: [
                 { model: Category, as: 'category' },
                 { model: Brand, as: 'brand' },
-                { model: ProductVariant, as: 'variants', paranoid: false }
+                { model: ProductVariant, as: 'variants' }
             ]
         });
 
@@ -143,98 +137,28 @@ const getProductById = async (req, res) => {
 };
 
 
-const parseVariantsInput = (variants) => {
-    if (!variants) return [];
-
-    if (Array.isArray(variants)) {
-        return variants;
-    }
-
-    if (typeof variants === 'string') {
-        return JSON.parse(variants);
-    }
-
-    return [];
-};
-
-// Update product details and variants in one request
+// Update product details (excluding variants for simplicity)
 const updateProduct = async (req, res) => {
     try {
+        // For simplicity, we are only updating the main product details here. Variants can be updated through a separate endpoint if needed.
         const { id } = req.params;
-        const { product_name, brand_id, category_id, description, status, variants } = req.body;
-        const parsedVariants = parseVariantsInput(variants);
+        // Get the update data from the request body
+        const updateData = req.body;
 
-        const product = await Product.findByPk(id, {
-            include: [{ model: ProductVariant, as: 'variants' }]
-        });
-
+        // If there's a new main image, get its URL
+        const product = await Product.findByPk(id);
+        
+        // If product not found, return 404
         if (!product) {
             return res.status(404).json({ error: "Product not found" });
         }
 
-        const mainImageUrl = req.files?.['main_image']?.[0]?.path;
-        const variantImages = req.files?.['variant_images'] || [];
-        let imageCounter = 0;
-
-        await sequelize.transaction(async (transaction) => {
-            await product.update({
-                product_name,
-                brand_id,
-                category_id,
-                description,
-                status,
-                ...(mainImageUrl ? { image_url: mainImageUrl } : {})
-            }, { transaction });
-
-            const existingVariants = product.variants || [];
-            const existingVariantMap = new Map(existingVariants.map((variant) => [variant.variant_id, variant]));
-            const submittedVariantIds = new Set();
-
-            for (const variant of parsedVariants) {
-                const variantId = variant.variant_id || null;
-                const variantImageUrl = variant.hasImage
-                    ? (variantImages[imageCounter] ? variantImages[imageCounter].path : null)
-                    : (variant.existing_image_url || null);
-
-                if (variant.hasImage) {
-                    imageCounter += 1;
-                }
-
-                const payload = {
-                    product_id: product.product_id,
-                    sku: variant.sku,
-                    variant_name: variant.variant_name,
-                    price: variant.price,
-                    stock_count: variant.stock_count,
-                    critical_stock_level: variant.critical_stock_level,
-                    image_url: variantImageUrl
-                };
-
-                if (variantId && existingVariantMap.has(variantId)) {
-                    submittedVariantIds.add(variantId);
-                    await existingVariantMap.get(variantId).update(payload, { transaction });
-                } else {
-                    await ProductVariant.create(payload, { transaction });
-                }
-            }
-
-            const variantsToDelete = existingVariants.filter((variant) => !submittedVariantIds.has(variant.variant_id));
-            for (const variant of variantsToDelete) {
-                await variant.destroy({ transaction });
-            }
-        });
-
-        const updatedProduct = await Product.findByPk(id, {
-            include: [
-                { model: Category, as: 'category' },
-                { model: Brand, as: 'brand' },
-                { model: ProductVariant, as: 'variants' }
-            ]
-        });
+        // If a new main image is uploaded, update the image_url
+        await product.update(updateData);
 
         res.status(200).json({
             message: "Product updated successfully",
-            product: updatedProduct
+            product
         });
 
     } catch (err) {
@@ -243,7 +167,7 @@ const updateProduct = async (req, res) => {
     }
 };
 
-// Deactivate a product so it stays visible in inventory but becomes unclickable
+// Delete a product (soft delete)
 const deleteProduct = async (req, res) => {
     try {
         // Get the product ID from the request parameters
@@ -257,45 +181,14 @@ const deleteProduct = async (req, res) => {
             return res.status(404).json({ error: "Product not found" });
         }
 
-        // Mark the product inactive instead of deleting it so inventory can still show it
-        await product.update({ 
-            status: 'inactive', 
-        });
+        // Soft delete the product (set deletedAt timestamp)
+        await product.destroy();
 
         // Return success response
-        res.status(200).json({ message: "Product deactivated successfully" });
+        res.status(200).json({ message: "Product deleted successfully" });
 
     } catch (err) {
         console.error("Delete Product Error:", err.message);
-        res.status(500).json({ error: err.message });
-    }
-};
-
-const deleteProductVariant = async (req, res) => {
-    try {
-        const { id, variantId } = req.params;
-
-        const product = await Product.findByPk(id);
-        if (!product) {
-            return res.status(404).json({ error: 'Product not found' });
-        }
-
-        const variant = await ProductVariant.findOne({
-            where: {
-                variant_id: variantId,
-                product_id: id,
-            }
-        });
-
-        if (!variant) {
-            return res.status(404).json({ error: 'Variant not found' });
-        }
-
-        await variant.destroy();
-
-        res.status(200).json({ message: 'Variant deleted successfully' });
-    } catch (err) {
-        console.error('Delete Variant Error:', err.message);
         res.status(500).json({ error: err.message });
     }
 };
@@ -305,6 +198,5 @@ module.exports = {
     getProducts,
     getProductById,
     updateProduct,
-    deleteProduct,
-    deleteProductVariant
+    deleteProduct
 };

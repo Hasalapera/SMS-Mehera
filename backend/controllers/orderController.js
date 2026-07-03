@@ -90,17 +90,33 @@ const placeOrder = async (req, res) => {
     
     await transaction.commit(); // ✅ confirm DB operations before sending response
 
-    const notificationTargetUserId = await getOrderNotificationTarget(newOrder, req.user.user_id);
+    const initiator = req.user;
+    const shortId = newOrder.order_id.substring(0, 8).toUpperCase();
+    const totalFmt = Number(total_amount || 0).toLocaleString();
 
+    // Notification for Admins/Managers
     await createNotification(
       'order',
-      'Order Submitted',
-      `Order #${newOrder.order_id.substring(0, 8).toUpperCase()} for ${customer_name} was submitted for approval. Total: LKR ${Number(total_amount || 0).toLocaleString()}.`,
+      `Order by ${initiator.name}`,
+      `Order #${shortId} for ${customer_name} was submitted by ${initiator.name}. Total: LKR ${totalFmt}.`,
       {
         reference_id: newOrder.order_id,
-        target_user_id: notificationTargetUserId,
+        target_role: 'manager', // Target managers (and admins will see it too)
         severity: 'info',
-        initiator_id: req.user.user_id,
+        initiator_id: initiator.user_id,
+      }
+    );
+
+    // Notification for the Sales Rep who placed it
+    await createNotification(
+      'order',
+      'Your Order Submitted',
+      `Your order #${shortId} for ${customer_name} has been submitted for approval. Total: LKR ${totalFmt}.`,
+      {
+        reference_id: newOrder.order_id,
+        target_user_id: initiator.user_id, // Target self
+        severity: 'info',
+        initiator_id: initiator.user_id,
       }
     );
 
@@ -174,13 +190,15 @@ const placeOnlineOrder = async (req, res) => {
     
     await transaction.commit();
 
+    const initiator = req.user;
+
     await createNotification(
       'order',
       'Online Order Submitted',
       `Online order #${newOrder.order_id.substring(0, 8).toUpperCase()} for ${customer_name} was submitted. Total: LKR ${Number(total_amount || 0).toLocaleString()}.`,
       {
         reference_id: newOrder.order_id,
-        target_user_id: req.user.user_id,
+        target_role: 'online_store_keeper', // Target relevant role
         severity: 'info',
         initiator_id: req.user.user_id,
       }
