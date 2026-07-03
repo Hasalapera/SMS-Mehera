@@ -921,7 +921,18 @@ const OrderHistory = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in duration-300">
                       {editProducts
                         .filter(p => p.product_name.toLowerCase().includes(editSearchTerm.toLowerCase()))
-                        .map(product => (
+                        .map(product => {
+                          const allVariantsInCart = product.variants && product.variants.length > 0 && product.variants.every(v => 
+                            editCart.some(cartItem => cartItem.cartItemId === `${product.product_id}-${v.variant_id}`)
+                          );
+                          const singleProductInCart = (!product.variants || product.variants.length === 0) && editCart.some(cartItem => cartItem.product_id === product.product_id);
+
+                          // If all variants are in the cart, hide the product card.
+                          if (allVariantsInCart || singleProductInCart) {
+                            return null; 
+                          }
+
+                          return (
                           <div 
                             key={product.product_id}
                             className="bg-card p-4 rounded-2xl border border-border flex flex-col justify-between shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300 text-left"
@@ -956,7 +967,7 @@ const OrderHistory = () => {
                               </button>
                             </div>
                           </div>
-                        ))}
+                        )})}
                     </div>
                   )}
                 </div>

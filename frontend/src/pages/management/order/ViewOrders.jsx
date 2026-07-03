@@ -120,6 +120,7 @@ const ViewOrders = ({ showHeader = true }) => {
 
   // Edit Order states
   const [editingOrder, setEditingOrder] = useState(null);
+  const [editMobileTab, setEditMobileTab] = useState('catalog');
   const [editProducts, setEditProducts] = useState([]);
   const [editSearchTerm, setEditSearchTerm] = useState("");
   const [editSelectedProductForVariant, setEditSelectedProductForVariant] = useState(null);
@@ -153,6 +154,7 @@ const ViewOrders = ({ showHeader = true }) => {
     try {
       if (!order) throw new Error("Order data is null or undefined");
       setEditingOrder(order);
+      setEditMobileTab('catalog'); // Reset to catalog view on open
       setEditDiscount(Number(order.discount_percentage) || 0);
       setEditPaymentMethod(order.payment_method || "cash");
       
@@ -1117,11 +1119,33 @@ const ViewOrders = ({ showHeader = true }) => {
               </button>
             </div>
 
+            {/* Mobile Tabs */}
+            <div className="lg:hidden flex border-b border-border shrink-0">
+                <button
+                    type="button"
+                    onClick={() => setEditMobileTab('catalog')}
+                    className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors ${editMobileTab === 'catalog' ? 'bg-background text-primary' : 'bg-card/50 text-textMain/50'}`}
+                >
+                    <Package size={16} /> Catalog
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setEditMobileTab('queue')}
+                    className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 relative transition-colors ${editMobileTab === 'queue' ? 'bg-background text-primary' : 'bg-card/50 text-textMain/50'}`}
+                >
+                    <ShoppingCart size={16} /> Edit Queue
+                    {editCart.length > 0 && (
+                        <span className="absolute top-2 right-2 w-5 h-5 bg-primary text-black text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in">
+                            {editCart.length}
+                        </span>
+                    )}
+                </button>
+            </div>
+
             {/* Split Layout Content */}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
-              
               {/* LEFT SIDE: LIVE INVENTORY */}
-              <div className="w-full lg:w-[50%] h-[40vh] lg:h-full flex flex-col border-b lg:border-b-0 lg:border-r border-border bg-background min-h-0">
+              <div className={`w-full lg:w-[50%] flex-col border-b lg:border-b-0 lg:border-r border-border bg-background min-h-0 ${editMobileTab === 'catalog' ? 'flex flex-1' : 'hidden lg:flex'}`}>
                 
                 {/* Search Header */}
                 <div className="p-4 border-b border-border bg-card shrink-0">
@@ -1233,7 +1257,7 @@ const ViewOrders = ({ showHeader = true }) => {
               </div>
 
               {/* RIGHT SIDE: EDIT CART & GENERAL SUMMARY */}
-              <div className="w-full lg:w-[50%] h-[50vh] lg:h-full flex flex-col bg-card min-h-0 overflow-y-auto custom-scrollbar p-4 lg:p-6 space-y-4 lg:space-y-5">
+              <div className={`w-full lg:w-[50%] h-full flex-col bg-card min-h-0 overflow-y-auto custom-scrollbar p-4 lg:p-6 space-y-4 lg:space-y-5 ${editMobileTab === 'queue' ? 'flex flex-1' : 'hidden lg:flex'}`}>
                 
                 {/* Client Reference Card */}
                 <div className="p-4 bg-background border border-border rounded-2xl flex items-center justify-between shadow-sm shrink-0 text-left">
