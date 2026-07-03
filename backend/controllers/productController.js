@@ -24,7 +24,7 @@ const addProduct = async (req, res) => {
         const roleLabel = loggedInUser.role
             ? loggedInUser.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
             : 'System';
-        
+
         // 1. get main image URL 
         const mainImageUrl = req.files['main_image'] ? req.files['main_image'][0].path : null;
 
@@ -34,7 +34,7 @@ const addProduct = async (req, res) => {
             brand_id,
             category_id,
             description,
-            image_url: mainImageUrl 
+            image_url: mainImageUrl
         });
 
         // 3. handle variants and their images
@@ -94,10 +94,11 @@ const getProducts = async (req, res) => {
     try {
         // Use eager loading to get associated category, brand, and variants in one query
         const products = await Product.findAll({
+            paranoid: false,
             include: [
                 { model: Category, as: 'category' },
                 { model: Brand, as: 'brand' },
-                { model: ProductVariant, as: 'variants' }
+                { model: ProductVariant, as: 'variants', paranoid: false }
             ]
         });
 
@@ -119,6 +120,7 @@ const getProductById = async (req, res) => {
 
         // Use eager loading to get associated category, brand, and variants in one query
         const product = await Product.findByPk(id, {
+            paranoid: false,
             include: [
                 { model: Category, as: 'category' },
                 { model: Brand, as: 'brand' },
@@ -251,15 +253,20 @@ const deleteProduct = async (req, res) => {
 
         // Find the product by ID
         const product = await Product.findByPk(id);
-        
+
         // If product not found, return 404
         if (!product) {
             return res.status(404).json({ error: "Product not found" });
         }
 
-        // Mark the product inactive instead of deleting it so inventory can still show it
-        await product.update({ 
-            status: 'inactive', 
+        // Mark the product inactive, soft-delete it (updating deleted_at), and soft-delete its variants
+        await product.update({
+            status: 'inactive',
+        });
+        await product.destroy();
+
+        await ProductVariant.destroy({
+            where: { product_id: id }
         });
 
         // Return success response
