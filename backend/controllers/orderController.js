@@ -569,4 +569,78 @@ const verifyDeliveryOTPByRep = async (req, res) => {
   }
 };
 
-module.exports = { placeOrder, placeOnlineOrder, getAllOrders, updateOrderStatus, updateTrackingInfo, confirmDeliveryWithOTP, initiateDeliveryOTP, verifyDeliveryOTPByRep };
+const deleteOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { user_id, role } = req.user;
+
+    const order = await Order.findByPk(orderId);
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    // 🛡️ Authorization Check: Admins/Managers can delete any order. 
+    // Sales reps can only delete orders they created.
+    if (role !== 'admin' && role !== 'manager' && order.created_by !== user_id) {
+      return res.status(403).json({ success: false, message: "Access denied. You can only delete your own orders." });
+    }
+
+    // Adjust Sales Target if approved order is deleted
+    if (order.order_status === 'approved') {
+      const orderAmount = parseFloat(order.total_amount);
+      const repId = order.created_by;
+      const orderMonth = order.created_at.toISOString().slice(0, 7);
+
+      if (repId && orderAmount > 0) {
+        await SalesTarget.decrement('achieved_amount', {
+          by: orderAmount,
+          where: { sales_rep_id: repId, month: orderMonth }
+        }).catch(console.error);
+
+        // Re-evaluate target status
+        const target = await SalesTarget.findOne({
+          where: { sales_rep_id: repId, month: orderMonth }
+        });
+        if (target) {
+          const isNowAchieved = parseFloat(target.achieved_amount) >= parseFloat(target.adjusted_target_amount);
+          if (target.is_achieved !== isNowAchieved) {
+            await target.update({ is_achieved: isNowAchieved });
+          }
+        }
+      }
+    }
+
+    await order.destroy();
+
+    // Create Notification
+    await createNotification(
+      'order',
+      'Order Deleted',
+      `Order #${order.order_id.substring(0, 8).toUpperCase()} for ${order.customer_name} was deleted.`,
+      {
+        reference_id: order.order_id,
+        target_user_id: order.created_by,
+        severity: 'warning',
+        initiator_id: user_id,
+      }
+    ).catch(err => console.error("Error creating delete notification:", err));
+
+    res.status(200).json({ success: true, message: "Order deleted successfully" });
+  } catch (error) {
+    console.error("Delete Order Error:", error);
+    res.status(500).json({ success: false, message: "Failed to delete order" });
+  }
+};
+
+module.exports = { 
+  placeOrder, 
+  placeOnlineOrder, 
+  getAllOrders, 
+  updateOrderStatus, 
+  updateTrackingInfo, 
+  confirmDeliveryWithOTP, 
+  initiateDeliveryOTP, 
+  verifyDeliveryOTPByRep,
+  deleteOrder
+};

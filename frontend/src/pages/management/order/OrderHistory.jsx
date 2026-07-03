@@ -16,6 +16,7 @@ import {
   X,
   ChevronRight,
   ShoppingCart,
+  Trash2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -92,6 +93,41 @@ const OrderHistory = () => {
     };
     fetchHistory();
   }, [token, user?.user_id]);
+
+  const handleDeleteOrder = async (orderId, salonName) => {
+    if (!window.confirm("Are you sure you want to delete this order?")) return;
+    try {
+      await api.delete(`/orders/delete/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success("Order deleted successfully");
+      
+      // Update orders state
+      setOrders((prev) => prev.filter((o) => o.order_id !== orderId));
+
+      // If selectedTransaction is the deleted order, close the modal
+      if (selectedTransaction?.order_id === orderId) {
+        setSelectedTransaction(null);
+      }
+
+      // If we are currently viewing transactions for this salon in mobile view, update it
+      if (viewingTransactionsFor && viewingTransactionsFor.salonName === salonName) {
+        setViewingTransactionsFor((prev) => {
+          const updatedTransactions = prev.transactions.filter((o) => o.order_id !== orderId);
+          if (updatedTransactions.length === 0) {
+            return null; // Close mobile modal if no orders left
+          }
+          return {
+            ...prev,
+            transactions: updatedTransactions,
+          };
+        });
+      }
+    } catch (err) {
+      console.error("Error deleting order", err);
+      toast.error(err.response?.data?.message || "Failed to delete order");
+    }
+  };
 
   // Group orders by Saloon (Customer Name)
   const groupedOrders = useMemo(() => {
@@ -337,13 +373,22 @@ const OrderHistory = () => {
                             )}
                           </td>
                           <td className="px-6 py-5 text-right">
-                            <button
-                              onClick={() => setSelectedTransaction(order)}
-                              className="text-primary hover:text-textMain text-[9px] font-black uppercase flex items-center gap-1.5 ml-auto hover:scale-110 transition-transform"
-                              title="View Full Details"
-                            >
-                              View <ArrowRight size={12} />
-                            </button>
+                            <div className="flex items-center justify-end gap-3">
+                              <button
+                                onClick={() => setSelectedTransaction(order)}
+                                className="text-primary hover:text-textMain text-[9px] font-black uppercase flex items-center gap-1.5 hover:scale-110 transition-transform"
+                                title="View Full Details"
+                              >
+                                View <ArrowRight size={12} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteOrder(order.order_id, salon.salonName)}
+                                className="text-red-500 hover:text-red-700 transition-colors p-1.5 rounded hover:bg-red-50 transition-all duration-300"
+                                title="Delete Order"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -418,9 +463,18 @@ const OrderHistory = () => {
                       LKR {Number(order.total_amount).toLocaleString()}
                     </p>
                   </div>
-                  <button onClick={() => { setViewingTransactionsFor(null); setSelectedTransaction(order); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-background border border-border text-[10px] font-black uppercase text-textMain/70 hover:text-primary hover:border-primary transition-all">
-                    Details <ArrowRight size={14} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => { setViewingTransactionsFor(null); setSelectedTransaction(order); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-background border border-border text-[10px] font-black uppercase text-textMain/70 hover:text-primary hover:border-primary transition-all">
+                      Details <ArrowRight size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteOrder(order.order_id, viewingTransactionsFor.salonName)}
+                      className="p-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all border border-red-200 flex items-center justify-center shrink-0"
+                      title="Delete Order"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
