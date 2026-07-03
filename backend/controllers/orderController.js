@@ -633,6 +633,165 @@ const deleteOrder = async (req, res) => {
   }
 };
 
+const updateOrder = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { orderId } = req.params;
+    const { 
+      subtotal, 
+      discount_percentage, 
+      discount_amount, 
+      total_amount, 
+      payment_method, 
+      items 
+    } = req.body;
+
+    const order = await Order.findByPk(orderId, {
+      include: [{ model: OrderItem }],
+      transaction
+    });
+
+    if (!order) {
+      await transaction.rollback();
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    const previousStatus = order.order_status;
+    const previousTotalAmount = parseFloat(order.total_amount);
+    const newTotalAmount = parseFloat(total_amount);
+
+    // If order was already approved, we handle stock adjustment (restore first, check, then deduct)
+    if (previousStatus === 'approved') {
+      // 1. Restore stock of the old items
+      for (const oldItem of order.OrderItems) {
+        const variant = await ProductVariant.findByPk(oldItem.variant_id, { transaction });
+        if (variant) {
+          variant.stock_count += oldItem.qty;
+          await variant.save({ transaction });
+        }
+      }
+
+      // 2. Validate and deduct stock of the new items
+      for (const newItem of items) {
+        const variant = await ProductVariant.findByPk(newItem.variant_id, {
+          include: [{ model: Product, as: 'product', attributes: ['product_name'] }],
+          transaction
+        });
+
+        if (!variant || variant.stock_count < newItem.qty) {
+          await transaction.rollback();
+          const productName = variant?.product?.product_name || 'Unknown Product';
+          const variantName = variant?.variant_name || 'Standard';
+          return res.status(400).json({
+            success: false,
+            message: `Insufficient stock for ${productName} (${variantName}). Requested: ${newItem.qty}, Available: ${variant ? variant.stock_count : 0}.`
+          });
+        }
+
+        variant.stock_count -= newItem.qty;
+        await variant.save({ transaction });
+      }
+
+      // 3. Adjust Sales Target
+      const repId = order.created_by;
+      const orderMonth = order.created_at.toISOString().slice(0, 7);
+      if (repId && previousTotalAmount !== newTotalAmount) {
+        const diff = newTotalAmount - previousTotalAmount;
+        if (diff > 0) {
+          await SalesTarget.increment('achieved_amount', {
+            by: diff,
+            where: { sales_rep_id: repId, month: orderMonth },
+            transaction
+          });
+        } else if (diff < 0) {
+          await SalesTarget.decrement('achieved_amount', {
+            by: Math.abs(diff),
+            where: { sales_rep_id: repId, month: orderMonth },
+            transaction
+          });
+        }
+
+        // Re-evaluate target status
+        const target = await SalesTarget.findOne({
+          where: { sales_rep_id: repId, month: orderMonth },
+          transaction
+        });
+        if (target) {
+          const isNowAchieved = parseFloat(target.achieved_amount) >= parseFloat(target.adjusted_target_amount);
+          if (target.is_achieved !== isNowAchieved) {
+            await target.update({ is_achieved: isNowAchieved }, { transaction });
+          }
+        }
+      }
+    } else {
+      // For requested/other status (where stock has not been deducted yet), we just validate that we have enough stock available
+      for (const newItem of items) {
+        const variant = await ProductVariant.findByPk(newItem.variant_id, {
+          include: [{ model: Product, as: 'product', attributes: ['product_name'] }],
+          transaction
+        });
+
+        if (!variant || variant.stock_count < newItem.qty) {
+          await transaction.rollback();
+          const productName = variant?.product?.product_name || 'Unknown Product';
+          const variantName = variant?.variant_name || 'Standard';
+          return res.status(400).json({
+            success: false,
+            message: `Insufficient stock for ${productName} (${variantName}). Requested: ${newItem.qty}, Available: ${variant ? variant.stock_count : 0}.`
+          });
+        }
+      }
+    }
+
+    // Update order fields
+    order.subtotal = subtotal;
+    order.discount_percentage = discount_percentage;
+    order.discount_amount = discount_amount;
+    order.total_amount = total_amount;
+    order.payment_method = payment_method;
+
+    await order.save({ transaction });
+
+    // Delete old order items
+    await OrderItem.destroy({
+      where: { order_id: orderId },
+      transaction
+    });
+
+    // Create new order items
+    const orderItemsData = items.map(item => ({
+      order_id: orderId,
+      product_id: item.product_id,
+      variant_id: item.variant_id,
+      qty: item.qty,
+      price: item.price
+    }));
+
+    await OrderItem.bulkCreate(orderItemsData, { transaction });
+
+    await transaction.commit();
+
+    // Create notification
+    await createNotification(
+      'order',
+      'Order Updated',
+      `Order #${orderId.substring(0, 8).toUpperCase()} for ${order.customer_name} was updated. Total: LKR ${Number(total_amount).toLocaleString()}.`,
+      {
+        reference_id: orderId,
+        target_user_id: order.created_by,
+        severity: 'info',
+        initiator_id: req.user.user_id,
+      }
+    ).catch(err => console.error("Error creating update notification:", err));
+
+    res.status(200).json({ success: true, message: "Order updated successfully", order });
+  } catch (error) {
+    if (transaction && !transaction.finished) await transaction.rollback();
+    console.error("Update Order Error:", error);
+    res.status(500).json({ success: false, message: "Failed to update order" });
+  }
+};
+
 module.exports = { 
   placeOrder, 
   placeOnlineOrder, 
@@ -642,5 +801,6 @@ module.exports = {
   confirmDeliveryWithOTP, 
   initiateDeliveryOTP, 
   verifyDeliveryOTPByRep,
-  deleteOrder
+  deleteOrder,
+  updateOrder
 };

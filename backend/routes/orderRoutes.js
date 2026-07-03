@@ -9,7 +9,8 @@ const {
     confirmDeliveryWithOTP,
     initiateDeliveryOTP,
     verifyDeliveryOTPByRep,
-    deleteOrder
+    deleteOrder,
+    updateOrder
 } = require('../controllers/orderController');
 const { verifyToken, isAdmin, isAuthorized } = require('../middlewares/authMiddleware');
 
@@ -24,6 +25,9 @@ router.get('/all', verifyToken, getAllOrders);
 
 // Delete order
 router.delete('/delete/:orderId', verifyToken, deleteOrder);
+
+// Update order
+router.put('/update/:orderId', verifyToken, updateOrder);
 
 // Update order status (Admin only)
 router.put('/update-order-status/:orderId', 
