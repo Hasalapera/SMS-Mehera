@@ -1,9 +1,10 @@
+// backend/routes/orderRoutes.js
 const express = require('express');
 const router = express.Router();
 const { 
     placeOrder, 
     placeOnlineOrder, 
-    getAllOrders ,
+    getAllOrders,
     updateOrderStatus,
     updateTrackingInfo,
     confirmDeliveryWithOTP,
@@ -11,6 +12,7 @@ const {
     verifyDeliveryOTPByRep,
     deleteOrder,
     updateOrder
+    getOrderById // 🎯 1. කන්ට්‍රෝලර් එකෙන් අලුත් ෆන්ක්ෂන් එක Import කරගත්තා
 } = require('../controllers/orderController');
 const { verifyToken, isAdmin, isAuthorized } = require('../middlewares/authMiddleware');
 
@@ -28,6 +30,9 @@ router.delete('/delete/:orderId', verifyToken, deleteOrder);
 
 // Update order
 router.put('/update/:orderId', verifyToken, updateOrder);
+// 🎯 2. [THE EXACT ROUTE FIX]: ෆ්‍රොන්ටෙන්ඩ් එකෙන් එවපු tracking ID එක පබ්ලික්ලි සර්ච් කරන්න මෙන්න මේ රවුට් එක ඇතුළත් කළා මචං!
+// ලොග් නොවී එන කස්ටමර්ටත් සර්ච් කරන්න ඕන නිසා මේකට verifyToken මිඩ්ල්වෙයාර් එක දැම්මේ නැහැ.
+router.get('/:orderId', getOrderById);
 
 // Update order status (Admin only)
 router.put('/update-order-status/:orderId', 
@@ -42,8 +47,5 @@ router.post('/confirm-delivery/:orderId', confirmDeliveryWithOTP);
 
 router.post('/initiate-delivery/:orderId', verifyToken, isAuthorized(['sales_rep', 'admin']), initiateDeliveryOTP);
 router.post('/rep-confirm-delivery/:orderId', verifyToken, isAuthorized(['sales_rep', 'admin']), verifyDeliveryOTPByRep);
-
-
-
 
 module.exports = router;

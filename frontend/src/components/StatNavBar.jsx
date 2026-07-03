@@ -1,6 +1,7 @@
+// src/components/StatNavBar.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, X, Sun, Moon } from 'lucide-react';
+import { Menu, X, Sun, Moon, QrCode } from 'lucide-react';
 import api from '../api/axiosInstance';
 import localDarkLogo from '../assets/logo/main-dark.png';
 import localLightLogo from '../assets/logo/main-light.png';
@@ -39,12 +40,9 @@ const StatNavBar = () => {
     window.dispatchEvent(new Event('themeChange'));
   };
 
-
-  
   const handleNavigation = (path) => {
     setIsMenuOpen(false);
     navigate(path);
-    // පේජ් එක මාරු වූ පසු උඩටම ස්ක්‍රෝල් කිරීම
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -67,11 +65,11 @@ const StatNavBar = () => {
       <div className="max-w-7xl mx-auto flex justify-between items-center px-6 md:px-12 py-5">
         
         {/* Logo Area */}
-        <div className="flex flex-col text-left cursor-pointer" onClick={() => handleNavigation('/')}>
+        <div className="flex flex-col items-start text-left cursor-pointer" onClick={() => handleNavigation('/')}>
           <img
             src={getDynamicLogo()}
             alt="Mehera International Logo"
-            className="h-8 md:h-10 w-auto object-contain transition-opacity duration-500 ease-in-out will-change-opacity"
+            className="h-8 md:h-10 w-auto object-contain transition-opacity duration-500 ease-in-out"
           />
         </div>
 
@@ -86,6 +84,16 @@ const StatNavBar = () => {
               {link.name}
             </button>
           ))}
+          
+          {/* 🎯 Desktop Button: ක්ලික් කළ සැනින් /verify-order පේජ් එකට රවුට් වෙනවා */}
+          <button
+            type="button"
+            onClick={() => handleNavigation('/verify-order')}
+            className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.15em] text-primary bg-primary/10 border border-primary/20 px-4 py-2 rounded-full hover:bg-primary hover:text-black transition-all duration-300 shadow-sm"
+          >
+            <QrCode size={13} /> Verify & Track
+          </button>
+
           <button 
             onClick={toggleTheme} 
             className="p-2.5 rounded-lg text-textMain/60 hover:text-primary hover:bg-primary/10 transition-all duration-300 ml-4"
@@ -123,9 +131,19 @@ const StatNavBar = () => {
               {link.name}
             </button>
           ))}
+          
+          {/* 🎯 Mobile Link */}
+          <button
+            type="button"
+            onClick={() => handleNavigation('/verify-order')}
+            className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary border-b border-border pb-4 transition-colors text-left"
+          >
+            <QrCode size={15} /> Verify & Track
+          </button>
+
           <button
             onClick={() => handleNavigation('/login')}
-            className="w-full bg-black text-white py-4 rounded-xl font-bold uppercase text-xs tracking-widest"
+            className="w-full bg-black text-white py-4 rounded-xl font-bold uppercase text-xs tracking-widest mt-2"
           >
             Login
           </button>
