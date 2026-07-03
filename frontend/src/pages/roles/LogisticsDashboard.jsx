@@ -8,7 +8,7 @@ import { useReactToPrint } from 'react-to-print';
 import { 
     Truck, MapPin, Package, Phone, User,
     Globe, Store, RefreshCw, CheckCircle, Printer, ScanLine, QrCode, X,
-    Calendar, Loader2, Info
+    Calendar, Loader2, Info, AlertTriangle
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -35,8 +35,8 @@ const LogisticsDashboard = () => {
             const res = await api.get('/orders/all', {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            const approvedOrders = res.data.filter(o => o.order_status === 'approved');
-            setOrders(approvedOrders);
+            const logisticsQueue = res.data.filter(o => ['approved', 'shipped', 'handed_over', 'handed_over_delivery'].includes(o.order_status));
+            setOrders(logisticsQueue);
         } catch (err) {
             console.error("Error fetching logistics orders", err);
             toast.error('Failed to load dispatch queue');
@@ -49,12 +49,13 @@ const LogisticsDashboard = () => {
 
     const handleStatusUpdate = async (orderId, newStatus) => {
         const result = await MySwal.fire({
-            title: 'Confirm Dispatch?',
-            text: `Marking this order as "${newStatus}" will remove it from the pending dispatch queue. Proceed?`,
+            title: `Confirm Status Shift?`,
+            text: `Are you sure you want to transition this package to "${newStatus.replace('_', ' ').toUpperCase()}"?`,
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Yes, Dispatch Order',
+            confirmButtonText: 'Yes, Confirm Shift',
             cancelButtonText: 'Cancel',
+            confirmButtonColor: '#000000',
             reverseButtons: true,
         });
 
@@ -67,7 +68,7 @@ const LogisticsDashboard = () => {
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 
-                toast.success(`Order successfully marked as ${newStatus}!`);
+                toast.success(`Status successfully updated to ${newStatus}!`);
                 
                 if (res.data.whatsappUrl) {
                     MySwal.fire({
@@ -110,13 +111,7 @@ const LogisticsDashboard = () => {
                 foreignObjectRendering: true
             });
             const imgData = canvas.toDataURL('image/png');
-            
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'cm',
-                format: [10, 12]
-            });
-
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'cm', format: [10, 12] });
             pdf.addImage(imgData, 'PNG', 0, 0, 10, 12);
             pdf.save(filename);
             toast.success('PDF downloaded!', { id: toastId });
@@ -126,6 +121,7 @@ const LogisticsDashboard = () => {
         }
     };
 
+    // ⏳ [FIXED TIMEOUT]: QR Code එක සර්වර් එකෙන් ඇදලා ගන්න තත්පර 1.2ක් නිදන් වෙන්න හැදුවා මචං
     useEffect(() => {
         if (isReadyToPrint && orderToPrint) {
             const isMobileDevice = window.innerWidth < 768;
@@ -136,7 +132,7 @@ const LogisticsDashboard = () => {
                 } else {
                     triggerPrint();
                 }
-            }, 800);
+            }, 1200); 
             return () => clearTimeout(timer);
         }
     }, [isReadyToPrint, orderToPrint, triggerPrint]);
@@ -152,42 +148,23 @@ const LogisticsDashboard = () => {
         if (!element) return;
         const toastId = toast.loading('Generating Bulk PDF...');
         try {
-            const canvas = await html2canvas(element, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                windowWidth: element.scrollWidth,
-                windowHeight: element.scrollHeight,
-                foreignObjectRendering: true
-            });
+            const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#ffffff', foreignObjectRendering: true });
             const imgData = canvas.toDataURL('image/png');
-            
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a4'
-            });
-            
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
-            const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
-            const ratio = canvasWidth / pdfWidth;
-            const calculatedHeight = canvasHeight / ratio;
+            const calculatedHeight = canvas.height / (canvas.width / pdfWidth);
 
             let heightLeft = calculatedHeight;
             let position = 0;
 
             pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, calculatedHeight);
             heightLeft -= pdfHeight;
-
             while (heightLeft > 0) {
-                position -= pdfHeight;
-                pdf.addPage();
+                position -= pdfHeight; pdf.addPage();
                 pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, calculatedHeight);
                 heightLeft -= pdfHeight;
             }
-
             pdf.save(filename);
             toast.success('Bulk PDF downloaded!', { id: toastId });
         } catch (error) {
@@ -206,7 +183,7 @@ const LogisticsDashboard = () => {
                 } else {
                     triggerBulkPrint();
                 }
-            }, 800);
+            }, 1200); 
             return () => clearTimeout(timer);
         }
     }, [isBulkReadyToPrint, bulkOrdersToPrint, triggerBulkPrint]);
@@ -216,25 +193,22 @@ const LogisticsDashboard = () => {
             if (o.order_type === 'online') return !!o.tracking_id;
             return true;
         });
-
         if (printableOrders.length === 0) {
             toast.error("No valid orders to print. Ensure online orders have a tracking ID.");
             return;
         }
-        setBulkOrdersToPrint(printableOrders);
-        setIsBulkReadyToPrint(true);
+        setBulkOrdersToPrint(printableOrders); setIsBulkReadyToPrint(true);
     };
 
-    // 🎯 [THE CRITICAL UPDATE]: Online orders සඳහා Courier Service සහ Tracking ID එකම තැනකින් තෝරන විදිය
     const handlePrintQR = async (order) => {
         if (order.order_type === 'online' && !order.tracking_id) {
             const { value: formValues } = await MySwal.fire({
                 title: '<span style="font-family:serif; font-style:italic; font-size:22px;">Logistics Allocation</span>',
                 html: `
-                    <div style="text-align: left; font-family: sans-serif; display: flex; flex-col; gap: 12px; width: 100%;">
+                    <div style="text-align: left; font-family: sans-serif; display: flex; flex-direction: column; gap: 12px; width: 100%;">
                         <div style="margin-bottom: 14px; width: 100%;">
                             <label style="font-size: 10px; font-weight: 900; text-transform: uppercase; tracking: 0.1em; color: #6b7280; display:block; margin-bottom:6px;">Select Courier Service</label>
-                            <select id="swal-courier-name" style="width: 100%; p: 12px; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 13px; outline: none; background: #fff; height: 45px; padding: 0 10px;">
+                            <select id="swal-courier-name" style="width: 100%; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 13px; outline: none; background: #fff; height: 45px; padding: 0 10px;">
                                 <option value="Domex">Domex Logistics</option>
                                 <option value="Pronto">Pronto Lanka</option>
                                 <option value="Koombiyo">Koombiyo</option>
@@ -254,42 +228,24 @@ const LogisticsDashboard = () => {
                 preConfirm: () => {
                     const courier_name = document.getElementById('swal-courier-name').value;
                     const tracking_id = document.getElementById('swal-tracking-id').value.trim();
-                    
-                    if (!tracking_id) {
-                        MySwal.showValidationMessage('Tracking ID is mandatory for online dispatches!');
-                        return false;
-                    }
+                    if (!tracking_id) { MySwal.showValidationMessage('Tracking ID is mandatory!'); return false; }
                     return { courier_name, tracking_id };
                 }
             });
 
             if (formValues) {
                 try {
-                    // 🚀 බැකෙන්ඩ් එකට tracking_id සහ courier_name දෙකම එකවර යවනවා මචං
-                    await api.put(`/orders/update-tracking/${order.order_id}`, 
-                        { 
-                            tracking_id: formValues.tracking_id,
-                            courier_name: formValues.courier_name 
-                        }, 
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
+                    await api.put(`/orders/update-tracking/${order.order_id}`, formValues, { headers: { Authorization: `Bearer ${token}` } });
+                    await api.put(`/orders/update-order-status/${order.order_id}`, { status: 'shipped' }, { headers: { Authorization: `Bearer ${token}` } });
                     
                     toast.success("Logistics Ledger Updated!");
-                    const updatedOrder = { 
-                        ...order, 
-                        tracking_id: formValues.tracking_id, 
-                        courier_name: formValues.courier_name 
-                    };
-                    setOrderToPrint(updatedOrder);
-                    setIsReadyToPrint(true);
+                    const updatedOrder = { ...order, tracking_id: formValues.tracking_id, courier_name: formValues.courier_name, order_status: 'shipped' };
+                    setOrderToPrint(updatedOrder); setIsReadyToPrint(true);
                     fetchOrders(false);
-                } catch (err) {
-                    toast.error("Failed to save logistics details.");
-                }
+                } catch (err) { toast.error("Failed to save logistics details."); }
             }
         } else {
-            setOrderToPrint(order);
-            setIsReadyToPrint(true);
+            setOrderToPrint(order); setIsReadyToPrint(true);
         }
     };
 
@@ -297,38 +253,28 @@ const LogisticsDashboard = () => {
         let html5QrcodeScanner = null;
         if (isScannerOpen) {
             const initScanner = () => {
-                html5QrcodeScanner = new window.Html5QrcodeScanner(
-                    "mehera-qr-reader", 
-                    { 
-                        fps: 30, 
-                        qrbox: { width: 250, height: 250 },
-                        videoConstraints: { facingMode: "environment" } 
-                    }, 
-                    false
-                );
+                html5QrcodeScanner = new window.Html5QrcodeScanner("mehera-qr-reader", { fps: 30, qrbox: { width: 250, height: 250 }, videoConstraints: { facingMode: "environment" } }, false);
                 html5QrcodeScanner.render(onScanSuccess, () => {});
             };
-
             if (!window.Html5QrcodeScanner) {
-                const script = document.createElement('script');
-                script.src = "https://unpkg.com/html5-qrcode";
-                script.async = true;
-                script.onload = initScanner;
-                document.body.appendChild(script);
-            } else {
-                initScanner();
-            }
+                const script = document.createElement('script'); script.src = "https://unpkg.com/html5-qrcode"; script.async = true; script.onload = initScanner; document.body.appendChild(script);
+            } else { initScanner(); }
         }
-        return () => {
-            if (html5QrcodeScanner) html5QrcodeScanner.clear().catch(e => console.error("Scanner clear error", e));
-        };
+        return () => { if (html5QrcodeScanner) html5QrcodeScanner.clear().catch(e => console.error(e)); };
     }, [isScannerOpen]);
 
+    // 📷 [🎯 ULTRA FIXED SCANNER DISPATCH ROUTER]: 
     const onScanSuccess = (decodedText) => {
         setIsScannerOpen(false);
         const orderExists = orders.find(o => o.order_id === decodedText);
+        
         if (orderExists) {
-            handleStatusUpdate(decodedText, 'shipped');
+            // 🚀 ඔයා ඉල්ලපු විදිහටම ඔන්ලයින් නම් Courier, සේල්ස් රෙප් නම් Delivery Person වෙන විදිහටම විතරක් මෙතනින් රූට් වෙනවා මචං!
+            if (orderExists.order_type === 'online') {
+                handleStatusUpdate(decodedText, 'handed_over');
+            } else {
+                handleStatusUpdate(decodedText, 'handed_over_delivery');
+            }
         } else {
             toast.error("Scanned Order is not in your Dispatch Queue!");
         }
@@ -339,65 +285,40 @@ const LogisticsDashboard = () => {
     const displayedOrders = activeTab === 'online' ? onlineOrders : offlineOrders;
 
     return (
-        <div className="w-full mx-auto animate-in fade-in duration-500 pb-10">
+        <div className="w-full mx-auto animate-in fade-in duration-500 pb-10 text-left">
             <style>{`
-                #mehera-qr-reader span, 
-                #mehera-qr-reader a {
-                    color: #ffffff !important;
-                    opacity: 0.6;
-                }
-                #mehera-qr-reader #qr-reader__status_message {
-                    color: #ffffff !important; 
-                    opacity: 1;
-                    font-weight: 700;
-                    font-size: 12px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.1em;
-                }
-                #mehera-qr-reader a[href='https://scanapp.org'] {
-                    display: none !important;
-                }
+                #mehera-qr-reader span, #mehera-qr-reader a { color: #ffffff !important; opacity: 0.6; }
+                #mehera-qr-reader #qr-reader__status_message { color: #ffffff !important; opacity: 1; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; }
+                #mehera-qr-reader a[href='https://scanapp.org'] { display: none !important; }
             `}</style>
             
-            {/* Header Section */}
+            {/* Header */}
             <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-serif text-textMain transition-colors duration-300 uppercase tracking-tight flex items-center gap-3">
-                        <div className="p-2 sm:p-3 bg-black text-primary transition-all duration-300 rounded-2xl shadow-xl"><Truck size={24} /></div>
-                        Logistics <span className="italic text-primary transition-all duration-300">Dispatch</span>
+                    <h1 className="text-2xl sm:text-3xl font-serif text-textMain uppercase tracking-tight flex items-center gap-3">
+                        <div className="p-2 sm:p-3 bg-black text-primary rounded-2xl shadow-xl"><Truck size={24} /></div>
+                        Logistics <span className="italic text-primary">Dispatch</span>
                     </h1>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-textMain/50 transition-colors duration-300 mt-2 italic ml-4 sm:ml-16">
-                        Manage & dispatch approved registry orders
-                    </p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-textMain/50 mt-2 italic ml-4 sm:ml-16">Manage & dispatch approved registry orders</p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-3 w-full md:w-auto mt-4 md:mt-0">
-                    <button onClick={handleBulkPrint} className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-3 bg-card text-textMain border border-border transition-all duration-300 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest shadow-sm hover:border-primary hover:text-primary">
-                        <Printer size={18} /> Bulk Print
-                    </button>
-                    <button onClick={() => setIsScannerOpen(true)} className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-3 bg-black text-primary border border-primary transition-all duration-300 rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest shadow-lg hover:bg-primary hover:text-black">
-                        <ScanLine size={18} /> Open Scanner
-                    </button>
-                    <button onClick={() => fetchOrders()} className="p-3.5 bg-card border border-border rounded-xl text-textMain/50 hover:text-primary transition-all shadow-sm shrink-0">
-                        <RefreshCw size={18} className={loading ? 'animate-spin text-primary' : ''} />
-                    </button>
+                    <button onClick={handleBulkPrint} className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-3 bg-card text-textMain border border-border rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest shadow-sm hover:border-primary hover:text-primary"><Printer size={18} /> Bulk Print</button>
+                    <button onClick={() => setIsScannerOpen(true)} className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-3 bg-black text-primary border border-primary rounded-xl font-black text-[10px] sm:text-[11px] uppercase tracking-widest shadow-lg hover:bg-primary hover:text-black"><ScanLine size={18} /> Open Scanner</button>
+                    <button onClick={() => fetchOrders()} className="p-3.5 bg-card border border-border rounded-xl text-textMain/50 hover:text-primary shadow-sm shrink-0"><RefreshCw size={18} className={loading ? 'animate-spin text-primary' : ''} /></button>
                 </div>
             </div>
 
             {/* Tabs Layer */}
-            <div className="flex flex-col sm:flex-row gap-2 bg-card p-1.5 rounded-2xl border border-border transition-colors duration-300 w-full shadow-sm mb-6">
-                <button onClick={() => setActiveTab('online')} className={`flex-1 flex justify-center items-center gap-2 px-4 py-3 text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all rounded-xl ${activeTab === 'online' ? 'bg-black text-primary shadow-lg' : 'text-textMain/50 hover:text-textMain'}`}>
-                    <Globe size={16} /> Online Orders <span className="ml-2 bg-primary/20 text-primary px-2 py-0.5 rounded-md">{onlineOrders.length}</span>
-                </button>
-                <button onClick={() => setActiveTab('offline')} className={`flex-1 flex justify-center items-center gap-2 px-4 py-3 text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all rounded-xl ${activeTab === 'offline' ? 'bg-black text-primary shadow-lg' : 'text-textMain/50 hover:text-textMain'}`}>
-                    <Store size={16} /> Offline/Retail Orders <span className="ml-2 bg-primary/20 text-primary px-2 py-0.5 rounded-md">{offlineOrders.length}</span>
-                </button>
+            <div className="flex flex-col sm:flex-row gap-2 bg-card p-1.5 rounded-2xl border border-border w-full shadow-sm mb-6">
+                <button onClick={() => setActiveTab('online')} className={`flex-1 flex justify-center items-center gap-2 px-4 py-3 text-[10px] sm:text-[11px] font-black uppercase tracking-widest rounded-xl ${activeTab === 'online' ? 'bg-black text-primary shadow-lg' : 'text-textMain/50 hover:text-textMain'}`}><Globe size={16} /> Online Orders <span className="ml-2 bg-primary/20 text-primary px-2 py-0.5 rounded-md">{onlineOrders.length}</span></button>
+                <button onClick={() => setActiveTab('offline')} className={`flex-1 flex justify-center items-center gap-2 px-4 py-3 text-[10px] sm:text-[11px] font-black uppercase tracking-widest rounded-xl ${activeTab === 'offline' ? 'bg-black text-primary shadow-lg' : 'text-textMain/50 hover:text-textMain'}`}><Store size={16} /> Offline/Retail Orders <span className="ml-2 bg-primary/20 text-primary px-2 py-0.5 rounded-md">{offlineOrders.length}</span></button>
             </div>
 
             {/* Orders Feed */}
             {loading ? (
                 <div className="py-24 flex flex-col items-center justify-center gap-4"><Loader2 className="animate-spin text-primary" size={40} /><p className="text-xs font-black uppercase tracking-widest text-textMain/50">Syncing Dispatch Queue...</p></div>
             ) : displayedOrders.length === 0 ? (
-                <div className="py-24 text-center border border-dashed border-border rounded-[2rem] bg-card/30"><Package className="mx-auto text-textMain/20 mb-4" size={48} /><h3 className="text-lg font-black text-textMain/50 uppercase tracking-widest">Queue is Clear</h3><p className="text-xs font-medium text-textMain/40 mt-1">No approved orders pending for dispatch in this channel.</p></div>
+                <div className="py-24 text-center border border-dashed border-border rounded-[2rem] bg-card/30"><Package className="mx-auto text-textMain/20 mb-4" size={48} /><h3 className="text-lg font-black text-textMain/50 uppercase tracking-widest">Queue is Clear</h3></div>
             ) : (
                 <div className="grid grid-cols-1 gap-6">
                     {displayedOrders.map(order => (
@@ -407,11 +328,9 @@ const LogisticsDashboard = () => {
                                     <p className="text-[10px] font-black uppercase tracking-widest text-textMain/50 mb-0.5">Dispatch Ref</p>
                                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                                         <p className="font-mono font-black text-primary text-base sm:text-lg leading-none">#{order.order_id.substring(0, 8).toUpperCase()}</p>
-                                        {order.tracking_id && (
-                                            <span className="text-[9px] font-black uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded-md border border-primary/20">
-                                                {order.courier_name || 'Courier'}: {order.tracking_id}
-                                            </span>
-                                        )}
+                                        <span className="text-[9px] font-black uppercase tracking-widest bg-card text-textMain/50 border border-border px-2 py-0.5 rounded">
+                                            Stage: {order.order_status.replace(/_/g, ' ')}
+                                        </span>
                                     </div>
                                 </div>
                                 <div className="text-left sm:text-right shrink-0">
@@ -419,6 +338,7 @@ const LogisticsDashboard = () => {
                                     <p className="font-bold text-textMain text-sm mt-0.5">{new Date(order.created_at).toLocaleDateString('en-GB')}</p>
                                 </div>
                             </div>
+                            
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
                                 <div className="flex flex-col space-y-3">
                                     <p className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-2"><User size={14}/> Destination Profile</p>
@@ -440,20 +360,59 @@ const LogisticsDashboard = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* 🕹️ ACTIONS HIGHWAY MATRIX PANEL */}
                             <div className="border-t border-border pt-5 flex flex-col sm:flex-row justify-between items-center gap-4">
                                 <p className="text-sm font-black text-textMain uppercase tracking-widest w-full sm:w-auto text-center sm:text-left">
                                     Net Value: <span className="text-primary text-lg sm:text-xl tracking-tighter ml-2 whitespace-nowrap">LKR {Number(order.total_amount).toLocaleString()}</span>
                                 </p>
-                                <button onClick={() => handlePrintQR(order)} className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-3.5 bg-primary text-black font-black text-[10px] sm:text-[11px] uppercase tracking-widest rounded-xl hover:bg-[#9a8b50] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#b4a460]/20 active:scale-95 shrink-0">
-                                    <Printer size={16}/> Print Label & QR
-                                </button>
+                                
+                                <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+                                    <button onClick={() => handlePrintQR(order)} className="w-full sm:w-auto px-5 py-3 bg-card text-textMain border border-border font-black text-[10px] sm:text-[11px] uppercase tracking-widest rounded-xl hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-2">
+                                        <Printer size={15}/> Print Label & QR
+                                    </button>
+
+                                    {/* 🔵 Online Orders: Stage 3 -> Stage 4 (Courier Handover) */}
+                                    {order.order_status === 'shipped' && order.order_type === 'online' && (
+                                        <button onClick={() => handleStatusUpdate(order.order_id, 'handed_over')} className="w-full sm:w-auto px-6 py-3 bg-black text-primary border border-primary/30 font-black text-[10px] sm:text-[11px] uppercase tracking-widest rounded-xl hover:bg-primary hover:text-black transition-all">
+                                            Hand over to Courier
+                                        </button>
+                                    )}
+
+                                    {/* 🟢 Offline / Sales Rep Orders: Stage 3 -> Stage 4 (Delivery Person Handover) */}
+                                    {order.order_status === 'shipped' && order.order_type !== 'online' && (
+                                        <button onClick={() => handleStatusUpdate(order.order_id, 'handed_over_delivery')} className="w-full sm:w-auto px-6 py-3 bg-black text-primary border border-primary/30 font-black text-[10px] sm:text-[11px] uppercase tracking-widest rounded-xl hover:bg-primary hover:text-black transition-all">
+                                            Hand over to Delivery Person
+                                        </button>
+                                    )}
+
+                                    {/* 🔵 Online Resolution Gateways */}
+                                    {order.order_status === 'handed_over' && order.order_type === 'online' && (
+                                        <div className="flex flex-wrap items-center gap-2 bg-background p-2 rounded-xl border border-border w-full sm:w-auto justify-center">
+                                            <span className="text-[9px] font-black uppercase text-textMain/40 px-1">Admin Resolution:</span>
+                                            <button onClick={() => handleStatusUpdate(order.order_id, 'delivered')} className="bg-green-500/10 text-green-500 border border-green-500/20 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 hover:bg-green-500 hover:text-white transition-all">
+                                                <CheckCircle size={12}/> Confirm Delivered
+                                            </button>
+                                            <button onClick={() => handleStatusUpdate(order.order_id, 'returned')} className="bg-red-500/10 text-red-500 border border-red-500/20 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 hover:bg-red-500 hover:text-white transition-all">
+                                                <AlertTriangle size={12}/> Mark Returned
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* 🟢 Offline / Sales Rep Resolution Gateway */}
+                                    {order.order_status === 'handed_over_delivery' && order.order_type !== 'online' && (
+                                        <button onClick={() => handleStatusUpdate(order.order_id, 'delivered')} className="w-full sm:w-auto px-6 py-3 bg-green-600 text-white font-black text-[10px] sm:text-[11px] uppercase tracking-widest rounded-xl hover:bg-green-700 transition-all flex items-center justify-center gap-2">
+                                            <CheckCircle size={15}/> Complete Delivery
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* Scanner Modal */}
+            {/* Scanner Modal Overlay */}
             {isScannerOpen && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
                     <div className="bg-card w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-border">
@@ -462,7 +421,7 @@ const LogisticsDashboard = () => {
                                 <div className="p-2 bg-primary/10 text-primary rounded-lg shrink-0"><QrCode size={20} /></div>
                                 <div>
                                     <h3 className="text-base font-black uppercase text-textMain tracking-tight">Scan Dispatch QR</h3>
-                                    <p className="text-[10px] font-bold text-textMain/50 uppercase tracking-widest">Scan label to mark as shipped</p>
+                                    <p className="text-[10px] font-bold text-textMain/50 uppercase tracking-widest">Automated Logistics Router Mode</p>
                                 </div>
                             </div>
                             <button onClick={() => setIsScannerOpen(false)} className="p-2 bg-card border border-border rounded-full text-textMain/50 hover:text-red-500 transition-all shrink-0"><X size={18} /></button>
@@ -471,14 +430,14 @@ const LogisticsDashboard = () => {
                             <div id="mehera-qr-reader" className="w-full rounded-2xl overflow-hidden border-2 border-primary/30 shadow-inner bg-black min-h-[300px]"></div>
                             <div className="mt-4 flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400">
                                 <Info size={16} className="shrink-0 mt-0.5" />
-                                <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed">Align the QR code from the printed shipping label within the frame. The order will automatically be marked as Shipped.</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed">Align the QR code from the printed shipping label within the frame. The system will auto-route the package status tracking ledger step.</p>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Hidden Print Component */}
+            {/* Hidden Print Container */}
             <div className="absolute -left-[9999px] top-0 opacity-0 pointer-events-none">
                 <div ref={printRef} className="print-label-container bg-white text-black p-6 flex flex-col items-center justify-start border-2 border-dashed border-black" style={{ width: '10cm', minHeight: '12cm', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact', boxSizing: 'border-box' }}>
                     {orderToPrint ? (
@@ -568,13 +527,14 @@ const LogisticsDashboard = () => {
                 </div>
             </div>
 
+            {/* 🎯 [THE FINAL LOGISTICS PRINT SEGREGATOR ENGINE]: සිංගල් සහ බල්ක් වෙන වෙනම ප්‍රින්ට් එකට ෆෝස් කරන ලොජික් එක */}
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
                     body * { visibility: hidden !important; }
-                    .print-label-container, .print-label-container * { visibility: visible !important; }
-                    .print-label-container { position: absolute !important; left: 0 !important; top: 0 !important; }
-                    .print-bulk-container, .print-bulk-container * { visibility: visible !important; }
-                    .print-bulk-container { position: absolute !important; left: 0 !important; top: 0 !important; }
+                    ${isBulkReadyToPrint ? 
+                      '.print-bulk-container, .print-bulk-container * { visibility: visible !important; } .print-bulk-container { position: absolute !important; left: 0 !important; top: 0 !important; width: 210mm !important; }' : 
+                      '.print-label-container, .print-label-container * { visibility: visible !important; } .print-label-container { position: absolute !important; left: 0 !important; top: 0 !important; width: 10cm !important; height: 12cm !important; }'
+                    }
                 }
             `}} />
         </div>
