@@ -183,7 +183,8 @@ const updateProduct = async (req, res) => {
         const parsedVariants = parseVariantsInput(variants);
 
         const product = await Product.findByPk(id, {
-            include: [{ model: ProductVariant, as: 'variants' }]
+            paranoid: false,
+            include: [{ model: ProductVariant, as: 'variants', paranoid: false }]
         });
 
         if (!product) {
@@ -195,6 +196,11 @@ const updateProduct = async (req, res) => {
         let imageCounter = 0;
 
         await sequelize.transaction(async (transaction) => {
+            if (status === 'active') {
+                await product.restore({ transaction });
+                await ProductVariant.restore({ where: { product_id: product.product_id }, transaction });
+            }
+
             await product.update({
                 product_name,
                 brand_id,
@@ -230,7 +236,11 @@ const updateProduct = async (req, res) => {
 
                 if (variantId && existingVariantMap.has(variantId)) {
                     submittedVariantIds.add(variantId);
-                    await existingVariantMap.get(variantId).update(payload, { transaction });
+                    const existingModel = existingVariantMap.get(variantId);
+                    if (existingModel.deletedAt) {
+                        await existingModel.restore({ transaction });
+                    }
+                    await existingModel.update(payload, { transaction });
                 } else {
                     await ProductVariant.create(payload, { transaction });
                 }
@@ -243,10 +253,11 @@ const updateProduct = async (req, res) => {
         });
 
         const updatedProduct = await Product.findByPk(id, {
+            paranoid: false,
             include: [
                 { model: Category, as: 'category' },
                 { model: Brand, as: 'brand' },
-                { model: ProductVariant, as: 'variants' }
+                { model: ProductVariant, as: 'variants', paranoid: false }
             ]
         });
 
@@ -268,7 +279,7 @@ const deleteProduct = async (req, res) => {
         const { id } = req.params;
 
         // Find the product by ID
-        const product = await Product.findByPk(id);
+        const product = await Product.findByPk(id, { paranoid: false });
 
         // If product not found, return 404
         if (!product) {
