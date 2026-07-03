@@ -549,7 +549,7 @@ export default function ProductDetail() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="bg-background p-4 rounded-2xl border border-border">
                       <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Status</p>
                       <select name="status" value={editForm.status} onChange={handleEditFieldChange} className="w-full bg-card text-textMain border border-border rounded-xl px-3 py-2 font-black uppercase text-[10px] tracking-widest outline-none focus:ring-2 focus:ring-primary/30">
@@ -574,10 +574,6 @@ export default function ProductDetail() {
                           <option key={brand.brand_id} value={brand.brand_id} className="bg-card text-textMain">{brand.brand_name}</option>
                         ))}
                       </select>
-                    </div>
-                    <div className="bg-background p-4 rounded-2xl border border-border">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Starting Price</p>
-                      <span className="text-lg font-serif italic text-primary">{firstVariantPrice > 0 ? `Rs. ${firstVariantPrice.toLocaleString()}` : "N/A"}</span>
                     </div>
                   </div>
 
@@ -744,7 +740,7 @@ export default function ProductDetail() {
                 <h2 className="text-2xl font-serif italic text-textMain leading-tight">{product.product_name}</h2>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-background p-4 rounded-2xl border border-border">
                   <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Status</p>
                   <span className={`text-[10px] font-black uppercase tracking-widest ${product.status === "active" ? "text-green-600" : "text-red-600"}`}>
@@ -754,10 +750,6 @@ export default function ProductDetail() {
                 <div className="bg-background p-4 rounded-2xl border border-border">
                   <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Category</p>
                   <span className="text-[11px] font-bold text-textMain uppercase">{product.category?.category_name || "-"}</span>
-                </div>
-                <div className="bg-background p-4 rounded-2xl border border-border">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Starting Price</p>
-                  <span className="text-lg font-serif italic text-primary">{firstVariantPrice > 0 ? `Rs. ${firstVariantPrice.toLocaleString()}` : "N/A"}</span>
                 </div>
                 <div className="bg-background p-4 rounded-2xl border border-border">
                   <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Total Network Stock</p>
