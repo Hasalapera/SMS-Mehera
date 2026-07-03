@@ -61,13 +61,17 @@ const addUserByAdmin = async (req, res) => {
 
             await transaction.commit();
 
-            const actorName = req.user?.name || 'An administrator';
+            let actorString = 'an administrator';
+            if (req.user && req.user.name && req.user.role) {
+                const roleFormatted = req.user.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                actorString = `${req.user.name} (${roleFormatted})`;
+            }
 
             // For the new user
             await createNotification(
                 'user',
                 'Welcome to Mehera!',
-                `Your account has been created by ${actorName}. Please check your email for login credentials.`,
+                `Your account has been created by ${actorString}. Please check your email for login credentials.`,
                 {
                     target_user_id: user.user_id,
                     severity: 'info',

@@ -54,14 +54,14 @@ const loginUser = async (req, res) => {
 
         // 🔑 ACCESS TOKEN (15 minutes)
         const accessToken = jwt.sign(
-            { user_id: user.user_id, role: user.role },
+            { user_id: user.user_id, role: user.role, name: user.name },
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
         );
 
         // 🔑 REFRESH TOKEN (7 days)
         const refreshToken = jwt.sign(
-            { user_id: user.user_id, role: user.role }, 
+            { user_id: user.user_id, role: user.role, name: user.name }, 
             process.env.REFRESH_TOKEN_SECRET,
             { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d' }
         );
@@ -134,7 +134,7 @@ const refreshAccessToken = async (req, res) => {
 
             // Generate new access token for relavent time limit
             const newAccessToken = jwt.sign(
-                { user_id: decoded.user_id, role: decoded.role },
+                { user_id: decoded.user_id, role: decoded.role, name: decoded.name },
                 process.env.JWT_SECRET,
                 { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
             );
