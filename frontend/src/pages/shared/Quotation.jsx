@@ -387,35 +387,52 @@ const Quotation = () => {
         dangerouslySetInnerHTML={{
           __html: `
         @media print {
-          @page { 
-            size: A4; 
-            margin: 0; 
+          @page {
+            size: A4 portrait;
+            margin: 0;
           }
-          /* 💡 FIX: Overrides global index.css rules that hide elements to prevent blank pages */
-          body * { visibility: visible !important; }
+
+          /* 1. Hide everything on the page by default */
+          body * {
+            visibility: hidden;
+          }
+
+          /* 2. Then, make the print container and everything inside it visible */
+          .quotation-container, .quotation-container * {
+            visibility: visible;
+          }
+
           html, body {
-            background: white !important; 
-            width: 100% !important;
-            margin: 0 !important; 
-            padding: 0 !important;
+            background: white !important;
             -webkit-print-color-adjust: exact;
+            width: 100% !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
           }
           .print\:hidden { display: none !important; }
 
           .quotation-container {
-            font-size: 16px !important; 
-            width: 100% !important;    
-            max-width: 100% !important;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100% !important;
             height: auto !important;
-            transform: none !important; 
+            min-height: 100%;
             margin: 0 !important;
             padding: 0 !important;
             box-shadow: none !important;
+            border: none !important;
             display: block !important;
             box-sizing: border-box !important;
+            transform: none !important;
+            font-size: 16px !important;
           }
 
-          tr { page-break-inside: avoid; }
+          tr {
+            page-break-inside: avoid;
+          }
         }
       `,
         }}
