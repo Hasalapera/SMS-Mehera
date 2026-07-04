@@ -13,7 +13,7 @@ import { useNotifications } from "../../context/NotificationContext";
 const AssignUser = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("accessToken");
-  const { setNotificationsFromAPI } = useNotifications();
+  const { refreshNotifications } = useNotifications();
   const districtsList = ["Colombo", "Gampaha", "Kalutara", "Kandy", "Matale", "Nuwara Eliya", "Galle", "Matara", "Hambantota", "Jaffna", "Kilinochchi", "Mannar", "Vavuniya", "Mullaitivu", "Batticaloa", "Ampara", "Trincomalee", "Kurunegala", "Puttalam", "Anuradhapura", "Polonnaruwa", "Badulla", "Moneragala", "Ratnapura", "Kegalle"];
   const [activePopover, setActivePopover] = useState(null);
 
@@ -94,13 +94,6 @@ const AssignUser = () => {
         setLoading(false);
       }
     }
-  };
-
-  const refreshNotifications = async () => {
-    const notificationRes = await api.get("/notifications", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setNotificationsFromAPI(notificationRes.data.notifications || []);
   };
 
   const toggleCustomerSelection = (customer) => {

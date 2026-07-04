@@ -23,7 +23,17 @@ const getVisibleNotificationWhere = async (user) => {
   const roleFilter = getRoleBasedFilter(user.role);
 
   if (user.role === 'admin' || user.role === 'manager') {
-    return registrationFilter;
+    return {
+      [Op.and]: [
+        registrationFilter,
+        {
+          [Op.or]: [
+            { target_user_id: null },
+            { target_user_id: user.user_id },
+          ],
+        },
+      ],
+    };
   }
 
   const clauses = [
