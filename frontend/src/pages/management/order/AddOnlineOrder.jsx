@@ -344,7 +344,7 @@ const AddOnlineOrder = () => {
             <input 
               type="number" 
               value={discount}
-              onChange={(e) => setDiscount(Math.min(100, Math.max(0, e.target.value)))}
+              onChange={(e) => setDiscount(Math.min(70, Math.max(0, e.target.value)))}
               placeholder="0"
               className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-2.5 md:py-3 pl-4 pr-10 text-sm font-black outline-none focus:ring-2 focus:ring-[#b4a460]/20 transition-all text-right shadow-sm"
             />

@@ -646,16 +646,20 @@ const ViewOrders = ({ showHeader = true }) => {
 
                         <td className="px-6 py-8 text-right relative">
                           <div className="flex items-center justify-end gap-3">
-                            <button 
-                              onClick={() => handleStartEdit(order)}
-                              className="p-2 text-textMain/50 transition-colors duration-300 hover:text-primary"
-                              title="Edit Order"
-                            >
-                              <Edit size={16} />
-                            </button>
-                            <button onClick={() => handleDeleteOrder(order.order_id)} className="p-2 text-textMain/50 transition-colors duration-300 hover:text-red-500" title="Delete Order">
-                              <Trash2 size={16} />
-                            </button>
+                            {(order.order_status === 'requested' || order.order_status === 'approved') && (
+                              <button 
+                                onClick={() => handleStartEdit(order)}
+                                className="p-2 text-textMain/50 transition-colors duration-300 hover:text-primary"
+                                title="Edit Order"
+                              >
+                                <Edit size={16} />
+                              </button>
+                            )}
+                            {order.order_status === 'requested' && (
+                              <button onClick={() => handleDeleteOrder(order.order_id)} className="p-2 text-textMain/50 transition-colors duration-300 hover:text-red-500" title="Delete Order">
+                                <Trash2 size={16} />
+                              </button>
+                            )}
                           </div>
                           <div className="absolute inset-x-0 bottom-1 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
                             <button
@@ -729,8 +733,12 @@ const ViewOrders = ({ showHeader = true }) => {
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => setSelectedOrder(order)} className="p-3 bg-card border border-border text-textMain/70 rounded-xl hover:text-primary hover:border-primary transition-all"><Search size={16} /></button>
-                    <button onClick={() => handleStartEdit(order)} className="p-3 bg-card border border-border text-textMain/70 rounded-xl hover:text-primary hover:border-primary transition-all"><Edit size={16} /></button>
-                    <button onClick={() => handleDeleteOrder(order.order_id)} className="p-3 bg-card border border-border text-textMain/70 rounded-xl hover:text-red-500 hover:border-red-500/50 transition-all"><Trash2 size={16} /></button>
+                    {(order.order_status === 'requested' || order.order_status === 'approved') && (
+                      <button onClick={() => handleStartEdit(order)} className="p-3 bg-card border border-border text-textMain/70 rounded-xl hover:text-primary hover:border-primary transition-all"><Edit size={16} /></button>
+                    )}
+                    {order.order_status === 'requested' && (
+                      <button onClick={() => handleDeleteOrder(order.order_id)} className="p-3 bg-card border border-border text-textMain/70 rounded-xl hover:text-red-500 hover:border-red-500/50 transition-all"><Trash2 size={16} /></button>
+                    )}
                   </div>
                 </div>
               </div>
