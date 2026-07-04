@@ -9,7 +9,6 @@ const AddUser = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-
   const { addNotification } = useNotifications();
 
   const isFromAssignUser = location.state?.from === '/assign-user'; // Check if navigated from AssignUser page
@@ -96,19 +95,6 @@ const handleDistrictChange = (district) => {
   setFormData({ ...formData, selectedDistricts: updated });
 };
 
-//save notification to DB
-const saveNotificationToDB = async (type, title, message, severity) => {
-  try {
-    const token = localStorage.getItem('accessToken');
-    await api.post('/notifications', 
-      { type, title, message, severity },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-  } catch (err) {
-    console.error('Failed to save notification:', err);
-  }
-};
-
 const handleSubmit = async (e) => {
   e.preventDefault();
 
@@ -174,21 +160,9 @@ const handleSubmit = async (e) => {
     
     if (response.status === 201) {
       toast.success(`User ${name} added successfully!`);
-
-      // Create notification
-      const currentUser = JSON.parse(localStorage.getItem('user'));
-      await saveNotificationToDB(
-        'user',
-        '👤 New User Registered',
-        `${name} (${email}) has been added as ${role.replace('_', ' ')} by ${currentUser?.name || 'Admin'}`,
-        'info'
-      );
-      addNotification({
-        type: 'user',
-        title: '👤 New User Registered',
-        message: `${name} (${email}) has been added as ${role.replace('_', ' ')} by ${currentUser?.name || 'Admin'}`,
-        severity: 'info'
-      });
+      if (response.data.notification) {
+        addNotification(response.data.notification);
+      }
 
       // setFormData({ 
       //   name: '', email: '', role: 'sales_rep', contact_no: '', 
