@@ -12,6 +12,8 @@ import api from '../../api/axiosInstance';
 import ReportMetrics from '../../components/ReportMetrics';
 import ReportTable from '../../components/ReportTable';
 import QuotationModal from '../../components/QuotationModal';
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas-pro";
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -310,6 +312,619 @@ const Dashboard = () => {
 
     fetchDashboardData();
   }, [period, customDates, compareType, compareDates, specificMonth, compareMonth, specificYear, compareYear]);
+
+  const waitForPaint = () =>
+    new Promise((resolve) => requestAnimationFrame(resolve));
+
+  const sleep = (ms) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+
+  const isMobilePrintDevice = () => {
+    return (
+      window.innerWidth < 768 ||
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    );
+  };
+
+  const prepareForPdfCapture = async (element) => {
+    if (!element) return;
+
+    await waitForPaint();
+    await sleep(250);
+
+    if (document.fonts) {
+      await document.fonts.ready;
+    }
+
+    const images = Array.from(element.querySelectorAll("img"));
+
+    await Promise.all(
+      images.map((img) => {
+        const src = img.getAttribute("src");
+        if (!src) return Promise.resolve();
+        if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
+
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      })
+    );
+  };
+
+  const downloadReportAsPdf = async (element, filename) => {
+    if (!element) {
+      toast.error("Report content not found.");
+      return;
+    }
+
+    const toastId = toast.loading("Generating PDF...");
+    let sandbox = null;
+
+    try {
+      const clonedElement = element.cloneNode(true);
+
+      sandbox = document.createElement("div");
+      sandbox.style.position = "fixed";
+      sandbox.style.left = "-10000px";
+      sandbox.style.top = "0";
+      sandbox.style.width = "1120px";
+      sandbox.style.background = "#ffffff";
+      sandbox.style.zIndex = "-9999";
+      sandbox.style.pointerEvents = "none";
+      sandbox.style.overflow = "visible";
+
+      const exportStyle = document.createElement("style");
+      exportStyle.textContent = `
+        .pdf-export-capture {
+          width: 1120px !important;
+          max-width: 1120px !important;
+          min-height: 0 !important;
+          height: auto !important;
+          overflow: visible !important;
+          transform: none !important;
+          background: #ffffff !important;
+          color: #111111 !important;
+          box-sizing: border-box !important;
+          font-size: 16px !important;
+        }
+
+        .pdf-export-capture * {
+          box-sizing: border-box !important;
+        }
+
+        .pdf-export-capture .report-pagination-controls,
+        .pdf-export-capture .report-order-modal,
+        .pdf-export-capture [data-export-hide="true"] {
+          display: none !important;
+          visibility: hidden !important;
+          height: 0 !important;
+          overflow: hidden !important;
+        }
+
+        .pdf-export-capture .report-table-mobile {
+          display: none !important;
+        }
+
+        .pdf-export-capture .report-table-desktop {
+          display: block !important;
+          overflow: visible !important;
+          width: 100% !important;
+        }
+
+        .pdf-export-capture .mehera-table-print-fix,
+        .pdf-export-capture .custom-scrollbar {
+          overflow: visible !important;
+          max-height: none !important;
+        }
+
+        .pdf-export-capture table.report-data-table {
+          width: 100% !important;
+          table-layout: fixed !important;
+          border-collapse: collapse !important;
+          border-spacing: 0 !important;
+        }
+
+        .pdf-export-capture thead {
+          display: table-header-group !important;
+        }
+
+        .pdf-export-capture tbody {
+          display: table-row-group !important;
+        }
+
+        .pdf-export-capture .report-table-row,
+        .pdf-export-capture tbody tr,
+        .pdf-export-capture .hidden.print\\:table-row {
+          display: table-row !important;
+          break-inside: avoid !important;
+          page-break-inside: avoid !important;
+        }
+
+        .pdf-export-capture th {
+          background: #ffffff !important;
+          color: #777777 !important;
+          border-bottom: 1px solid #e5e7eb !important;
+          padding: 14px 10px !important;
+          font-size: 10px !important;
+          font-weight: 900 !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.16em !important;
+          white-space: normal !important;
+        }
+
+        .pdf-export-capture td {
+          background: #ffffff !important;
+          color: #111111 !important;
+          border-bottom: 1px solid #e5e7eb !important;
+          border-top: 0 !important;
+          border-left: 0 !important;
+          border-right: 0 !important;
+          border-radius: 0 !important;
+          padding: 16px 10px !important;
+          font-size: 12px !important;
+          vertical-align: middle !important;
+          overflow: visible !important;
+        }
+
+        .pdf-export-capture th:nth-child(1),
+        .pdf-export-capture td:nth-child(1) {
+          width: 19% !important;
+        }
+
+        .pdf-export-capture th:nth-child(2),
+        .pdf-export-capture td:nth-child(2) {
+          width: 24% !important;
+        }
+
+        .pdf-export-capture th:nth-child(3),
+        .pdf-export-capture td:nth-child(3) {
+          width: 18% !important;
+        }
+
+        .pdf-export-capture th:nth-child(4),
+        .pdf-export-capture td:nth-child(4) {
+          width: 27% !important;
+        }
+
+        .pdf-export-capture th:nth-child(5),
+        .pdf-export-capture td:nth-child(5) {
+          width: 12% !important;
+          text-align: right !important;
+        }
+
+        .pdf-export-capture td p,
+        .pdf-export-capture td span,
+        .pdf-export-capture td div {
+          overflow: visible !important;
+          white-space: normal !important;
+          text-overflow: clip !important;
+          max-width: none !important;
+        }
+
+        .pdf-export-capture td:nth-child(4) > div {
+          display: block !important;
+        }
+
+        .pdf-export-capture td:nth-child(4) > div > div {
+          display: grid !important;
+          grid-template-columns: 1fr 35px !important;
+          gap: 8px !important;
+          align-items: start !important;
+          background: transparent !important;
+          border: 0 !important;
+          padding: 0 0 4px 0 !important;
+          margin: 0 !important;
+        }
+
+        .pdf-export-capture td:nth-child(4) span {
+          font-size: 11px !important;
+          line-height: 1.35 !important;
+        }
+
+        .pdf-export-capture td:nth-child(5) {
+          font-size: 13px !important;
+          font-weight: 900 !important;
+          white-space: nowrap !important;
+        }
+      `;
+
+      clonedElement.classList.add("pdf-export-capture");
+
+      clonedElement.style.width = "1120px";
+      clonedElement.style.maxWidth = "1120px";
+      clonedElement.style.minHeight = "0";
+      clonedElement.style.height = "auto";
+      clonedElement.style.fontSize = "16px";
+      clonedElement.style.transform = "none";
+      clonedElement.style.background = "#ffffff";
+      clonedElement.style.overflow = "visible";
+
+      sandbox.appendChild(exportStyle);
+      sandbox.appendChild(clonedElement);
+      document.body.appendChild(sandbox);
+
+      // Remove pagination/modal/mobile cards from PDF clone
+      clonedElement
+        .querySelectorAll(
+          ".report-pagination-controls, .report-order-modal, [data-export-hide='true']"
+        )
+        .forEach((el) => el.remove());
+
+      clonedElement
+        .querySelectorAll(".report-table-mobile")
+        .forEach((el) => el.remove());
+
+      // Force desktop table layout for mobile PDF
+      clonedElement.querySelectorAll(".report-table-desktop").forEach((el) => {
+        el.style.setProperty("display", "block", "important");
+        el.style.setProperty("overflow", "visible", "important");
+        el.style.setProperty("width", "100%", "important");
+      });
+
+      // Force all rows visible for export
+      clonedElement.querySelectorAll("tbody tr").forEach((row) => {
+        row.classList.remove("hidden");
+        row.classList.add("report-table-row");
+        row.setAttribute("data-pdf-row", "true");
+        row.style.setProperty("display", "table-row", "important");
+        row.style.setProperty("break-inside", "avoid", "important");
+        row.style.setProperty("page-break-inside", "avoid", "important");
+      });
+
+      // Remove old desktop print footer from captured DOM
+      clonedElement.querySelectorAll("*").forEach((el) => {
+        const className = String(el.className || "");
+
+        if (
+          className.includes("print:block") &&
+          className.includes("fixed") &&
+          className.includes("bottom-0")
+        ) {
+          el.remove();
+        }
+
+        if (
+          className.includes("print:block") &&
+          className.includes("h-[200px]")
+        ) {
+          el.remove();
+        }
+      });
+
+      await prepareForPdfCapture(clonedElement);
+      await sleep(300);
+
+      const rootRect = clonedElement.getBoundingClientRect();
+
+      let contentBottom = 0;
+
+      clonedElement.querySelectorAll("*").forEach((el) => {
+        const style = window.getComputedStyle(el);
+
+        if (style.display === "none" || style.visibility === "hidden") return;
+
+        const rect = el.getBoundingClientRect();
+
+        if (rect.width <= 0 || rect.height <= 0) return;
+
+        contentBottom = Math.max(contentBottom, rect.bottom - rootRect.top);
+      });
+
+      const captureHeightCss = Math.ceil(contentBottom + 8);
+      clonedElement.style.height = `${captureHeightCss}px`;
+
+      const canvas = await html2canvas(clonedElement, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+        width: 1120,
+        windowWidth: 1120,
+        height: captureHeightCss,
+        windowHeight: captureHeightCss,
+        scrollX: 0,
+        scrollY: 0,
+        foreignObjectRendering: false,
+      });
+
+      if (!canvas || canvas.width === 0 || canvas.height === 0) {
+        throw new Error("Empty canvas generated.");
+      }
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "a4",
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const pageCanvasHeight = Math.floor((pdfHeight * canvas.width) / pdfWidth);
+      const cssToCanvasScale = canvas.width / rootRect.width;
+
+      const finalFooterReservedPt = 120;
+      const finalPageImageMaxHeight = pdfHeight - finalFooterReservedPt;
+
+      const safetyGap = Math.floor(18 * cssToCanvasScale);
+      const minProgress = Math.floor(pageCanvasHeight * 0.35);
+
+      const rowBoxes = Array.from(
+        clonedElement.querySelectorAll("[data-pdf-row='true']")
+      )
+        .map((row) => {
+          const rect = row.getBoundingClientRect();
+
+          return {
+            top: Math.max(
+              0,
+              Math.floor((rect.top - rootRect.top) * cssToCanvasScale)
+            ),
+            bottom: Math.min(
+              canvas.height,
+              Math.ceil((rect.bottom - rootRect.top) * cssToCanvasScale)
+            ),
+          };
+        })
+        .filter((box) => box.bottom > box.top + 2);
+
+      // Check whether a canvas slice is completely blank/white.
+      // This prevents blank middle pages.
+      const isBlankSlice = (sourceY, sourceHeight) => {
+        if (sourceHeight <= 20) return true;
+
+        const sampleCanvas = document.createElement("canvas");
+        const sampleWidth = 80;
+        const sampleHeight = Math.min(120, Math.max(20, Math.floor(sourceHeight / 12)));
+
+        sampleCanvas.width = sampleWidth;
+        sampleCanvas.height = sampleHeight;
+
+        const sampleCtx = sampleCanvas.getContext("2d", { willReadFrequently: true });
+
+        sampleCtx.fillStyle = "#ffffff";
+        sampleCtx.fillRect(0, 0, sampleWidth, sampleHeight);
+
+        sampleCtx.drawImage(
+          canvas,
+          0,
+          sourceY,
+          canvas.width,
+          sourceHeight,
+          0,
+          0,
+          sampleWidth,
+          sampleHeight
+        );
+
+        const pixels = sampleCtx.getImageData(0, 0, sampleWidth, sampleHeight).data;
+
+        let nonWhitePixels = 0;
+        const totalPixels = sampleWidth * sampleHeight;
+
+        for (let i = 0; i < pixels.length; i += 4) {
+          const r = pixels[i];
+          const g = pixels[i + 1];
+          const b = pixels[i + 2];
+          const a = pixels[i + 3];
+
+          if (a > 20 && (r < 245 || g < 245 || b < 245)) {
+            nonWhitePixels++;
+          }
+        }
+
+        return nonWhitePixels / totalPixels < 0.002;
+      };
+
+      const addSlice = (
+        sourceY,
+        sourceHeight,
+        isFirstPage,
+        maxPdfImageHeight = null,
+        allowBlank = false
+      ) => {
+        if (sourceHeight <= 20) return false;
+
+        if (!allowBlank && isBlankSlice(sourceY, sourceHeight)) {
+          return false;
+        }
+
+        const sliceCanvas = document.createElement("canvas");
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = sourceHeight;
+
+        const ctx = sliceCanvas.getContext("2d");
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+
+        ctx.drawImage(
+          canvas,
+          0,
+          sourceY,
+          canvas.width,
+          sourceHeight,
+          0,
+          0,
+          canvas.width,
+          sourceHeight
+        );
+
+        if (!isFirstPage) {
+          pdf.addPage();
+        }
+
+        const imgData = sliceCanvas.toDataURL("image/png");
+        const naturalImgHeight = (sourceHeight * pdfWidth) / canvas.width;
+
+        const imgHeight = maxPdfImageHeight
+          ? Math.min(naturalImgHeight, maxPdfImageHeight)
+          : naturalImgHeight;
+
+        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, imgHeight);
+
+        return true;
+      };
+
+      const drawFinalFooter = () => {
+        pdf.setPage(pdf.getNumberOfPages());
+
+        const blackFooterHeight = 34;
+        const signatureAreaHeight = 82;
+
+        const blackY = pdfHeight - blackFooterHeight;
+        const signatureY = blackY - signatureAreaHeight;
+
+        const marginX = 36;
+        const gap = 45;
+        const lineWidth = (pdfWidth - marginX * 2 - gap) / 2;
+
+        const leftX = marginX;
+        const rightX = marginX + lineWidth + gap;
+
+        const lineY = signatureY + 38;
+        const labelY = lineY + 15;
+
+        // White signature area
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(0, signatureY, pdfWidth, signatureAreaHeight, "F");
+
+        // Light top border
+        pdf.setDrawColor(230, 230, 230);
+        pdf.setLineWidth(0.5);
+        pdf.line(0, signatureY, pdfWidth, signatureY);
+
+        // Signature lines
+        pdf.setDrawColor(17, 17, 17);
+        pdf.setLineWidth(1.1);
+
+        pdf.line(leftX, lineY, leftX + lineWidth, lineY);
+        pdf.line(rightX, lineY, rightX + lineWidth, lineY);
+
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(7);
+        pdf.setTextColor(17, 17, 17);
+
+        pdf.text("MANAGER'S SIGNATURE", leftX + lineWidth / 2, labelY, {
+          align: "center",
+        });
+
+        pdf.text("AUTHORIZED SIGNATURE", rightX + lineWidth / 2, labelY, {
+          align: "center",
+        });
+
+        // Black footer
+        pdf.setFillColor(0, 0, 0);
+        pdf.rect(0, blackY, pdfWidth, blackFooterHeight, "F");
+
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(6);
+        pdf.setTextColor(90, 95, 105);
+
+        pdf.text(
+          `C L O U D   R E G I S T R Y   S Y S T E M   •   M E H E R A   I N T E R N A T I O N A L   •   ${new Date().getFullYear()}`,
+          pdfWidth / 2,
+          blackY + 21,
+          { align: "center" }
+        );
+      };
+
+      const findSafeEndY = (startY, desiredEndY) => {
+        let endY = Math.min(desiredEndY, canvas.height);
+
+        const crossingRow = rowBoxes.find(
+          (box) => box.top < endY - safetyGap && box.bottom > endY - safetyGap
+        );
+
+        if (crossingRow && crossingRow.top > startY + minProgress) {
+          endY = Math.max(startY + 1, crossingRow.top - safetyGap);
+        }
+
+        if (endY <= startY + 30) {
+          endY = Math.min(startY + pageCanvasHeight, canvas.height);
+        }
+
+        return endY;
+      };
+
+      let startY = 0;
+      let isFirstPage = true;
+      let footerDrawn = false;
+
+      while (startY < canvas.height - 2) {
+        const remaining = canvas.height - startY;
+
+        // Final page:
+        // Put the remaining content above footer area.
+        // If remaining is slightly taller, image is scaled down a little to avoid footer overlap.
+        if (remaining <= pageCanvasHeight) {
+          const added = addSlice(
+            startY,
+            remaining,
+            isFirstPage,
+            finalPageImageMaxHeight
+          );
+
+          if (added) {
+            drawFinalFooter();
+            footerDrawn = true;
+            isFirstPage = false;
+          } else if (!footerDrawn && pdf.getNumberOfPages() > 0) {
+            drawFinalFooter();
+            footerDrawn = true;
+          }
+
+          startY = canvas.height;
+          break;
+        }
+
+        let desiredEndY = startY + pageCanvasHeight;
+        let endY = findSafeEndY(startY, desiredEndY);
+
+        // Prevent blank middle pages
+        const sliceHeight = endY - startY;
+
+        if (sliceHeight <= 30 || isBlankSlice(startY, sliceHeight)) {
+          startY = endY;
+          continue;
+        }
+
+        const added = addSlice(startY, sliceHeight, isFirstPage);
+
+        if (added) {
+          isFirstPage = false;
+        }
+
+        startY = endY;
+      }
+
+      // Edge case fallback
+      if (!footerDrawn) {
+        drawFinalFooter();
+      }
+
+      pdf.save(filename);
+
+      toast.success("PDF downloaded successfully!", { id: toastId });
+    } catch (error) {
+      console.error("Mobile PDF generation failed:", error);
+      toast.error("Failed to generate PDF.", { id: toastId });
+    } finally {
+      if (sandbox) {
+        document.body.removeChild(sandbox);
+      }
+    }
+  };
+
+  const handleSmartReportDownload = async (ref, desktopPrintFn, filename) => {
+    if (isMobilePrintDevice()) {
+      await downloadReportAsPdf(ref.current, filename);
+    } else {
+      desktopPrintFn();
+    }
+  };
 
   // --- Print Handlers ---
   // ⚠️ මේවා Hooks (`useReactToPrint`) නිසා අනිවාර්යයෙන්ම return එකකට කලින් උඩින්ම තියෙන්න ඕනේ.
@@ -804,7 +1419,13 @@ const Dashboard = () => {
               <button onClick={handleDownloadCSV} className="flex items-center justify-center gap-2 bg-[#2ca01c] text-white px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-[#2ca01c]/20 hover:bg-[#238016] transition-all">
                 <FileSpreadsheet size={14} /> QB CSV
               </button>
-              <button onClick={handlePrintSalesLedger} className="flex items-center justify-center gap-2 bg-primary text-black px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-[#b4a460]/20 hover:bg-[#9a8b50] transition-all">
+              <button onClick={() =>
+                  handleSmartReportDownload(
+                    salesLedgerPrintRef,
+                    handlePrintSalesLedger,
+                    `SalesReport_${period}_${dateStamp}.pdf`
+                  )
+                } className="flex items-center justify-center gap-2 bg-primary text-black px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-[#b4a460]/20 hover:bg-[#9a8b50] transition-all">
                 <FileDown size={14} /> PDF
               </button>
               <button onClick={() => setIsQuotationOpen(true)} className="col-span-2 md:col-auto flex items-center justify-center gap-2 bg-black text-primary px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg border border-primary/30 hover:border-primary transition-all">
@@ -941,10 +1562,22 @@ const Dashboard = () => {
 
           {/* Comparison Export Buttons */}
           <div className="flex flex-wrap items-center gap-3 lg:ml-auto lg:border-l border-border lg:pl-4">
-             <button onClick={handlePrintSales} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-primary border border-primary transition-all duration-300 rounded-lg font-black text-[10px] uppercase tracking-widest shadow-md hover:bg-primary hover:text-black w-full sm:w-auto">
+             <button onClick={() =>
+    handleSmartReportDownload(
+      salesPrintRef,
+      handlePrintSales,
+      `SalesReport_${period}_${dateStamp}.pdf`
+    )
+  } className="flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-primary border border-primary transition-all duration-300 rounded-lg font-black text-[10px] uppercase tracking-widest shadow-md hover:bg-primary hover:text-black w-full sm:w-auto">
                <FileText size={14} /> Sales Comparison
              </button>
-             <button onClick={handlePrintOrders} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-card text-textMain border border-border transition-all duration-300 rounded-lg font-black text-[10px] uppercase tracking-widest shadow-sm hover:border-primary hover:text-primary w-full sm:w-auto">
+             <button onClick={() =>
+    handleSmartReportDownload(
+      ordersPrintRef,
+      handlePrintOrders,
+      `OrdersReport_${period}_${dateStamp}.pdf`
+    )
+  } className="flex items-center justify-center gap-2 px-4 py-2.5 bg-card text-textMain border border-border transition-all duration-300 rounded-lg font-black text-[10px] uppercase tracking-widest shadow-sm hover:border-primary hover:text-primary w-full sm:w-auto">
                <FileText size={14} /> Order Comparison
              </button>
           </div>
@@ -1029,7 +1662,13 @@ const Dashboard = () => {
             <div className="flex justify-between items-center mb-8 border-b border-border pb-4">
               <h4 className="text-sm font-bold text-textMain">Trending Products</h4>
               <div className="flex items-center gap-4">
-                 <button onClick={handlePrintTrending} className="text-[10px] uppercase font-bold text-textMain/50 hover:text-primary transition-colors flex items-center gap-1"><Printer size={14}/> Export</button>
+                 <button onClick={() =>
+    handleSmartReportDownload(
+      trendingPrintRef,
+      handlePrintTrending,
+      `TrendingProducts_${period}_${dateStamp}.pdf`
+    )
+  } className="text-[10px] uppercase font-bold text-textMain/50 hover:text-primary transition-colors flex items-center gap-1"><Printer size={14}/> Export</button>
                  <button onClick={() => navigate('/product-summary')} className="text-[10px] uppercase font-bold text-primary hover:underline">View All</button>
               </div>
             </div>
@@ -1072,7 +1711,13 @@ const Dashboard = () => {
           <div className="flex justify-between items-center mb-8 border-b border-border pb-4">
             <h4 className="text-sm font-bold text-textMain">Top Performers</h4>
             <div className="flex items-center gap-4">
-                 <button onClick={handlePrintPerformers} className="text-[10px] uppercase font-bold text-textMain/50 hover:text-primary transition-colors flex items-center gap-1"><Printer size={14}/> Export</button>
+                 <button onClick={() =>
+    handleSmartReportDownload(
+      performersPrintRef,
+      handlePrintPerformers,
+      `TopPerformers_${period}_${dateStamp}.pdf`
+    )
+  } className="text-[10px] uppercase font-bold text-textMain/50 hover:text-primary transition-colors flex items-center gap-1"><Printer size={14}/> Export</button>
                  <button onClick={() => navigate('/rep-ranking')} className="text-[10px] uppercase font-bold text-primary hover:underline flex items-center gap-1">Leaderboard <ArrowRight size={12}/></button>
             </div>
           </div>
@@ -1395,7 +2040,7 @@ const Dashboard = () => {
                   <ReportMetrics orders={ordersForExport} token={localStorage.getItem('accessToken')} />
                   {ordersForExport.length > 0 ? (
                     <div className="mehera-table-print-fix">
-                      <ReportTable orders={ordersForExport} />
+                      <ReportTable orders={ordersForExport} exportMode />
                     </div>
                   ) : (
                     <div className="py-[3rem] text-center text-gray-400 font-bold italic text-[0.875rem] uppercase">

@@ -101,3 +101,222 @@ body {
     display: none;
   }
 }
+
+/* --- Mehera Luxury SweetAlert Theme --- */
+
+.mehera-swal-container {
+  backdrop-filter: blur(6px) !important;
+}
+
+.swal2-container.swal2-backdrop-show {
+  background: rgba(0, 0, 0, 0.45) !important;
+}
+
+.mehera-swal-popup {
+  width: auto !important;
+  max-width: calc(100vw - 1rem) !important;
+  border-radius: 2rem !important;
+  padding: 1.5rem !important;
+
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--theme-primary) 14%, transparent), transparent 35%),
+    var(--theme-card) !important;
+
+  color: var(--theme-text) !important;
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 30%, var(--theme-border)) !important;
+
+  box-shadow:
+    0 30px 80px -20px rgba(0, 0, 0, 0.35),
+    0 0 0 1px color-mix(in srgb, var(--theme-primary) 10%, transparent) !important;
+
+  overflow: hidden !important;
+}
+
+/* Gold top line */
+.mehera-swal-popup::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--theme-primary),
+    transparent
+  );
+}
+
+/* Icon */
+.mehera-swal-popup .swal2-icon {
+  margin-top: 1.25rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.mehera-swal-popup .swal2-icon.swal2-warning {
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+}
+
+.mehera-swal-popup .swal2-icon.swal2-success {
+  border-color: var(--theme-primary) !important;
+  color: var(--theme-primary) !important;
+}
+
+.mehera-swal-title {
+  font-family: serif !important;
+  font-style: italic !important;
+  font-size: 1.55rem !important;
+  line-height: 1.15 !important;
+  color: var(--theme-text) !important;
+  letter-spacing: -0.035em !important;
+  padding-inline: 0.25rem !important;
+}
+
+.mehera-swal-html {
+  margin-top: 1rem !important;
+  font-size: 0.9rem !important;
+  line-height: 1.65 !important;
+  color: color-mix(in srgb, var(--theme-text) 68%, transparent) !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+/* Button wrapper */
+.mehera-swal-actions {
+  width: 100% !important;
+  margin-top: 2rem !important;
+
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 1.1rem !important;
+
+  padding: 0 !important;
+}
+
+/* Common buttons */
+.mehera-swal-confirm,
+.mehera-swal-cancel,
+.mehera-swal-delete-confirm {
+  width: 100% !important;
+  min-width: 0 !important;
+
+  border-radius: 0.95rem !important;
+  padding: 0.95rem 2rem !important;
+
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.18em !important;
+
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease !important;
+}
+
+/* Main confirm - black + gold */
+.mehera-swal-confirm {
+  background: #000000 !important;
+  color: var(--theme-primary) !important;
+  border: 1px solid color-mix(in srgb, var(--theme-primary) 55%, #000000) !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22) !important;
+}
+
+.mehera-swal-confirm:hover {
+  transform: scale(1.025) !important;
+  background: var(--theme-primary) !important;
+  color: #000000 !important;
+  border-color: var(--theme-primary) !important;
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--theme-primary) 30%, transparent) !important;
+}
+
+/* Cancel - soft outline */
+.mehera-swal-cancel {
+  background: var(--theme-card) !important;
+  color: color-mix(in srgb, var(--theme-text) 65%, transparent) !important;
+  border: 1px solid var(--theme-border) !important;
+}
+
+.mehera-swal-cancel:hover {
+  background: var(--theme-bg) !important;
+  color: var(--theme-text) !important;
+  border-color: color-mix(in srgb, var(--theme-primary) 50%, var(--theme-border)) !important;
+  transform: scale(1.015) !important;
+}
+
+/* Delete confirm - red but still premium */
+.mehera-swal-delete-confirm {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border: 1px solid #ef4444 !important;
+  box-shadow: 0 18px 40px rgba(239, 68, 68, 0.25) !important;
+}
+
+.mehera-swal-delete-confirm:hover {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  transform: scale(1.025) !important;
+}
+
+/* Input */
+.mehera-swal-input {
+  width: 100% !important;
+  border-radius: 0.95rem !important;
+  border: 1px solid var(--theme-border) !important;
+  background: var(--theme-bg) !important;
+  color: var(--theme-text) !important;
+  padding: 0.85rem 1rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  outline: none !important;
+}
+
+.mehera-swal-input:focus {
+  border-color: var(--theme-primary) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--theme-primary) 18%, transparent) !important;
+}
+
+/* Tablet / Desktop */
+@media (min-width: 640px) {
+  .mehera-swal-popup {
+    max-width: 34rem !important;
+    padding: 2.25rem !important;
+    border-radius: 2.5rem !important;
+  }
+
+  .mehera-swal-title {
+    font-size: 2rem !important;
+  }
+
+  .mehera-swal-html {
+    font-size: 1rem !important;
+  }
+
+  .mehera-swal-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+
+    gap: 3.5rem !important;
+    padding-inline: 1.5rem !important;
+  }
+
+  .mehera-swal-confirm,
+  .mehera-swal-cancel,
+  .mehera-swal-delete-confirm {
+    width: auto !important;
+    min-width: 155px !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .mehera-swal-popup {
+    padding: 2.75rem !important;
+  }
+
+  .mehera-swal-actions {
+    gap: 4rem !important;
+  }
+}

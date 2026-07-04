@@ -46,7 +46,7 @@ const AddOrder = () => {
         setCart([]);
       }
     } catch (error) {
-      console.error("දත්ත කියවීමේදී දෝෂයක්:", error);
+      console.error("Error reading data:", error);
     }
   };
 
