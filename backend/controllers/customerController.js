@@ -127,7 +127,7 @@ const addNote = async (req, res) => {
             return res.status(404).json({ error: 'Customer not found' });
         }
 
-        const note = await CustomerNote.create({
+        const note = await CustomerNote.create({ 
             customer_id: id,
             note_text: note_text.trim(),
             tag: tag || 'general',
@@ -298,7 +298,7 @@ const assignSalesRep = async (req, res) => {
             }
         );
 
-        const assignerName = req.user?.name || 'An administrator';
+        const assignerName = req.user?.name || 'An administrator'; // Get the name of the user who initiated the assignment
         await createNotification(
             'customer',
             `Customers Assigned to ${salesRep.name}`,
