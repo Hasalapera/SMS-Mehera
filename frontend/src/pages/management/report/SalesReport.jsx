@@ -92,52 +92,379 @@ const SalesReport = () => {
     return () => window.removeEventListener("resize", handleFontScale);
   }, [orders]);
 
-  // 📊 QuickBooks (QB) CSV Export Generator
+  // --- QuickBooks IIF Export Logic ---
+  // Keep the same Export QB button/function name, but download QuickBooks Desktop 2018 .iif file.
+  const QB_REF = {
+    txnType: 'INVOICE',
+    arAccount: 'Accounts Receivable',
+    salesAccount: 'Sale of Cosmetics',
+    discountAccount: 'Customers Discount',
+    deliveryAccount: 'Sale of Cosmetics',
+    roundingAccount: 'Other Income',
+    inventoryAssetAccount: 'Inventory Asset',
+    cogsAccount: 'Cost of Goods Sold',
+    deliveryItem: 'Delivery',
+    defaultDiscountItem: 'Discount 10%',
+    discountItems: {
+      5: 'Discount 5%',
+      10: 'Discount 10%',
+      25: 'Discount 25%',
+    },
+    roundingItem: 'ROU',
+    taxCode: 'Tax',
+    nonTaxCode: 'Non',
+    terms: {
+      online: 'Online transfer',
+      cod: 'Cash On Deivery', // spelling exactly as found in client's QB IIF
+      cash: 'Cash and credit',
+      credit: 'Credit',
+    },
+    paymentMethods: {
+      online: 'ONLINE',
+      cash: 'Cash',
+      bank: 'Bank dep',
+      cheque: 'Check',
+    },
+    shipMethods: {
+      pronto: 'PRONTO',
+      dhl: 'DHL',
+      pickup: 'PICKUP',
+      bus: 'BUS',
+      pickme: 'PICKME',
+      defaultOnline: 'COURIER-FDE',
+      defaultOffline: 'Delivered',
+    },
+    classes: {
+      cosmetics1: 'COS-1',
+      cosmetics2: 'COS-2',
+      kaaral1: 'KAARAL01',
+      kaaral2: 'KAARAL 02',
+      kaaral3: 'KAARAL 03',
+      studio17: 'STUDIO 17',
+    }
+  };
+
+  const toMoney = (value) => {
+    const num = Number(value || 0);
+    return Number.isFinite(num) ? num.toFixed(2) : '0.00';
+  };
+
+  const toQty = (value) => {
+    const num = Number(value || 0);
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  const formatQBDate = (value) => {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    // QuickBooks Desktop IIF commonly accepts MM/DD/YYYY.
+    return `${mm}/${dd}/${yyyy}`;
+  };
+
+  const addDays = (value, days) => {
+    const d = new Date(value || new Date());
+    d.setDate(d.getDate() + days);
+    return d;
+  };
+
+  const cleanName = (value, fallback = '') => {
+    const cleaned = String(value || '').replace(/\s+/g, ' ').trim();
+    return cleaned || fallback;
+  };
+
+  const iifClean = (value) => {
+    if (value === null || value === undefined) return '';
+    return String(value)
+      .replace(/\t/g, ' ')
+      .replace(/\r?\n|\r/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  const pushIifRow = (rows, row) => {
+    rows.push(row.map(iifClean).join('\t'));
+  };
+
+  const getCustomerName = (order) => {
+    // Prefer QB-specific name if the backend later provides it.
+    return cleanName(
+      order.customer?.qb_name ||
+      order.customer?.quickbooks_name ||
+      order.customer?.saloon_name ||
+      order.customer_name ||
+      order.customer?.name,
+      'Direct Customer'
+    );
+  };
+
+  const getInvoiceNo = (order) => {
+    const existing = order.invoice_no || order.invoice_number || order.ref_no;
+    if (existing) return cleanName(existing);
+    return `SMS-${String(order.order_id || '').substring(0, 8).toUpperCase()}`;
+  };
+
+  const getTerms = (order) => {
+    const paymentText = `${order.payment_method || order.payment_type || order.order_type || ''}`.toLowerCase();
+    if (paymentText.includes('online') || order.order_type === 'online') return QB_REF.terms.online;
+    if (paymentText.includes('credit')) return QB_REF.terms.credit;
+    if (paymentText.includes('cash')) return QB_REF.terms.cash;
+    return QB_REF.terms.cod;
+  };
+
+  const getPaymentMethod = (order) => {
+    const paymentText = `${order.payment_method || order.payment_type || order.order_type || ''}`.toLowerCase();
+    if (paymentText.includes('bank') || paymentText.includes('deposit')) return QB_REF.paymentMethods.bank;
+    if (paymentText.includes('cheque') || paymentText.includes('check')) return QB_REF.paymentMethods.cheque;
+    if (paymentText.includes('online') || order.order_type === 'online') return QB_REF.paymentMethods.online;
+    return QB_REF.paymentMethods.cash;
+  };
+
+  const getShipMethod = (order) => {
+    const raw = `${order.courier_name || order.delivery_method || order.shipping_method || ''}`.toLowerCase();
+    if (raw.includes('pronto')) return QB_REF.shipMethods.pronto;
+    if (raw.includes('dhl')) return QB_REF.shipMethods.dhl;
+    if (raw.includes('pickup') || raw.includes('pick up')) return QB_REF.shipMethods.pickup;
+    if (raw.includes('bus')) return QB_REF.shipMethods.bus;
+    if (raw.includes('pickme')) return QB_REF.shipMethods.pickme;
+    return order.order_type === 'online' ? QB_REF.shipMethods.defaultOnline : QB_REF.shipMethods.defaultOffline;
+  };
+
+  const getSalesRep = (order) => {
+    // Match existing QB sales rep initials where possible. Backend can later send qb_initials.
+    const explicit = order.sales_rep?.qb_initials || order.salesRep?.qb_initials || order.sales_rep_initials;
+    if (explicit) return explicit;
+
+    const name = `${order.sales_rep?.name || order.salesRep?.name || order.createdBy?.name || order.user?.name || ''}`.toLowerCase();
+    if (name.includes('kavindu')) return 'KG';
+    if (name.includes('lasantha')) return 'LK';
+    if (name.includes('tharindu')) return 'TG';
+    if (name.includes('thejadha') || name.includes('thejada')) return 'TR';
+    return '';
+  };
+
+  const getQBClass = (item, order) => {
+    const productName = `${item.variant?.product?.name || item.variant?.product?.product_name || item.product_name || ''}`.toLowerCase();
+    const variantName = `${item.variant?.variant_name || item.variant_name || ''}`.toLowerCase();
+    const orderClass = order.qb_class || order.quickbooks_class || '';
+    if (orderClass) return orderClass;
+    if (productName.includes('kaaral') || variantName.includes('kaaral')) return QB_REF.classes.kaaral1;
+    if (productName.includes('studio 17') || productName.includes('studion 17') || productName.includes('s17')) return QB_REF.classes.studio17;
+    return QB_REF.classes.cosmetics1;
+  };
+
+  const getQBItemName = (item) => {
+    // Best practice: save this value in DB from the client's QuickBooks item list.
+    const qbName =
+      item.qb_item_name ||
+      item.quickbooks_item_name ||
+      item.variant?.qb_item_name ||
+      item.variant?.quickbooks_item_name ||
+      item.variant?.product?.qb_item_name ||
+      item.variant?.product?.quickbooks_item_name;
+    if (qbName) return cleanName(qbName);
+
+    // If product/variant has SKU/code matching QB item names like S17BB833 or KAARAL:KBEYOS300ML, prefer it.
+    const possibleCode =
+      item.variant?.sku ||
+      item.variant?.item_code ||
+      item.variant?.variant_code ||
+      item.variant?.product?.sku ||
+      item.variant?.product?.item_code ||
+      item.product_code;
+    if (possibleCode) return cleanName(possibleCode);
+
+    const productName = cleanName(item.variant?.product?.name || item.variant?.product?.product_name || item.product_name, 'Item');
+    const variantName = cleanName(item.variant?.variant_name || item.variant_name || 'Std');
+    return variantName && variantName !== 'Std' ? `${productName} - ${variantName}` : productName;
+  };
+
+  const getDiscountItem = (order) => {
+    const percent = Number(order.discount_percentage || order.discount_percent || order.discount_rate || 0);
+    if (percent && QB_REF.discountItems[Math.round(percent)]) {
+      return QB_REF.discountItems[Math.round(percent)];
+    }
+    return QB_REF.defaultDiscountItem;
+  };
+
   const handleDownloadQB = () => {
-    if (orders.length === 0) return;
+    if (orders.length === 0) {
+      toast.error('No data available to export.');
+      return;
+    }
 
-    // QuickBooks Data Map Headers
-    const headers = [
-      "InvoiceNumber", "CustomerName", "Date", 
-      "ItemName", "ItemDescription", "Quantity", "Rate", "Amount"
-    ];
+    const iifRows = [];
+    const skippedOrders = [];
 
-    const csvRows = [headers.join(",")];
+    // QuickBooks Desktop 2018 compatible basic Invoice IIF header.
+    pushIifRow(iifRows, ['!TRNS', 'TRNSTYPE', 'DATE', 'ACCNT', 'NAME', 'CLASS', 'AMOUNT', 'DOCNUM', 'MEMO']);
+    pushIifRow(iifRows, ['!SPL', 'TRNSTYPE', 'DATE', 'ACCNT', 'NAME', 'CLASS', 'AMOUNT', 'DOCNUM', 'MEMO', 'INVITEM', 'QNTY', 'PRICE']);
+    pushIifRow(iifRows, ['!ENDTRNS']);
 
-    orders.forEach(order => {
-      const invoiceNo = `ORD-${order.order_id.substring(0, 8).toUpperCase()}`;
-      const customer = `"${order.customer?.saloon_name || order.customer_name || 'Direct Customer'}"`;
-      const date = new Date(order.created_at || order.createdAt).toLocaleDateString('en-US'); // MM/DD/YYYY is standard for QB
-
-      // Map all items
+    orders.forEach((order) => {
       const items = order.items || order.OrderItems || [];
-      items.forEach(item => {
-        const itemName = `"${item.variant?.product?.name || 'Item'} - ${item.variant?.variant_name || 'Std'}"`;
-        const desc = `"${item.variant?.product?.name || 'Product'}"`;
-        const qty = item.quantity || item.qty || 0;
-        const rate = item.price || 0;
-        const amount = qty * rate;
-        csvRows.push([invoiceNo, customer, date, itemName, desc, qty, rate, amount].join(","));
+      if (!items.length) {
+        skippedOrders.push(getInvoiceNo(order));
+        return;
+      }
+
+      const invoiceNo = getInvoiceNo(order);
+      const customer = getCustomerName(order);
+      const txnDateValue = order.created_at || order.createdAt || order.order_date || new Date();
+      const txnDate = formatQBDate(txnDateValue);
+      const terms = getTerms(order);
+      const salesRep = getSalesRep(order);
+      const shipMethod = getShipMethod(order);
+      const paymentMethod = getPaymentMethod(order);
+      const trackingNo = order.tracking_id || order.tracking_number || '';
+      const orderType = order.order_type || '';
+      const memo = `SMS-Mehera Order ${invoiceNo}${trackingNo ? ` | Tracking: ${trackingNo}` : ''} | Terms: ${terms} | Payment: ${paymentMethod} | Ship: ${shipMethod}${salesRep ? ` | Rep: ${salesRep}` : ''} | OrderType: ${orderType}`;
+
+      const invoiceLines = [];
+      let itemSubtotal = 0;
+
+      items.forEach((item) => {
+        const qty = toQty(item.quantity || item.qty || 0);
+        const rate = Number(item.price || item.rate || item.unit_price || 0);
+        const lineAmount = Number((qty * rate).toFixed(2));
+
+        if (!qty && !lineAmount) return;
+
+        itemSubtotal += lineAmount;
+
+        const qbItem = getQBItemName(item);
+        const productName = cleanName(item.variant?.product?.name || item.variant?.product?.product_name || item.product_name, 'Product');
+        const variantName = cleanName(item.variant?.variant_name || item.variant_name || 'Std');
+        const description = variantName && variantName !== 'Std' ? `${productName} - ${variantName}` : productName;
+
+        invoiceLines.push({
+          account: QB_REF.salesAccount,
+          qbClass: getQBClass(item, order),
+          lineAmount,
+          splAmount: -lineAmount,
+          memo: `${description} | LineType: ITEM`,
+          itemName: qbItem,
+          qty: -Math.abs(qty),
+          price: rate,
+        });
       });
 
-      // Add Discount as a separate line item (Negative Amount) to balance the total in QB
-      const discountAmt = Number(order.discount_amount || 0);
-      if (discountAmt > 0) {
-        csvRows.push([invoiceNo, customer, date, '"Discount"', '"Order Discount"', 1, -discountAmt, -discountAmt].join(","));
+      const discountAmount = Number(order.discount_amount || order.discount || 0);
+      if (discountAmount > 0) {
+        invoiceLines.push({
+          account: QB_REF.discountAccount,
+          qbClass: QB_REF.classes.cosmetics1,
+          lineAmount: -discountAmount,
+          splAmount: discountAmount,
+          memo: 'Order Discount | LineType: DISCOUNT',
+          itemName: getDiscountItem(order),
+          qty: -1,
+          price: -discountAmount,
+        });
       }
+
+      const deliveryAmount = Number(
+        order.delivery_fee ||
+        order.delivery_charge ||
+        order.shipping_fee ||
+        order.shipping_charge ||
+        order.courier_charge ||
+        0
+      );
+      if (deliveryAmount > 0) {
+        invoiceLines.push({
+          account: QB_REF.deliveryAccount,
+          qbClass: QB_REF.classes.cosmetics1,
+          lineAmount: deliveryAmount,
+          splAmount: -deliveryAmount,
+          memo: 'Delivery | LineType: DELIVERY',
+          itemName: QB_REF.deliveryItem,
+          qty: -1,
+          price: deliveryAmount,
+        });
+      }
+
+      // Balance line: if system total and item total differ because of rounding/adjustments, export ROU line.
+      const orderTotal = Number(order.total_amount || 0);
+      const calculatedTotal = itemSubtotal - discountAmount + deliveryAmount;
+      const roundingAmount = Number((orderTotal - calculatedTotal).toFixed(2));
+      if (Math.abs(roundingAmount) >= 0.01) {
+        invoiceLines.push({
+          account: QB_REF.roundingAccount,
+          qbClass: QB_REF.classes.cosmetics1,
+          lineAmount: roundingAmount,
+          splAmount: -roundingAmount,
+          memo: 'Rounding / Order Total Adjustment | LineType: ROUNDING',
+          itemName: QB_REF.roundingItem,
+          qty: -1,
+          price: roundingAmount,
+        });
+      }
+
+      const invoiceTotal = Number(invoiceLines.reduce((sum, line) => sum + Number(line.lineAmount || 0), 0).toFixed(2));
+
+      if (!invoiceLines.length || Math.abs(invoiceTotal) < 0.01) {
+        skippedOrders.push(invoiceNo);
+        return;
+      }
+
+      const invoiceClass = invoiceLines.find((line) => line.qbClass)?.qbClass || QB_REF.classes.cosmetics1;
+
+      pushIifRow(iifRows, [
+        'TRNS',
+        QB_REF.txnType,
+        txnDate,
+        QB_REF.arAccount,
+        customer,
+        invoiceClass,
+        toMoney(invoiceTotal),
+        invoiceNo,
+        memo,
+      ]);
+
+      invoiceLines.forEach((line) => {
+        pushIifRow(iifRows, [
+          'SPL',
+          QB_REF.txnType,
+          txnDate,
+          line.account,
+          customer,
+          line.qbClass,
+          toMoney(line.splAmount),
+          invoiceNo,
+          line.memo,
+          line.itemName,
+          line.qty,
+          toMoney(line.price),
+        ]);
+      });
+
+      pushIifRow(iifRows, ['ENDTRNS']);
     });
 
-    // Generate and Download the CSV File
-    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `QuickBooks_Export_${filterType}_${new Date().toISOString().slice(0,10)}.csv`);
+    const iifContent = `${iifRows.join('\r\n')}\r\n`;
+    const blob = new Blob([iifContent], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = `QuickBooks_Sales_Invoices_${filterType}_${new Date().toISOString().slice(0, 10)}.iif`;
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success("QuickBooks CSV exported successfully!");
+    URL.revokeObjectURL(url);
+
+    if (skippedOrders.length > 0) {
+      toast.success(`QuickBooks IIF exported. ${skippedOrders.length} order(s) skipped because they had no items or zero total.`);
+    } else {
+      toast.success('QuickBooks IIF exported successfully!');
+    }
   };
+
 
   // ️ PDF Trigger Mechanism using react-to-print v3 API.
   // The `contentRef` prop is used as per the latest API specification,
