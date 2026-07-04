@@ -75,6 +75,12 @@ const statusBadge = {
     text: "text-white",
     border: "border-border transition-colors duration-300",
   },
+  returned: {
+    label: "Returned",
+    bg: "bg-red-500/10",
+    text: "text-red-500",
+    border: "border-red-500/20",
+  },
   cancelled: {
     label: "Cancelled",
     bg: "bg-gray-100",
@@ -307,13 +313,17 @@ const ViewOrders = ({ showHeader = true }) => {
     }
   };
 
-  const filtered = orders.filter((o) => {
-    const matchSearch =
-      (o.customer_name || "").toLowerCase().includes(search.toLowerCase()) ||
+  const filtered = orders.filter(o => {
+    const matchSearch = 
+      (o.customer_name || "").toLowerCase().includes(search.toLowerCase()) || 
       (o.order_id || "").toLowerCase().includes(search.toLowerCase());
-    const matchStatus =
-      statusFilter === "All" || o.order_status === statusFilter.toLowerCase();
-    return matchSearch && matchStatus;
+
+    if (statusFilter === 'All') return matchSearch;
+
+    // 🎯 [FIX]: "Cancelled" tab eka "returned" status eka pennanna haduwa.
+    if (statusFilter === 'Cancelled') return matchSearch && o.order_status === 'returned';
+
+    return matchSearch && o.order_status === statusFilter.toLowerCase();
   });
 
   const indexOfLastRow = currentPage * rowsPerPage;
@@ -489,8 +499,8 @@ const ViewOrders = ({ showHeader = true }) => {
             {[
               "All",
               "Requested",
+              "Rejected",
               "Approved",
-              "Shipped",
               "Delivered",
               "Cancelled",
             ].map((s) => (
@@ -513,8 +523,8 @@ const ViewOrders = ({ showHeader = true }) => {
               {[
                 "All",
                 "Requested",
+              "Rejected",
                 "Approved",
-                "Shipped",
                 "Delivered",
                 "Cancelled",
               ].map((s) => (
