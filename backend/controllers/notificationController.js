@@ -10,14 +10,24 @@ const getRoleBasedFilter = (role) => {
   return { type: ['order'] };
 };
 
-const getVisibleNotificationWhere = (user) => {
+const getVisibleNotificationWhere = async (user) => {
+  const currentUser = await User.findByPk(user.user_id, {
+    attributes: ['createdAt'],
+  });
+  if (!currentUser) {
+    throw new Error('Authenticated user not found');
+  }
+  const registrationFilter = {
+    createdAt: { [Op.gte]: currentUser.createdAt },
+  };
   const roleFilter = getRoleBasedFilter(user.role);
 
   if (user.role === 'admin' || user.role === 'manager') {
-    return {};
+    return registrationFilter;
   }
 
   const clauses = [
+    registrationFilter,
     {
       [Op.or]: [
         { target_user_id: null },
@@ -43,7 +53,7 @@ const getVisibleNotificationWhere = (user) => {
 exports.getNotifications = async (req, res) => {
   try {
     const user = req.user;
-    const where = getVisibleNotificationWhere(user);
+    const where = await getVisibleNotificationWhere(user);
 
     // Get notifications filtered by role
     const notifications = await Notification.findAll({
@@ -112,7 +122,7 @@ exports.getNotifications = async (req, res) => {
 exports.getUnreadCount = async (req, res) => {
   try {
     const user = req.user;
-    const where = getVisibleNotificationWhere(user);
+    const where = await getVisibleNotificationWhere(user);
 
     // Get all notifications for this role
     const notifications = await Notification.findAll({ 
@@ -193,7 +203,7 @@ exports.markAsRead = async (req, res) => {
       where: {
         [Op.and]: [
           { notification_id: id },
-          getVisibleNotificationWhere(user),
+          await getVisibleNotificationWhere(user),
         ],
       }
     });
@@ -219,7 +229,7 @@ exports.markAsRead = async (req, res) => {
 exports.markAllAsRead = async (req, res) => {
   try {
     const user = req.user;
-    const where = getVisibleNotificationWhere(user);
+    const where = await getVisibleNotificationWhere(user);
 
     // Get all notifications for this role
     const notifications = await Notification.findAll({ where });
