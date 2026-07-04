@@ -45,6 +45,7 @@ const ViewStock = () => {
   };
 
 
+  // Filter products based on search term (product name or category)
   const filteredProducts = products.filter(product => {
     const pName = product.product_name?.toLowerCase() || '';
     const cName = product.category?.category_name?.toLowerCase() || '';
@@ -52,6 +53,7 @@ const ViewStock = () => {
     return pName.includes(search) || cName.includes(search);
   });
 
+  // Pagination logic
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentProducts = filteredProducts.slice(indexOfFirstRow, indexOfLastRow);
@@ -89,6 +91,7 @@ const ViewStock = () => {
           </div>
         </div>
 
+        {/* Back and Refresh Buttons */}
         <div className="w-full md:w-auto flex items-center justify-between md:justify-end gap-4 order-1 md:order-2">
           <button 
             onClick={() => navigate(-1)}

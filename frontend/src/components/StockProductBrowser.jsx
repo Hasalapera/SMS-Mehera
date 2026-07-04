@@ -18,16 +18,18 @@ const StockProductBrowser = ({
     return productName.includes(searchTerm.toLowerCase());
   });
 
-  const totalPages = Math.ceil(filteredProducts.length / rowsPerPage);
-  const safeCurrentPage = totalPages > 0 ? Math.min(currentPage, totalPages) : 1;
-  const indexOfLastRow = safeCurrentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const totalPages = Math.ceil(filteredProducts.length / rowsPerPage); // Calculate total pages based on filtered products and rows per page
+  const safeCurrentPage = totalPages > 0 ? Math.min(currentPage, totalPages) : 1;  // Ensure currentPage is within valid range
+  const indexOfLastRow = safeCurrentPage * rowsPerPage; // Calculate the index of the last row for the current page
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage; // Calculate the index of the first row for the current page
   const currentProducts = filteredProducts.slice(indexOfFirstRow, indexOfLastRow);
 
+  
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
+  // Ensure currentPage is valid when totalPages changes
   useEffect(() => {
     if (totalPages === 0) {
       if (currentPage !== 1) setCurrentPage(1);
@@ -58,8 +60,8 @@ const StockProductBrowser = ({
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-      </div>
-
+      </div> 
+      {/* Product list */}
       <div className="divide-y divide-border">
         {currentProducts.length > 0 ? (
           currentProducts.map((product) => (
@@ -90,7 +92,7 @@ const StockProductBrowser = ({
           </div>
         )}
       </div>
-
+      {/* Pagination controls */}
       {totalPages > 1 && (
         <div className="px-5 py-4 border-t border-border bg-card/30 flex items-center justify-between gap-3 flex-wrap">
           <p className="text-[10px] font-black text-textMain/50 uppercase tracking-widest">

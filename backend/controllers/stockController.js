@@ -8,7 +8,7 @@ const formatUserInfo = (user) => {
     const name = user.name || 'Unknown';
     const role = (user.role || 'user')
         .replace(/_/g, ' ')
-        .replace(/\b\w/g, c => c.toUpperCase());
+        .replace(/\b\w/g, c => c.toUpperCase()); 
 
     return `${name} (${role})`;
 };
@@ -56,7 +56,7 @@ const batchAddStockToVariants = async (req, res) => {
             return res.status(400).json({ error: 'Updates array is required' });
         }
 
-        const appliedUpdates = [];
+        const appliedUpdates = []; // Store applied updates for response
         let totalUnits = 0;
 
         for (const update of updates) {
@@ -132,6 +132,7 @@ const batchAddStockToVariants = async (req, res) => {
         });
         }
 
+        // Commit the transaction after all updates and notifications
         await transaction.commit();
         res.status(200).json({
             message: 'Batch stock update successful',
@@ -142,7 +143,7 @@ const batchAddStockToVariants = async (req, res) => {
             appliedUpdates
         });
     } catch (err) {
-        await transaction.rollback();
+        await transaction.rollback(); 
         console.error('Batch Add Stock Error:', err.message);
         res.status(500).json({ error: err.message });
     }
@@ -161,7 +162,8 @@ const batchEditStockForVariants = async (req, res) => {
         const appliedUpdates = [];
         let totalChange = 0;
 
-        for (const update of updates) {
+        // Validate and apply updates
+        for (const update of updates) { 
             const variantId = update?.variant_id;
             const newStock = Number(update?.newStock);
 
@@ -170,7 +172,7 @@ const batchEditStockForVariants = async (req, res) => {
                 return res.status(400).json({ error: 'Each update must include variant_id and non-negative integer newStock' });
             }
 
-            const variant = await ProductVariant.findByPk(variantId, { transaction });
+            const variant = await ProductVariant.findByPk(variantId, { transaction }); // Find the variant in the database
             if (!variant) {
                 await transaction.rollback();
                 return res.status(404).json({ error: `Variant not found: ${variantId}` });
@@ -197,6 +199,7 @@ const batchEditStockForVariants = async (req, res) => {
             include: [{ model: Product, as: 'product' }]
         });
 
+        // Determine product and variant names for notification
         const productName = variant?.product?.product_name || 'Unknown Product';
         const variantName = variant?.variant_name || 'Unknown Variant';
         const newStock = update.newStock;
@@ -205,7 +208,7 @@ const batchEditStockForVariants = async (req, res) => {
         const difference = newStock - oldStock;
         const sign = difference > 0 ? '+' : '';
 
-        let title, message, severity;
+        let title, message, severity; // Initialize variables for notification content
 
         if (newStock <= 0) {
             title = '🔴 Out of Stock Alert';
@@ -259,14 +262,14 @@ const batchRevertStockForVariants = async (req, res) => {
             return res.status(400).json({ error: 'Updates array is required' });
         }
 
-        const revertedUpdates = [];
-        let totalUnits = 0;
+        const revertedUpdates = []; // Store reverted updates for response
+        let totalUnits = 0; 
 
         for (const update of updates) {
             const variantId = update?.variant_id;
             const quantity = Number(update?.quantity);
 
-            if (!variantId || !Number.isInteger(quantity) || quantity <= 0) {
+            if (!variantId || !Number.isInteger(quantity) || quantity <= 0) { // Validate input
                 await transaction.rollback();
                 return res.status(400).json({ error: 'Each update must include variant_id and positive integer quantity' });
             }
@@ -277,13 +280,13 @@ const batchRevertStockForVariants = async (req, res) => {
                 return res.status(404).json({ error: `Variant not found: ${variantId}` });
             }
 
-            const previousStock = Number(variant.stock_count || 0);
+            const previousStock = Number(variant.stock_count || 0); // Get previous stock count
             if (previousStock < quantity) {
                 await transaction.rollback();
                 return res.status(400).json({ error: `Cannot revert ${quantity} units for variant ${variantId}; current stock is ${previousStock}` });
             }
 
-            const newStock = previousStock - quantity;
+            const newStock = previousStock - quantity; // Update stock count after revert
             await variant.update({ stock_count: newStock }, { transaction });
 
             revertedUpdates.push({
@@ -305,7 +308,7 @@ const batchRevertStockForVariants = async (req, res) => {
         const productName = variant?.product?.product_name || 'Unknown Product';
         const variantName = variant?.variant_name || 'Unknown Variant';
 
-        await createNotification(
+        await createNotification( // Create notification for each reverted update
             'stock',
             '↩️ Stock Addition Reverted',
             `${productName} - ${variantName}: ${update.quantity} units addition reverted by ${userInfo}`,
@@ -317,7 +320,7 @@ const batchRevertStockForVariants = async (req, res) => {
         );
         }
 
-        await transaction.commit();
+        await transaction.commit(); // Commit the transaction after all updates and notifications
         res.status(200).json({
             message: 'Batch stock revert successful',
             summary: {

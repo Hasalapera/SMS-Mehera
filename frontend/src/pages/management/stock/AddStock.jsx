@@ -352,6 +352,7 @@ const AddStock = () => {
     }
   };
 
+  {/* Render loading state if products are being fetched */}
   if (loading) {
     return (
       <div className="w-full min-h-screen bg-background transition-colors duration-300 flex items-center justify-center">
@@ -428,6 +429,7 @@ const AddStock = () => {
           />
         </div>
 
+        {/* Queue Sidebar */}
         <div className="lg:col-span-5">
           <div className="bg-card rounded-4xl shadow-xl border border-border overflow-hidden sticky top-6 transition-colors duration-300">
             <div className="p-5 border-b border-border bg-card/50 flex items-center justify-between transition-colors duration-300">
@@ -446,6 +448,7 @@ const AddStock = () => {
               </div>
             </div>
 
+            {/* Queue List */}
             <div className="max-h-140 overflow-y-auto p-4 space-y-4">
               {selectedProducts.length === 0 ? (
                 <div className="py-16 text-center border-2 border-dashed border-border rounded-3xl">
@@ -469,6 +472,7 @@ const AddStock = () => {
                       </button>
                     </div>
 
+                    {/* Variant list with quantity inputs */}
                     <div className="p-4 space-y-3">
                       {product.variants.map((variant) => (
                         <div key={variant.variant_id} className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-center">
@@ -487,6 +491,7 @@ const AddStock = () => {
                         </div>
                       ))}
 
+                      {/* Bulk quantity input and apply button */}
                       <div className="pt-3 border-t border-border flex flex-col sm:flex-row items-center gap-2">
                         <input
                           type="number"
