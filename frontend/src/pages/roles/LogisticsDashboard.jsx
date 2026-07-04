@@ -166,8 +166,18 @@ const LogisticsDashboard = () => {
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 
-                toast.success(`Status successfully updated to ${newStatus}!`);
-                
+                const getSuccessMessage = (status) => {
+                    switch (status) {
+                        case 'handed_over':
+                            return "Package handed over to Courier Service.";
+                        case 'handed_over_delivery':
+                            return "Package handed over to Delivery Person.";
+                        default:
+                            return `Status successfully updated to ${status.replace(/_/g, ' ')}!`;
+                    }
+                };
+                toast.success(getSuccessMessage(newStatus));
+
                 if (res.data.whatsappUrl) {
                     MySwal.fire({
                         title: 'Send Notification',
@@ -249,26 +259,31 @@ const LogisticsDashboard = () => {
             const { value: formValues } = await MySwal.fire({
                 title: '<span style="font-family:serif; font-style:italic; font-size:22px;">Logistics Allocation</span>',
                 html: `
-                    <div style="text-align: left; font-family: sans-serif; display: flex; flex-direction: column; gap: 12px; width: 100%;">
-                        <div style="margin-bottom: 14px; width: 100%;">
-                            <label style="font-size: 10px; font-weight: 900; text-transform: uppercase; tracking: 0.1em; color: #6b7280; display:block; margin-bottom:6px;">Select Courier Service</label>
-                            <select id="swal-courier-name" style="width: 100%; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 13px; outline: none; background: #fff; height: 45px; padding: 0 10px;">
+                    <div class="text-left font-sans space-y-4 w-full">
+                        <div>
+                            <label for="swal-courier-name" class="block mb-1.5 text-[10px] font-black uppercase tracking-widest text-textMain/50">Select Courier Service</label>
+                            <select id="swal-courier-name" class="w-full bg-background border border-border rounded-xl py-3 px-4 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none">
                                 <option value="Domex">Domex Logistics</option>
                                 <option value="Pronto">Pronto Lanka</option>
                                 <option value="Koombiyo">Koombiyo</option>
                             </select>
                         </div>
-                        <div style="width: 100%;">
-                            <label style="font-size: 10px; font-weight: 900; text-transform: uppercase; tracking: 0.1em; color: #6b7280; display:block; margin-bottom:6px;">Courier Tracking ID</label>
-                            <input id="swal-tracking-id" placeholder="e.g. DPD-12345678" style="width: 100%; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 13px; outline: none; height: 45px; padding: 0 12px; box-sizing: border-box;" />
+                        <div>
+                            <label for="swal-tracking-id" class="block mb-1.5 text-[10px] font-black uppercase tracking-widest text-textMain/50">Courier Tracking ID</label>
+                            <input id="swal-tracking-id" placeholder="e.g. DPD-12345678" class="w-full bg-background border border-border rounded-xl py-3 px-4 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                         </div>
                     </div>
                 `,
                 focusConfirm: false,
                 showCancelButton: true,
                 confirmButtonText: 'Save & Print',
-                confirmButtonColor: '#000000',
-                customClass: { popup: 'rounded-[2rem] p-6' },
+                cancelButtonText: 'Cancel',
+                customClass: {
+                    popup: 'rounded-[2rem] p-6 bg-card border border-border shadow-2xl',
+                    actions: 'w-full flex gap-3 pt-4',
+                    confirmButton: 'flex-1 bg-black text-primary rounded-xl px-6 py-3 text-xs font-bold uppercase hover:bg-primary hover:text-black transition-colors shadow-lg',
+                    cancelButton: 'flex-1 bg-card border border-border text-textMain/70 rounded-xl px-6 py-3 text-xs font-bold uppercase hover:bg-background hover:border-border transition-colors'
+                },
                 preConfirm: () => {
                     const courier_name = document.getElementById('swal-courier-name').value;
                     const tracking_id = document.getElementById('swal-tracking-id').value.trim();
@@ -455,7 +470,7 @@ const LogisticsDashboard = () => {
         return () => { if (html5QrcodeScanner) html5QrcodeScanner.clear().catch(e => console.error(e)); };
     }, [isScannerOpen]);
 
-    // 📷 [🎯 ULTRA FIXED SCANNER DISPATCH ROUTER]: 
+
     const onScanSuccess = (decodedText) => {
         setIsScannerOpen(false);
         const orderExists = orders.find(o => o.order_id === decodedText);
