@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Trash2, AlertTriangle, UserX, Search, ShieldCheck, Loader2 } from 'lucide-react';
 import api from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
-import {MySwal} from '../../utils/swalConfig';
+import {MySwal, swalClasses} from '../../utils/swalConfig';
 import { useNotifications } from '../../context/NotificationContext';
 
 const DeleteUser = () => {
@@ -55,11 +55,30 @@ const DeleteUser = () => {
   const handleSoftDelete = async (userId, userName) => {
     // 1. 🛡️ Confirmation Prompt (SweetAlert)
     const result = await MySwal.fire({
-      title: 'Archive Account?',
-      text: `Do you want to archive ${userName}? This will disable system access.`,
-      icon: 'warning',
-      confirmButtonText: 'Yes, archive it!',
-    });
+    title: "Archive Account?",
+    html: `
+      <div class="text-center">
+        <p>
+          Do you want to archive 
+          <span style="color: var(--theme-primary); font-weight: 900;">
+            ${userName}
+          </span>?
+        </p>
+        <p style="margin-top: 0.5rem;">
+          This will disable system access.
+        </p>
+      </div>
+    `,
+    icon: "warning",
+    iconColor: "var(--theme-primary)",
+    confirmButtonText: "Yes, Archive It",
+    cancelButtonText: "Cancel",
+
+    customClass: {
+      ...swalClasses,
+      confirmButton: "mehera-swal-confirm",
+    },
+  });
 
     if (result.isConfirmed) {
       // 2. 🔑 Password Prompt (SweetAlert)
