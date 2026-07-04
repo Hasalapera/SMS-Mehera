@@ -10,7 +10,6 @@ const AddUser = () => {
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
   const location = useLocation();
-
   const { addNotification } = useNotifications();
 
   const isFromAssignUser = location.state?.from === '/assign-user'; // Check if navigated from AssignUser page
@@ -290,6 +289,7 @@ const handleSubmit = async (e) => {
     if (response.status === 201) {
       toast.success(`User ${name} added successfully!`);
 
+
       const currentUser = JSON.parse(localStorage.getItem("user"));
 
       await saveNotificationToDB(
@@ -310,6 +310,10 @@ const handleSubmit = async (e) => {
         )} by ${currentUser?.name || "Admin"}`,
         severity: "info",
       });
+
+      if (response.data.notification) {
+        addNotification(response.data.notification);
+      }
 
       if (isFromAssignUser) {
         navigate("/assign-user");

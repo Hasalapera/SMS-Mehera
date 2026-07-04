@@ -165,12 +165,39 @@ const addUserByAdmin = async (req, res) => {
       });
     }
 
+
     if (getAgeFromDOB(cleanDOB) < 16) {
       return res.status(400).json({
         field: "dob",
         message: "User must be at least 16 years old.",
       });
     }
+
+            // For the new user
+            await createNotification(
+                'user',
+                'Welcome to Mehera!',
+                `Your account has been created by ${actorString}. Please check your email for login credentials.`,
+                {
+                    target_user_id: user.user_id,
+                    severity: 'info',
+                    initiator_id: req.user.user_id
+                }
+            );
+
+            // For the admin
+            const newUserRole = role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            const adminNotification = await createNotification(
+                'user',
+                'New User Created',
+                `${name} (${email}) was added as ${newUserRole} by ${actorString}.`,
+                {
+                    target_user_id: req.user.user_id,
+                    severity: 'info',
+                    initiator_id: req.user.user_id
+                }
+            );
+
 
     if (!doesNICMatchDOBYear(cleanNIC, cleanDOB)) {
       return res.status(400).json({
@@ -179,6 +206,7 @@ const addUserByAdmin = async (req, res) => {
       });
     }
 
+
     // 7. Gender validation
     if (!VALID_GENDERS.includes(cleanGender)) {
       return res.status(400).json({
@@ -186,6 +214,15 @@ const addUserByAdmin = async (req, res) => {
         message: "Please select a valid gender.",
       });
     }
+
+            return res.status(201).json({
+                message: emailSent
+                    ? "User and assigned areas added successfully!"
+                    : "User created, but welcome email could not be sent.",
+                userId: user.user_id,
+                notification: adminNotification
+            });
+
 
     // 8. Sales rep district validation
     if (cleanRole === "sales_rep") {

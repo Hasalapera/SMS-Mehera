@@ -5,6 +5,8 @@ const NotificationContext = createContext();
 
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadByType, setUnreadByType] = useState({});
   const [loading, setLoading] = useState(false);
 
   //Load notifications fetched from API into context
@@ -12,10 +14,27 @@ export const NotificationProvider = ({ children }) => {
     setNotifications(apiNotifications);
   }, []);
 
+  const refreshUnreadCount = useCallback(async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setUnreadCount(0);
+      setUnreadByType({});
+      return 0;
+    }
+
+    const res = await api.get('/notifications/unread-count');
+    const count = Number(res.data.unread_count) || 0;
+    setUnreadCount(count);
+    setUnreadByType(res.data.unread_by_type || {});
+    return count;
+  }, []);
+
   const refreshNotifications = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
     if (!token) {
       setNotifications([]);
+      setUnreadCount(0);
+      setUnreadByType({});
       return [];
     }
 
@@ -23,7 +42,15 @@ export const NotificationProvider = ({ children }) => {
       setLoading(true);
       const res = await api.get('/notifications');
       const apiNotifications = res.data.notifications || [];
-      setNotifications(apiNotifications);
+      setNotifications(prev => {
+        if (prev.length <= 50) return apiNotifications;
+        const latestIds = new Set(apiNotifications.map(n => n.notification_id));
+        return [
+          ...apiNotifications,
+          ...prev.filter(n => !latestIds.has(n.notification_id)),
+        ];
+      });
+      await refreshUnreadCount();
       return apiNotifications;
     } catch (err) {
       // 💡 Improved Error Handling: Differentiate between network errors and other errors.
@@ -40,7 +67,7 @@ export const NotificationProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshUnreadCount]);
 
   useEffect(() => {
     refreshNotifications();
@@ -70,12 +97,28 @@ export const NotificationProvider = ({ children }) => {
       created_at: new Date(),
       ...notification,
     };
+    if (notifications.some(n => n.notification_id === newNotif.notification_id)) return newNotif;
     setNotifications(prev => [newNotif, ...prev]);
+    if (!newNotif.is_read) {
+      setUnreadCount(count => count + 1);
+      setUnreadByType(counts => ({
+        ...counts,
+        [newNotif.type]: (counts[newNotif.type] || 0) + 1,
+      }));
+    }
     return newNotif;
-  }, []);
+  }, [notifications]);
 
   // Mark single notification as read
   const markAsRead = useCallback((id) => {
+    const notification = notifications.find(n => n.notification_id === id);
+    if (notification && !notification.is_read) {
+      setUnreadCount(count => Math.max(0, count - 1));
+      setUnreadByType(counts => ({
+        ...counts,
+        [notification.type]: Math.max(0, (counts[notification.type] || 0) - 1),
+      }));
+    }
     setNotifications(prev =>
       prev.map(n =>
         n.notification_id === id
@@ -83,10 +126,12 @@ export const NotificationProvider = ({ children }) => {
           : n
       )
     );
-  }, []);
+  }, [notifications]);
 
   // Mark all notifications as read
   const markAllAsRead = useCallback(() => {
+    setUnreadCount(0);
+    setUnreadByType({});
     setNotifications(prev =>
       prev.map(n => ({ ...n, is_read: true, read_at: new Date() }))
     );
@@ -94,27 +139,27 @@ export const NotificationProvider = ({ children }) => {
 
   // Remove notification from list
   const deleteNotification = useCallback((id) => {
+    const notification = notifications.find(n => n.notification_id === id);
+    if (notification && !notification.is_read) {
+      setUnreadCount(count => Math.max(0, count - 1));
+      setUnreadByType(counts => ({
+        ...counts,
+        [notification.type]: Math.max(0, (counts[notification.type] || 0) - 1),
+      }));
+    }
     setNotifications(prev => prev.filter(n => n.notification_id !== id));
-  }, []);
+  }, [notifications]);
 
   // Get unread count grouped by type (for filter tab badges)
   const getUnreadByType = useCallback(() => {
-    const counts = {};
-    notifications.forEach(notif => {
-      if (!notif.is_read) {
-        counts[notif.type] = (counts[notif.type] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [notifications]);
+    return unreadByType;
+  }, [unreadByType]);
 
   const clearNotifications = useCallback(() => {
     setNotifications([]);
+    setUnreadCount(0);
+    setUnreadByType({});
   }, []);
-
-
-  // Total unread count (for sidebar bell badge)
-  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   const value = {
     notifications,
