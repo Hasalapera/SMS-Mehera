@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import api from "../../../api/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
 import { toast } from "react-hot-toast"; 
 
 const formatStatus = (status) => {
@@ -52,6 +53,7 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { token, logout, user } = useAuth();
+  const { refreshNotifications } = useNotifications();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -59,9 +61,7 @@ export default function ProductDetail() {
   const [isEditing, setIsEditing] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [deletingVariantId, setDeletingVariantId] = useState(null);
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
   const [editForm, setEditForm] = useState(null);
@@ -70,6 +70,7 @@ export default function ProductDetail() {
   const allowedRoles = ["admin", "sales_rep", "online_store_keeper"];
   const canAddToOrder = user && allowedRoles.includes(user.role);
   const canEditProduct = user?.role === "admin";
+  const isAdminOrManager = user?.role === "admin" || user?.role === "manager";
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -151,10 +152,6 @@ export default function ProductDetail() {
     setMainImagePreview(null);
   };
 
-  const handleCancelDeleteMode = () => {
-    setIsDeleteMode(false);
-  };
-
   const handleEditFieldChange = (e) => {
     const { name, value } = e.target;
     setEditForm((current) => ({ ...current, [name]: value }));
@@ -201,7 +198,12 @@ export default function ProductDetail() {
 
   const removeVariantField = (index) => {
     setEditForm((current) => {
-      const activeVariants = current.variants.filter((v, i) => !v.isDeleted && i !== index);
+      // If the product is being activated, all variants are considered "active" for this check.
+      // Otherwise, only non-deleted variants are considered active.
+      const activeVariants = current.variants.filter((v, i) => 
+        (current.status === 'active' || !v.isDeleted) && i !== index
+      );
+
       if (activeVariants.length === 0) {
         toast.error("At least one active variant is required!");
         return current;
@@ -219,28 +221,6 @@ export default function ProductDetail() {
       const updatedVariants = [...current.variants];
       updatedVariants[index] = { ...updatedVariants[index], isDeleted: false };
       return { ...current, variants: updatedVariants };
-    });
-  };
-
-  const syncVariantRemoval = (variantId) => {
-    setProduct((current) => {
-      if (!current) return current;
-      return {
-        ...current,
-        variants: (current.variants || []).map((variant) => (
-          variant.variant_id === variantId
-            ? { ...variant, deletedAt: variant.deletedAt || variant.deleted_at || new Date().toISOString(), deleted_at: variant.deleted_at || variant.deletedAt || new Date().toISOString() }
-            : variant
-        )),
-      };
-    });
-
-    setEditForm((current) => {
-      if (!current) return current;
-      return {
-        ...current,
-        variants: (current.variants || []).filter((variant) => variant.variant_id !== variantId),
-      };
     });
   };
 
@@ -272,75 +252,12 @@ export default function ProductDetail() {
                     });
 
                     toast.success(response.data?.message || 'Product deleted successfully');
+                    await refreshNotifications();
                     navigate('/inventory');
                   } catch (err) {
                     toast.error(err.response?.data?.error || 'Failed to delete product');
                   } finally {
                     setDeleting(false);
-                    setIsDeleteMode(false);
-                  }
-                }}
-                className="rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-primary/90"
-              >
-                Delete
-              </button>
-              <button
-                type="button"
-                onClick={() => toast.dismiss(toastId)}
-                className="rounded-xl border border-border bg-background px-3 py-2 text-[10px] font-black uppercase tracking-widest text-textMain/60 hover:bg-card"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => toast.dismiss(toastId)}
-            className="text-textMain/40 hover:text-textMain"
-            aria-label="Close confirmation"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      </div>
-    ), { duration: Infinity });
-  };
-
-  const handleDeleteVariant = async (variantId) => {
-    if (!variantId) return;
-
-    const variant = (product?.variants || []).find((item) => item.variant_id === variantId);
-
-    const toastId = toast.custom((t) => (
-      <div className="w-[320px] max-w-[calc(100vw-2rem)] rounded-3xl border border-border bg-card p-4 shadow-2xl">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 rounded-full bg-red-500/10 p-2 text-red-500">
-            <Trash2 size={16} />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="text-sm font-black text-textMain">Delete variant {variant?.variant_name || ''}?</p>
-            <p className="mt-1 text-[11px] font-medium text-textMain/60">
-              This will soft-delete the selected variant from the product.
-            </p>
-            <div className="mt-4 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={async () => {
-                  toast.dismiss(toastId);
-                  try {
-                    setDeletingVariantId(variantId);
-                    const response = await api.delete(`/products/${id}/variants/${variantId}`, {
-                      headers: {
-                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                      },
-                    });
-
-                    toast.success(response.data?.message || 'Variant deleted successfully');
-                    syncVariantRemoval(variantId);
-                  } catch (err) {
-                    toast.error(err.response?.data?.error || 'Failed to delete variant');
-                  } finally {
-                    setDeletingVariantId(null);
                   }
                 }}
                 className="rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-primary/90"
@@ -388,7 +305,10 @@ export default function ProductDetail() {
         data.append('main_image', editForm.main_image);
       }
 
-      const variantsToSave = editForm.variants.filter(v => !v.isDeleted);
+      // If activating the product, include all variants for restoration. Otherwise, only include active ones.
+      const variantsToSave = editForm.status === 'active' ? 
+        editForm.variants : 
+        editForm.variants.filter(v => !v.isDeleted);
       
       data.append('variants', JSON.stringify(variantsToSave.map((variant) => ({
         variant_id: variant.variant_id,
@@ -420,6 +340,7 @@ export default function ProductDetail() {
       setIsEditing(false);
       setEditForm(createEditForm(updatedProduct));
       setMainImagePreview(null);
+      await refreshNotifications();
       toast.success('Product updated successfully!');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to update product');
@@ -553,6 +474,7 @@ export default function ProductDetail() {
                     <input
                       type="text"
                       name="product_name"
+                    required
                       value={editForm.product_name}
                       onChange={handleEditFieldChange}
                       className="w-full text-2xl font-serif italic text-textMain leading-tight bg-transparent border-b border-border focus:border-primary outline-none pb-2"
@@ -563,25 +485,25 @@ export default function ProductDetail() {
                     <div className="bg-background p-4 rounded-2xl border border-border">
                       <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Status</p>
                       <select name="status" value={editForm.status} onChange={handleEditFieldChange} className="w-full bg-card text-textMain border border-border rounded-xl px-3 py-2 font-black uppercase text-[10px] tracking-widest outline-none focus:ring-2 focus:ring-primary/30">
-                        <option value="active" className="bg-card text-textMain">Active</option>
-                        <option value="inactive" className="bg-card text-textMain">Inactive</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
                       </select>
                     </div>
                     <div className="bg-background p-4 rounded-2xl border border-border">
                       <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Category</p>
-                      <select name="category_id" value={editForm.category_id} onChange={handleEditFieldChange} className="w-full bg-card text-textMain border border-border rounded-xl px-3 py-2 font-black uppercase text-[10px] tracking-widest outline-none focus:ring-2 focus:ring-primary/30">
-                        <option value="" className="bg-card text-textMain">Select Category</option>
+                    <select name="category_id" required value={editForm.category_id} onChange={handleEditFieldChange} className="w-full bg-card text-textMain border border-border rounded-xl px-3 py-2 font-black uppercase text-[10px] tracking-widest outline-none focus:ring-2 focus:ring-primary/30">
+                      <option value="">Select Category</option>
                         {categories.map((category) => (
-                          <option key={category.category_id} value={category.category_id} className="bg-card text-textMain">{category.category_name}</option>
+                        <option key={category.category_id} value={category.category_id}>{category.category_name}</option>
                         ))}
                       </select>
                     </div>
                     <div className="bg-background p-4 rounded-2xl border border-border">
                       <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Brand</p>
-                      <select name="brand_id" value={editForm.brand_id} onChange={handleEditFieldChange} className="w-full bg-card text-textMain border border-border rounded-xl px-3 py-2 font-black uppercase text-[10px] tracking-widest outline-none focus:ring-2 focus:ring-primary/30">
-                        <option value="" className="bg-card text-textMain">Select Brand</option>
+                    <select name="brand_id" required value={editForm.brand_id} onChange={handleEditFieldChange} className="w-full bg-card text-textMain border border-border rounded-xl px-3 py-2 font-black uppercase text-[10px] tracking-widest outline-none focus:ring-2 focus:ring-primary/30">
+                      <option value="">Select Brand</option>
                         {brands.map((brand) => (
-                          <option key={brand.brand_id} value={brand.brand_id} className="bg-card text-textMain">{brand.brand_name}</option>
+                        <option key={brand.brand_id} value={brand.brand_id}>{brand.brand_name}</option>
                         ))}
                       </select>
                     </div>
@@ -617,8 +539,8 @@ export default function ProductDetail() {
                   </div>
 
                   {editForm.variants.map((variant, index) => (
-                    <div key={variant.variant_id || index} className={`bg-background rounded-3xl border border-border p-4 ${variant.isDeleted ? 'opacity-50 grayscale' : ''}`}>
-                      {variant.isDeleted ? (
+                    <div key={variant.variant_id || index} className={`bg-background rounded-3xl border border-border p-4 ${variant.isDeleted && editForm.status !== 'active' ? 'opacity-50 grayscale' : ''}`}>
+                      {variant.isDeleted && editForm.status !== 'active' ? (
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <div className="w-16 h-16 bg-card rounded-xl flex items-center justify-center border border-border overflow-hidden">
@@ -635,11 +557,13 @@ export default function ProductDetail() {
                         </div>
                       ) : (
                       <>
-                      <div className="flex flex-col md:grid md:grid-cols-[96px_minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,0.9fr)] gap-4 items-start relative">
+                      <div className="flex flex-col md:grid md:grid-cols-[96px_minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,0.9fr)] gap-4 items-start relative pt-4 md:pt-0">
                         {/* Remove Variant Button */}
-                        <button type="button" onClick={() => removeVariantField(index)} className="absolute -top-6 -right-2 md:top-0 md:right-0 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:scale-110 active:scale-95 transition-all z-10" title="Remove Variant">
-                          <X size={14} strokeWidth={3} />
-                        </button>
+                        {!variant.variant_id && (
+                          <button type="button" onClick={() => removeVariantField(index)} className="absolute top-0 right-0 md:top-0 md:-right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:scale-110 active:scale-95 transition-all z-10" title="Remove Variant">
+                            <X size={14} strokeWidth={3} />
+                          </button>
+                        )}
                         <div className="w-20 h-20 bg-card rounded-2xl flex items-center justify-center p-2 shrink-0 border border-border overflow-hidden relative">
                           {variant.preview ? (
                             <img src={variant.preview} alt="Variant" className="w-full h-full object-contain" />
@@ -653,26 +577,26 @@ export default function ProductDetail() {
 
                         <div className="grid gap-2 w-full">
                           <label className="text-[9px] font-black uppercase tracking-widest text-textMain/40">Variant Name</label>
-                          <input type="text" name="variant_name" value={variant.variant_name} onChange={(e) => handleVariantFieldChange(index, e)} placeholder="Variant Name" className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm outline-none" />
+                          <input type="text" name="variant_name" required value={variant.variant_name} onChange={(e) => handleVariantFieldChange(index, e)} placeholder="Variant Name" className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm outline-none" />
                         </div>
 
                         <div className="grid gap-2 w-full">
                           <label className="text-[9px] font-black uppercase tracking-widest text-textMain/40">SKU</label>
-                          <input type="text" name="sku" value={variant.sku} onChange={(e) => handleVariantFieldChange(index, e)} placeholder="SKU" className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm outline-none" />
+                          <input type="text" name="sku" required value={variant.sku} onChange={(e) => handleVariantFieldChange(index, e)} placeholder="SKU" className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm outline-none" />
                         </div>
 
                         <div className="grid gap-2 w-full">
                           <label className="text-[9px] font-black uppercase tracking-widest text-textMain/40">Price</label>
-                          <input type="number" name="price" value={variant.price} onChange={(e) => handleVariantFieldChange(index, e)} placeholder="Price" className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm outline-none" />
+                          <input type="number" name="price" required value={variant.price} onChange={(e) => handleVariantFieldChange(index, e)} placeholder="Price" className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm outline-none" />
                         </div>
 
                         <div className="grid gap-2 w-full">
                           <label className="text-[9px] font-black uppercase tracking-widest text-textMain/40">Stock</label>
-                          <input type="number" name="stock_count" value={variant.stock_count} onChange={(e) => handleVariantFieldChange(index, e)} placeholder="Stock" className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm outline-none" />
+                          <input type="number" name="stock_count" required value={variant.stock_count} onChange={(e) => handleVariantFieldChange(index, e)} placeholder="Stock" className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm outline-none" />
                           <label className="text-[9px] font-black uppercase tracking-widest text-red-500 mt-2 flex items-center gap-1">
                             <AlertTriangle size={10} /> Critical Stock Level
                           </label>
-                          <input type="number" name="critical_stock_level" value={variant.critical_stock_level} onChange={(e) => handleVariantFieldChange(index, e)} className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm outline-none" />
+                          <input type="number" name="critical_stock_level" required value={variant.critical_stock_level} onChange={(e) => handleVariantFieldChange(index, e)} className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm outline-none" />
                         </div>
                       </div>
 
@@ -714,10 +638,10 @@ export default function ProductDetail() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-background text-left">
-      <div className="p-6 md:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-textMain/50 hover:text-textMain font-black uppercase text-[10px] tracking-widest">
+    <div className="w-full min-h-screen bg-background text-left animate-in fade-in duration-500">
+      <div className="p-4 md:p-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6 md:mb-10">
+          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-textMain/50 hover:text-textMain font-black uppercase text-[10px] tracking-widest group">
             <ArrowLeft size={16} /> Back to Inventory
           </button>
 
@@ -725,7 +649,7 @@ export default function ProductDetail() {
             {canEditProduct && (
               <button
                 type="button"
-                onClick={handleOpenEdit}
+                onClick={handleOpenEdit} // This function is already defined
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-black px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-primary shadow-2xl shadow-black/20 transition-all hover:scale-105 active:scale-95 w-full sm:w-auto"
               >
                 <Pencil size={16} />
@@ -733,170 +657,160 @@ export default function ProductDetail() {
               </button>
             )}
 
-            {canEditProduct && !isDeleteMode && (
+            {canEditProduct && (
               <button
                 type="button"
-                onClick={() => setIsDeleteMode(true)}
+                onClick={handleDeleteProduct}
+                disabled={deleting}
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-red-500 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-2xl shadow-red-500/20 transition-all hover:scale-105 active:scale-95 w-full sm:w-auto"
               >
-                <Trash2 size={16} />
-                Delete Product
-              </button>
-            )}
-
-            {canEditProduct && isDeleteMode && (
-              <button
-                type="button"
-                onClick={handleCancelDeleteMode}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-textMain/70 transition-all hover:scale-105 active:scale-95 w-full sm:w-auto"
-              >
-                <X size={16} />
-                Exit Delete Mode
+                {deleting ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
+                {deleting ? 'Deleting...' : 'Delete Product'}
               </button>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* LEFT SIDE: Image & Description */}
-          <div className="bg-card rounded-4xl shadow-md p-8 border border-border">
+          <div className="lg:col-span-2 bg-card rounded-[2.5rem] shadow-md p-6 md:p-8 border border-border">
             <div className="flex flex-col gap-6">
               <div className="flex items-center justify-center">
-                <div className="bg-background rounded-[2.5rem] w-full h-72 flex items-center justify-center p-6 border border-border shadow-inner relative overflow-hidden">
+                <div className="bg-background rounded-[2rem] w-full h-72 flex items-center justify-center p-6 border border-border shadow-inner relative overflow-hidden">
                   <img src={product.image_url || "https://placehold.co/400x400/C0B26D/white?text=No+Image"} alt={product.product_name} className="w-full h-full object-contain mix-blend-normal" />
-                  {canEditProduct && isDeleteMode && (
-                    <button
-                      type="button"
-                      onClick={handleDeleteProduct}
-                      disabled={deleting}
-                      className="absolute top-4 right-4 inline-flex items-center gap-2 rounded-full bg-red-500 px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-red-500/20 transition-all hover:scale-105 disabled:opacity-70"
-                    >
-                      {deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
-                      Delete
-                    </button>
-                  )}
                 </div>
               </div>
 
               <div>
-                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary mb-2 block">{product.brand?.brand_name || "Premium Brand"}</span>
-                <h2 className="text-2xl font-serif italic text-textMain leading-tight">{product.product_name}</h2>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2 block">{product.brand?.brand_name || "Premium Brand"}</span>
+                <h2 className="text-3xl font-serif italic text-textMain leading-tight">{product.product_name}</h2>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-background p-4 rounded-2xl border border-border">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-background p-4 rounded-xl border border-border">
                   <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Status</p>
                   <span className={`text-[10px] font-black uppercase tracking-widest ${product.status === "active" ? "text-green-600" : "text-red-600"}`}>
                     {formatStatus(product.status)}
                   </span>
                 </div>
-                <div className="bg-background p-4 rounded-2xl border border-border">
+                <div className="bg-background p-4 rounded-xl border border-border">
                   <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Category</p>
                   <span className="text-[11px] font-bold text-textMain uppercase">{product.category?.category_name || "-"}</span>
                 </div>
-                <div className="bg-background p-4 rounded-2xl border border-border">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-textMain/50 mb-1">Total Network Stock</p>
-                  <span className="text-lg font-serif italic text-textMain">{totalStock} Units</span>
-                </div>
               </div>
 
-              <p className="text-textMain/50 leading-relaxed italic text-sm border-t border-border pt-4">
+              <p className="text-textMain/60 leading-relaxed italic text-sm border-t border-border pt-6">
                 {product.description || "No professional description available for this registry item."}
               </p>
             </div>
           </div>
 
           {/*RIGHT SIDE: Variants Table */}
-          <div className="bg-card rounded-4xl shadow-md overflow-hidden border border-border flex flex-col">
-            <div className="bg-primary px-8 py-5 flex items-center justify-between">
-              <h2 className="text-sm font-black text-black uppercase tracking-widest">Product Variations</h2>
-              <span className="text-[10px] font-bold text-black/60">{activeVariantCount} Active / {variants.length} Total</span>
+          <div className="lg:col-span-3 bg-card rounded-[2.5rem] shadow-md overflow-hidden border border-border flex flex-col">
+            <div className="bg-card px-6 md:px-8 py-5 flex items-center justify-between border-b border-border">
+              <h2 className="text-sm font-black text-textMain uppercase tracking-widest">Available Variants</h2>
+              <span className="text-[10px] font-bold text-textMain/50">{activeVariantCount} Active / {variants.length} Total</span>
             </div>
 
-            <div className="overflow-x-auto flex-1">
-              <table className="w-full text-left">
+            {/* Desktop Table */}
+            <div className="overflow-x-auto flex-1 hidden md:block">
+              <table className="w-full text-left min-w-[600px]">
                 <thead>
-                  <tr className="bg-card border-b border-border sticky top-0">
-                    <th className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">Variant</th>
-                    <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">SKU</th>
-                    <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">Price</th>
-                    <th className="px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">Stock</th>
-                    {isDeleteMode && <th className="px-4 py-4 text-[9px] text-center font-black uppercase tracking-[0.2em] text-textMain/50">Delete</th>}
-                    {canAddToOrder && <th className="px-4 py-4 text-[9px] text-center font-black uppercase tracking-[0.2em] text-textMain/50">Action</th>}
+                  <tr className="bg-background/50 border-b border-border sticky top-0">
+                    <th className="px-6 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">Variant</th>
+                    <th className="px-4 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">SKU</th>
+                    <th className="px-4 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">Price</th>
+                    <th className="px-4 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-textMain/50">Stock</th>
+                    {canAddToOrder && <th className="px-6 py-3 text-[9px] text-right font-black uppercase tracking-[0.2em] text-textMain/50">Action</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {variants.length > 0 ? (
-                    variants.map((variant) => (
-                      <tr
-                        key={variant.variant_id}
-                        className={`border-b border-border ${(getVariantDeletedAt(variant) || product.status === 'inactive') ? 'opacity-40 grayscale pointer-events-none' : 'hover:bg-background'}`}
-                      >
+                    variants.map((variant) => {
+                      const isEffectivelyDisabled = !isAdminOrManager && (getVariantDeletedAt(variant) || product.status === 'inactive');
+                      return (
+                        <tr
+                          key={variant.variant_id}
+                          className={`border-b border-border last:border-0 ${isEffectivelyDisabled ? 'opacity-40 grayscale pointer-events-none' : 'hover:bg-background'}`}
+                        >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-14 h-14 bg-background rounded-lg flex items-center justify-center p-2 shrink-0 border border-border">
+                            <div className="w-12 h-12 bg-background rounded-lg flex items-center justify-center p-1 shrink-0 border border-border">
                               <img src={variant.image_url || product.image_url} alt="v" className="max-h-full max-w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="font-bold text-sm text-textMain">{variant.variant_name}</span>
-                              {getVariantDeletedAt(variant) && (
-                                <span className="rounded-full bg-red-500/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-red-500">
-                                  Deleted
-                                </span>
-                              )}
+                              <span className="font-bold text-xs text-textMain">{variant.variant_name}</span>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-4 text-[10px] font-mono font-bold text-textMain/50 uppercase">{variant.sku}</td>
-                        <td className="px-4 py-4 font-serif italic text-sm text-textMain">Rs. {Number(variant.price || 0).toLocaleString()}</td>
+                        <td className="px-4 py-4 font-serif italic text-xs text-textMain">Rs. {Number(variant.price || 0).toLocaleString()}</td>
                         <td className="px-4 py-4">
-                          <span className={`font-bold text-sm ${Number(variant.stock_count || 0) <= 5 ? "text-red-500" : "text-textMain"}`}>
+                          <span className={`font-bold text-xs ${Number(variant.stock_count || 0) <= 5 ? "text-red-500" : "text-textMain"}`}>
                             {variant.stock_count}
                           </span>
                         </td>
-                        {isDeleteMode && !getVariantDeletedAt(variant) && (
-                          <td className="px-4 py-4 text-center">
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteVariant(variant.variant_id)}
-                              disabled={deletingVariantId === variant.variant_id}
-                              className="inline-flex items-center justify-center rounded-full bg-red-500 px-3 py-2 text-white shadow-lg shadow-red-500/20 transition-all hover:scale-105 disabled:opacity-70"
-                              title="Delete variant"
-                            >
-                              {deletingVariantId === variant.variant_id ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
-                            </button>
-                          </td>
-                        )}
                         <td className="px-6 py-4 text-right">
-                          {canAddToOrder && !getVariantDeletedAt(variant) && (
+                          {canAddToOrder && product.status === 'active' && (
                             <button 
                               onClick={() => handleAddToCart(variant)}
                               disabled={Number(variant.stock_count) <= 0}
-                              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-black uppercase text-[8px] tracking-widest transition-all ml-auto ${
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-black uppercase text-[8px] tracking-widest transition-all ml-auto ${
                                 Number(variant.stock_count) <= 0 
                                 ? "bg-background text-textMain/50 cursor-not-allowed" 
                                 : "bg-black text-primary hover:scale-105 shadow-lg active:scale-95"
                               }`}
                             >
-                              <PlusCircle size={12} />
+                              <PlusCircle size={10} />
                               Add
                             </button>
                           )}
                         </td>
-                      </tr>
-                    ))
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td
-                        colSpan={canAddToOrder ? (isDeleteMode ? 6 : 5) : (isDeleteMode ? 5 : 4)}
-                        className="px-6 py-14 text-center text-textMain/40 text-sm italic"
-                      >
-                        No variants available.
-                      </td>
+                      <td colSpan={canAddToOrder ? 5 : 4} className="px-6 py-14 text-center text-textMain/40 text-sm italic">No variants available.</td>
                     </tr>
                   )}
                 </tbody>
               </table>
+            </div>
+            
+            {/* Mobile Cards */}
+            <div className="md:hidden p-4 space-y-3">
+              {variants.length > 0 ? (
+                variants.map((variant) => {
+                  const isEffectivelyDisabled = !isAdminOrManager && (getVariantDeletedAt(variant) || product.status === 'inactive');
+                  return (
+                    <div key={variant.variant_id} className={`bg-background p-4 rounded-2xl border border-border ${isEffectivelyDisabled ? 'opacity-40 grayscale pointer-events-none' : ''}`}>
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-card rounded-lg flex items-center justify-center p-1 shrink-0 border border-border">
+                            <img src={variant.image_url || product.image_url} alt="v" className="max-h-full max-w-full object-contain mix-blend-multiply dark:mix-blend-normal" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-sm text-textMain">{variant.variant_name}</p>
+                            <p className="text-[10px] font-mono font-bold text-textMain/50 uppercase">{variant.sku}</p>
+                          </div>
+                        </div>
+                        <span className={`font-bold text-sm ${Number(variant.stock_count || 0) <= 5 ? "text-red-500" : "text-textMain"}`}>{variant.stock_count}</span>
+                      </div>
+                      <div className="flex justify-between items-center pt-3 border-t border-border">
+                        <p className="font-serif italic text-lg text-textMain">Rs. {Number(variant.price || 0).toLocaleString()}</p>
+                        {canAddToOrder && product.status === 'active' && (
+                          <button onClick={() => handleAddToCart(variant)} disabled={Number(variant.stock_count) <= 0} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black uppercase text-[9px] tracking-widest transition-all ${Number(variant.stock_count) <= 0 ? "bg-card text-textMain/50 cursor-not-allowed" : "bg-black text-primary"}`}>
+                            <PlusCircle size={12} /> Add
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="px-6 py-14 text-center text-textMain/40 text-sm italic">No variants available.</div>
+              )}
             </div>
           </div>
         </div>

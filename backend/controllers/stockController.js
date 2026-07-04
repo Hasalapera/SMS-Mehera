@@ -2,15 +2,11 @@ const { ProductVariant, Product, User, sequelize } = require('../models');
 const { createNotification } = require('./notificationController');
 
 // Format user info for notification messages
-const formatUserInfo = async (user) => {
+const formatUserInfo = (user) => {
     if (!user) return 'System';
 
-    const dbUser = user.user_id
-        ? await User.findByPk(user.user_id, { attributes: ['name', 'role'] })
-        : null;
-
-    const name = dbUser?.name || user.name || 'Unknown';
-    const role = (dbUser?.role || user.role || 'user')
+    const name = user.name || 'Unknown';
+    const role = (user.role || 'user')
         .replace(/_/g, ' ')
         .replace(/\b\w/g, c => c.toUpperCase());
 
@@ -98,7 +94,7 @@ const batchAddStockToVariants = async (req, res) => {
         }
 
         // Create notifications after all updates
-        const userInfo = await formatUserInfo(req.user);
+        const userInfo = formatUserInfo(req.user);
         for (const update of appliedUpdates) {
         const variant = await ProductVariant.findByPk(update.variant_id, {
             include: [{ model: Product, as: 'product' }]
@@ -195,7 +191,7 @@ const batchEditStockForVariants = async (req, res) => {
         }
 
         // Create notifications after all updates
-        const userInfo = await formatUserInfo(req.user);
+        const userInfo = formatUserInfo(req.user);
         for (const update of appliedUpdates) {
         const variant = await ProductVariant.findByPk(update.variant_id, {
             include: [{ model: Product, as: 'product' }]
@@ -300,7 +296,7 @@ const batchRevertStockForVariants = async (req, res) => {
         }
 
         // Create revert notifications
-        const userInfo = await formatUserInfo(req.user);
+        const userInfo = formatUserInfo(req.user);
         for (const update of revertedUpdates) {
         const variant = await ProductVariant.findByPk(update.variant_id, {
             include: [{ model: Product, as: 'product' }]

@@ -5,8 +5,8 @@ const { Op } = require('sequelize');
 const getRoleBasedFilter = (role) => {
   if (role === 'admin') return null;
   if (role === 'manager') return null;
-  if (role === 'sales_rep') return { type: ['stock', 'order', 'customer', 'user'] };
-  if (role === 'online_store_keeper') return { type: ['order', 'stock', 'customer'] };
+  if (role === 'sales_rep') return { type: ['stock', 'order', 'customer', 'user', 'target', 'product'] };
+  if (role === 'online_store_keeper') return { type: ['order', 'stock', 'customer', 'product'] };
   return { type: ['order'] };
 };
 
@@ -80,8 +80,8 @@ exports.getNotifications = async (req, res) => {
     // If no record → fall back to global is_read (false by default)
     const notificationsWithReadStatus = notifications.map(n => ({
       ...n.toJSON(),
-      is_read: readMap[n.notification_id]?.is_read ?? n.is_read,
-      read_at: readMap[n.notification_id]?.read_at ?? n.read_at,
+      is_read: readMap[n.notification_id]?.is_read ?? false,
+      read_at: readMap[n.notification_id]?.read_at ?? null,
     }));
 
     // Count unread by type for THIS specific user

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import api from '../../api/axiosInstance';
 
 export const AuthContext = createContext();
@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
     const [isTokenExpiring, setIsTokenExpiring] = useState(false);
 
     // LOGIN
-    const login = (userData, userToken, expiresAt) => {
+    const login = useCallback((userData, userToken, expiresAt) => {
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('accessToken', userToken);
         localStorage.setItem('expiresAt', expiresAt);
@@ -27,8 +27,11 @@ export const AuthProvider = ({ children }) => {
         setToken(userToken);
         setIsTokenExpiring(false);
         
+        // 🚀 Notify other parts of the app (like NotificationContext) that auth state has changed.
+        window.dispatchEvent(new Event('auth-changed'));
+
         console.log('✅ User logged in:', userData.email);
-    };
+    }, []);
 
     /*
     * eka access token expire wenna kalin refresh token eka use karala automatically aluth access token ekak ganna.
@@ -45,32 +48,7 @@ export const AuthProvider = ({ children }) => {
     * session eka maintain karanna. (Example: Facebook, Gmail, Instagram wage apps)
     */
     // PROACTIVE REFRESH ACCESS TOKEN
-    const refreshAccessTokenFn = async () => {
-        try {
-            // The httpOnly refresh token is sent automatically by the browser
-            const response = await api.post('/users/refresh-token');
-
-            const { accessToken, expiresAt } = response.data;
-
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('expiresAt', expiresAt);
-
-            setToken(accessToken);
-            setIsTokenExpiring(false);
-
-            console.log('✅ Access token refreshed proactively');
-            return accessToken;
-
-        } catch (err) {
-            console.error('❌ Proactive refresh failed:', err.message);
-            // If proactive refresh fails, we log out immediately
-            logout('/login');
-            return null;
-        }
-    };
-
     // LOGOUT
-
     /*
     * userge current session eka completely end karala system eken safely logout karana eka.
     * 
@@ -95,7 +73,7 @@ export const AuthProvider = ({ children }) => {
     * Me function eka use karanne secure widihata session eka close karanna.
     * Logout unama old token use karala protected routes access karanna bari wenawa.
     */
-    const logout = async (target) => { 
+    const logout = useCallback(async (target) => { 
         try {
             await api.post('/users/logout');
         } catch (err) {
@@ -109,6 +87,9 @@ export const AuthProvider = ({ children }) => {
             setUser(null);
             setToken(null);
             setIsTokenExpiring(false);
+
+            // 🚀 Notify other parts of the app that auth state has changed.
+            window.dispatchEvent(new Event('auth-changed'));
             
             // If a target path is provided, perform a hard redirect.
             // This is used for forced logouts (e.g., token expiry).
@@ -116,7 +97,30 @@ export const AuthProvider = ({ children }) => {
                 window.location.href = target;
             }
         }
-    };
+    }, []);
+
+    const refreshAccessTokenFn = useCallback(async () => {
+        try {
+            // The httpOnly refresh token is sent automatically by the browser
+            const response = await api.post('/users/refresh-token');
+
+            const { accessToken, expiresAt } = response.data;
+
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('expiresAt', expiresAt);
+
+            setToken(accessToken);
+            setIsTokenExpiring(false);
+
+            console.log('✅ Access token refreshed proactively');
+            return accessToken;
+
+        } catch (err) {
+            console.error('❌ Proactive refresh failed:', err.message);
+            logout('/login');
+            return null;
+        }
+    }, [logout]);
 
     // Token Expiry Check (Proactive checks)
 
@@ -146,7 +150,7 @@ export const AuthProvider = ({ children }) => {
     * saha sudden logout avoid karanna.
     * (Example: Gmail, Facebook, Instagram wage systems)
     */
-    const checkTokenExpiry = async () => {
+    const checkTokenExpiry = useCallback(async () => {
         const expiresAt = localStorage.getItem('expiresAt');
         if (!expiresAt) return;
 
@@ -171,7 +175,7 @@ export const AuthProvider = ({ children }) => {
             // In case the browser tab was asleep and the interceptor didn't catch it
             logout('/login'); 
         }
-    };
+    }, [refreshAccessTokenFn, logout]);
 
     // INIT & MONITOR
 
@@ -214,7 +218,7 @@ export const AuthProvider = ({ children }) => {
             window.removeEventListener('token-refreshed', handleTokenRefreshed);
             window.removeEventListener('force-logout', handleForceLogout);
         };
-    }, []);
+    }, [checkTokenExpiry, logout]);
 
     return (
         <AuthContext.Provider 
