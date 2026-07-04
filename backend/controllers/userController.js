@@ -165,6 +165,7 @@ const addUserByAdmin = async (req, res) => {
       });
     }
 
+
     if (getAgeFromDOB(cleanDOB) < 16) {
       return res.status(400).json({
         field: "dob",
@@ -178,6 +179,7 @@ const addUserByAdmin = async (req, res) => {
         message: "NIC number does not match the selected birth year.",
       });
     }
+
 
     // 7. Gender validation
     if (!VALID_GENDERS.includes(cleanGender)) {
@@ -305,12 +307,16 @@ const addUserByAdmin = async (req, res) => {
         }
       );
 
-      await createNotification(
+      const newUserRole = cleanRole
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+
+      const adminNotification = await createNotification(
         "user",
         "New User Created",
-        `You created a new user account for ${cleanName} with the role of ${cleanRole}.`,
+        `${cleanName} (${cleanEmail}) was added as ${newUserRole} by ${actorString}.`,
         {
-          target_user_id: req.user.user_id,
+          target_role: "manager",
           severity: "info",
           initiator_id: req.user.user_id,
         }
@@ -330,6 +336,7 @@ const addUserByAdmin = async (req, res) => {
           ? "User and assigned areas added successfully!"
           : "User created, but welcome email could not be sent.",
         userId: user.user_id,
+        notification: adminNotification,
       });
 
     } catch (err) {

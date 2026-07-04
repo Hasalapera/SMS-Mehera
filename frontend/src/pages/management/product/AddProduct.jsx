@@ -11,7 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const AddProduct = () => {
   const { user } = useAuth();   
-  const { setNotificationsFromAPI } = useNotifications();
+  const { refreshNotifications } = useNotifications();
 
   const [loading, setLoading] = useState(false);
   const [brands, setBrands] = useState([]);
@@ -90,18 +90,6 @@ const AddProduct = () => {
       setFormData({ ...formData, variants: updatedVariants });
     } else {
       toast.error("At least one variant is required!");
-    }
-  };
-
-  const refreshNotifications = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const res = await api.get('/notifications', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setNotificationsFromAPI(res.data.notifications || []);
-    } catch (err) {
-      console.error('Failed to refresh notifications:', err);
     }
   };
 
