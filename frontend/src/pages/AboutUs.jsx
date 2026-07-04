@@ -14,7 +14,7 @@ const AboutUs = () => {
 
       {/* --- Section 1: Our Identity --- */}
       <section className="py-24 px-8 bg-card transition-colors duration-300">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
           <div className="rounded-[3.5rem] overflow-hidden shadow-2xl bg-gray-100 aspect-[4/3] group">
             <img 
               src="https://i.postimg.cc/XJB4P7NZ/Gemini-Generated-Image-ynufwwynufwwynuf.png" 
@@ -25,9 +25,9 @@ const AboutUs = () => {
           <div className="space-y-8 text-left">
             <div className="space-y-2">
                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary transition-all duration-300">Established 1998</span>
-                <h1 className="text-5xl md:text-6xl font-serif text-textMain transition-colors duration-300 leading-tight">Our <span className="italic text-primary transition-all duration-300">Identity</span></h1>
+                <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif text-textMain transition-colors duration-300 leading-tight">Our <span className="italic text-primary transition-all duration-300">Identity</span></h1>
             </div>
-            <p className="text-textMain/50 transition-colors duration-300 text-lg leading-relaxed italic font-sans max-w-xl">
+            <p className="text-textMain/50 transition-colors duration-300 text-base md:text-lg leading-relaxed italic font-sans max-w-xl">
               Mehera International (Pvt) Ltd stands as a leading force in the Sri Lankan beauty industry, bridging the gap between international innovation and local professional expertise.
             </p>
             <div className="grid grid-cols-2 gap-y-10 gap-x-8 pt-4">
@@ -42,16 +42,16 @@ const AboutUs = () => {
 
       {/* --- Section 2: Leadership (MD/CEO Section) --- */}
       <section className="py-24 px-8 bg-background transition-all duration-300 border-y border-border transition-colors duration-300">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
           <div className="space-y-8 text-left order-2 md:order-1">
             <div className="space-y-2">
               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-primary transition-all duration-300">Leadership Vision</span>
-              <h2 className="text-4xl md:text-5xl font-serif text-textMain transition-colors duration-300 leading-tight">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif text-textMain transition-colors duration-300 leading-tight">
                 A Vision for <br /> <span className="italic text-primary transition-all duration-300">Excellence.</span>
               </h2>
             </div>
             
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               <p className="text-textMain/50 transition-colors duration-300 italic leading-relaxed font-sans text-xl border-l-4 border-primary transition-all duration-300 pl-6 py-2">
                 "Our journey at Mehera International is driven by a passion to redefine beauty standards in Sri Lanka, ensuring every professional has access to the world's finest innovations."
               </p>
@@ -68,7 +68,7 @@ const AboutUs = () => {
           </div>
 
           <div className="relative order-1 md:order-2 flex justify-center">
-            <div className="aspect-[4/5] w-full max-w-md bg-gray-200 rounded-[4rem] overflow-hidden shadow-2xl relative group border-[12px] border-white">
+            <div className="aspect-[4/5] w-full max-w-sm md:max-w-md bg-gray-200 rounded-[3rem] md:rounded-[4rem] overflow-hidden shadow-2xl relative group border-8 md:border-[12px] border-white">
                 
                 <img 
                   src="https://i.postimg.cc/JhQCd6k0/1727684826444.jpg" 
@@ -85,8 +85,8 @@ const AboutUs = () => {
       {/* --- Section 3: Our Core Values --- */}
       <section className="py-24 px-8 bg-card transition-colors duration-300">
         <div className="max-w-7xl mx-auto text-center space-y-16">
-          <h2 className="text-4xl font-serif italic text-textMain transition-colors duration-300">Our Core <span className="text-primary transition-all duration-300">Values</span></h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <h2 className="text-3xl md:text-4xl font-serif italic text-textMain transition-colors duration-300">Our Core <span className="text-primary transition-all duration-300">Values</span></h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
             <ValueCard icon={<Award size={28}/>} title="Excellence" desc="Uncompromising quality in every product and service we offer." />
             <ValueCard icon={<Users size={28}/>} title="Education" desc="Empowering beauty professionals with world-class training." />
             <ValueCard icon={<Target size={28}/>} title="Innovation" desc="Bringing the latest global trends and technologies to Sri Lanka." />
@@ -99,12 +99,12 @@ const AboutUs = () => {
       <section className="py-24 px-8 bg-background transition-all duration-300 border-t border-border transition-colors duration-300">
         <div className="max-w-4xl mx-auto text-center space-y-12">
           <div className="space-y-4">
-            <h2 className="text-4xl font-serif italic text-textMain transition-colors duration-300">Join Our <span className="text-primary transition-all duration-300">Team</span></h2>
-            <p className="text-textMain/50 transition-colors duration-300 italic max-w-2xl mx-auto leading-relaxed">
+            <h2 className="text-3xl md:text-4xl font-serif italic text-textMain transition-colors duration-300">Join Our <span className="text-primary transition-all duration-300">Team</span></h2>
+            <p className="text-textMain/50 transition-colors duration-300 text-base md:text-lg italic max-w-2xl mx-auto leading-relaxed">
               We're always looking for passionate individuals to join our growing family. Experience a culture driven by creativity and excellence.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
             {['Sales & Marketing', 'Education & Training', 'Brand Management'].map(role => (
               <div key={role} className="p-8 bg-card transition-colors duration-300 rounded-3xl border border-border transition-colors duration-300 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group">
                 <p className="font-serif text-lg italic mb-2 group-hover:text-primary transition-all duration-300">{role}</p>
@@ -124,7 +124,7 @@ const AboutUs = () => {
 
 const StatItem = ({ value, label }) => (
   <div className="space-y-1">
-    <p className="text-4xl font-serif text-textMain transition-colors duration-300">{value}</p>
+    <p className="text-3xl sm:text-4xl font-serif text-textMain transition-colors duration-300">{value}</p>
     <p className="text-[10px] font-black uppercase tracking-widest text-textMain/50 transition-colors duration-300">{label}</p>
   </div>
 );

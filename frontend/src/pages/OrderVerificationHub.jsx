@@ -1,22 +1,20 @@
 // src/pages/OrderVerificationHub.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom'; // 🎯 [FIX] useNavigate import කරගන්නවා.
-import { QrCode, ScanLine, EyeOff, CheckCircle, Search, Truck, Clock, Package, Smartphone, Award, Globe, Copy, Check, ExternalLink, AlertTriangle, Printer } from 'lucide-react'; // 🎯 [FIXED]: Added Printer icon here
+import { useLocation, useNavigate } from 'react-router-dom';
+import { QrCode, ScanLine, EyeOff, CheckCircle, Search, Truck, Clock, Package, Smartphone, Award, Globe, Copy, Check, ExternalLink, AlertTriangle, Printer } from 'lucide-react';
 import api from '../api/axiosInstance';
-import Swal from 'sweetalert2';
 import toast from 'react-hot-toast'; 
+import { MySwal } from './utils/swalConfig';
 import StatNavBar from '../components/StatNavBar';
 import Footer from '../components/Footer';
 
 const OrderVerificationHub = () => {
   const customerScannerRef = useRef(null);
   const location = useLocation();
-  const navigate = useNavigate(); // 🎯 URL එක වෙනස් කරන්න navigate hook එක ගන්නවා.
+  const navigate = useNavigate();
 
-  // 🎯 [FIXED & IMPROVED] URL එකේ ?tab=... parameter එකට අනුව අදාළ tab එක active කරනවා.
   const initialTab = new URLSearchParams(location.search).get('tab') || 'verify';
   const [activeTab, setActiveTab] = useState(initialTab);
-
 
   // Delivery Verification States
   const [isCustomerScannerOpen, setIsCustomerScannerOpen] = useState(false);
@@ -32,7 +30,6 @@ const OrderVerificationHub = () => {
 
   useEffect(() => { 
     window.scrollTo(0, 0); 
-    // 🎯 URL එකේ query param එක වෙනස් වෙද්දී activeTab එක update කරනවා.
     const tabFromUrl = new URLSearchParams(location.search).get('tab');
     if (tabFromUrl && tabFromUrl !== activeTab) {
       setActiveTab(tabFromUrl);
@@ -47,7 +44,11 @@ const OrderVerificationHub = () => {
           "mehera-hub-qr-reader", 
           { 
             fps: 30, 
-            qrbox: { width: 200, height: 200 }, 
+            qrbox: function(viewfinderWidth, viewfinderHeight) {
+              const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+              const size = minEdge < 300 ? Math.floor(minEdge * 0.7) : 230;
+              return { width: size, height: size };
+            },
             videoConstraints: { facingMode: "environment" } 
           }, 
           false
@@ -76,19 +77,32 @@ const OrderVerificationHub = () => {
   const onCustomerScanSuccess = (decodedText) => {
     setScannedOrderId(decodedText);
     setIsCustomerScannerOpen(false);
-    Swal.fire({
+    MySwal.fire({
       title: '<span style="font-family: serif; font-style: italic; font-size: 20px;">QR Scanned!</span>',
-      html: '<p style="font-family: sans-serif; color: #10b981; font-size: 12px; font-weight: bold;">Reference captured. Enter your 6-digit OTP code.</p>',
+      html: '<p class="text-sm text-textMain/70">Reference captured. Please enter the 6-digit OTP code sent to the customer.</p>',
       icon: 'success',
-      confirmButtonColor: '#000000'
+      confirmButtonText: 'Okay',
+      customClass: {
+        popup: 'rounded-[2rem] p-4 md:p-6 bg-card border border-border',
+        title: 'text-textMain',
+        htmlContainer: 'text-textMain/70',
+        confirmButton: 'bg-black text-primary rounded-xl px-10 py-3 text-xs font-bold uppercase shadow-lg',
+      }
     });
   };
 
-  // Handle Delivery Verification Secure OTP Submit
   const handleCustomerDeliveryVerify = async (e) => {
     e.preventDefault();
     if (!scannedOrderId || !verificationOtp) {
-      Swal.fire('Error', 'Please scan the QR code and enter the OTP.', 'error');
+      MySwal.fire({
+        title: 'Error', 
+        text: 'Please scan the QR code and enter the OTP.', 
+        icon: 'error',
+        customClass: {
+          popup: 'rounded-[2rem] p-4 md:p-6 bg-card border border-border',
+          confirmButton: 'bg-black text-primary rounded-xl px-10 py-3 text-xs font-bold uppercase shadow-lg',
+        }
+      });
       return;
     }
 
@@ -96,43 +110,49 @@ const OrderVerificationHub = () => {
     try {
       const res = await api.post(`/orders/confirm-delivery/${scannedOrderId}`, { otp: verificationOtp });
       if (res.data.success || res.status === 200) {
-        Swal.fire({
+        MySwal.fire({
           title: '<span style="font-family: serif; font-style: italic; font-size: 24px;">Delivery Confirmed!</span>',
-          html: '<p style="font-family: sans-serif; color: #6b7280; font-size: 13px;">Thank you! Your order status has been successfully verified as DELIVERED.</p>',
+          html: '<p class="text-sm text-textMain/70">Thank you! Your order status has been successfully verified as DELIVERED.</p>',
           icon: 'success',
-          confirmButtonColor: '#000000'
+          confirmButtonText: 'Done',
+          customClass: {
+            popup: 'rounded-[2rem] p-4 md:p-6 bg-card border border-border',
+            confirmButton: 'bg-black text-primary rounded-xl px-10 py-3 text-xs font-bold uppercase shadow-lg',
+          }
         });
         setScannedOrderId('');
         setVerificationOtp('');
       }
     } catch (err) {
-      Swal.fire({
+      MySwal.fire({
         title: 'Verification Failed',
         text: err.response?.data?.message || 'Invalid Secure Delivery OTP Code.',
         icon: 'error',
-        confirmButtonColor: '#000000'
+        confirmButtonText: 'Try Again',
+        customClass: {
+          popup: 'rounded-[2rem] p-4 md:p-6 bg-card border border-border',
+          confirmButton: 'bg-black text-primary rounded-xl px-10 py-3 text-xs font-bold uppercase shadow-lg',
+        }
       });
     } finally {
       setVerifying(false);
     }
   };
 
-  // Handle Trace Status Query
   const handleCheckStatus = async (e) => {
     e.preventDefault();
-
-    const cleanOrderRef = searchOrderId
-      .trim()
-      .replace(/^#/, "")
-      .replace(/^ORD-/i, "")
-      .replace(/^\/+|\/+$/g, "");
+    const cleanOrderRef = searchOrderId.trim().replace(/^#/, "").replace(/^ORD-/i, "").replace(/^\/+|\/+$/g, "");
 
     if (!cleanOrderRef) {
-      Swal.fire({
+      MySwal.fire({
         title: "Missing Order Reference",
         text: "Please enter a valid Order Reference Number.",
         icon: "warning",
-        confirmButtonColor: "#000000",
+        confirmButtonText: 'Okay',
+        customClass: {
+          popup: 'rounded-[2rem] p-4 md:p-6 bg-card border border-border',
+          confirmButton: 'bg-black text-primary rounded-xl px-10 py-3 text-xs font-bold uppercase shadow-lg',
+        }
       });
       return;
     }
@@ -145,13 +165,15 @@ const OrderVerificationHub = () => {
       const res = await api.get(`/orders/${encodeURIComponent(cleanOrderRef)}`);
       setOrderStatusData(res.data);
     } catch (err) {
-      Swal.fire({
+      MySwal.fire({
         title: "Not Found",
-        text:
-          err.response?.data?.message ||
-          "Could not find any details for this Order Reference Number.",
+        text: err.response?.data?.message || "Could not find any details for this Order Reference Number.",
         icon: "warning",
-        confirmButtonColor: "#000000",
+        confirmButtonText: 'Okay',
+        customClass: {
+          popup: 'rounded-[2rem] p-4 md:p-6 bg-card border border-border',
+          confirmButton: 'bg-black text-primary rounded-xl px-10 py-3 text-xs font-bold uppercase shadow-lg',
+        }
       });
     } finally {
       setSearching(false);
@@ -165,19 +187,16 @@ const OrderVerificationHub = () => {
     setTimeout(() => { setIsCopied(false); }, 2000);
   };
 
-  // 🎯 [UPDATED] Tracking ID එක embed නොකර, courier සේවාවේ ප්‍රධාන tracking page එකට යොමු කිරීමට සකස් කරන ලදී.
   const COURIER_URLS = new Map([
-    ['domex', 'https://www.domex.lk/tracking.php'],      // ✅ නිවැරදි tracking page එක.
-    ['pronto', 'https://prontolanka.lk/tracking/'],      // ✅ නිවැරදි tracking page එක.
-    ['koombiyo', 'https://koombiyodelivery.lk/track'] // ✅ ඔබ ලබාදුන් URL එකට අනුව යාවත්කාලීන කරන ලදී.
+    ['domex', 'https://www.domex.lk/tracking.php'],      
+    ['pronto', 'https://prontolanka.lk/tracking/'],      
+    ['koombiyo', 'https://koombiyodelivery.lk/track'] 
   ]);
 
   const getCourierRedirectUrl = (courierName, trackingId) => {
     if (!trackingId) return '#';
-    
     const normalizedName = courierName?.toLowerCase().replace(/\s+/g, '') || '';
     const url = COURIER_URLS.get(normalizedName);
-
     if (url) return url;
     return `https://www.google.com/search?q=${courierName}+tracking+${trackingId}`;
   };
@@ -203,82 +222,87 @@ const OrderVerificationHub = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background font-sans text-textMain pt-28 flex flex-col justify-between transition-all duration-500 text-left">
+    <div className="min-h-screen bg-background font-sans text-textMain pt-20 sm:pt-28 flex flex-col justify-between transition-all duration-500 text-left">
       <StatNavBar />
       
       <style>{`
         #mehera-hub-qr-reader button {
           background-color: #000000 !important; color: #b4a460 !important;
           border: 1px solid rgba(180, 164, 96, 0.4) !important;
-          padding: 10px 20px !important; border-radius: 14px !important;
+          padding: 12px 24px !important; border-radius: 14px !important;
           font-size: 11px !important; font-weight: 900 !important; text-transform: uppercase !important;
-          cursor: pointer !important; width: 100% !important; max-width: 200px !important; margin-top: 10px !important;
+          cursor: pointer !important; width: 100% !important; max-width: 220px !important; margin-top: 12px !important;
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
         #mehera-hub-qr-reader a { display: none !important; }
         #mehera-hub-qr-reader span { color: #ffffff !important; opacity: 0.6; font-size: 11px; }
-        #mehera-hub-qr-reader video { border-radius: 16px !important; }
+        #mehera-hub-qr-reader video { border-radius: 20px !important; width: 100% !important; object-cover: cover; }
       `}</style>
 
-      <main className="max-w-5xl w-full mx-auto px-6 py-12 flex-1 space-y-8">
+      <main className="max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 flex-1 space-y-6 sm:space-y-8">
         {/* Top Header Title Panel */}
-        <div className="flex items-center gap-4 border-b border-border pb-6">
-          <div className="p-3.5 bg-black text-primary rounded-2xl shadow-xl"><QrCode size={26} /></div>
+        <div className="flex items-center gap-3 sm:gap-4 border-b border-border pb-4 sm:pb-6">
+          <div className="p-2.5 sm:p-3.5 bg-black text-primary rounded-xl sm:rounded-2xl shadow-xl shrink-0"><QrCode size={22} className="sm:w-[26px] sm:h-[26px]" /></div>
           <div>
-            <h1 className="text-3xl sm:text-4xl font-serif leading-none text-textMain">Customer <span className="italic text-primary">Operations Hub</span></h1>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-textMain/40 mt-1.5">Verify package delivery and track live lifecycle states</p>
+            <h1 className="text-2xl sm:text-4xl font-serif text-textMain tracking-tight">Customer <span className="italic text-primary">Operations Hub</span></h1>
+            <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] text-textMain/40 mt-1">Verify package delivery & trace live lifecycle states</p>
           </div>
         </div>
 
         {/* Dynamic Card Container Box */}
-        <div className="bg-card border border-border rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col">
-          {/* Tabs Switcher Component */}
-          <div className="flex border-b border-border bg-background/50 sm:px-6 pt-2 gap-2 sm:gap-4 overflow-x-auto w-full no-scrollbar">
-            {/* 🎯 [FIXED] Tab click කළාම URL එකත් update වෙන විදිහට navigate function එක එකතු කරන ලදී. */}
+        <div className="bg-card border border-border rounded-3xl sm:rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col">
+          {/* Tabs Switcher Component - Responsive Grid */}
+          <div className="grid grid-cols-2 border-b border-border bg-background/50 w-full relative">
             <button type="button" onClick={() => { 
               setActiveTab('verify'); 
               setIsCustomerScannerOpen(false); 
               navigate('/verify-order?tab=verify'); 
-            }} className={`pb-3.5 px-6 text-[11px] sm:text-xs font-black uppercase tracking-widest border-b-2 text-center whitespace-nowrap ${activeTab === 'verify' ? 'border-primary text-primary' : 'border-transparent text-textMain/40 hover:text-textMain'}`}>Verify Secure Delivery</button>
+            }} className={`pb-3.5 pt-4 px-3 sm:px-6 text-[10px] sm:text-xs font-black uppercase tracking-wider sm:tracking-widest border-b-2 text-center transition-all duration-300 ${activeTab === 'verify' ? 'border-primary text-primary bg-card/40' : 'border-transparent text-textMain/40 hover:text-textMain'}`}>Verify Delivery</button>
             <button type="button" onClick={() => { 
               setActiveTab('status'); 
               setIsCustomerScannerOpen(false); 
               navigate('/verify-order?tab=status'); 
-            }} className={`pb-3.5 px-6 text-[11px] sm:text-xs font-black uppercase tracking-widest border-b-2 text-center whitespace-nowrap ${activeTab === 'status' ? 'border-primary text-primary' : 'border-transparent text-textMain/40 hover:text-textMain'}`}>Trace Order Status</button>
+            }} className={`pb-3.5 pt-4 px-3 sm:px-6 text-[10px] sm:text-xs font-black uppercase tracking-wider sm:tracking-widest border-b-2 text-center transition-all duration-300 ${activeTab === 'status' ? 'border-primary text-primary bg-card/40' : 'border-transparent text-textMain/40 hover:text-textMain'}`}>Trace Status</button>
           </div>
 
-          <div className="p-6 sm:p-10 bg-card">
+          <div className="p-4 sm:p-10 bg-card">
             {/* TAB 1: SECURE RECEIPT VALIDATION HUB */}
             {activeTab === 'verify' && (
-              <div className="flex flex-col lg:grid lg:grid-cols-5 gap-8">
-                <div className="lg:col-span-2 bg-background p-4 rounded-3xl border border-border flex flex-col items-center justify-center min-h-[240px] w-full">
+              <div className="flex flex-col lg:grid lg:grid-cols-5 gap-6 sm:gap-8">
+                {/* Responsive Scanner Base Panel */}
+                <div className="lg:col-span-2 bg-background p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border flex flex-col items-center justify-center min-h-[260px] w-full shadow-inner">
                   {isCustomerScannerOpen ? (
-                    <div id="mehera-hub-qr-reader" className="w-full rounded-2xl overflow-hidden border border-primary/20 bg-black"></div>
+                    <div id="mehera-hub-qr-reader" className="w-full max-w-sm aspect-square rounded-2xl overflow-hidden border border-primary/20 bg-black mx-auto"></div>
                   ) : (
-                    <div className="text-center p-4 flex flex-col items-center space-y-3">
-                      <ScanLine size={32} className="animate-pulse text-primary" />
-                      <h4 className="text-[10px] font-black text-textMain/40 uppercase tracking-widest">Scanner Offline</h4>
-                      <p className="text-xs text-textMain/40 italic max-w-xs leading-relaxed">Activate your camera link below to capture the signature matrix code on the label.</p>
-                      <button type="button" onClick={() => setIsCustomerScannerOpen(true)} className="bg-black text-primary border border-primary/30 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-black transition-all">Launch Camera</button>
+                    <div className="text-center p-2 flex flex-col items-center space-y-4">
+                      <div className="p-4 bg-card rounded-full border border-border shadow-sm"><ScanLine size={28} className="animate-pulse text-primary" /></div>
+                      <div className="space-y-1">
+                        <h4 className="text-[10px] font-black text-textMain/40 uppercase tracking-widest">Scanner Offline</h4>
+                        <p className="text-xs text-textMain/40 italic max-w-xs leading-relaxed mx-auto">Activate camera to scan the signature matrix code on your package shipping label.</p>
+                      </div>
+                      <button type="button" onClick={() => setIsCustomerScannerOpen(true)} className="bg-black text-primary border border-primary/30 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-black transition-all shadow-md active:scale-95">Launch Camera</button>
                     </div>
                   )}
                   {isCustomerScannerOpen && (
-                    <button type="button" onClick={() => setIsCustomerScannerOpen(false)} className="mt-4 text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-1"><EyeOff size={12} /> Disconnect Camera</button>
+                    <button type="button" onClick={() => setIsCustomerScannerOpen(false)} className="mt-4 text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-1.5 hover:opacity-80"><EyeOff size={13} /> Disconnect Camera</button>
                   )}
                 </div>
-                <div className="lg:col-span-3 bg-background/40 p-6 rounded-3xl border border-border w-full flex flex-col justify-center shadow-inner">
+
+                {/* Form Elements Box */}
+                <div className="lg:col-span-3 bg-background/40 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-border w-full flex flex-col justify-center shadow-inner">
                   <form onSubmit={handleCustomerDeliveryVerify} className="space-y-4">
                     <div className="space-y-1.5">
                       <label className="text-[9px] font-black uppercase tracking-widest text-textMain/50 ml-1">Extracted Order ID</label>
-                      <input type="text" readOnly value={scannedOrderId} placeholder="[ Auto-populated via QR Scanner ]" className="w-full p-4 bg-card rounded-xl border border-border outline-none text-xs font-mono font-bold text-primary placeholder:text-textMain/30" />
+                      <input type="text" readOnly value={scannedOrderId} placeholder="[ Auto-populated via QR Scanner ]" className="w-full p-3.5 sm:p-4 bg-card rounded-xl border border-border outline-none text-xs font-mono font-bold text-primary placeholder:text-textMain/30 shadow-sm" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[9px] font-black uppercase tracking-widest text-textMain/50 ml-1">Secure Delivery OTP</label>
                       <div className="relative">
                         <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/30" size={16} />
-                        <input type="text" required value={verificationOtp} onChange={(e) => setVerificationOtp(e.target.value)} placeholder="ENTER 6-DIGIT LEDGER OTP" className="w-full pl-12 pr-4 py-4 bg-card rounded-xl border border-border outline-none text-xs sm:text-sm font-black tracking-[0.2em] text-textMain placeholder:tracking-normal placeholder:font-bold placeholder:text-textMain/30" />
+                        <input type="text" required value={verificationOtp} onChange={(e) => setVerificationOtp(e.target.value)} placeholder="ENTER 6-DIGIT LEDGER OTP" className="w-full pl-12 pr-4 py-3.5 sm:p-4 bg-card rounded-xl border border-border outline-none text-xs sm:text-sm font-black tracking-[0.15em] sm:tracking-[0.2em] text-textMain placeholder:tracking-normal placeholder:font-bold placeholder:text-textMain/30 shadow-sm" />
                       </div>
                     </div>
-                    <button type="submit" disabled={verifying || !scannedOrderId || !verificationOtp} className="w-full py-4 bg-black text-primary font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-primary hover:text-black transition-all disabled:opacity-40 shadow-xl flex items-center justify-center gap-2">
+                    <button type="submit" disabled={verifying || !scannedOrderId || !verificationOtp} className="w-full py-3.5 sm:py-4 bg-black text-primary font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-primary hover:text-black transition-all disabled:opacity-40 shadow-xl flex items-center justify-center gap-2 active:scale-[0.99]">
                       {verifying ? 'Signing Security Ledger...' : 'Confirm Package Receipt'} <CheckCircle size={14} />
                     </button>
                   </form>
@@ -292,27 +316,29 @@ const OrderVerificationHub = () => {
                 <form onSubmit={handleCheckStatus} className="flex flex-col sm:flex-row gap-3 w-full">
                   <div className="relative flex-1">
                     <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/30" />
-                    <input type="text" required value={searchOrderId} onChange={(e) => setSearchOrderId(e.target.value)} placeholder="Enter unique Order Hash Code Reference..." className="w-full pl-12 pr-4 py-4 bg-background rounded-xl border border-border outline-none text-xs font-mono font-bold text-textMain shadow-inner" />
+                    <input type="text" required value={searchOrderId} onChange={(e) => setSearchOrderId(e.target.value)} placeholder="Enter unique Order Hash Code Reference..." className="w-full pl-12 pr-4 py-3.5 sm:py-4 bg-background rounded-xl border border-border outline-none text-xs font-mono font-bold text-textMain shadow-inner" />
                   </div>
-                  <button type="submit" disabled={searching} className="bg-black text-primary px-8 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest border border-primary/20 hover:bg-primary hover:text-black transition-all shadow-md">{searching ? 'Querying...' : 'Trace Order'}</button>
+                  <button type="submit" disabled={searching} className="bg-black text-primary px-8 py-3.5 sm:py-4 rounded-xl font-black uppercase text-[10px] tracking-widest border border-primary/20 hover:bg-primary hover:text-black transition-all shadow-md active:scale-95">{searching ? 'Querying...' : 'Trace Order'}</button>
                 </form>
 
                 {orderStatusData && (
-                  <div className="bg-background/40 rounded-3xl border border-border p-5 sm:p-6 space-y-6 animate-in fade-in duration-300 w-full shadow-inner">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
+                  <div className="bg-background/40 rounded-2xl sm:rounded-3xl border border-border p-4 sm:p-6 space-y-6 animate-in fade-in duration-300 w-full shadow-inner">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
                       <div className="flex flex-col items-start text-left">
                         <h4 className="text-[10px] font-black text-textMain/40 uppercase tracking-widest">Consignee Name</h4>
                         <p className="text-sm font-black text-textMain mt-0.5 uppercase tracking-tight">{orderStatusData.customer_name}</p>
                         {getOrderTypeBadge(orderStatusData.order_type)}
                       </div>
-                      <div className="sm:text-right text-left">
-                        <h4 className="text-[10px] font-black text-textMain/40 uppercase tracking-widest mb-1.5">Fulfillment Status</h4>
+                      <div className="sm:text-right text-left shrink-0">
+                        <h4 className="text-[10px] font-black text-textMain/40 uppercase tracking-widest mb-1">Fulfillment Status</h4>
                         {getStatusBadge(orderStatusData.order_status)}
                       </div>
                     </div>
 
-                    {/* 🗺️ DYNAMIC RESPONSIVE 5-STAGE PIPELINE TIMELINE CORE ENGINE */}
-                    <div className="flex flex-col md:grid relative pt-2 gap-6 md:gap-2 grid-cols-5 text-center">
+                    {/* 🗺️ ADAPTIVE 5-STAGE PIPELINE TIMELINE - MOBILE VERTICAL & DESKTOP HORIZONTAL METRIC */}
+                    <div className="relative flex flex-col md:grid md:grid-cols-5 gap-6 md:gap-2 pt-2 text-left md:text-center px-2 md:px-0">
+                      
+                      {/* Desktop Horizontal Line */}
                       <div className="hidden md:block absolute top-6 left-[10%] right-[10%] h-[2px] bg-border z-0">
                         <div className={`h-full bg-primary transition-all duration-500 ${orderStatusData.order_status === 'returned' ? 'bg-red-500' : ''}`}
                           style={{
@@ -350,32 +376,46 @@ const OrderVerificationHub = () => {
                         const isReturnedState = step.key === 'returned' && orderStatusData.order_status === 'returned';
 
                         return (
-                          <div key={step.key} className="flex flex-row md:flex-col items-center md:justify-start gap-4 md:gap-0 z-10 relative">
-                            {idx < arr.length - 1 && <div className={`md:hidden absolute left-5 top-10 w-[2px] h-10 bg-border ${isDone ? 'bg-primary' : ''}`} />}
-                            <div className={`p-2.5 rounded-full border transition-all ${isReturnedState ? 'bg-red-500 text-white border-red-600 shadow-lg' : isDone ? 'bg-black text-primary border-primary shadow-lg' : 'bg-card text-textMain/20 border-border'}`}><Icon size={14} /></div>
-                            <span className={`text-[10px] font-black uppercase tracking-wider md:mt-3 ${isReturnedState ? 'text-red-500' : isDone ? 'text-textMain' : 'text-textMain/30'}`}>{step.label}</span>
+                          <div key={step.key} className="flex flex-row md:flex-col items-center md:justify-start gap-4 md:gap-0 z-10 relative group">
+                            {/* Mobile Vertical Dynamic Connector Line */}
+                            {idx < arr.length - 1 && (
+                              <div className={`md:hidden absolute left-5 top-10 w-[2px] h-[calc(100%+8px)] bg-border transition-colors duration-500 ${isDone ? 'bg-primary' : ''}`} />
+                            )}
+                            
+                            <div className={`p-2.5 rounded-full border transition-all shrink-0 duration-300 ${isReturnedState ? 'bg-red-500 text-white border-red-600 shadow-lg scale-110' : isDone ? 'bg-black text-primary border-primary shadow-lg scale-105' : 'bg-card text-textMain/20 border-border'}`}>
+                              <Icon size={14} />
+                            </div>
+                            
+                            <div className="flex flex-col md:items-center text-left md:text-center">
+                              <span className={`text-[10px] font-black uppercase tracking-wider md:mt-3 ${isReturnedState ? 'text-red-500' : isDone ? 'text-textMain' : 'text-textMain/30'}`}>
+                                {step.label}
+                              </span>
+                            </div>
                           </div>
                         );
                       })}
                     </div>
 
-                    {/* External Courier Waybill Tracking Button Component Row */}
+                    {/* External Courier Waybill Tracking Component - Responsive Adjustments */}
                     {orderStatusData.tracking_id && (
-                      <div className="bg-card p-4 rounded-xl border border-border flex flex-col md:flex-row justify-between md:items-center gap-4 text-xs mt-4">
-                        <div className="flex gap-4">
-                          <div><span className="text-[9px] block text-textMain/40 uppercase font-black">Courier Partner</span><span className="font-bold text-textMain text-[11px] uppercase bg-background px-2 py-0.5 rounded border border-border mt-0.5 inline-block">{orderStatusData.courier_name}</span></div>
+                      <div className="bg-card p-4 rounded-xl border border-border flex flex-col sm:flex-row justify-between sm:items-center gap-4 text-xs mt-6 shadow-sm">
+                        <div className="flex gap-6">
+                          <div>
+                            <span className="text-[9px] block text-textMain/40 uppercase font-black">Courier Partner</span>
+                            <span className="font-bold text-textMain text-[11px] uppercase bg-background px-2.5 py-1 rounded border border-border mt-1 inline-block shadow-sm">{orderStatusData.courier_name}</span>
+                          </div>
                           <div>
                             <span className="text-[9px] block text-textMain/40 uppercase font-black">Waybill Number</span>
-                            <span className="font-mono font-black text-primary text-sm tracking-wide flex items-center gap-2 mt-0.5">
+                            <span className="font-mono font-black text-primary text-sm tracking-wide flex items-center gap-2 mt-1">
                               {orderStatusData.tracking_id} 
-                              <button type="button" onClick={() => handleCopyTrackingId(orderStatusData.tracking_id)} className="text-textMain/50 hover:text-primary transition-all">
+                              <button type="button" onClick={() => handleCopyTrackingId(orderStatusData.tracking_id)} className="text-textMain/50 hover:text-primary transition-all p-0.5 active:scale-95">
                                 {isCopied ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}
                               </button>
                             </span>
                           </div>
                         </div>
                         {['shipped', 'handed_over', 'handed_over_delivery', 'delivered'].includes(orderStatusData.order_status) && (
-                          <a href={getCourierRedirectUrl(orderStatusData.courier_name, orderStatusData.tracking_id)} target="_blank" rel="noopener noreferrer" className="bg-black text-primary border border-primary/30 px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-black flex items-center justify-center gap-2 transition-all"><ExternalLink size={13} /> Track Live Shipment</a>
+                          <a href={getCourierRedirectUrl(orderStatusData.courier_name, orderStatusData.tracking_id)} target="_blank" rel="noopener noreferrer" className="bg-black text-primary border border-primary/30 px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-black flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 w-full sm:w-auto text-center"><ExternalLink size={13} /> Track Live Shipment</a>
                         )}
                       </div>
                     )}
