@@ -88,7 +88,7 @@ const Contact = () => {
               <ContactInfoCard 
                 icon={<MapPin size={24} />} 
                 title="Visit Us" 
-                detail="Studio17, Colombo 07, Sri Lanka" 
+                detail="Pothupitiya South, Wadduwa, Sri Lanka" 
               />
               <ContactInfoCard 
                 icon={<Phone size={24} />} 
@@ -176,16 +176,16 @@ const Contact = () => {
       {/* --- Section 3: Find Us (Google Maps) --- */}
       <section className="py-24 px-8 bg-background transition-all duration-300">
         <div className="max-w-7xl mx-auto text-center space-y-12">
-            <h2 className="text-4xl font-serif italic text-textMain transition-colors duration-300">Find Mehera Flagship Store</h2>
+            <h2 className="text-4xl font-serif italic text-textMain transition-colors duration-300">Find Our Location</h2>
             <div className="w-full h-[500px] bg-gray-100 rounded-[3.5rem] overflow-hidden shadow-2xl border-8 border-white group">
                 <iframe 
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.7985117651!2d79.8596642!3d6.9146775!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae2596d00000001%3A0x7d6f55447b9264!2sColombo%2007%2C%20Sri%20Lanka!5e0!3m2!1sen!2slk!4v1714000000000!5m2!1sen!2slk" 
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3962.709345337229!2d79.9475424749943!3d6.682361093309205!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae2361735105555%3A0x89364a907a53742!2sPothupitiya%20South%2C%20Wadduwa!5e0!3m2!1sen!2slk!4v1721451912235!5m2!1sen!2slk"
                     width="100%" 
                     height="100%" 
                     style={{ border: 0 }} 
                     allowFullScreen="" 
                     loading="lazy" 
-                    title="Studio17 Location"
+                    title="Mehera International Location"
                     className="grayscale group-hover:grayscale-0 transition-all duration-1000"
                 ></iframe>
             </div>
