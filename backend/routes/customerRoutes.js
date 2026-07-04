@@ -4,7 +4,7 @@ const router = express.Router();
 const { createCustomer, getAllCustomers, getCustomer, addNote, deleteNote, getCustomerCount,searchCustomers, reassignCustomers, assignSalesRep, getUnassignedCustomers, getCustomersByRep, getDeletedSalesReps, getReplacementCandidates, updateCustomer  } = require('../controllers/customerController');
 const { verifyToken, isAdmin } = require('../middlewares/authMiddleware');
 
-router.get('/all', getAllCustomers);
+router.get('/all', verifyToken, getAllCustomers);
 router.get('/count', getCustomerCount);
 router.post('/add', createCustomer);
 

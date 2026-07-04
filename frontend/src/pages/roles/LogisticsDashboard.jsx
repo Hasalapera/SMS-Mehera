@@ -34,6 +34,8 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
  * @param {HTMLElement} element - The container element to check for media.
  */
 const prepareForCanvasCapture = async (element) => {
+    if (!element) return;
+
     // Wait for the next browser paint to ensure the DOM is up-to-date.
     await waitForPaint();
 
@@ -46,10 +48,14 @@ const prepareForCanvasCapture = async (element) => {
     }
 
     // Wait for all images to be loaded (if any).
+    // Empty src images are skipped to avoid react-to-print/html2canvas preload warnings.
     const images = Array.from(element.querySelectorAll("img"));
     await Promise.all(
         images.map(img => {
+            const src = img.getAttribute("src");
+            if (!src) return Promise.resolve();
             if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
+
             return new Promise((resolve) => {
                 img.onload = resolve;
                 img.onerror = resolve; // Don't block on failed images.
@@ -185,39 +191,50 @@ const LogisticsDashboard = () => {
         }
     };
 
-    const triggerPrint = useReactToPrint({
+    const handlePrint = useReactToPrint({
         contentRef: printRef,
         documentTitle: `ShippingLabel_${orderToPrint?.order_id?.substring(0,8) || 'Mehera'}`,
         pageStyle: `@page { size: 10cm 12cm; margin: 0; }`,
         onAfterPrint: () => setIsReadyToPrint(false)
     });
 
+    // 💡 Mobile-safe PDF generation
+    // First code UI/styles are preserved. Only the capture logic is hardened.
     const generatePdf = async (element, filename) => {
         if (!element) return;
-        console.log('Capture size:', element.offsetWidth, element.offsetHeight);
+
         const toastId = toast.loading("Generating PDF...");
         try {
-            // 1. Wait for all content (images, fonts, SVGs) to be fully rendered.
+            // Wait until React DOM, fonts and QR image are fully ready.
             await prepareForCanvasCapture(element);
-            
-            // 2. Capture the element with html2canvas.
-            // const canvas = await html2canvas(element, {
-            //     scale: 3, // Higher scale for better quality
-            //     useCORS: true,
-            //     allowTaint: true,
-            //     backgroundColor: "#ffffff",
-            //     foreignObjectRendering: true, // Crucial for rendering modern CSS and SVGs
-            // });
+            await sleep(300);
+
+            const isMobileDeviceNow = window.innerWidth < 768;
 
             const canvas = await html2canvas(element, {
-                scale: 2,
+                scale: isMobileDeviceNow ? 3 : 2,
                 useCORS: true,
-                backgroundColor: '#ffffff',
-                foreignObjectRendering: true
+                allowTaint: true,
+                backgroundColor: "#ffffff",
+                logging: false,
+                windowWidth: element.scrollWidth,
+                windowHeight: element.scrollHeight,
+                // Important: mobile browsers can generate blank pages when this is true.
+                foreignObjectRendering: !isMobileDeviceNow
             });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({ orientation: 'portrait', unit: 'cm', format: [10, 12] });
-            pdf.addImage(imgData, 'PNG', 0, 0, 10, 12);
+
+            if (!canvas || canvas.width === 0 || canvas.height === 0) {
+                throw new Error("Canvas capture failed. Empty canvas generated.");
+            }
+
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF({
+                orientation: "portrait",
+                unit: "cm",
+                format: [10, 12]
+            });
+
+            pdf.addImage(imgData, "PNG", 0, 0, 10, 12);
             pdf.save(filename);
 
             toast.success("PDF Downloaded!", { id: toastId });
@@ -225,89 +242,6 @@ const LogisticsDashboard = () => {
             console.error("PDF Generation Error:", err);
             toast.error("Failed to generate PDF.", { id: toastId });
         }
-    };
-
-    // ⏳ [FIXED TIMEOUT]: QR Code එක සර්වර් එකෙන් ඇදලා ගන්න තත්පර 1.2ක් නිදන් වෙන්න හැදුවා මචං
-    useEffect(() => {
-        if (isReadyToPrint && orderToPrint) {
-            const isMobileDevice = window.innerWidth < 768;
-            const timer = setTimeout(() => {
-                if (isMobileDevice) {
-                    generatePdf(printRef.current, `ShippingLabel_${orderToPrint?.order_id?.substring(0,8) || 'Mehera'}.pdf`);
-                    setIsReadyToPrint(false);
-                } else {
-                    triggerPrint();
-                }
-            }, 1200); 
-            return () => clearTimeout(timer);
-        }
-    }, [isReadyToPrint, orderToPrint, triggerPrint]);
-
-    const triggerBulkPrint = useReactToPrint({
-        contentRef: bulkPrintRef,
-        documentTitle: `Bulk_ShippingLabels_${new Date().toISOString().slice(0,10)}`,
-        pageStyle: `@page { size: A4 portrait; margin: 5mm; }`,
-        onAfterPrint: () => setIsBulkReadyToPrint(false)
-    });
-
-    /**
-     * Generates a multi-page PDF for bulk labels from a tall DOM element.
-     */
-    const generateBulkPdf = async (element, filename) => {
-        if (!element) return;
-        const toastId = toast.loading('Generating Bulk PDF...');
-        try {
-            const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#ffffff', foreignObjectRendering: true });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const calculatedHeight = canvas.height / (canvas.width / pdfWidth);
-
-            let heightLeft = calculatedHeight;
-            let position = 0;
-
-            // Add the first page
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-            heightLeft -= pdfHeight;
-            while (heightLeft > 0) {
-                position -= pdfHeight; pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, calculatedHeight);
-                heightLeft -= pdfHeight;
-            }
-            pdf.save(filename);
-            toast.success('Bulk PDF downloaded!', { id: toastId });
-        } catch (error) {
-            console.error("Error generating bulk PDF", error);
-            toast.error('Failed to generate bulk PDF.', { id: toastId });
-        }
-    };
-
-    useEffect(() => {
-        if (isBulkReadyToPrint && bulkOrdersToPrint.length > 0) {
-            const isMobileDevice = window.innerWidth < 768;
-            const timer = setTimeout(() => {
-                if (isMobileDevice) {
-                    generateBulkPdf(bulkPrintRef.current, `Bulk_ShippingLabels_${new Date().toISOString().slice(0,10)}.pdf`);
-                    setIsBulkReadyToPrint(false);
-                } else {
-                    triggerBulkPrint();
-                }
-            }, 1200); 
-            return () => clearTimeout(timer);
-        }
-    }, [isBulkReadyToPrint, bulkOrdersToPrint, triggerBulkPrint]);
-
-    const handleBulkPrint = () => {
-        const printableOrders = orders.filter(o => {
-            if (o.order_type === 'online') return !!o.tracking_id;
-            return true;
-        });
-        if (printableOrders.length === 0) {
-            toast.error("No valid orders to print. Ensure online orders have a tracking ID.");
-            return;
-        }
-        setBulkOrdersToPrint(printableOrders); setIsBulkReadyToPrint(true);
     };
 
     const handlePrintQR = async (order) => {
@@ -338,7 +272,7 @@ const LogisticsDashboard = () => {
                 preConfirm: () => {
                     const courier_name = document.getElementById('swal-courier-name').value;
                     const tracking_id = document.getElementById('swal-tracking-id').value.trim();
-                    if (!tracking_id) { MySwal.showValidationMessage('Tracking ID is mandatory!'); return false; }
+                    if (!tracking_id) { MySwal.showValidationMessage('Tracking ID is mandatory for online orders!'); return false; }
                     return { courier_name, tracking_id };
                 }
             });
@@ -350,12 +284,160 @@ const LogisticsDashboard = () => {
                     
                     toast.success("Logistics Ledger Updated!");
                     const updatedOrder = { ...order, tracking_id: formValues.tracking_id, courier_name: formValues.courier_name, order_status: 'shipped' };
-                    setOrderToPrint(updatedOrder); setIsReadyToPrint(true);
+                    
+                    const qrUrl = await generateQrDataUrl(updatedOrder.order_id);
+                    setOrderToPrint({ ...updatedOrder, qrDataUrl: qrUrl });
+
+                    setIsReadyToPrint(true);
                     fetchOrders(false);
                 } catch (err) { toast.error("Failed to save logistics details."); }
             }
         } else {
-            setOrderToPrint(order); setIsReadyToPrint(true);
+            const qrUrl = await generateQrDataUrl(order.order_id);
+            setOrderToPrint({ ...order, qrDataUrl: qrUrl });
+            setIsReadyToPrint(true);
+        }
+    };
+
+    useEffect(() => {
+        if (isReadyToPrint && orderToPrint) {
+            const processPrint = async () => {
+                // Give React time to render the hidden label and QR image.
+                await sleep(300);
+                await prepareForCanvasCapture(printRef.current);
+
+                const isMobileDeviceNow = window.innerWidth < 768;
+
+                if (isMobileDeviceNow) {
+                    await generatePdf(
+                        printRef.current,
+                        `ShippingLabel_${orderToPrint?.order_id?.substring(0,8) || 'Mehera'}.pdf`
+                    );
+                    setIsReadyToPrint(false);
+                } else {
+                    handlePrint();
+                }
+            };
+
+            processPrint();
+        }
+    }, [isReadyToPrint, orderToPrint, handlePrint]);
+
+    const handleBulkPrintAction = useReactToPrint({
+        contentRef: bulkPrintRef,
+        documentTitle: `Bulk_ShippingLabels_${new Date().toISOString().slice(0,10)}`,
+        pageStyle: `@page { size: A4 portrait; margin: 5mm; }`,
+        onAfterPrint: () => setIsBulkReadyToPrint(false)
+    });
+
+    const generateBulkPdf = async (element, filename) => {
+        if (!element) return;
+
+        const toastId = toast.loading('Generating Bulk PDF...');
+        try {
+            await prepareForCanvasCapture(element);
+            await sleep(300);
+
+            const isMobileDeviceNow = window.innerWidth < 768;
+
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff',
+                logging: false,
+                windowWidth: element.scrollWidth,
+                windowHeight: element.scrollHeight,
+                // Important for mobile: avoids blank pages with html2canvas/html2canvas-pro.
+                foreignObjectRendering: !isMobileDeviceNow
+            });
+
+            if (!canvas || canvas.width === 0 || canvas.height === 0) {
+                throw new Error("Canvas capture failed. Empty bulk canvas generated.");
+            }
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            const ratio = canvasWidth / pdfWidth;
+            const imgHeight = canvasHeight / ratio;
+
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position -= pdfHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pdfHeight;
+            }
+
+            pdf.save(filename);
+            toast.success('Bulk PDF downloaded!', { id: toastId });
+        } catch (error) {
+            console.error("Error generating bulk PDF", error);
+            toast.error('Failed to generate bulk PDF.', { id: toastId });
+        }
+    };
+
+    useEffect(() => {
+        if (isBulkReadyToPrint && bulkOrdersToPrint.length > 0) {
+            const processBulkPrint = async () => {
+                // Wait until all bulk labels and QR images are rendered.
+                await sleep(300);
+                await prepareForCanvasCapture(bulkPrintRef.current);
+
+                const isMobileDeviceNow = window.innerWidth < 768;
+
+                if (isMobileDeviceNow) {
+                    await generateBulkPdf(
+                        bulkPrintRef.current,
+                        `Bulk_ShippingLabels_${new Date().toISOString().slice(0,10)}.pdf`
+                    );
+                    setIsBulkReadyToPrint(false);
+                } else {
+                    handleBulkPrintAction();
+                }
+            };
+
+            processBulkPrint();
+        }
+    }, [isBulkReadyToPrint, bulkOrdersToPrint, handleBulkPrintAction]);
+
+    const handleBulkPrint = async () => {
+        const printableOrders = orders.filter(o => {
+            if (o.order_type === 'online') return !!o.tracking_id;
+            return true;
+        });
+        if (printableOrders.length === 0) {
+            toast.error("No valid orders to print. Ensure online orders have a tracking ID.");
+            return;
+        }
+        const toastId = toast.loading('Preparing bulk labels...');
+        try {
+            const ordersWithQr = await Promise.all(
+                printableOrders.map(async (order) => {
+                    const qrUrl = await generateQrDataUrl(order.order_id, 200); // Smaller size for bulk
+                    return { ...order, qrDataUrl: qrUrl };
+                })
+            );
+            setBulkOrdersToPrint(ordersWithQr); 
+            setIsBulkReadyToPrint(true);
+            toast.success('Labels ready for printing.', { id: toastId });
+        } catch (error) {
+            toast.error('Failed to generate QR codes for bulk print.', { id: toastId });
         }
     };
 
@@ -548,7 +630,7 @@ const LogisticsDashboard = () => {
             )}
 
             {/* Hidden Print Container */}
-            <div className="absolute -left-[9999px] top-0 opacity-0 pointer-events-none">
+            <div className="fixed left-[-9999px] top-0 pointer-events-none" style={{ zIndex: -1 }}>
                 <div ref={printRef} className="print-label-container bg-white text-black p-6 flex flex-col items-center justify-start border-2 border-dashed border-black" style={{ width: '10cm', minHeight: '12cm', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact', boxSizing: 'border-box' }}>
                     {orderToPrint ? (
                         <>
@@ -591,7 +673,7 @@ const LogisticsDashboard = () => {
             </div>
 
             {/* Hidden Bulk Print Component */}
-            <div className="absolute -left-[9999px] top-0 opacity-0 pointer-events-none">
+            <div className="fixed left-[-9999px] top-0 pointer-events-none" style={{ zIndex: -1 }}>
                 <div ref={bulkPrintRef} className="print-bulk-container bg-white text-black p-2" style={{ width: '210mm', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact', boxSizing: 'border-box' }}>
                     {bulkOrdersToPrint.length > 0 ? (
                         <div className="grid grid-cols-3 gap-2">
@@ -642,7 +724,7 @@ const LogisticsDashboard = () => {
                 @media print {
                     body * { visibility: hidden !important; }
                     ${isBulkReadyToPrint ? 
-                      '.print-bulk-container, .print-bulk-container * { visibility: visible !important; } .print-bulk-container { position: absolute !important; left: 0 !important; top: 0 !important; width: 210mm !important; }' : 
+                      '.print-bulk-container, .print-bulk-container * { visibility: visible !important; } .print-bulk-container { position: absolute !important; left: 0 !important; top: 0 !important; width: 210mm !important; }' :
                       '.print-label-container, .print-label-container * { visibility: visible !important; } .print-label-container { position: absolute !important; left: 0 !important; top: 0 !important; width: 10cm !important; height: 12cm !important; }'
                     }
                 }

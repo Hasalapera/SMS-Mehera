@@ -12,6 +12,7 @@ const ProductCard = ({ product, onAddToCart }) => {
   const userRole = user?.role?.toLowerCase();
   const canAddOrders = user && ["admin", "sales_rep", "online_store_keeper"].includes(userRole);
   const isInactive = product?.status !== 'active';
+  const canEditInactive = user && ["admin", "manager"].includes(userRole);
 
   const variants = product?.variants || [];
   const variantsPreview = variants.slice(0, 4);
@@ -52,7 +53,7 @@ const ProductCard = ({ product, onAddToCart }) => {
   };
 
   return (
-    <div className={`group bg-card rounded-3xl md:rounded-[2.5rem] overflow-hidden shadow-sm border border-border flex flex-col h-full transition-colors duration-300 ${isInactive ? 'opacity-50 grayscale cursor-not-allowed pointer-events-none' : 'hover:shadow-2xl hover:shadow-[#b4a460]/15 transition-all duration-500'}`}>
+    <div className={`group bg-card rounded-3xl md:rounded-[2.5rem] overflow-hidden shadow-sm border border-border flex flex-col h-full transition-colors duration-300 ${isInactive ? 'opacity-60 grayscale' : ''} ${(isInactive && !canEditInactive) ? 'cursor-not-allowed pointer-events-none' : 'hover:shadow-2xl hover:shadow-[#b4a460]/15 transition-all duration-500'}`}>
       
       {/* --- Image Container --- */}
       <div className="relative bg-card/50 aspect-square flex items-center justify-center overflow-hidden p-6 md:p-10 transition-all duration-300">
@@ -77,10 +78,10 @@ const ProductCard = ({ product, onAddToCart }) => {
         </div> */}
 
         {/* --- Side Hover Actions --- */}
-        <div className={`absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-3 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ${isInactive ? 'hidden' : ''}`}>
+        <div className={`absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-3 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ${(isInactive && !canEditInactive) ? 'hidden' : ''}`}>
           
           {/* ✅ ShoppingCart with Luxury Toast Notification */}
-          {canAddOrders && (
+          {canAddOrders && !isInactive && (
             <button 
               onClick={handleAddToCartClick}
               className="p-3 bg-card text-primary rounded-2xl shadow-xl hover:bg-black hover:text-primary transition-all duration-300 transform hover:scale-110 active:scale-95"
@@ -128,7 +129,7 @@ const ProductCard = ({ product, onAddToCart }) => {
         {/* --- Variants & Actions --- */}
         <div className="mt-auto pt-5 border-t border-border flex items-center justify-between gap-2">
           <div className="flex -space-x-3 hover:space-x-1 transition-all duration-300">
-            {variantsPreview?.length > 0 ? (
+            {!isInactive && variantsPreview?.length > 0 ? (
               variantsPreview.map((variant) => (
                 <div key={variant.variant_id} className="w-8 h-8 md:w-9 md:h-9 rounded-full border-[3px] border-white overflow-hidden bg-card shadow-md ring-1 ring-gray-100 hover:-translate-y-1 transition-all duration-300">
                   <img src={variant.image_url || product.image_url} className="w-full h-full object-cover" alt="v" />
@@ -151,7 +152,7 @@ const ProductCard = ({ product, onAddToCart }) => {
 
           {/* --- Mobile Action Buttons --- */}
           <div className="flex md:hidden items-center gap-2">
-            {canAddOrders && (
+            {canAddOrders && !isInactive && (
               <button 
                 onClick={handleAddToCartClick}
                 className="p-2.5 bg-black text-primary rounded-xl shadow-lg active:scale-95 transition-all duration-300"

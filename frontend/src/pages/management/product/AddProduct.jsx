@@ -133,6 +133,20 @@ const AddProduct = () => {
         }
       });
       toast.success("Product added successfully!");
+      
+      // Clear form data and image preview
+      setFormData({
+        product_name: '',
+        brand_id: '',
+        category_id: '',
+        description: '',
+        main_image: null,
+        variants: [
+          { sku: '', variant_name: '', price: '', stock_count: '', critical_stock_level: 5, variant_image: null, preview: null }
+        ]
+      });
+      setMainImagePreview(null);
+
       await refreshNotifications();
 
     } catch (err) {
