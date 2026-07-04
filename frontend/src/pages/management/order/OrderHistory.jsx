@@ -54,7 +54,7 @@ const statusBadge = {
     border: "border-amber-200",
   },
   shipped: {
-    label: "Shipped",
+    label: "Dispatched to Delivery",
     bg: "bg-purple-50",
     text: "text-purple-600",
     border: "border-purple-200",

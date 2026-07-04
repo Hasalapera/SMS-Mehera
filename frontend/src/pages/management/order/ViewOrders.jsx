@@ -64,7 +64,7 @@ const statusBadge = {
     border: "border-amber-200",
   },
   shipped: {
-    label: "Shipped",
+    label: "Dispatched to Delivery",
     bg: "bg-purple-50",
     text: "text-purple-600",
     border: "border-purple-200",
@@ -74,6 +74,18 @@ const statusBadge = {
     bg: "bg-gray-900",
     text: "text-white",
     border: "border-border transition-colors duration-300",
+  },
+  handed_over: {
+    label: "Courier Handover",
+    bg: "bg-purple-500/10",
+    text: "text-purple-500",
+    border: "border-purple-500/20",
+  },
+  handed_over_delivery: {
+    label: "Delivery Handover",
+    bg: "bg-orange-500/10",
+    text: "text-orange-500",
+    border: "border-orange-500/20",
   },
   returned: {
     label: "Returned",
@@ -102,6 +114,16 @@ const ViewOrders = ({ showHeader = true }) => {
   const isAdmin = loggedUser?.role === "admin";
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
+
+  const filterTabs = [
+    { value: "All", label: "All" },
+    { value: "Requested", label: "Requested" },
+    { value: "Rejected", label: "Rejected" },
+    { value: "Approved", label: "Approved" },
+    { value: "Shipped", label: "Dispatched to Delivery" },
+    { value: "Delivered", label: "Delivered" },
+    { value: "Cancelled", label: "Returned/Cancelled" },
+  ];
 
   const fetchOrders = async (showLoader = true) => {
     if (!token) return;
@@ -321,7 +343,12 @@ const ViewOrders = ({ showHeader = true }) => {
     if (statusFilter === 'All') return matchSearch;
 
     // 🎯 [FIX]: "Cancelled" tab eka "returned" status eka pennanna haduwa.
-    if (statusFilter === 'Cancelled') return matchSearch && o.order_status === 'returned';
+    if (statusFilter === 'Cancelled') return matchSearch && (o.order_status === 'returned' || o.order_status === 'cancelled');
+
+    // 🎯 [NEW]: "Shipped" tab eka "handed_over" saha "handed_over_delivery" pennanna haduwa.
+    if (statusFilter === 'Shipped') {
+      return matchSearch && (o.order_status === 'handed_over' || o.order_status === 'handed_over_delivery');
+    }
 
     return matchSearch && o.order_status === statusFilter.toLowerCase();
   });
@@ -496,20 +523,13 @@ const ViewOrders = ({ showHeader = true }) => {
           </div>
           {/* Desktop Filters */}
           <div className="hidden lg:flex items-center gap-2">
-            {[
-              "All",
-              "Requested",
-              "Rejected",
-              "Approved",
-              "Delivered",
-              "Cancelled",
-            ].map((s) => (
+            {filterTabs.map((tab) => (
               <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-4 py-2 rounded-lg text-[11px] font-black border uppercase whitespace-nowrap ${statusFilter === s ? "bg-primary transition-all duration-300 text-textMain transition-colors duration-300" : "bg-card transition-colors duration-300 text-textMain/50 transition-colors duration-300"}`}
+                key={tab.value}
+                onClick={() => setStatusFilter(tab.value)}
+                className={`px-4 py-2 rounded-lg text-[11px] font-black border uppercase whitespace-nowrap ${statusFilter === tab.value ? "bg-primary transition-all duration-300 text-textMain transition-colors duration-300" : "bg-card transition-colors duration-300 text-textMain/50 transition-colors duration-300"}`}
               >
-                {s}
+                {tab.label}
               </button>
             ))}
           </div>
@@ -520,16 +540,9 @@ const ViewOrders = ({ showHeader = true }) => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full appearance-none bg-background border border-border rounded-xl py-3.5 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none"
             >
-              {[
-                "All",
-                "Requested",
-              "Rejected",
-                "Approved",
-                "Delivered",
-                "Cancelled",
-              ].map((s) => (
-                <option key={s} value={s}>
-                  {s === "All" ? "All Order Statuses" : s}
+              {filterTabs.map((tab) => (
+                <option key={tab.value} value={tab.value}>
+                  {tab.value === "All" ? "All Order Statuses" : tab.label}
                 </option>
               ))}
             </select>
