@@ -127,19 +127,6 @@ const handleDistrictChange = (district) => {
   }
 };
 
-//save notification to DB
-const saveNotificationToDB = async (type, title, message, severity) => {
-  try {
-    const token = localStorage.getItem('accessToken');
-    await api.post('/notifications', 
-      { type, title, message, severity },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-  } catch (err) {
-    console.error('Failed to save notification:', err);
-  }
-};
-
 const getAgeFromDob = (dob) => {
   if (!dob) return 0;
 
@@ -289,27 +276,6 @@ const handleSubmit = async (e) => {
     if (response.status === 201) {
       toast.success(`User ${name} added successfully!`);
 
-
-      const currentUser = JSON.parse(localStorage.getItem("user"));
-
-      await saveNotificationToDB(
-        "user",
-        "👤 New User Registered",
-        `${name} (${email}) has been added as ${role.replace("_", " ")} by ${
-          currentUser?.name || "Admin"
-        }`,
-        "info"
-      );
-
-      addNotification({
-        type: "user",
-        title: "👤 New User Registered",
-        message: `${name} (${email}) has been added as ${role.replace(
-          "_",
-          " "
-        )} by ${currentUser?.name || "Admin"}`,
-        severity: "info",
-      });
 
       if (response.data.notification) {
         addNotification(response.data.notification);
