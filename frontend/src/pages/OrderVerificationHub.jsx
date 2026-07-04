@@ -1,5 +1,6 @@
 // src/pages/OrderVerificationHub.jsx
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom'; // 🎯 [FIX] useNavigate import කරගන්නවා.
 import { QrCode, ScanLine, EyeOff, CheckCircle, Search, Truck, Clock, Package, Smartphone, Award, Globe, Copy, Check, ExternalLink, AlertTriangle, Printer } from 'lucide-react'; // 🎯 [FIXED]: Added Printer icon here
 import api from '../api/axiosInstance';
 import Swal from 'sweetalert2';
@@ -9,8 +10,14 @@ import Footer from '../components/Footer';
 
 const OrderVerificationHub = () => {
   const customerScannerRef = useRef(null);
-  const [activeTab, setActiveTab] = useState('verify'); 
-  
+  const location = useLocation();
+  const navigate = useNavigate(); // 🎯 URL එක වෙනස් කරන්න navigate hook එක ගන්නවා.
+
+  // 🎯 [FIXED & IMPROVED] URL එකේ ?tab=... parameter එකට අනුව අදාළ tab එක active කරනවා.
+  const initialTab = new URLSearchParams(location.search).get('tab') || 'verify';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+
   // Delivery Verification States
   const [isCustomerScannerOpen, setIsCustomerScannerOpen] = useState(false);
   const [scannedOrderId, setScannedOrderId] = useState('');
@@ -25,7 +32,12 @@ const OrderVerificationHub = () => {
 
   useEffect(() => { 
     window.scrollTo(0, 0); 
-  }, []);
+    // 🎯 URL එකේ query param එක වෙනස් වෙද්දී activeTab එක update කරනවා.
+    const tabFromUrl = new URLSearchParams(location.search).get('tab');
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [location, activeTab]);
 
   // HTML5 QR Scanner Lifecycle Router
   useEffect(() => {
@@ -221,8 +233,17 @@ const OrderVerificationHub = () => {
         <div className="bg-card border border-border rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col">
           {/* Tabs Switcher Component */}
           <div className="flex border-b border-border bg-background/50 sm:px-6 pt-2 gap-2 sm:gap-4 overflow-x-auto w-full no-scrollbar">
-            <button type="button" onClick={() => { setActiveTab('verify'); setIsCustomerScannerOpen(false); }} className={`pb-3.5 px-6 text-[11px] sm:text-xs font-black uppercase tracking-widest border-b-2 text-center whitespace-nowrap ${activeTab === 'verify' ? 'border-primary text-primary' : 'border-transparent text-textMain/40 hover:text-textMain'}`}>Verify Secure Delivery</button>
-            <button type="button" onClick={() => { setActiveTab('status'); setIsCustomerScannerOpen(false); }} className={`pb-3.5 px-6 text-[11px] sm:text-xs font-black uppercase tracking-widest border-b-2 text-center whitespace-nowrap ${activeTab === 'status' ? 'border-primary text-primary' : 'border-transparent text-textMain/40 hover:text-textMain'}`}>Trace Order Status</button>
+            {/* 🎯 [FIXED] Tab click කළාම URL එකත් update වෙන විදිහට navigate function එක එකතු කරන ලදී. */}
+            <button type="button" onClick={() => { 
+              setActiveTab('verify'); 
+              setIsCustomerScannerOpen(false); 
+              navigate('/verify-order?tab=verify'); 
+            }} className={`pb-3.5 px-6 text-[11px] sm:text-xs font-black uppercase tracking-widest border-b-2 text-center whitespace-nowrap ${activeTab === 'verify' ? 'border-primary text-primary' : 'border-transparent text-textMain/40 hover:text-textMain'}`}>Verify Secure Delivery</button>
+            <button type="button" onClick={() => { 
+              setActiveTab('status'); 
+              setIsCustomerScannerOpen(false); 
+              navigate('/verify-order?tab=status'); 
+            }} className={`pb-3.5 px-6 text-[11px] sm:text-xs font-black uppercase tracking-widest border-b-2 text-center whitespace-nowrap ${activeTab === 'status' ? 'border-primary text-primary' : 'border-transparent text-textMain/40 hover:text-textMain'}`}>Trace Order Status</button>
           </div>
 
           <div className="p-6 sm:p-10 bg-card">
