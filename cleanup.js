@@ -1,6 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 
+// This script recursively processes all .jsx files in the specified directory and its subdirectories. It fixes broken opacity modifiers, deduplicates transition classes, and corrects layout background classes. The cleaned content is then written back to the original file if any changes were made.
+// Usage: node cleanup.js
+// Note: Make sure to run this script from the root of your project where the 'frontend/src' directory is located.
+// Function to recursively process directories and clean up .jsx files
 function processDirectory(directory) {
   const files = fs.readdirSync(directory);
 

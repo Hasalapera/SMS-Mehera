@@ -18,7 +18,7 @@ const EditStock = () => {
 
   const navigate = useNavigate();
 
-  // States
+  // State variables for managing products, loading state, search term, selected products, applying/undoing state, and last applied summary
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,6 +53,7 @@ const EditStock = () => {
     }
   };
 
+  // Function to add a product to the edit queue, ensuring no duplicates
   const addProductToQueue = (product) => {
     const alreadyAdded = selectedProducts.some((p) => p.product_id === product.product_id);
     if (alreadyAdded) {
@@ -60,6 +61,7 @@ const EditStock = () => {
       return;
     }
 
+    // Prepare the product object for the queue, including variants and their stock quantities
     const queueProduct = {
       product_id: product.product_id,
       product_name: product.product_name,
@@ -499,6 +501,7 @@ const EditStock = () => {
               <h3 className="font-black text-[11px] uppercase tracking-widest text-textMain/50 flex items-center gap-2">
                 <ClipboardList size={16} /> Edit Queue
               </h3>
+              {/* Clear All Button */}
               <div className="flex items-center gap-3">
                 <span className="text-[10px] font-black text-primary uppercase tracking-widest">{selectedProducts.length} Product(s)</span>
                 <button
@@ -534,6 +537,7 @@ const EditStock = () => {
                       </button>
                     </div>
 
+                    {/* Variant List with Current and New Stock Inputs */}
                     <div className="p-4 space-y-3">
                       {product.variants.map((variant) => (
                         <div key={variant.variant_id} className="space-y-2">
@@ -559,6 +563,7 @@ const EditStock = () => {
                         </div>
                       ))}
 
+                      {/* Bulk Quantity Input */}
                       <div className="pt-3 border-t border-border flex flex-col sm:flex-row items-center gap-2">
                         <input
                           type="number"

@@ -5,8 +5,10 @@ const upload = multer();
 const {sendSupportEmail, getAdminContacts} = require('../controllers/supportController');
 const { verifyToken } = require('../middlewares/authMiddleware');
 
+// POST: /api/support/send-email
 router.post('/send-email', verifyToken, upload.single('supportFile'), sendSupportEmail);
 
+// GET: /api/support/getAdminContacts
 router.get('/getAdminContacts', verifyToken, getAdminContacts);
 
 module.exports = router;

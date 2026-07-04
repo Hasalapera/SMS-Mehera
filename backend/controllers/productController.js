@@ -79,7 +79,7 @@ const addProduct = async (req, res) => {
                 price: v.price,
                 stock_count: v.stock_count,
                 critical_stock_level: v.critical_stock_level,
-                image_url: vImgUrl // 👈 Variant URL
+                image_url: vImgUrl // Variant URL
             });
         });
 
@@ -216,7 +216,7 @@ const updateProduct = async (req, res) => {
             return res.status(404).json({ error: "Product not found" });
         }
 
-        // --- Start tracking changes for granular notifications ---
+        // Track specific product and variant changes for detailed notifications
         const changes = {
             productDetails: false,
             newVariants: [],
@@ -257,6 +257,7 @@ const updateProduct = async (req, res) => {
                 await product.restore({ transaction });
             }
 
+            // update main product details
             await product.update({
                 product_name,
                 brand_id,
@@ -318,14 +319,16 @@ const updateProduct = async (req, res) => {
                     ) {
                         changes.otherVariantUpdates.push(existingModel.variant_name);
                     }
-
+                    // Update existing variant
                     await existingModel.update(payload, { transaction });
                 } else {
+                    // New variant adding
                     const newVariant = await ProductVariant.create(payload, { transaction });
                     changes.newVariants.push(newVariant.variant_name);
                 }
             }
 
+            // --- Track Deleted Variants ---
             const variantsToDelete = existingVariants.filter((variant) => !submittedVariantIds.has(variant.variant_id));
             for (const variant of variantsToDelete) {
                 changes.deletedVariants.push(variant.variant_name);
@@ -429,8 +432,10 @@ const deleteProduct = async (req, res) => {
         await product.update({
             status: 'inactive',
         });
+        // Soft-delete the product (this will set deleted_at)
         await product.destroy();
 
+        // Soft-delete all associated variants
         await ProductVariant.destroy({
             where: { product_id: id }
         });

@@ -5,14 +5,15 @@ const ReportFilters = ({ filterType, setFilterType, dates, setDates }) => {
   const handleStartDateChange = (e) => {
     const newStartDate = e.target.value;
     
-    // 💡 ආරක්ෂාවට: අලුත් From Date එක දැනට තියෙන To Date එකට වඩා වැඩි නම්, To Date එක clear කරනවා
+    // This ensures that the selected start date does not exceed the end date, maintaining logical consistency in the date range selection.
     if (dates.endDate && newStartDate > dates.endDate) {
-      setDates({ startDate: newStartDate, endDate: '' });
+      setDates({ startDate: newStartDate, endDate: '' }); // If the new start date is later than the current end date, we reset the end date to an empty string. This prevents the user from selecting an invalid date range where the start date is after the end date.
     } else {
-      setDates({ ...dates, startDate: newStartDate });
+      setDates({ ...dates, startDate: newStartDate }); // If the new start date is valid (i.e., it does not exceed the current end date), we simply update the start date while keeping the end date unchanged. This allows for a flexible and user-friendly date selection experience, ensuring that users can easily adjust their date ranges without encountering errors or inconsistencies.
     }
   };
 
+  // The filters array defines the available time range options for generating reports. Each filter has a unique identifier (id) and a corresponding label that will be displayed in the UI. The options include "All Time," "Daily," "Monthly," "Yearly," and "Custom Date," allowing users to select the desired time frame for their reports.
   const filters = [
     { id: 'all', label: 'All Time' },
     { id: 'daily', label: 'Daily' },

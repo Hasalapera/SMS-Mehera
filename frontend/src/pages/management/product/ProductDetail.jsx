@@ -121,7 +121,7 @@ export default function ProductDetail() {
     setEditLoading(true);
 
     try {
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers = token ? { Authorization: `Bearer ${token}` } : {}; // Include the token in the headers if it exists
       const [brandResult, categoryResult] = await Promise.allSettled([
         api.get('/brands/getBrands', { headers }),
         api.get('/category/getCategories', { headers }),
@@ -134,7 +134,7 @@ export default function ProductDetail() {
         ? (categoryResult.value.data.categories || categoryResult.value.data || [])
         : [];
 
-      setBrands(loadedBrands.length > 0 ? loadedBrands : (product.brand ? [product.brand] : []));
+      setBrands(loadedBrands.length > 0 ? loadedBrands : (product.brand ? [product.brand] : [])); // If no brands are loaded, fallback to the product's brand if it exists
       setCategories(loadedCategories.length > 0 ? loadedCategories : (product.category ? [product.category] : []));
       setEditForm(createEditForm(product));
       setMainImagePreview(product.image_url || null);
@@ -265,10 +265,10 @@ export default function ProductDetail() {
   const handleSaveProduct = async (e) => {
     e.preventDefault();
 
-    if (!editForm) return;
+    if (!editForm) return; // Safety check to ensure editForm is defined
 
     try {
-      setSaving(true);
+      setSaving(true); // Set saving state to true to indicate that the save operation is in progress
 
       const data = new FormData();
       data.append('product_name', editForm.product_name);
@@ -278,7 +278,7 @@ export default function ProductDetail() {
       data.append('status', editForm.status);
 
       if (editForm.main_image) {
-        data.append('main_image', editForm.main_image);
+        data.append('main_image', editForm.main_image); // Append the main image file if it exists
       }
 
       // If activating the product, include all variants for restoration. Otherwise, only include active ones.
@@ -551,6 +551,7 @@ export default function ProductDetail() {
                           </label>
                         </div>
 
+                        {/* Variant Details */}
                         <div className="grid gap-2 w-full">
                           <label className="text-[9px] font-black uppercase tracking-widest text-textMain/40">Variant Name</label>
                           <input type="text" name="variant_name" required value={variant.variant_name} onChange={(e) => handleVariantFieldChange(index, e)} placeholder="Variant Name" className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm outline-none" />
@@ -585,6 +586,7 @@ export default function ProductDetail() {
                     </div>
                   ))}
                   
+                  {/* Add Another Variant Button */}
                   <div className="flex justify-center mt-6">
                     <button 
                       type="button" 
@@ -621,6 +623,7 @@ export default function ProductDetail() {
             <ArrowLeft size={16} /> Back to Inventory
           </button>
 
+          {/* Action Buttons */}
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end w-full md:w-auto">
             {canEditProduct && (
               <button
@@ -632,7 +635,7 @@ export default function ProductDetail() {
                 Edit Product
               </button>
             )}
-
+            {/* Delete Product Button */}
             {canEditProduct && (
               <button
                 type="button"

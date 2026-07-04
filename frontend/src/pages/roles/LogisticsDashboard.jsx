@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import api from '../../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { MySwal } from '../utils/swalConfig';
+import { MySwal, swalClasses } from '../utils/swalConfig';
 import { useReactToPrint } from 'react-to-print';
 import { 
     Truck, MapPin, Package, Phone, User,
@@ -147,15 +147,23 @@ const LogisticsDashboard = () => {
 
     const handleStatusUpdate = async (orderId, newStatus) => {
         const result = await MySwal.fire({
-            title: `Confirm Status Shift?`,
-            text: `Are you sure you want to transition this package to "${newStatus.replace('_', ' ').toUpperCase()}"?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, Confirm Shift',
-            cancelButtonText: 'Cancel',
-            confirmButtonColor: '#000000',
-            reverseButtons: true,
-        });
+        title: `Confirm Status Shift?`,
+        text: `Are you sure you want to transition this package to "${newStatus.replace('_', ' ').toUpperCase()}"?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Confirm Shift',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#000000',
+        reverseButtons: true,
+
+        // ✅ Keep global swal design classes + add Logistics-only alignment classes
+        customClass: {
+            ...swalClasses,
+            actions: `${swalClasses.actions} logistics-swal-actions`,
+            confirmButton: `${swalClasses.confirmButton} logistics-swal-confirm`,
+            cancelButton: `${swalClasses.cancelButton} logistics-swal-cancel`,
+        },
+    });
 
         if (result.isDismissed) return;
 
@@ -166,8 +174,18 @@ const LogisticsDashboard = () => {
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
                 
-                toast.success(`Status successfully updated to ${newStatus}!`);
-                
+                const getSuccessMessage = (status) => {
+                    switch (status) {
+                        case 'handed_over':
+                            return "Package handed over to Courier Service.";
+                        case 'handed_over_delivery':
+                            return "Package handed over to Delivery Person.";
+                        default:
+                            return `Status successfully updated to ${status.replace(/_/g, ' ')}!`;
+                    }
+                };
+                toast.success(getSuccessMessage(newStatus));
+
                 if (res.data.whatsappUrl) {
                     MySwal.fire({
                         title: 'Send Notification',
@@ -249,26 +267,31 @@ const LogisticsDashboard = () => {
             const { value: formValues } = await MySwal.fire({
                 title: '<span style="font-family:serif; font-style:italic; font-size:22px;">Logistics Allocation</span>',
                 html: `
-                    <div style="text-align: left; font-family: sans-serif; display: flex; flex-direction: column; gap: 12px; width: 100%;">
-                        <div style="margin-bottom: 14px; width: 100%;">
-                            <label style="font-size: 10px; font-weight: 900; text-transform: uppercase; tracking: 0.1em; color: #6b7280; display:block; margin-bottom:6px;">Select Courier Service</label>
-                            <select id="swal-courier-name" style="width: 100%; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 13px; outline: none; background: #fff; height: 45px; padding: 0 10px;">
+                    <div class="text-left font-sans space-y-4 w-full">
+                        <div>
+                            <label for="swal-courier-name" class="block mb-1.5 text-[10px] font-black uppercase tracking-widest text-textMain/50">Select Courier Service</label>
+                            <select id="swal-courier-name" class="w-full bg-background border border-border rounded-xl py-3 px-4 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none">
                                 <option value="Domex">Domex Logistics</option>
                                 <option value="Pronto">Pronto Lanka</option>
                                 <option value="Koombiyo">Koombiyo</option>
                             </select>
                         </div>
-                        <div style="width: 100%;">
-                            <label style="font-size: 10px; font-weight: 900; text-transform: uppercase; tracking: 0.1em; color: #6b7280; display:block; margin-bottom:6px;">Courier Tracking ID</label>
-                            <input id="swal-tracking-id" placeholder="e.g. DPD-12345678" style="width: 100%; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 13px; outline: none; height: 45px; padding: 0 12px; box-sizing: border-box;" />
+                        <div>
+                            <label for="swal-tracking-id" class="block mb-1.5 text-[10px] font-black uppercase tracking-widest text-textMain/50">Courier Tracking ID</label>
+                            <input id="swal-tracking-id" placeholder="e.g. DPD-12345678" class="w-full bg-background border border-border rounded-xl py-3 px-4 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                         </div>
                     </div>
                 `,
                 focusConfirm: false,
                 showCancelButton: true,
                 confirmButtonText: 'Save & Print',
-                confirmButtonColor: '#000000',
-                customClass: { popup: 'rounded-[2rem] p-6' },
+                cancelButtonText: 'Cancel',
+                customClass: {
+                    popup: 'rounded-[2rem] p-6 bg-card border border-border shadow-2xl',
+                    actions: 'w-full flex gap-3 pt-4',
+                    confirmButton: 'flex-1 bg-black text-primary rounded-xl px-6 py-3 text-xs font-bold uppercase hover:bg-primary hover:text-black transition-colors shadow-lg',
+                    cancelButton: 'flex-1 bg-card border border-border text-textMain/70 rounded-xl px-6 py-3 text-xs font-bold uppercase hover:bg-background hover:border-border transition-colors'
+                },
                 preConfirm: () => {
                     const courier_name = document.getElementById('swal-courier-name').value;
                     const tracking_id = document.getElementById('swal-tracking-id').value.trim();
@@ -455,7 +478,7 @@ const LogisticsDashboard = () => {
         return () => { if (html5QrcodeScanner) html5QrcodeScanner.clear().catch(e => console.error(e)); };
     }, [isScannerOpen]);
 
-    // 📷 [🎯 ULTRA FIXED SCANNER DISPATCH ROUTER]: 
+
     const onScanSuccess = (decodedText) => {
         setIsScannerOpen(false);
         const orderExists = orders.find(o => o.order_id === decodedText);
@@ -728,6 +751,46 @@ const LogisticsDashboard = () => {
                       '.print-label-container, .print-label-container * { visibility: visible !important; } .print-label-container { position: absolute !important; left: 0 !important; top: 0 !important; width: 10cm !important; height: 12cm !important; }'
                     }
                 }
+                    #mehera-qr-reader span, #mehera-qr-reader a { color: #ffffff !important; opacity: 0.6; }
+                    #mehera-qr-reader #qr-reader__status_message { color: #ffffff !important; opacity: 1; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; }
+                    #mehera-qr-reader a[href='https://scanapp.org'] { display: none !important; }
+
+                    /* ✅ LogisticsDashboard SweetAlert button alignment only */
+                    .logistics-swal-actions {
+                        width: 100% !important;
+                        display: flex !important;
+                        flex-direction: row !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        gap: 12px !important;
+                        flex-wrap: nowrap !important;
+                    }
+
+                    .logistics-swal-confirm,
+                    .logistics-swal-cancel {
+                        flex: 1 1 0 !important;
+                        min-width: 0 !important;
+                        max-width: 190px !important;
+                        margin: 0 !important;
+                        white-space: nowrap !important;
+                        display: inline-flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                    }
+
+                    @media (max-width: 480px) {
+                        .logistics-swal-actions {
+                            gap: 8px !important;
+                        }
+
+                        .logistics-swal-confirm,
+                        .logistics-swal-cancel {
+                            max-width: none !important;
+                            font-size: 10px !important;
+                            padding-left: 8px !important;
+                            padding-right: 8px !important;
+                        }
+                    }
             `}} />
         </div>
     );

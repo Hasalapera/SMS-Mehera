@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../db/db');
 
+// Define the Notification model
 const Notification = sequelize.define('Notification', {
     notification_id: {
         type: DataTypes.UUID,

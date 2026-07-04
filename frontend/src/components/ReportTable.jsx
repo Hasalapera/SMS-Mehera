@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Package, Calendar, User, MapPin, X, Receipt 
 const ReportTable = ({ orders = [], exportMode = false }) => {
   // 🔢 Pagination States
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; // 📄 පේජ් එකකට පෙන්වන්න ඕනේ ඕඩර්ස් ගණන (උඹට ඕන නම් මාරු කරපන්)
+  const itemsPerPage = 5; // Number of items to display per page for screen view (not for export/print)
   
   const [selectedOrder, setSelectedOrder] = useState(null); // 🔍 Click කරපු Order එක තියාගන්න state එක
 

@@ -2,16 +2,21 @@ const fs = require('fs');
 const path = require('path');
 
 // 1. Fix Navbar.jsx
+// The Navbar.jsx file had some text visibility issues in light theme and the active link highlight was not working properly. 
+// This section of the script reads the Navbar.jsx file, applies the necessary fixes, and writes the updated content back to the file.
+// Read the Navbar.jsx file
 const navbarPath = path.join(__dirname, 'frontend/src/components/Navbar.jsx');
 let navbar = fs.readFileSync(navbarPath, 'utf8');
 
 // Fix visibility of text in light theme (change text-white to text-textMain when inside bg-card)
+// Fix the active link highlight to use a more visible style (background + border + shadow) instead of just text color change
 navbar = navbar.replace('bg-card transition-colors duration-300 text-white shadow-2xl', 'bg-card transition-colors duration-300 text-textMain shadow-sm');
 navbar = navbar.replace('tracking-tight text-white group-hover:text-primary', 'tracking-tight text-textMain group-hover:text-primary');
 navbar = navbar.replace('bg-black/40 rounded-3xl p-5 border border-border', 'bg-background/50 rounded-3xl p-5 border border-border');
 navbar = navbar.replace('font-black text-white uppercase', 'font-black text-textMain uppercase');
 
 // Re-apply Desktop NavLink highlight (since it was lost in a race condition)
+// The old desktop nav links used a border-bottom to indicate active state, which was not very visible. The new design uses a background color, border, and shadow for better visibility.
 const oldDesktopNav = `                <div className="hidden lg:flex gap-8 text-[11px] font-bold uppercase tracking-widest">
                     {filteredLinks.map((link) => (
                         <NavLink 

@@ -1,39 +1,51 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../../api/axiosInstance';
-import { MessageCircle, Paperclip, Send, HelpCircle, ShieldCheck, Mail, Loader2, X } from 'lucide-react';
+import { MessageCircle, Paperclip, Send, HelpCircle, ShieldCheck, Mail, Loader2, X, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../../pages/context/AuthContext'; // Path preserved from your snippet logic
 import { MySwal } from '../utils/swalConfig';
 
 const Support = () => {
+  console.log('SUPPORT COMPONENT RENDERED'); // Temporary Debug Log
   const { user } = useAuth();
   const [formData, setFormData] = useState({ subject: '', message: '' });
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [adminWhatsApp, setAdminWhatsApp] = useState([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
 
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchAdminContacts = async () => {
-      if (user?.role?.toLowerCase() !== 'admin') {
-        try {
-          const token = localStorage.getItem('accessToken');
-          const response = await api.get('/support/getAdminContacts', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          
-          //Separate only the numbers into an array.
-          const numbers = response.data.admins
-            .map(a => a.contact_no)
-            .filter(n => n); // remove empty numbers
-          
-          setAdminWhatsApp(numbers);
-        } catch (err) {
-          console.error("Admin contacts fetch error:", err);
-        }
+      if (!user) {
+        return;
+      }
+
+      if (user?.role?.toLowerCase() === 'admin') {
+        return;
+      }
+
+      console.log('FETCHING ADMIN CONTACTS'); // Temporary Debug Log
+      setContactsLoading(true);
+      try {
+        const token = localStorage.getItem('accessToken');
+        const response = await api.get('/support/getAdminContacts', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const numbers = response.data.admins
+          .map(a => a.contact_no)
+          .filter(n => n);
+
+        setAdminWhatsApp(numbers);
+      } catch (err) {
+        console.error("Admin contacts fetch error:", err.response?.data || err.message);
+      } finally {
+        setContactsLoading(false);
       }
     };
+
     fetchAdminContacts();
   }, [user]);
 
@@ -145,6 +157,11 @@ const Support = () => {
     <div className="w-full max-w-4xl mx-auto animate-in fade-in duration-500 pb-10">
       
       {/* Header - Matches AddUser structure */}
+      {/* --- Temporary UI Debug Badge --- */}
+      <div className="absolute top-24 left-4 bg-red-500 text-white text-xs p-1 rounded z-50">
+        SUPPORT_COMPONENT_LOADED
+      </div>
+
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-textMain transition-colors duration-300 flex items-center gap-3">
           <div className="p-2 bg-primary rounded-lg text-black">
@@ -239,11 +256,15 @@ const Support = () => {
         <div className="mt-12 flex flex-col sm:flex-row justify-end gap-4">
           <button 
             type="button" 
-            onClick={openWhatsApp}
-            className="border-2 border-green-500 text-green-600 px-8 py-3 rounded-xl font-bold text-sm hover:bg-green-500/10 transition-all flex items-center justify-center gap-2"
+            onClick={openWhatsApp} 
+            disabled={contactsLoading}
+            className="border-2 border-green-500 text-green-600 px-8 py-3 rounded-xl font-bold text-sm hover:bg-green-500/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <MessageCircle size={18} />
-            Chat via WhatsApp
+            {contactsLoading ? (
+              <><Loader2 size={18} className="animate-spin" /> Fetching Contact...</>
+            ) : (
+              <><MessageCircle size={18} /> Chat via WhatsApp</>
+            )}
           </button>
 
           <button 
