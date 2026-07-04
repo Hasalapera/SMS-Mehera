@@ -1,10 +1,11 @@
+// src/pages/Workshops.jsx
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Clock, Award, ArrowRight, Loader2 } from 'lucide-react';
+import { Calendar, Users, Clock, Award, ArrowRight, Loader2, Sparkles } from 'lucide-react';
 import StatNavBar from '../components/StatNavBar';
 import Footer from '../components/Footer';
 import api from '../api/axiosInstance';
 
-// 📦 කලින් පිටුවේ තිබුණු ඔක්කොම වර්ක්ෂොප් ටික මෙන්න Default (Static) ඩේටා විදිහට හැදුවා
+// 📦 පරණ පිටුවේ තිබුණු Default (Static) ඩේටා ලිස්ට් එක
 const DEFAULT_WORKSHOPS = [
   {
     workshop_id: "static-flagship",
@@ -21,14 +22,13 @@ const DEFAULT_WORKSHOPS = [
     workshop_id: "static-past",
     title: "DB Collaboration with INGLOT 2024",
     description: "A retrospective of our successful partnership focusing on creative makeup artistry.",
-    date: "22 SEPTEMBER 2025", // කලින් කෝඩ් එකේ තිබුණු දිනයමයි
+    date: "22 SEPTEMBER 2025",
     capacity: "400+ Attendees",
     speakers: "Dhananjaya Bandara",
     duration: "1 Day",
     image_url: "https://i.postimg.cc/zXd1DrRf/484132183-654001320714909-7171993099864643698-n.jpg",
     type: "past"
   },
-  // Active Workshop Series (කලින් තිබුණු ලිස්ට් එක)
   ...[
     'Galle Workshop', 'Matara Workshop', 'Maharagama Workshop', 'Negombo Workshop',
     'Gampaha Workshop', 'Kandy Workshop', 'Kurunegala Workshop', 'Galle Workshop II'
@@ -41,7 +41,7 @@ const DEFAULT_WORKSHOPS = [
 ];
 
 const Workshops = () => {
-    const [workshops, setWorkshops] = useState(DEFAULT_WORKSHOPS); // මුලින්ම පරණ බඩු ටික ලෝඩ් කරනවා
+    const [workshops, setWorkshops] = useState(DEFAULT_WORKSHOPS); 
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -49,7 +49,7 @@ const Workshops = () => {
             try {
                 const res = await api.get('/workshops');
                 if (res.data && res.data.length > 0) {
-                    // ✅ පරණ තිබ්බ Static ඒවා සහ DB එකෙන් එන අලුත් ඒවා ඔක්කොම එකතු කරනවා (Merge)
+                    // Static ඒවා සහ DB එකෙන් එන අලුත් ඒවා ඔක්කොම එකතු කරනවා
                     setWorkshops([...DEFAULT_WORKSHOPS, ...res.data]);
                 }
             } catch (err) {
@@ -61,15 +61,33 @@ const Workshops = () => {
         fetchWorkshops();
     }, []);
 
-    // ඩේටා වර්ගීකරණය (පරණ + අලුත් ඔක්කොම Type එක අනුව Filter වෙනවා)
-    // Flagship සහ Past ඒවායේ අලුත්ම එක උඩින් පෙන්වන්න .reverse() හෝ අන්තිමට ආපු එක ගන්නවා
-    const flagshipEvents = workshops.filter(w => w.type === 'flagship');
-    const pastEvents = workshops.filter(w => w.type === 'past');
-    const seriesEvents = workshops.filter(w => w.type === 'series');
+    // 🎯 [SMART FILTER MATRIX]: ඩේටාබේස් එකෙන් එන අලුත් බඩු ටික විතරක් වෙන් කරලා ගන්නවා (ID එක static නැති ඒවා)
+    const dbWorkshops = workshops.filter(w => !w.workshop_id.toString().startsWith('static-'));
 
-    // පෙන්වන්න ගන්න ප්‍රධාන ඒවා (ලිස්ට් එකේ අන්තිමටම ඇති ඩේටාබේස් එකෙන් ආපු අලුත්ම ඒවා)
-    const currentFlagship = flagshipEvents[flagshipEvents.length - 1];
-    const currentPast = pastEvents[pastEvents.length - 1];
+    // යට කොටස් වල ඩබ්ලිකේට් නොවෙන්න ස්ටැටික් ඒවා විතරක් වෙන් කරගන්නවා මචං
+    const flagshipEvents = workshops.filter(w => w.type === 'flagship' && w.workshop_id.toString().startsWith('static-'));
+    const pastEvents = workshops.filter(w => w.type === 'past' && w.workshop_id.toString().startsWith('static-'));
+    const seriesEvents = workshops.filter(w => w.type === 'series' && w.workshop_id.toString().startsWith('static-'));
+
+    // WhatsApp පණිවිඩය යැවීමේ function එක
+    const handleReserveSeat = (workshop) => {
+        const phoneNumber = "94755728290"; // +94 එක්ක අංකය
+        const message = `Hello Mehera International,
+
+I am interested in reserving a seat for the upcoming workshop:
+
+*Workshop Title:* ${workshop.title}
+*Date:* ${workshop.date}
+*Duration:* ${workshop.duration || 'N/A'}
+
+Could you please provide me with more details on how to confirm my reservation?
+
+Thank you!`;
+
+        const encodedMessage = encodeURIComponent(message);
+        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    };
 
     if (loading) {
         return (
@@ -84,88 +102,150 @@ const Workshops = () => {
         <div className="min-h-screen bg-background font-sans text-textMain pt-24 text-left">
             <StatNavBar />
 
-            {/* --- Section 1: Hero & Flagship Event --- */}
-            <section className="py-24 px-8 bg-background">
+            {/* --- Hero Section Intro --- */}
+            <section className="pt-24 px-8 bg-background">
                 <div className="max-w-7xl mx-auto">
-                    <div className="mb-16 space-y-4">
+                    <div className="space-y-4">
                         <h1 className="text-6xl font-serif text-textMain leading-tight">Workshops <span className="italic text-primary">&</span> Events</h1>
                         <p className="text-textMain/50 italic text-lg max-w-2xl">Empowering the next generation of artists through world-class education and international collaboration.</p>
                     </div>
-
-                    {currentFlagship && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center animate-in fade-in duration-500">
-                            <div className="rounded-[3rem] overflow-hidden aspect-square shadow-2xl bg-gray-100">
-                                <img
-                                    src={currentFlagship.image_url}
-                                    className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
-                                    alt="Flagship Event"
-                                />
-                            </div>
-                            <div className="space-y-6">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Flagship Event</span>
-                                <h2 className="text-4xl font-serif leading-tight">{currentFlagship.title}</h2>
-                                <p className="text-textMain/50 italic leading-relaxed">{currentFlagship.description}</p>
-
-                                <div className="grid grid-cols-2 gap-6 pt-4">
-                                    <div className="flex items-center gap-3">
-                                        <Calendar className="text-primary" size={20} />
-                                        <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Date</p><p className="font-bold text-sm uppercase">{currentFlagship.date}</p></div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <Users className="text-primary" size={20} />
-                                        <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Capacity</p><p className="font-bold text-sm uppercase">{currentFlagship.capacity || '500+ Attendees'}</p></div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <Award className="text-primary" size={20} />
-                                        <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Speakers</p><p className="font-bold text-sm uppercase">{currentFlagship.speakers || 'International Maestros'}</p></div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <Clock className="text-primary" size={20} />
-                                        <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Duration</p><p className="font-bold text-sm uppercase">{currentFlagship.duration || '1 Day'}</p></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </section>
 
-            {/* --- Section 2: Past Event Highlight --- */}
-            {currentPast && (
-                <section className="py-24 px-8 bg-card border-b border-border">
-                    <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
-                        <div className="space-y-8 order-2 md:order-1">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Past Event Highlight</span>
-                            <h2 className="text-4xl font-serif italic">{currentPast.title}</h2>
-                            <p className="text-textMain/50 leading-relaxed italic">{currentPast.description}</p>
-
-                            <div className="grid grid-cols-2 gap-6 pt-4">
-                                <div className="flex items-center gap-3">
-                                    <Calendar className="text-primary" size={20} />
-                                    <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Date</p><p className="font-bold text-sm uppercase">{currentPast.date}</p></div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <Users className="text-primary" size={20} />
-                                    <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Capacity</p><p className="font-bold text-sm uppercase">{currentPast.capacity}</p></div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <Award className="text-primary" size={20} />
-                                    <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Speakers</p><p className="font-bold text-sm uppercase">{currentPast.speakers}</p></div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <Clock className="text-primary" size={20} />
-                                    <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Duration</p><p className="font-bold text-sm uppercase">{currentPast.duration}</p></div>
-                                </div>
+            {/* 🔥 --- [NEW SECTION]: UPCOMING WORKSHOPS (DATABASE DRIVEN) --- */}
+            {dbWorkshops.length > 0 && (
+                <section className="py-16 px-8 bg-background animate-in fade-in duration-700">
+                    <div className="max-w-7xl mx-auto border-t border-b border-border/40 py-16">
+                        <div className="mb-12 flex items-center gap-2">
+                            <div className="p-1.5 bg-primary/10 text-primary rounded-lg"><Sparkles size={16} /></div>
+                            <div>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-primary block">Live Schedule</span>
+                                <h2 className="text-3xl font-serif text-textMain">Upcoming <span className="italic text-primary">Workshops</span></h2>
                             </div>
                         </div>
-                        <div className="rounded-[3rem] overflow-hidden aspect-square shadow-xl order-1 md:order-2 bg-gray-100">
-                            <img src={currentPast.image_url} className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" alt="Past Event" />
+
+                        {/* Gorgeous Premium Grid Layout */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {dbWorkshops.map((w) => (
+                                <div key={w.workshop_id} className="bg-card rounded-[2.5rem] border border-border overflow-hidden shadow-sm flex flex-col group hover:shadow-xl hover:border-primary/30 transition-all duration-300">
+                                    <div className="aspect-video w-full bg-background relative overflow-hidden">
+                                        <img src={w.image_url || 'https://via.placeholder.com/400x220'} className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500" alt={w.title} />
+                                        <span className="absolute top-4 right-4 text-[8px] font-black uppercase tracking-widest bg-black/80 text-primary px-2.5 py-1 rounded-md backdrop-blur-sm border border-primary/20">{w.type}</span>
+                                    </div>
+                                    <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                                        <div>
+                                            <h3 className="font-serif text-xl text-textMain tracking-tight line-clamp-1">{w.title}</h3>
+                                            <p className="text-xs text-textMain/50 line-clamp-2 italic mt-1.5 leading-relaxed">{w.description || 'No description provided.'}</p>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-3 text-[10px] font-bold text-textMain/70 pt-4 border-t border-border/50">
+                                            <div className="flex items-center gap-1.5 truncate"><Calendar size={13} className="text-primary shrink-0" /> {w.date}</div>
+                                            <div className="flex items-center gap-1.5 truncate"><Clock size={13} className="text-primary shrink-0" /> {w.duration || 'N/A'}</div>
+                                            {w.speakers && <div className="flex items-center gap-1.5 col-span-2 text-textMain/50 mt-1 truncate"><Award size={13} className="text-primary shrink-0" /> Host: {w.speakers}</div>}
+                                        </div>
+
+                                        <button 
+                                            onClick={() => handleReserveSeat(w)}
+                                            className="w-full py-3 bg-black text-primary font-black text-[9px] uppercase tracking-widest rounded-xl hover:bg-primary hover:text-black transition-all shadow-md active:scale-95 flex items-center justify-center gap-1 mt-2"
+                                        >
+                                            Reserve Seat <ArrowRight size={12} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </section>
             )}
 
-            {/* --- Section 3: Workshop Series (Patan and New active series items) --- */}
+            {/* --- Section 1: Static Flagship Events --- */}
+            <section className="py-12 px-8 bg-background">
+                <div className="max-w-7xl mx-auto">
+                    <div className="space-y-20">
+                        {flagshipEvents.map((flagship) => (
+                            <div key={flagship.workshop_id} className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center border-b border-border/30 pb-12 last:border-0 last:pb-0">
+                                <div className="rounded-[3rem] overflow-hidden aspect-square shadow-2xl bg-gray-100">
+                                    <img
+                                        src={flagship.image_url}
+                                        className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                                        alt={flagship.title}
+                                    />
+                                </div>
+                                <div className="space-y-6">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">Flagship Event</span>
+                                    <h2 className="text-4xl font-serif leading-tight">{flagship.title}</h2>
+                                    <p className="text-textMain/50 italic leading-relaxed">{flagship.description}</p>
+
+                                    <div className="grid grid-cols-2 gap-6 pt-4">
+                                        <div className="flex items-center gap-3">
+                                            <Calendar className="text-primary" size={20} />
+                                            <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Date</p><p className="font-bold text-sm uppercase">{flagship.date}</p></div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Users className="text-primary" size={20} />
+                                            <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Capacity</p><p className="font-bold text-sm uppercase">{flagship.capacity}</p></div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Award className="text-primary" size={20} />
+                                            <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Speakers</p><p className="font-bold text-sm uppercase">{flagship.speakers}</p></div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Clock className="text-primary" size={20} />
+                                            <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Duration</p><p className="font-bold text-sm uppercase">{flagship.duration}</p></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* --- Section 2: Static Past Event Highlights --- */}
+            {pastEvents.length > 0 && (
+                <section className="py-24 px-8 bg-card border-b border-border">
+                    <div className="max-w-7xl mx-auto space-y-24">
+                        <div className="text-left">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Past Masterclasses</span>
+                            <h2 className="text-4xl font-serif mt-2">Historical Highlights</h2>
+                        </div>
+
+                        {pastEvents.map((past) => (
+                            <div key={past.workshop_id} className="grid grid-cols-1 md:grid-cols-2 gap-20 items-center border-b border-border/30 pb-16 last:border-0 last:pb-0">
+                                <div className="space-y-8 order-2 md:order-1">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">Past Event Highlight</span>
+                                    <h2 className="text-4xl font-serif italic">{past.title}</h2>
+                                    <p className="text-textMain/50 leading-relaxed italic">{past.description}</p>
+
+                                    <div className="grid grid-cols-2 gap-6 pt-4">
+                                        <div className="flex items-center gap-3">
+                                            <Calendar className="text-primary" size={20} />
+                                            <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Date</p><p className="font-bold text-sm uppercase">{past.date}</p></div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Users className="text-primary" size={20} />
+                                            <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Capacity</p><p className="font-bold text-sm uppercase">{past.capacity}</p></div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Award className="text-primary" size={20} />
+                                            <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Speakers</p><p className="font-bold text-sm uppercase">{past.speakers}</p></div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Clock className="text-primary" size={20} />
+                                            <div><p className="text-[10px] font-bold text-textMain/50 uppercase">Duration</p><p className="font-bold text-sm uppercase">{past.duration}</p></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="rounded-[3rem] overflow-hidden aspect-square shadow-xl order-1 md:order-2 bg-gray-100">
+                                    <img src={past.image_url} className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" alt={past.title} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            {/* --- Section 3: Static Workshop Series --- */}
             {seriesEvents.length > 0 && (
                 <section className="py-24 px-8 bg-card border-b border-border">
                     <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-20 items-center">

@@ -6,116 +6,360 @@ const { Op } = require('sequelize');
 const { createNotification } = require('./notificationController');
 
 
+const VALID_ROLES = [
+  'admin',
+  'manager',
+  'sales_rep',
+  'online_store_keeper',
+  'logistics_officer',
+];
+
+const VALID_GENDERS = ['male', 'female', 'other'];
+
+const VALID_DISTRICTS = [
+  "Colombo", "Gampaha", "Kalutara", "Kandy", "Matale", "Nuwara Eliya",
+  "Galle", "Matara", "Hambantota", "Jaffna", "Kilinochchi", "Mannar",
+  "Vavuniya", "Mullaitivu", "Batticaloa", "Ampara", "Trincomalee",
+  "Kurunegala", "Puttalam", "Anuradhapura", "Polonnaruwa", "Badulla",
+  "Moneragala", "Ratnapura", "Kegalle"
+];
+
+const isValidEmail = (email) => {
+  return String(email).trim().includes("@") && !String(email).includes(" ");
+};
+
+const isValidPhone = (phone) => {
+  return /^0\d{9}$/.test(String(phone).trim());
+};
+
+const isValidNIC = (nic) => {
+  return /^([0-9]{9}[VX]|[0-9]{12})$/.test(String(nic).trim().toUpperCase());
+};
+
+const getAgeFromDOB = (dob) => {
+  const birthDate = new Date(`${dob}T00:00:00`);
+  const today = new Date();
+
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birthDate.getDate())
+  ) {
+    age--;
+  }
+
+  return age;
+};
+
+const isFutureDOB = (dob) => {
+  const birthDate = new Date(`${dob}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return birthDate > today;
+};
+
+const doesNICMatchDOBYear = (nic, dob) => {
+  const cleanNIC = String(nic).trim().toUpperCase();
+  const dobYear = new Date(`${dob}T00:00:00`).getFullYear().toString();
+
+  if (cleanNIC.length === 10) {
+    return cleanNIC.substring(0, 2) === dobYear.substring(2, 4);
+  }
+
+  if (cleanNIC.length === 12) {
+    return cleanNIC.substring(0, 4) === dobYear;
+  }
+
+  return false;
+};
+
+
 const addUserByAdmin = async (req, res) => {
-    console.log("--- Add User Process Started ---");
+  console.log("--- Add User Process Started ---");
+
+  try {
+    const {
+      name,
+      email,
+      role,
+      dob,
+      contact_no,
+      nic_no,
+      address,
+      gender,
+      selectedDistricts,
+    } = req.body;
+
+    const cleanName = String(name || "").trim();
+    const cleanEmail = String(email || "").trim().toLowerCase();
+    const cleanRole = String(role || "").trim();
+    const cleanDOB = String(dob || "").trim();
+    const cleanContactNo = String(contact_no || "").trim();
+    const cleanNIC = String(nic_no || "").trim().toUpperCase();
+    const cleanAddress = String(address || "").trim();
+    const cleanGender = String(gender || "").trim().toLowerCase();
+
+    // 1. Required validation
+    if (
+      !cleanName ||
+      !cleanEmail ||
+      !cleanRole ||
+      !cleanDOB ||
+      !cleanContactNo ||
+      !cleanNIC ||
+      !cleanAddress ||
+      !cleanGender
+    ) {
+      return res.status(400).json({
+        message: "All fields are required.",
+      });
+    }
+
+    // 2. Email validation
+    if (!isValidEmail(cleanEmail)) {
+      return res.status(400).json({
+        field: "email",
+        message: "Email address must contain @ symbol.",
+      });
+    }
+
+    // 3. Role validation
+    if (!VALID_ROLES.includes(cleanRole)) {
+      return res.status(400).json({
+        field: "role",
+        message: "Please select a valid user role.",
+      });
+    }
+
+    // 4. Phone validation
+    if (!isValidPhone(cleanContactNo)) {
+      return res.status(400).json({
+        field: "contact_no",
+        message: "Contact number must start with 0 and contain exactly 10 digits.",
+      });
+    }
+
+    // 5. NIC validation
+    if (!isValidNIC(cleanNIC)) {
+      return res.status(400).json({
+        field: "nic_no",
+        message: "NIC must be 12 digits or 9 digits followed by V/X.",
+      });
+    }
+
+    // 6. DOB validation
+    if (Number.isNaN(new Date(`${cleanDOB}T00:00:00`).getTime())) {
+      return res.status(400).json({
+        field: "dob",
+        message: "Please enter a valid birth date.",
+      });
+    }
+
+    if (isFutureDOB(cleanDOB)) {
+      return res.status(400).json({
+        field: "dob",
+        message: "Birth date cannot be a future date.",
+      });
+    }
+
+
+    if (getAgeFromDOB(cleanDOB) < 16) {
+      return res.status(400).json({
+        field: "dob",
+        message: "User must be at least 16 years old.",
+      });
+    }
+
+    if (!doesNICMatchDOBYear(cleanNIC, cleanDOB)) {
+      return res.status(400).json({
+        field: "nic_no",
+        message: "NIC number does not match the selected birth year.",
+      });
+    }
+
+
+    // 7. Gender validation
+    if (!VALID_GENDERS.includes(cleanGender)) {
+      return res.status(400).json({
+        field: "gender",
+        message: "Please select a valid gender.",
+      });
+    }
+
+    // 8. Sales rep district validation
+    if (cleanRole === "sales_rep") {
+      if (!Array.isArray(selectedDistricts) || selectedDistricts.length === 0) {
+        return res.status(400).json({
+          field: "selectedDistricts",
+          message: "Sales Rep must have at least one working district.",
+        });
+      }
+
+      const invalidDistricts = selectedDistricts.filter(
+        (district) => !VALID_DISTRICTS.includes(district)
+      );
+
+      if (invalidDistricts.length > 0) {
+        return res.status(400).json({
+          field: "selectedDistricts",
+          message: "One or more selected districts are invalid.",
+        });
+      }
+    }
+
+    // 9. Duplicate email check - includes soft deleted users also
+    const existingEmailUser = await User.findOne({
+      where: sequelize.where(
+        sequelize.fn("LOWER", sequelize.col("email")),
+        cleanEmail
+      ),
+      paranoid: false,
+    });
+
+    if (existingEmailUser) {
+      return res.status(409).json({
+        field: "email",
+        message: "This email address already exists.",
+      });
+    }
+
+    // 10. Duplicate NIC check - model change nokara controller level unique check
+    const existingNICUser = await User.findOne({
+      where: sequelize.where(
+        sequelize.fn("UPPER", sequelize.col("nic_no")),
+        cleanNIC
+      ),
+      paranoid: false,
+    });
+
+    if (existingNICUser) {
+      return res.status(409).json({
+        field: "nic_no",
+        message: "This NIC number already exists.",
+      });
+    }
+
+    const transaction = await sequelize.transaction();
+
     try {
-        const { name, email, role, dob, contact_no, nic_no,address, gender, selectedDistricts } = req.body;
+      const count = await User.count({
+        where: { role: cleanRole },
+        paranoid: false,
+        transaction,
+      });
 
-        if (!name || !email || !role) {
-            return res.status(400).json({ message: "Name, email and role are required." });
+      const nextNumber = count + 1;
+      const defaultPassword = `${cleanRole}${nextNumber}@user`;
+
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(defaultPassword, salt);
+
+      const user = await User.create(
+        {
+          name: cleanName,
+          email: cleanEmail,
+          password: hashedPassword,
+          role: cleanRole,
+          dob: cleanDOB,
+          contact_no: encrypt(cleanContactNo),
+          nic_no: cleanNIC,
+          address: cleanAddress,
+          gender: cleanGender,
+          is_active: true,
+          is_default_password: true,
+          default_password: defaultPassword,
+        },
+        { transaction }
+      );
+
+      if (cleanRole === "sales_rep") {
+        const areaRecords = selectedDistricts.map((district) => ({
+          user_id: user.user_id,
+          district_name: district,
+        }));
+
+        await UserArea.bulkCreate(areaRecords, { transaction });
+      }
+
+      await transaction.commit();
+
+      let actorString = "an administrator";
+
+      if (req.user && req.user.name && req.user.role) {
+        const roleFormatted = req.user.role
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+
+        actorString = `${req.user.name} (${roleFormatted})`;
+      }
+
+      await createNotification(
+        "user",
+        "Welcome to Mehera!",
+        `Your account has been created by ${actorString}. Please check your email for login credentials.`,
+        {
+          target_user_id: user.user_id,
+          severity: "info",
+          initiator_id: req.user.user_id,
         }
+      );
 
-        if (role === 'sales_rep' && (!selectedDistricts || selectedDistricts.length === 0)) {
-            return res.status(400).json({ message: "Sales rep must have at least one district." });
+      const newUserRole = cleanRole
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+
+      const adminNotification = await createNotification(
+        "user",
+        "New User Created",
+        `${cleanName} (${cleanEmail}) was added as ${newUserRole} by ${actorString}.`,
+        {
+          target_role: "manager",
+          severity: "info",
+          initiator_id: req.user.user_id,
         }
+      );
 
-        const existingUser = await User.findOne({ where: { email } });
-        if (existingUser) {
-            return res.status(409).json({ message: "A user with this email already exists." });
-        }
+      let emailSent = true;
 
-        //Start a new transaction to ensure all database operations are treated as a single unit.
-        const transaction = await sequelize.transaction();
+      try {
+        await sendWelcomeEmail(cleanEmail, cleanName, defaultPassword, cleanRole);
+      } catch (mailErr) {
+        emailSent = false;
+        console.error("Welcome email failed:", mailErr);
+      }
 
-        try {
-            const count = await User.count({ where: { role }, transaction });
-            const nextNumber = count + 1;
-            const defaultPassword = `${role}${nextNumber}@user`;
-
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(defaultPassword, salt);
-
-            const user = await User.create({
-                name,
-                email,
-                password: hashedPassword,
-                role,
-                dob,
-                contact_no: encrypt(contact_no),
-                nic_no,
-                address: null,
-                gender: null,
-                is_active: true,
-                is_default_password: true,
-                default_password: defaultPassword
-            }, { transaction });
-
-            // user areas add karana eka waradnoth transactions nisa user add kotasama wenne na
-            if (role === 'sales_rep' && selectedDistricts?.length > 0) {
-                const areaRecords = selectedDistricts.map(district => ({
-                    user_id: user.user_id,
-                    district_name: district
-                }));
-                await UserArea.bulkCreate(areaRecords, { transaction });
-            }
-
-            await transaction.commit();
-
-            let actorString = 'an administrator';
-            if (req.user && req.user.name && req.user.role) {
-                const roleFormatted = req.user.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                actorString = `${req.user.name} (${roleFormatted})`;
-            }
-
-            // For the new user
-            await createNotification(
-                'user',
-                'Welcome to Mehera!',
-                `Your account has been created by ${actorString}. Please check your email for login credentials.`,
-                {
-                    target_user_id: user.user_id,
-                    severity: 'info',
-                    initiator_id: req.user.user_id
-                }
-            );
-
-            // For the admin
-            await createNotification(
-                'user',
-                'New User Created',
-                `You created a new user account for ${name} with the role of ${role}.`,
-                {
-                    target_user_id: req.user.user_id,
-                    severity: 'info',
-                    initiator_id: req.user.user_id
-                }
-            );
-
-            let emailSent = true;
-            try {
-                await sendWelcomeEmail(email, name, defaultPassword, role);
-            } catch (mailErr) {
-                emailSent = false;
-                console.error("Welcome email failed:", mailErr);
-            }
-
-            return res.status(201).json({
-                message: emailSent
-                    ? "User and assigned areas added successfully!"
-                    : "User created, but welcome email could not be sent.",
-                userId: user.user_id
-            });
-
-        } catch (err) {
-            await transaction.rollback();
-            console.error("Add User Inner Error:", err);
-            return res.status(500).json({ message: err.message || "Failed to add user." });
-        }
+      return res.status(201).json({
+        message: emailSent
+          ? "User and assigned areas added successfully!"
+          : "User created, but welcome email could not be sent.",
+        userId: user.user_id,
+        notification: adminNotification,
+      });
 
     } catch (err) {
-        console.error("Add User Error:", err);
-        return res.status(500).json({ message: err.message || "Internal server error." });
+      await transaction.rollback();
+
+      if (err.name === "SequelizeUniqueConstraintError") {
+        return res.status(409).json({
+          message: "Email or NIC already exists.",
+        });
+      }
+
+      console.error("Add User Inner Error:", err);
+      return res.status(500).json({
+        message: err.message || "Failed to add user.",
+      });
     }
+
+  } catch (err) {
+    console.error("Add User Error:", err);
+    return res.status(500).json({
+      message: err.message || "Internal server error.",
+    });
+  }
 };
 
 const updatePassword = async (req, res) => {

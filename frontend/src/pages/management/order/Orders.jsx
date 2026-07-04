@@ -17,6 +17,7 @@ const Orders = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('create');
   const [products, setProducts] = useState([]);
+  const [mobileTab, setMobileTab] = useState('catalog');
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null); 
   const [isCatalogLoading, setIsCatalogLoading] = useState(true);
@@ -106,7 +107,6 @@ const Orders = () => {
   const tabs = [
     { id: 'create', label: 'Create Order', icon: PlusCircle, show: ['admin', 'sales_rep', 'online_store_keeper'].includes(userRole) },
     { id: 'history', label: 'Order History', icon: History, show: true },
-    { id: 'analytics', label: 'Sales Insights', icon: TrendingUp, show: ['admin', 'manager'].includes(userRole) },
   ];
 
   return (
@@ -123,12 +123,12 @@ const Orders = () => {
         </div>
 
         {/* TABS */}
-        <div className="flex gap-2 bg-gray-100/50 p-1.5 rounded-2xl border border-border transition-colors duration-300 overflow-x-auto w-full md:w-auto shadow-sm">
+        <div className="flex flex-wrap md:flex-nowrap gap-2 bg-gray-100/50 p-1.5 rounded-2xl border border-border transition-colors duration-300 w-full md:w-auto shadow-sm">
           {tabs.map((tab) => tab.show && (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-xl whitespace-nowrap ${
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-3 md:py-2.5 text-[10px] font-black uppercase tracking-widest transition-all rounded-xl whitespace-nowrap ${
                 activeTab === tab.id ? 'bg-black text-white shadow-lg shadow-black/20' : 'text-textMain/50 transition-colors duration-300 hover:text-textMain transition-colors duration-300'
               }`}
             >
@@ -140,10 +140,29 @@ const Orders = () => {
 
       <div className="max-w-[1800px] mx-auto">
         {activeTab === 'create' ? (
-          <div className="flex flex-col xl:flex-row gap-6 animate-in fade-in duration-500">
+          <div className="animate-in fade-in duration-500">
+            {/* Mobile Tabs */}
+            <div className="xl:hidden flex border-b border-border shrink-0 sticky top-0 bg-background z-10">
+              <button
+                type="button"
+                onClick={() => setMobileTab('catalog')}
+                className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors ${mobileTab === 'catalog' ? 'bg-background text-primary' : 'bg-card/50 text-textMain/50'}`}
+              >
+                <Package size={16} /> Catalog
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileTab('console')}
+                className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 relative transition-colors ${mobileTab === 'console' ? 'bg-background text-primary' : 'bg-card/50 text-textMain/50'}`}
+              >
+                <ShoppingCart size={16} /> Order Console
+              </button>
+            </div>
+
+            <div className="flex flex-col xl:flex-row gap-6 mt-6 xl:mt-0">
             
             {/* ⬅️ LEFT PANEL: LIVE INVENTORY */}
-            <div className="xl:w-[55%] flex flex-col h-[850px]"> 
+            <div className={`xl:w-[55%] flex-col xl:h-[850px] ${mobileTab === 'catalog' ? 'flex' : 'hidden'} xl:flex`}> 
               <div className="bg-card transition-colors duration-300 rounded-[2.5rem] border border-border transition-colors duration-300 shadow-sm flex flex-col h-full overflow-hidden">
                 
                 <div className="p-6 pb-4 border-b border-border bg-card transition-colors duration-300">
@@ -199,7 +218,7 @@ const Orders = () => {
             </div>
 
             {/* ➡️ RIGHT PANEL: ROLE-BASED CONSOLE */}
-            <div className="xl:w-[45%] h-[850px] overflow-y-auto custom-scrollbar bg-card transition-colors duration-300 rounded-[2.5rem] border border-border transition-colors duration-300 shadow-sm p-4">
+            <div className={`xl:w-[45%] xl:h-[850px] overflow-y-auto custom-scrollbar bg-card transition-colors duration-300 rounded-[2.5rem] border border-border transition-colors duration-300 shadow-sm p-4 ${mobileTab === 'console' ? 'block' : 'hidden'} xl:block`}>
               {userRole === 'sales_rep' ? (
                 <AddOrder />
               ) : userRole === 'online_store_keeper' ? (
@@ -214,6 +233,7 @@ const Orders = () => {
               )}
             </div>
 
+            </div>
           </div>
         ) : (
           <div className="bg-card transition-colors duration-300 rounded-[3rem] border border-border shadow-sm p-4 animate-in slide-in-from-bottom-4 duration-500">

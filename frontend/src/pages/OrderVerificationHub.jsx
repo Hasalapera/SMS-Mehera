@@ -1,5 +1,6 @@
 // src/pages/OrderVerificationHub.jsx
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom'; // 🎯 [FIX] useNavigate import කරගන්නවා.
 import { QrCode, ScanLine, EyeOff, CheckCircle, Search, Truck, Clock, Package, Smartphone, Award, Globe, Copy, Check, ExternalLink, AlertTriangle, Printer } from 'lucide-react'; // 🎯 [FIXED]: Added Printer icon here
 import api from '../api/axiosInstance';
 import Swal from 'sweetalert2';
@@ -9,8 +10,14 @@ import Footer from '../components/Footer';
 
 const OrderVerificationHub = () => {
   const customerScannerRef = useRef(null);
-  const [activeTab, setActiveTab] = useState('verify'); 
-  
+  const location = useLocation();
+  const navigate = useNavigate(); // 🎯 URL එක වෙනස් කරන්න navigate hook එක ගන්නවා.
+
+  // 🎯 [FIXED & IMPROVED] URL එකේ ?tab=... parameter එකට අනුව අදාළ tab එක active කරනවා.
+  const initialTab = new URLSearchParams(location.search).get('tab') || 'verify';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+
   // Delivery Verification States
   const [isCustomerScannerOpen, setIsCustomerScannerOpen] = useState(false);
   const [scannedOrderId, setScannedOrderId] = useState('');
@@ -25,7 +32,12 @@ const OrderVerificationHub = () => {
 
   useEffect(() => { 
     window.scrollTo(0, 0); 
-  }, []);
+    // 🎯 URL එකේ query param එක වෙනස් වෙද්දී activeTab එක update කරනවා.
+    const tabFromUrl = new URLSearchParams(location.search).get('tab');
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [location, activeTab]);
 
   // HTML5 QR Scanner Lifecycle Router
   useEffect(() => {
@@ -108,21 +120,38 @@ const OrderVerificationHub = () => {
   // Handle Trace Status Query
   const handleCheckStatus = async (e) => {
     e.preventDefault();
-    if (!searchOrderId.trim()) return;
-    
+
+    const cleanOrderRef = searchOrderId
+      .trim()
+      .replace(/^#/, "")
+      .replace(/^ORD-/i, "")
+      .replace(/^\/+|\/+$/g, "");
+
+    if (!cleanOrderRef) {
+      Swal.fire({
+        title: "Missing Order Reference",
+        text: "Please enter a valid Order Reference Number.",
+        icon: "warning",
+        confirmButtonColor: "#000000",
+      });
+      return;
+    }
+
     setSearching(true);
     setOrderStatusData(null);
     setIsCopied(false);
-    
+
     try {
-      const res = await api.get(`/orders/${searchOrderId.trim()}`);
+      const res = await api.get(`/orders/${encodeURIComponent(cleanOrderRef)}`);
       setOrderStatusData(res.data);
     } catch (err) {
       Swal.fire({
-        title: 'Not Found',
-        text: 'Could not find any details for this Order Reference Number.',
-        icon: 'warning',
-        confirmButtonColor: '#000000'
+        title: "Not Found",
+        text:
+          err.response?.data?.message ||
+          "Could not find any details for this Order Reference Number.",
+        icon: "warning",
+        confirmButtonColor: "#000000",
       });
     } finally {
       setSearching(false);
@@ -136,12 +165,20 @@ const OrderVerificationHub = () => {
     setTimeout(() => { setIsCopied(false); }, 2000);
   };
 
+  // 🎯 [UPDATED] Tracking ID එක embed නොකර, courier සේවාවේ ප්‍රධාන tracking page එකට යොමු කිරීමට සකස් කරන ලදී.
+  const COURIER_URLS = new Map([
+    ['domex', 'https://www.domex.lk/tracking.php'],      // ✅ නිවැරදි tracking page එක.
+    ['pronto', 'https://prontolanka.lk/tracking/'],      // ✅ නිවැරදි tracking page එක.
+    ['koombiyo', 'https://koombiyodelivery.lk/track'] // ✅ ඔබ ලබාදුන් URL එකට අනුව යාවත්කාලීන කරන ලදී.
+  ]);
+
   const getCourierRedirectUrl = (courierName, trackingId) => {
     if (!trackingId) return '#';
-    const name = courierName?.toLowerCase()?.trim();
-    if (name === 'domex') return `https://www.domex.lk/tracking.php?waybill=${trackingId}`;
-    if (name === 'pronto') return `https://prontolanka.lk/tracking/?wb=${trackingId}`;
-    if (name === 'koombiyo') return `https://koombiyocourier.lk/tracking?tracking_id=${trackingId}`;
+    
+    const normalizedName = courierName?.toLowerCase().replace(/\s+/g, '') || '';
+    const url = COURIER_URLS.get(normalizedName);
+
+    if (url) return url;
     return `https://www.google.com/search?q=${courierName}+tracking+${trackingId}`;
   };
 
@@ -196,8 +233,17 @@ const OrderVerificationHub = () => {
         <div className="bg-card border border-border rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col">
           {/* Tabs Switcher Component */}
           <div className="flex border-b border-border bg-background/50 sm:px-6 pt-2 gap-2 sm:gap-4 overflow-x-auto w-full no-scrollbar">
-            <button type="button" onClick={() => { setActiveTab('verify'); setIsCustomerScannerOpen(false); }} className={`pb-3.5 px-6 text-[11px] sm:text-xs font-black uppercase tracking-widest border-b-2 text-center whitespace-nowrap ${activeTab === 'verify' ? 'border-primary text-primary' : 'border-transparent text-textMain/40 hover:text-textMain'}`}>Verify Secure Delivery</button>
-            <button type="button" onClick={() => { setActiveTab('status'); setIsCustomerScannerOpen(false); }} className={`pb-3.5 px-6 text-[11px] sm:text-xs font-black uppercase tracking-widest border-b-2 text-center whitespace-nowrap ${activeTab === 'status' ? 'border-primary text-primary' : 'border-transparent text-textMain/40 hover:text-textMain'}`}>Trace Order Status</button>
+            {/* 🎯 [FIXED] Tab click කළාම URL එකත් update වෙන විදිහට navigate function එක එකතු කරන ලදී. */}
+            <button type="button" onClick={() => { 
+              setActiveTab('verify'); 
+              setIsCustomerScannerOpen(false); 
+              navigate('/verify-order?tab=verify'); 
+            }} className={`pb-3.5 px-6 text-[11px] sm:text-xs font-black uppercase tracking-widest border-b-2 text-center whitespace-nowrap ${activeTab === 'verify' ? 'border-primary text-primary' : 'border-transparent text-textMain/40 hover:text-textMain'}`}>Verify Secure Delivery</button>
+            <button type="button" onClick={() => { 
+              setActiveTab('status'); 
+              setIsCustomerScannerOpen(false); 
+              navigate('/verify-order?tab=status'); 
+            }} className={`pb-3.5 px-6 text-[11px] sm:text-xs font-black uppercase tracking-widest border-b-2 text-center whitespace-nowrap ${activeTab === 'status' ? 'border-primary text-primary' : 'border-transparent text-textMain/40 hover:text-textMain'}`}>Trace Order Status</button>
           </div>
 
           <div className="p-6 sm:p-10 bg-card">

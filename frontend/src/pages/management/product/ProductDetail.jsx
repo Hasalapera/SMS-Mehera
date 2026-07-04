@@ -15,7 +15,8 @@ import {
 import api from "../../../api/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
-import { toast } from "react-hot-toast"; 
+import { toast } from "react-hot-toast";
+import { MySwal, swalClasses } from "../../utils/swalConfig";
 
 const formatStatus = (status) => {
   if (!status) return "Unknown";
@@ -227,63 +228,38 @@ export default function ProductDetail() {
   const handleDeleteProduct = async () => {
     if (!product) return;
 
-    const toastId = toast.custom((t) => (
-      <div className="w-[320px] max-w-[calc(100vw-2rem)] rounded-3xl border border-border bg-card p-4 shadow-2xl">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 rounded-full bg-red-500/10 p-2 text-red-500">
-            <Trash2 size={16} />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="text-sm font-black text-textMain">Delete {product.product_name} and all of its variants?</p>
-            <p className="mt-1 text-[11px] font-medium text-textMain/60">
-              This will soft-delete the product and every related variant.
-            </p>
-            <div className="mt-4 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={async () => {
-                  toast.dismiss(toastId);
-                  try {
-                    setDeleting(true);
-                    const response = await api.delete(`/products/${id}`, {
-                      headers: {
-                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                      },
-                    });
+    const result = await MySwal.fire({
+      title: `Delete ${product.product_name}?`,
+      html: "This will soft-delete the product and all its variants. This action cannot be undone.",
+      icon: "warning",
+      iconColor: "#ef4444",
+      confirmButtonText: "Yes, Delete It",
+      cancelButtonText: "Cancel",
 
-                    toast.success(response.data?.message || 'Product deleted successfully');
-                    await refreshNotifications();
-                    navigate('/inventory');
-                  } catch (err) {
-                    toast.error(err.response?.data?.error || 'Failed to delete product');
-                  } finally {
-                    setDeleting(false);
-                  }
-                }}
-                className="rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-primary/90"
-              >
-                Delete
-              </button>
-              <button
-                type="button"
-                onClick={() => toast.dismiss(toastId)}
-                className="rounded-xl border border-border bg-background px-3 py-2 text-[10px] font-black uppercase tracking-widest text-textMain/60 hover:bg-card"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => toast.dismiss(toastId)}
-            className="text-textMain/40 hover:text-textMain"
-            aria-label="Close confirmation"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      </div>
-    ), { duration: Infinity });
+      customClass: {
+        ...swalClasses,
+        confirmButton: "mehera-swal-delete-confirm",
+      },
+    });
+
+    if (result.isConfirmed) {
+      try {
+        setDeleting(true);
+        const response = await api.delete(`/products/${id}`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        toast.success(response.data?.message || 'Product deleted successfully');
+        await refreshNotifications();
+        navigate('/inventory');
+      } catch (err) {
+        toast.error(err.response?.data?.error || 'Failed to delete product');
+      } finally {
+        setDeleting(false);
+      }
+    }
   };
 
   const handleSaveProduct = async (e) => {

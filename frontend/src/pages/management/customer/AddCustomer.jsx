@@ -103,10 +103,28 @@ const AddCustomer = () => {
   const nextCustomerId = `CUS-${String(customerCount + 1).padStart(4, '0')}`;
   const districts = ["Colombo", "Gampaha", "Kalutara", "Kandy", "Matale", "Nuwara Eliya", "Galle", "Matara", "Hambantota", "Jaffna", "Kilinochchi", "Mannar", "Vavuniya", "Mullaitivu", "Batticaloa", "Ampara", "Trincomalee", "Kurunegala", "Puttalam", "Anuradhapura", "Polonnaruwa", "Badulla", "Moneragala", "Ratnapura", "Kegalle"];
 
+  const isValidPhone = (phone) => {
+    return /^0\d{9}$/.test(phone);
+  };
+
+  const isValidEmail = (email) => {
+    return email.trim().includes("@") && !email.includes(" ");
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: false });
+    const { name, value } = e.target;
+
+    let cleanValue = value;
+
+    // Phone fields: only digits allowed + max 10 digits
+    if (name === "phone1" || name === "phone2") {
+      cleanValue = value.replace(/\D/g, "").slice(0, 10);
+    }
+
+    setFormData({ ...formData, [name]: cleanValue });
+
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: false });
     }
   };
 
@@ -133,11 +151,36 @@ const AddCustomer = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
-    if (!formData.saloon_name.trim()) newErrors.saloon_name = true;
-    if (!formData.owner_name.trim()) newErrors.owner_name = true;
-    if (!formData.phone1.trim()) newErrors.phone1 = true;
-    if (!formData.lane1.trim()) newErrors.lane1 = true;
-    if (!formData.district) newErrors.district = true;
+
+    if (!formData.saloon_name.trim()) {
+      newErrors.saloon_name = "Business name is required.";
+    }
+
+    if (!formData.owner_name.trim()) {
+      newErrors.owner_name = "Owner name is required.";
+    }
+
+    if (!formData.phone1.trim()) {
+      newErrors.phone1 = "Primary phone number is required.";
+    } else if (!isValidPhone(formData.phone1)) {
+      newErrors.phone1 = "Phone number must start with 0 and contain exactly 10 digits.";
+    }
+
+    if (formData.phone2.trim() && !isValidPhone(formData.phone2)) {
+      newErrors.phone2 = "Secondary phone number must start with 0 and contain exactly 10 digits.";
+    }
+
+    if (formData.email.trim() && !isValidEmail(formData.email)) {
+      newErrors.email = "Email address must contain @ symbol.";
+    }
+
+    if (!formData.lane1.trim()) {
+      newErrors.lane1 = "Address lane 01 is required.";
+    }
+
+    if (!formData.district) {
+      newErrors.district = "District is required.";
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -284,25 +327,117 @@ const AddCustomer = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="text-[9px] md:text-[10px] font-black text-textMain/50 uppercase tracking-widest mb-2 block ml-1 flex items-center gap-2">Email Address (Optional)</label>
+                    <label
+                      className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-2 block ml-1 flex items-center gap-2 ${
+                        errors.email ? "text-red-500" : "text-textMain/50"
+                      }`}
+                    >
+                      Email Address*
+                    </label>
+
                     <div className="relative group">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-textMain/50 group-focus-within:text-primary" size={16} />
-                      <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="customer@example.com" 
-                        className="w-full bg-card/50 border border-border rounded-2xl py-3.5 pl-12 pr-4 text-sm transition-all outline-none focus:border-primary focus:bg-card" />
+                      <Mail
+                        className={`absolute left-4 top-1/2 -translate-y-1/2 ${
+                          errors.email
+                            ? "text-red-400"
+                            : "text-textMain/50 group-focus-within:text-primary"
+                        }`}
+                        size={16}
+                      />
+
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="customer@example.com"
+                        className={`w-full bg-card/50 border rounded-2xl py-3.5 pl-12 pr-4 text-sm transition-all outline-none ${
+                          errors.email
+                            ? "border-red-500 focus:border-red-600 bg-red-50/30"
+                            : "border-border focus:border-primary focus:bg-card"
+                        }`}
+                      />
                     </div>
+
+                    {errors.email && (
+                      <p className="mt-2 ml-1 text-[10px] font-bold text-red-500">
+                        {errors.email}
+                      </p>
+                    )}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
-                      <label className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-2 block ml-1 ${errors.phone1 ? 'text-red-500' : 'text-textMain/50'}`}>Primary Phone *</label>
+                      <label
+                        className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-2 block ml-1 ${
+                          errors.phone1 ? "text-red-500" : "text-textMain/50"
+                        }`}
+                      >
+                        Primary Phone *
+                      </label>
+
                       <div className="relative group">
-                        <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${errors.phone1 ? 'text-red-400' : 'text-textMain/50 group-focus-within:text-primary'}`} size={16} />
-                        <input type="text" name="phone1" value={formData.phone1} onChange={handleChange} placeholder="07x..." 
-                          className={`w-full bg-card/50 border rounded-2xl py-3.5 pl-12 pr-4 text-sm transition-all outline-none ${errors.phone1 ? 'border-red-500 focus:border-red-600 bg-red-50/30' : 'border-border focus:border-primary focus:bg-card'}`} />
+                        <Phone
+                          className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${
+                            errors.phone1
+                              ? "text-red-400"
+                              : "text-textMain/50 group-focus-within:text-primary"
+                          }`}
+                          size={16}
+                        />
+
+                        <input
+                          type="tel"
+                          name="phone1"
+                          value={formData.phone1}
+                          onChange={handleChange}
+                          placeholder="07xxxxxxxx"
+                          inputMode="numeric"
+                          maxLength={10}
+                          pattern="0[0-9]{9}"
+                          className={`w-full bg-card/50 border rounded-2xl py-3.5 pl-12 pr-4 text-sm transition-all outline-none ${
+                            errors.phone1
+                              ? "border-red-500 focus:border-red-600 bg-red-50/30"
+                              : "border-border focus:border-primary focus:bg-card"
+                          }`}
+                        />
                       </div>
+
+                      {errors.phone1 && (
+                        <p className="mt-2 ml-1 text-[10px] font-bold text-red-500">
+                          {errors.phone1}
+                        </p>
+                      )}
                     </div>
                     <div>
-                      <label className="text-[9px] md:text-[10px] font-black text-textMain/50 uppercase tracking-widest mb-2 block ml-1">Secondary Phone</label>
-                      <input type="text" name="phone2" value={formData.phone2} onChange={handleChange} placeholder="Optional" className="w-full bg-card/50 border border-border focus:border-primary focus:bg-card rounded-2xl py-3.5 px-5 text-sm transition-all outline-none" />
+                      <label
+                        className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-2 block ml-1 ${
+                          errors.phone2 ? "text-red-500" : "text-textMain/50"
+                        }`}
+                      >
+                        Secondary Phone
+                      </label>
+
+                      <input
+                        type="tel"
+                        name="phone2"
+                        value={formData.phone2}
+                        onChange={handleChange}
+                        placeholder="Optional"
+                        inputMode="numeric"
+                        maxLength={10}
+                        pattern="0[0-9]{9}"
+                        className={`w-full bg-card/50 border rounded-2xl py-3.5 px-5 text-sm transition-all outline-none ${
+                          errors.phone2
+                            ? "border-red-500 focus:border-red-600 bg-red-50/30"
+                            : "border-border focus:border-primary focus:bg-card"
+                        }`}
+                      />
+
+                      {errors.phone2 && (
+                        <p className="mt-2 ml-1 text-[10px] font-bold text-red-500">
+                          {errors.phone2}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
