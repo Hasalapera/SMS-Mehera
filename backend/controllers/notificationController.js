@@ -53,10 +53,26 @@ const getVisibleNotificationWhere = async (user) => {
 exports.getNotifications = async (req, res) => {
   try {
     const user = req.user;
-    const where = await getVisibleNotificationWhere(user);
+    const visibilityWhere = await getVisibleNotificationWhere(user);
+    const validTypes = ['stock', 'product', 'customer', 'user', 'target', 'order'];
+    const requestedType = req.query.type;
+    if (requestedType && !validTypes.includes(requestedType)) {
+      return res.status(400).json({ error: 'Invalid notification type' });
+    }
+    const where = requestedType
+      ? { [Op.and]: [visibilityWhere, { type: requestedType }] }
+      : visibilityWhere;
+    const requestedLimit = Number.parseInt(req.query.limit, 10);
+    const requestedOffset = Number.parseInt(req.query.offset, 10);
+    const limit = Number.isInteger(requestedLimit) && requestedLimit > 0
+      ? Math.min(requestedLimit, 50)
+      : 50;
+    const offset = Number.isInteger(requestedOffset) && requestedOffset >= 0
+      ? requestedOffset
+      : 0;
 
     // Get notifications filtered by role
-    const notifications = await Notification.findAll({
+    const { count: total, rows: notifications } = await Notification.findAndCountAll({
       where,
       include: [{
         model: User,
@@ -64,7 +80,9 @@ exports.getNotifications = async (req, res) => {
         attributes: ['name', 'role'],
       }],
       order: [['created_at', 'DESC']],
-      limit: 50,
+      limit,
+      offset,
+      distinct: true,
     });
 
     // Get per-user read status from notification_reads table
@@ -110,7 +128,8 @@ exports.getNotifications = async (req, res) => {
 
     res.json({ 
       notifications: notificationsWithReadStatus, 
-      unreadByType: unreadByTypeArray 
+      unreadByType: unreadByTypeArray,
+      hasMore: offset + notifications.length < total,
     });
   } catch (err) {
     console.error('Get notifications error:', err);
@@ -127,12 +146,12 @@ exports.getUnreadCount = async (req, res) => {
     // Get all notifications for this role
     const notifications = await Notification.findAll({ 
       where,
-      attributes: ['notification_id'] // Only need IDs
+      attributes: ['notification_id', 'type']
     });
     const notificationIds = notifications.map(n => n.notification_id);
 
     if (notificationIds.length === 0) {
-      return res.json({ unread_count: 0 });
+      return res.json({ unread_count: 0, unread_by_type: {} });
     }
 
     // Get read records for this specific user
@@ -148,9 +167,14 @@ exports.getUnreadCount = async (req, res) => {
     const readIds = new Set(userReads.map(r => r.notification_id));
 
     // Unread = total notifications - ones this user has read
-    const unreadCount = notificationIds.filter(id => !readIds.has(id)).length;
+    const unreadNotifications = notifications.filter(n => !readIds.has(n.notification_id));
+    const unreadCount = unreadNotifications.length;
+    const unreadByType = unreadNotifications.reduce((counts, notification) => {
+      counts[notification.type] = (counts[notification.type] || 0) + 1;
+      return counts;
+    }, {});
 
-    res.json({ unread_count: unreadCount });
+    res.json({ unread_count: unreadCount, unread_by_type: unreadByType });
   } catch (err) {
     console.error('Get unread count error:', err);
     res.status(500).json({ error: 'Failed to fetch unread count' });
