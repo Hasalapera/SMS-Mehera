@@ -25,9 +25,13 @@ const Inbox = () => {
     markAllAsRead,
     deleteNotification,
     getUnreadByType,
+    unreadCount,
   } = useNotifications();
 
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreByFilter, setHasMoreByFilter] = useState({ all: false });
+  const [visibleCounts, setVisibleCounts] = useState({ all: 50 });
   const [activeFilter, setActiveFilter] = useState('all');
   const [fontScale, setFontScale] = useState(1);
   const wrapperRef = useRef(null);
@@ -59,7 +63,16 @@ const Inbox = () => {
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const res = await api.get('/notifications', config);
-      setNotificationsFromAPI(res.data.notifications || []);
+      const latestNotifications = res.data.notifications || [];
+      setNotificationsFromAPI(prev => {
+        if (prev.length <= 50) return latestNotifications;
+        const latestIds = new Set(latestNotifications.map(n => n.notification_id));
+        return [
+          ...latestNotifications,
+          ...prev.filter(n => !latestIds.has(n.notification_id)),
+        ];
+      });
+      setHasMoreByFilter(prev => ({ ...prev, all: Boolean(res.data.hasMore) }));
       setLoading(false);
     } catch (err) {
       if (err.response?.status === 401) {
@@ -68,6 +81,66 @@ const Inbox = () => {
         console.error('Failed to fetch notifications:', err);
       }
       setLoading(false);
+    }
+  };
+
+  const mergeNotifications = (incomingNotifications) => {
+    const incomingIds = new Set(incomingNotifications.map(n => n.notification_id));
+    setNotificationsFromAPI(prev => [
+      ...prev.filter(n => !incomingIds.has(n.notification_id)),
+      ...incomingNotifications,
+    ].sort((a, b) => new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at)));
+  };
+
+  const handleFilterChange = async (filter) => {
+    setActiveFilter(filter);
+    if (filter === 'all') {
+      return;
+    }
+
+    try {
+      setLoadingMore(true);
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const res = await api.get('/notifications', {
+        ...config,
+        params: { type: filter, limit: 50, offset: 0 },
+      });
+      const typeNotifications = res.data.notifications || [];
+      mergeNotifications(typeNotifications);
+      setVisibleCounts(prev => ({ ...prev, [filter]: typeNotifications.length }));
+      setHasMoreByFilter(prev => ({ ...prev, [filter]: Boolean(res.data.hasMore) }));
+    } catch (err) {
+      console.error(`Failed to load ${filter} notifications:`, err);
+      toast.error('Failed to load notifications');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = async () => {
+    try {
+      setLoadingMore(true);
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const res = await api.get('/notifications', {
+        ...config,
+        params: {
+          limit: 50,
+          offset: visibleCounts[activeFilter] ?? filteredNotifications.length,
+          ...(activeFilter !== 'all' && { type: activeFilter }),
+        },
+      });
+      const olderNotifications = res.data.notifications || [];
+      mergeNotifications(olderNotifications);
+      setVisibleCounts(prev => ({
+        ...prev,
+        [activeFilter]: (prev[activeFilter] || 50) + olderNotifications.length,
+      }));
+      setHasMoreByFilter(prev => ({ ...prev, [activeFilter]: Boolean(res.data.hasMore) }));
+    } catch (err) {
+      console.error('Failed to load more notifications:', err);
+      toast.error('Failed to load more notifications');
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -107,11 +180,15 @@ const Inbox = () => {
     }
   };
 
-  const filteredNotifications = activeFilter === 'all'
+  const matchingNotifications = activeFilter === 'all'
     ? notifications
     : notifications.filter(n => n.type === activeFilter);
+  const filteredNotifications = matchingNotifications.slice(
+    0,
+    visibleCounts[activeFilter] ?? 50
+  );
+  const hasMore = Boolean(hasMoreByFilter[activeFilter]);
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
   const unreadByType = getUnreadByType();
 
   const formatNotificationDateTime = (value) => {
@@ -248,7 +325,7 @@ const Inbox = () => {
           ].map(tab => (
             <button
               key={tab.key}
-              onClick={() => setActiveFilter(tab.key)}
+              onClick={() => handleFilterChange(tab.key)}
               className={`min-w-0 flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-[8px] font-black uppercase tracking-[0.12em] transition-all focus:outline-none sm:w-auto sm:justify-start sm:gap-2 sm:px-3.5 sm:py-2.5 sm:text-[9px] md:px-4 md:text-[10px] ${
                 activeFilter === tab.key
                     ? 'bg-primary text-black shadow-lg shadow-[#b4a460]/20'
@@ -258,7 +335,11 @@ const Inbox = () => {
               <tab.icon className="h-3.5 w-3.5 shrink-0 md:h-4 md:w-4" />
               <span className="min-w-0 truncate">{tab.label}</span>
               {tab.key !== 'all' && unreadByType[tab.key] > 0 && (
-                <span className="shrink-0 rounded-full bg-primary/20 px-1.5 py-0.5 text-[7px] font-black text-primary md:px-2 md:text-[8px]">
+                <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[7px] font-black md:px-2 md:text-[8px] ${
+                  activeFilter === tab.key
+                    ? 'bg-background/30 text-textMain ring-1 ring-border'
+                    : 'bg-primary/20 text-primary'
+                }`}>
                   {unreadByType[tab.key]}
                 </span>
               )}
@@ -344,6 +425,18 @@ const Inbox = () => {
                 </div>
               );
             })}
+            {hasMore && (
+              <div className="flex justify-center pt-5">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="flex items-center gap-2 rounded-xl border border-primary/30 bg-card px-5 py-3 text-[10px] font-black uppercase tracking-widest text-primary transition-all hover:bg-primary hover:text-black disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loadingMore && <Loader2 size={14} className="animate-spin" />}
+                  {loadingMore ? 'Loading...' : 'Load More'}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="py-20 text-center">

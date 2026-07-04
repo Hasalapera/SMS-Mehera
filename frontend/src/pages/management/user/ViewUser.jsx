@@ -15,6 +15,7 @@ const ViewUser = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState("all"); // "all", "active", "deleted" 
+  const [openActionMenuId, setOpenActionMenuId] = useState(null);
 
   const user = JSON.parse(localStorage.getItem('user')); 
 
@@ -60,6 +61,20 @@ const ViewUser = () => {
 
   useEffect(() => {
     fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest(".user-action-menu-root")) {
+        setOpenActionMenuId(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   // Filter Logic: Search term and Selected Role 
@@ -226,7 +241,7 @@ const handleResetPassword = async (userId, userName) => {
 
       {/* List Table Section */}
       <div className="bg-card transition-all duration-500 rounded-[1.5rem] border border-border shadow-sm overflow-visible">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-visible pb-28">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-card/50 border-b border-border transition-colors duration-500">
@@ -293,43 +308,78 @@ const handleResetPassword = async (userId, userName) => {
                       )}
 
                       {user?.role === 'admin' && (
-                        <div className="relative group/menu">
-                          <button className="p-2 text-textMain/50 transition-colors duration-300 hover:text-textMain transition-colors duration-300 hover:bg-gray-100 rounded-lg transition-all">
-                            <MoreVertical size={18} />
-                          </button>
+                      <div
+                        className="relative user-action-menu-root z-[100]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenActionMenuId((current) =>
+                              current === emp.user_id ? null : emp.user_id
+                            );
+                          }}
+                          className={`p-2 rounded-lg transition-all duration-300 ${
+                            openActionMenuId === emp.user_id
+                              ? "bg-primary/10 text-primary"
+                              : "text-textMain/50 hover:text-primary hover:bg-primary/10"
+                          }`}
+                          title="More Actions"
+                        >
+                          <MoreVertical size={18} />
+                        </button>
 
-                          {/* Dropdown Menu */}
-                          <div className="absolute right-0 mt-2 w-48 bg-card transition-colors duration-300 border border-border transition-colors duration-300 rounded-2xl shadow-xl opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-50 py-2">
-                            
-                            {/* Reset Password Option */}
+                        {openActionMenuId === emp.user_id && (
+                          <div className="absolute right-0 top-full mt-2 w-52 bg-card border border-border rounded-2xl shadow-2xl z-[9999] py-2 animate-in fade-in zoom-in-95 duration-150">
                             {!isDeactivated && emp.user_id !== user.user_id && (
                               <button
-                                onClick={() => {
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenActionMenuId(null);
+
                                   if (emp.is_default_password) {
-                                    Swal.fire({ title: 'Already Reset', text: 'User is on default password.', icon: 'info', confirmButtonColor: '#b4a460' });
+                                    MySwal.fire({
+                                      title: "Already Reset",
+                                      text: "User is on default password.",
+                                      icon: "info",
+                                      showCancelButton: false,
+                                      confirmButtonText: "Okay",
+                                    });
                                   } else {
                                     handleResetPassword(emp.user_id, emp.name);
                                   }
                                 }}
-                                className={`w-full text-left px-4 py-2.5 text-xs font-bold flex items-center gap-2 ${emp.is_default_password ? 'text-textMain/50 transition-colors duration-300 cursor-not-allowed' : 'text-red-500 hover:bg-red-50'}`}
+                                className={`w-full text-left px-4 py-3 text-xs font-bold flex items-center gap-2 transition-all ${
+                                  emp.is_default_password
+                                    ? "text-textMain/40 cursor-not-allowed"
+                                    : "text-red-500 hover:bg-red-500/10"
+                                }`}
                               >
-                                <RefreshCw size={14} /> 
+                                <RefreshCw size={14} />
                                 {emp.is_default_password ? "Already Reset" : "Reset Password"}
                               </button>
                             )}
 
-                            {/* Restore Option */}
                             {isDeactivated && (
                               <button
-                                onClick={() => handleRestore(emp.user_id, emp.name)}
-                                className="w-full text-left px-4 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-50 flex items-center gap-2 transition-colors rounded-xl"
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenActionMenuId(null);
+                                  handleRestore(emp.user_id, emp.name);
+                                }}
+                                className="w-full text-left px-4 py-3 text-xs font-bold text-emerald-600 hover:bg-emerald-500/10 flex items-center gap-2 transition-all"
                               >
-                                <RefreshCw size={14} className="text-emerald-500" /> Restore Account
+                                <RefreshCw size={14} className="text-emerald-500" />
+                                Restore Account
                               </button>
                             )}
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
+                    )}
                     </div>
                   </td>
                     {/* <td className="px-6 py-4 text-right">
