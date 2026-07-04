@@ -101,10 +101,10 @@ const Footer = () => {
           <div className="space-y-6 text-left lg:pl-8">
             <h4 className="text-xs font-black uppercase tracking-widest text-textMain">Customer Care</h4>
             <ul className="space-y-3 text-[11px] font-bold text-textMain/50 uppercase tracking-wider">
-              <li className="hover:text-primary transition-all duration-300 cursor-pointer">Track Order</li>
-              <li className="hover:text-primary transition-all duration-300 cursor-pointer">Return Policy</li>
-              <li className="hover:text-primary transition-all duration-300 cursor-pointer">Shipping Info</li>
-              <li className="hover:text-primary transition-all duration-300 cursor-pointer">FAQs</li>
+              <li onClick={() => handleNavigation('/verify-order')} className="hover:text-primary transition-all duration-300 cursor-pointer">Track Order</li>
+              <li onClick={() => handleNavigation('/return-policy')} className="hover:text-primary transition-all duration-300 cursor-pointer">Return Policy</li>
+              <li onClick={() => handleNavigation('/shipping-info')} className="hover:text-primary transition-all duration-300 cursor-pointer">Shipping Info</li>
+              <li onClick={() => handleNavigation('/faqs')} className="hover:text-primary transition-all duration-300 cursor-pointer">FAQs</li>
             </ul>
           </div>
 

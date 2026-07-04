@@ -153,12 +153,20 @@ const OrderVerificationHub = () => {
     setTimeout(() => { setIsCopied(false); }, 2000);
   };
 
+  // 🎯 [UPDATED] Tracking ID එක embed නොකර, courier සේවාවේ ප්‍රධාන tracking page එකට යොමු කිරීමට සකස් කරන ලදී.
+  const COURIER_URLS = new Map([
+    ['domex', 'https://www.domex.lk/tracking.php'],      // ✅ නිවැරදි tracking page එක.
+    ['pronto', 'https://prontolanka.lk/tracking/'],      // ✅ නිවැරදි tracking page එක.
+    ['koombiyo', 'https://koombiyodelivery.lk/track'] // ✅ ඔබ ලබාදුන් URL එකට අනුව යාවත්කාලීන කරන ලදී.
+  ]);
+
   const getCourierRedirectUrl = (courierName, trackingId) => {
     if (!trackingId) return '#';
-    const name = courierName?.toLowerCase()?.trim();
-    if (name === 'domex') return `https://www.domex.lk/tracking.php?waybill=${trackingId}`;
-    if (name === 'pronto') return `https://prontolanka.lk/tracking/?wb=${trackingId}`;
-    if (name === 'koombiyo') return `https://koombiyocourier.lk/tracking?tracking_id=${trackingId}`;
+    
+    const normalizedName = courierName?.toLowerCase().replace(/\s+/g, '') || '';
+    const url = COURIER_URLS.get(normalizedName);
+
+    if (url) return url;
     return `https://www.google.com/search?q=${courierName}+tracking+${trackingId}`;
   };
 
