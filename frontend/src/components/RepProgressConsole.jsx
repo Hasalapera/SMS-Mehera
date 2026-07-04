@@ -10,7 +10,7 @@ const RepProgressConsole = ({ selectedRepId, selectedMonth, orders = [], token }
 
   // 🧮 1. Calculate live achieved sales volume from orders for THIS specific selected representative
   const liveAchievedSales = orders.reduce((acc, order) => {
-    // සසඳන්නේ දැනට සිලෙක්ට් කරලා ඉන්න රෙප්ගේ ID එකට විතරයි
+    // Check if the order belongs to the selected sales representative by comparing the sales_rep.user_id and created_by fields with the selectedRepId. If it doesn't match, skip this order and continue accumulating the total.
     const isCurrentRepOrder = order.sales_rep?.user_id === selectedRepId || order.created_by === selectedRepId;
     if (!isCurrentRepOrder) return acc;
 
@@ -30,9 +30,9 @@ const RepProgressConsole = ({ selectedRepId, selectedMonth, orders = [], token }
         setLoading(true);
         const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
         
-        // 🔌 API 01: locked targets ඇදීම
+        // 🔌 API 01: get locked targets 
         const targetRes = await api.get(`/salesTarget/rep-summary?sales_rep_id=${selectedRepId}&month=${selectedMonth}`, config);
-        // 🔌 API 02: රෙප්ගේ දිස්ත්‍රික්ක සහ සලූන් ගණන ඇදීම
+        // 🔌 API 02: get representative details
         const detailsRes = await api.get(`/salesTarget/rep-details/${selectedRepId}`, config);
 
         if (targetRes.data?.success && targetRes.data?.data) {
@@ -60,7 +60,7 @@ const RepProgressConsole = ({ selectedRepId, selectedMonth, orders = [], token }
   const progressPercentage = targetAmount > 0 ? Math.min((liveAchievedSales / targetAmount) * 100, 100) : 0;
   const deficitAmount = Math.max(targetAmount - liveAchievedSales, 0);
 
-  // රෙප් කෙනෙක් තෝරලා නැත්නම් පිරිසිදු හිස් ස්ක්‍රීන් එකක් පෙන්වනවා (Placeholder)
+  // If no sales representative is selected, display a placeholder message prompting the user to select one from the filters. This ensures that the user understands that they need to make a selection to view the audit tracking loops and related metrics.
   if (!selectedRepId) {
     return (
       <div className="p-8 border border-dashed border-border rounded-[2rem] text-center text-textMain/30 font-bold uppercase text-[0.75rem] tracking-widest bg-card/10">

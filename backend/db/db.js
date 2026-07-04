@@ -8,19 +8,19 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
   protocol: 'postgres',
   // Professional Optimization: Connection Pooling
   pool: {
-    max: isProduction ? 15 : 5,  // Production එකේදී connections ගාණ වැඩි කරනවා, Local එකේදී 5ක් ඇති
+    max: isProduction ? 15 : 5,  // Increase connections in production, 5 is enough for local
     min: 0,
-    acquire: 30000,   // connection එකක් ගන්න උපරිම තත්පර 30ක් බලනවා
-    idle: 10000       // පාවිච්චි නොවන connection එකක් තත්පර 10කින් නිවා දමනවා
+    acquire: 30000,   // Wait a maximum of 30 seconds to get a connection
+    idle: 10000       // Close an unused connection after 10 seconds
   },
   dialectOptions: {
-    // DBeaver සහ Live Remote DB දෙකටම SSL අවශ්‍ය නිසා require: true ලෙසම තබා ඇත
+    // SSL is required for both DBeaver and the live remote DB, so require: true is kept
     ssl: {
       require: true,
       rejectUnauthorized: false,
     },
   },
-  // Development වලදී විතරක් SQL logs පෙන්වන්න
+  // Show SQL logs only in development
   logging: isProduction ? false : console.log,
 });
 

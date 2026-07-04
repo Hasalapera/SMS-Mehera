@@ -7,7 +7,7 @@ exports.createWorkshop = async (req, res) => {
   try {
     let image_url = null;
 
-    // ෆ්‍රොන්ටෙන්ඩ් එකෙන් අලුත් Base64 ඉමේජ් එකක් ආවොත් Cloudinary අප්ලෝඩ් කරනවා
+    // Cloudinary will upload a new Base64 image if it arrives from the frontend.
     if (req.body.image && req.body.image.startsWith('data:image')) {
       try {
         const uploadRes = await cloudinary.uploader.upload(req.body.image, {
@@ -16,13 +16,13 @@ exports.createWorkshop = async (req, res) => {
         image_url = uploadRes.secure_url;
       } catch (cloudinaryErr) {
         console.error("⚠️ Cloudinary Upload Failed (Create):", cloudinaryErr.message);
-        // 💡 Cloudinary fail වුණොත්, varchar(255) සීමාව පනින නිසා Base64 එක DB එකට දාන්නේ නැහැ.
-        // ඒ වෙනුවට default placeholder image එකක් සෙට් කරනවා ඇප් එක ක්‍රෑෂ් නොවී බේරගන්න.
+        // 💡 If Cloudinary fails, the Base64 will not be put into the DB because it exceeds the varchar(255) limit.
+        // Instead, a default placeholder image is set to prevent the app from crashing.
         image_url = 'https://ui-avatars.com/api/?name=Workshop&background=b4a460&color=fff';
       }
     }
 
-    // 🎯 ඩේටාබේස් එකේ තියෙන columns වලට විතරක් ඩේටා වෙන් කරලා ගන්නවා
+    // 🎯 Only include the valid columns from the request body
     const workshopData = {
       title: req.body.title,
       description: req.body.description,
@@ -52,23 +52,23 @@ exports.updateWorkshop = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Workshop not found' });
     }
 
-    let image_url = workshop.image_url; // 1. Default විදිහට පරණ තිබ්බ image url එකම තියාගන්නවා
+    let image_url = workshop.image_url; // 1. By default, the old image URL is kept the same.
 
-    // ඇඩ්මින් අලුත් ඉමේජ් එකක් සිලෙක්ට් කරලා තියෙනවා නම් විතරක් Cloudinary යවනවා
+    // Cloudinary only sends a new image if the admin has selected it.
     if (req.body.image && req.body.image.startsWith('data:image')) {
       try {
         const uploadRes = await cloudinary.uploader.upload(req.body.image, {
           folder: 'mehera-international/workshops',
         });
-        image_url = uploadRes.secure_url; // Upload සාර්ථක නම් විතරක් අලුත් URL එක ගන්නවා
+        image_url = uploadRes.secure_url; // Upload successful, only the new URL is kept
       } catch (cloudinaryErr) {
         console.error("⚠️ Cloudinary Upload Failed (Update):", cloudinaryErr.message);
-        // 💡 Cloudinary fail වුණොත්, 255 සීමාව පනින Base64 එක ඩේටාබේස් එකට දාන්න යන්නේ නැහැ.
-        // පරණ තිබුණු image_url එකම වෙනස් නොකර තියාගන්නවා (No DB crash).
+        // 💡 If Cloudinary fails, the Base64 will not be put into the DB because it exceeds the varchar(255) limit.
+        // The old image_url is kept unchanged (No DB crash).
       }
     }
 
-    // 🎯 ඩේටාබේස් එකේ තියෙන නිවැරදිම ටේබල් ෆීල්ඩ්ස් ටික විතරක් අප්ඩේට් කරන්න Payload එක හදනවා
+    // 🎯 Only include the valid columns from the request body
     const updatedData = {
       title: req.body.title,
       description: req.body.description,
@@ -77,7 +77,7 @@ exports.updateWorkshop = async (req, res) => {
       speakers: req.body.speakers,
       duration: req.body.duration,
       type: req.body.type,
-      image_url: image_url // 👈 මෙතනට කවදාවත් ලොකු Base64 string එකක් වැටෙන්නේ නැහැ දැන්
+      image_url: image_url // 👈A large Base64 string will never fall here now.
     };
 
     await workshop.update(updatedData);

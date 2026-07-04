@@ -5,10 +5,10 @@ const getSettings = async (req, res) => {
     try {
         console.log("Setting Model:", Setting); 
         let settings = await Setting.findOne();
-        // පද්ධතිය මුලින්ම රන් වෙද්දී record එකක් නැත්නම් අලුතින් එකක් හදනවා
+        // When the system first boots, if a record does not exist, a new one is created.
         if (!settings) {
             settings = await Setting.create({
-                light_logo_url: '', // මෙතනට උඹේ default cloudinary url එක දාන්නත් පුළුවන්
+                light_logo_url: '', // Replace with your default cloudinary url
                 dark_logo_url: '',
                 default_language: 'en'
             });
