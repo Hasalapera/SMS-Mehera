@@ -80,10 +80,11 @@ const addUserByAdmin = async (req, res) => {
             );
 
             // For the admin
-            await createNotification(
+            const newUserRole = role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            const adminNotification = await createNotification(
                 'user',
                 'New User Created',
-                `You created a new user account for ${name} with the role of ${role}.`,
+                `${name} (${email}) was added as ${newUserRole} by ${actorString}.`,
                 {
                     target_user_id: req.user.user_id,
                     severity: 'info',
@@ -103,7 +104,8 @@ const addUserByAdmin = async (req, res) => {
                 message: emailSent
                     ? "User and assigned areas added successfully!"
                     : "User created, but welcome email could not be sent.",
-                userId: user.user_id
+                userId: user.user_id,
+                notification: adminNotification
             });
 
         } catch (err) {
