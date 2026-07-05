@@ -169,7 +169,7 @@ export const AuthProvider = ({ children }) => {
     * saha sudden logout avoid karanna.
     * (Example: Gmail, Facebook, Instagram wage systems)
     */
-    const checkTokenExpiry = async () => {
+    const checkTokenExpiry = useCallback(async () => {
         const expiresAt = localStorage.getItem('expiresAt');
         if (!expiresAt) return;
 
