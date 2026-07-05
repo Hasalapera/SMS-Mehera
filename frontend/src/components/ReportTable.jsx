@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Package, Calendar, User, MapPin, X, Receipt } from 'lucide-react';
 
-const ReportTable = ({ orders = [] }) => {
+const ReportTable = ({ orders = [], exportMode = false }) => {
   // 🔢 Pagination States
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; // 📄 පේජ් එකකට පෙන්වන්න ඕනේ ඕඩර්ස් ගණන (උඹට ඕන නම් මාරු කරපන්)
+  const itemsPerPage = 5; // Number of items to display per page for screen view (not for export/print)
   
   const [selectedOrder, setSelectedOrder] = useState(null); // 🔍 Click කරපු Order එක තියාගන්න state එක
 
@@ -31,8 +31,8 @@ const ReportTable = ({ orders = [] }) => {
     <div className="w-full space-y-[1.5rem]">
       
       {/* 🖥️ 1. DESKTOP VIEW: Traditional Wide Table Layout (Hidden on Mobile) */}
-      <div className="hidden md:block w-full overflow-x-auto custom-scrollbar">
-        <table className="w-full text-left border-separate border-spacing-y-[1.5rem] print:border-collapse print:border-spacing-y-0">
+      <div className={`${exportMode ? 'block' : 'hidden md:block'} w-full overflow-x-visible md:overflow-x-auto custom-scrollbar report-table-desktop`}>
+        <table className="w-full text-left border-separate border-spacing-y-[1.5rem] print:border-collapse print:border-spacing-y-0 report-data-table">
           <thead className="print:table-row-group">
             <tr className="text-[0.5875rem] font-black text-textMain/50 uppercase tracking-[0.15em] whitespace-nowrap">
               <th className="px-[1rem] py-[1rem]">Invoice Reference</th>
@@ -48,15 +48,20 @@ const ReportTable = ({ orders = [] }) => {
               const targetItems = order.OrderItems || order.items || [];
               const repName = order.creator?.name || order.sales_rep?.name || 'Unknown Rep';
               const repEmail = order.creator?.email || order.sales_rep?.email || '';
-              const orderValue = targetItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * (item.quantity || 0)), 0);
+              const orderValue = targetItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * Number(item.quantity || item.qty || 0)), 0);
 
-              const isVisibleOnScreen = index >= indexOfFirstItem && index < indexOfLastItem;
+              const isVisibleOnScreen = exportMode || (index >= indexOfFirstItem && index < indexOfLastItem);
 
               return (
                 <tr 
-                  key={order.order_id} 
-                  onClick={() => setSelectedOrder(order)}
-                  className={`group transition-all text-[0.8125rem] print:break-inside-avoid print:text-[10px] cursor-pointer hover:bg-primary/5 ${!isVisibleOnScreen ? 'hidden print:table-row' : ''}`}
+                  key={order.order_id}
+                  data-pdf-row="true"
+                  onClick={() => {
+                    if (!exportMode) setSelectedOrder(order);
+                  }}
+                  className={`report-table-row group transition-all text-[0.8125rem] break-inside-avoid page-break-inside-avoid print:break-inside-avoid print:text-[10px] ${
+                    exportMode ? '' : 'cursor-pointer hover:bg-primary/5'
+                  } ${!isVisibleOnScreen ? 'hidden print:table-row' : ''}`}
                 >
                   
                   {/* Reference ID */}
@@ -107,18 +112,20 @@ const ReportTable = ({ orders = [] }) => {
       </div>
 
       {/* 📱 2. MOBILE VIEW: Premium Card Grid Layout (Hidden on Desktop) */}
-      <div className="block md:hidden space-y-[1rem] print:hidden">
+      <div className={`${exportMode ? 'hidden' : 'block md:hidden'} space-y-[1rem] print:hidden report-table-mobile`}>
         {orders.map((order, index) => {
           const targetItems = order.OrderItems || order.items || [];
           const repName = order.creator?.name || order.sales_rep?.name || 'Unknown Rep';
-          const orderValue = targetItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * (item.quantity || 0)), 0);
+          const orderValue = targetItems.reduce((sum, item) => sum + (parseFloat(item.price || 0) * Number(item.quantity || item.qty || 0)), 0);
 
           const isVisibleOnScreen = index >= indexOfFirstItem && index < indexOfLastItem;
 
           return (
             <div 
               key={order.order_id} 
-              onClick={() => setSelectedOrder(order)}
+              onClick={() => {
+                if (!exportMode) setSelectedOrder(order);
+              }}
               className={`p-5 bg-background border border-border rounded-2xl space-y-4 transition-all print:break-inside-avoid cursor-pointer hover:border-primary/40 hover:shadow-lg ${!isVisibleOnScreen ? 'hidden print:block' : ''}`}
             >
               
@@ -179,8 +186,8 @@ const ReportTable = ({ orders = [] }) => {
       </div>
 
       {/* 🎛️ 3. PAGINATION CONTROLS: Rendered beautifully on all screens */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-[1rem] border-t border-border/60 text-[0.8125rem] print:hidden">
+      {!exportMode && totalPages > 1 && (
+        <div className="report-pagination-controls flex items-center justify-between pt-[1rem] border-t border-border/60 text-[0.8125rem] print:hidden" data-export-hide="true">
           {/* Information string */}
           <p className="text-textMain/50 font-medium hidden sm:block">
             Showing <span className="font-bold text-textMain">{indexOfFirstItem + 1}</span> to <span className="font-bold text-textMain">{Math.min(indexOfLastItem, orders.length)}</span> of <span className="font-bold text-textMain">{orders.length}</span> records
@@ -231,9 +238,9 @@ const ReportTable = ({ orders = [] }) => {
       )}
 
       {/* 🔍 Details Popup Modal (Hidden in Print) */}
-      {selectedOrder && (
+      {!exportMode && selectedOrder && (
         <div 
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 print:hidden animate-in fade-in duration-300"
+          className="report-order-modal fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 print:hidden animate-in fade-in duration-300"
           onClick={() => setSelectedOrder(null)}
         >
           <div 

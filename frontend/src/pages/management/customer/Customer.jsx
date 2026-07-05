@@ -20,7 +20,6 @@ const Customer = () => {
   const tabs = [
     { id: 'view', label: 'View All Customers', icon: Users, show: canView },
     { id: 'add', label: 'New Registration', icon: UserPlus, show: canAdd },
-    { id: 'status', label: 'Credit Status', icon: UserCheck, show: canView },
     { id: 'delete', label: 'Archive Portal', icon: UserMinus, show: canDelete },
   ];
 

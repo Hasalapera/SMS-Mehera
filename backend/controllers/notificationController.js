@@ -10,14 +10,37 @@ const getRoleBasedFilter = (role) => {
   return { type: ['order'] };
 };
 
-const getVisibleNotificationWhere = (user) => {
+// Helper function to get the visibility filter for notifications based on user role and registration date
+const getVisibleNotificationWhere = async (user) => {
+  const currentUser = await User.findByPk(user.user_id, {
+    attributes: ['createdAt'],
+  });
+  if (!currentUser) {
+    throw new Error('Authenticated user not found');
+  }
+  const registrationFilter = {
+    createdAt: { [Op.gte]: currentUser.createdAt },
+  };
   const roleFilter = getRoleBasedFilter(user.role);
 
+  // Admins and managers can see all notifications, so we only apply the registration filter
   if (user.role === 'admin' || user.role === 'manager') {
-    return {};
+    return {
+      [Op.and]: [
+        registrationFilter,
+        {
+          [Op.or]: [
+            { target_user_id: null },
+            { target_user_id: user.user_id },
+          ],
+        },
+      ],
+    };
   }
 
+  // For other roles, we apply the registration filter, target_user_id filter, and target_role filter
   const clauses = [
+    registrationFilter,
     {
       [Op.or]: [
         { target_user_id: null },
@@ -43,10 +66,26 @@ const getVisibleNotificationWhere = (user) => {
 exports.getNotifications = async (req, res) => {
   try {
     const user = req.user;
-    const where = getVisibleNotificationWhere(user);
+    const visibilityWhere = await getVisibleNotificationWhere(user);
+    const validTypes = ['stock', 'product', 'customer', 'user', 'target', 'order'];
+    const requestedType = req.query.type;
+    if (requestedType && !validTypes.includes(requestedType)) {
+      return res.status(400).json({ error: 'Invalid notification type' });
+    }
+    const where = requestedType
+      ? { [Op.and]: [visibilityWhere, { type: requestedType }] }
+      : visibilityWhere;
+    const requestedLimit = Number.parseInt(req.query.limit, 10);
+    const requestedOffset = Number.parseInt(req.query.offset, 10);
+    const limit = Number.isInteger(requestedLimit) && requestedLimit > 0
+      ? Math.min(requestedLimit, 50)
+      : 50;
+    const offset = Number.isInteger(requestedOffset) && requestedOffset >= 0
+      ? requestedOffset
+      : 0;
 
     // Get notifications filtered by role
-    const notifications = await Notification.findAll({
+    const { count: total, rows: notifications } = await Notification.findAndCountAll({
       where,
       include: [{
         model: User,
@@ -54,7 +93,9 @@ exports.getNotifications = async (req, res) => {
         attributes: ['name', 'role'],
       }],
       order: [['created_at', 'DESC']],
-      limit: 50,
+      limit,
+      offset,
+      distinct: true,
     });
 
     // Get per-user read status from notification_reads table
@@ -66,7 +107,7 @@ exports.getNotifications = async (req, res) => {
       }
     });
 
-    // Build a map: notification_id → { is_read, read_at }
+    // Build a map: notification_id -> { is_read, read_at }
     const readMap = {};
     userReads.forEach(r => {
       readMap[r.notification_id] = {
@@ -76,8 +117,8 @@ exports.getNotifications = async (req, res) => {
     });
 
     // Override is_read with per-user status
-    // If user has a record → use that
-    // If no record → fall back to global is_read (false by default)
+    // If user has a record -> use that
+    // If no record -> fall back to global is_read (false by default)
     const notificationsWithReadStatus = notifications.map(n => ({
       ...n.toJSON(),
       is_read: readMap[n.notification_id]?.is_read ?? false,
@@ -98,9 +139,11 @@ exports.getNotifications = async (req, res) => {
       count: String(count)
     }));
 
+    // Return the notifications with read status and unread counts
     res.json({ 
       notifications: notificationsWithReadStatus, 
-      unreadByType: unreadByTypeArray 
+      unreadByType: unreadByTypeArray,
+      hasMore: offset + notifications.length < total,
     });
   } catch (err) {
     console.error('Get notifications error:', err);
@@ -112,17 +155,17 @@ exports.getNotifications = async (req, res) => {
 exports.getUnreadCount = async (req, res) => {
   try {
     const user = req.user;
-    const where = getVisibleNotificationWhere(user);
+    const where = await getVisibleNotificationWhere(user);
 
     // Get all notifications for this role
     const notifications = await Notification.findAll({ 
       where,
-      attributes: ['notification_id'] // Only need IDs
+      attributes: ['notification_id', 'type']
     });
     const notificationIds = notifications.map(n => n.notification_id);
 
     if (notificationIds.length === 0) {
-      return res.json({ unread_count: 0 });
+      return res.json({ unread_count: 0, unread_by_type: {} });
     }
 
     // Get read records for this specific user
@@ -138,9 +181,14 @@ exports.getUnreadCount = async (req, res) => {
     const readIds = new Set(userReads.map(r => r.notification_id));
 
     // Unread = total notifications - ones this user has read
-    const unreadCount = notificationIds.filter(id => !readIds.has(id)).length;
+    const unreadNotifications = notifications.filter(n => !readIds.has(n.notification_id));
+    const unreadCount = unreadNotifications.length;
+    const unreadByType = unreadNotifications.reduce((counts, notification) => {
+      counts[notification.type] = (counts[notification.type] || 0) + 1;
+      return counts;
+    }, {});
 
-    res.json({ unread_count: unreadCount });
+    res.json({ unread_count: unreadCount, unread_by_type: unreadByType });
   } catch (err) {
     console.error('Get unread count error:', err);
     res.status(500).json({ error: 'Failed to fetch unread count' });
@@ -163,7 +211,7 @@ exports.createNotificationRoute = async (req, res) => {
     if (!type || !title || !message) {
       return res.status(400).json({ error: 'type, title, and message are required' });
     }
-
+    // Create the notification with initiator_id set to the authenticated user
     const notification = await Notification.create({
       type,
       title,
@@ -193,7 +241,7 @@ exports.markAsRead = async (req, res) => {
       where: {
         [Op.and]: [
           { notification_id: id },
-          getVisibleNotificationWhere(user),
+          await getVisibleNotificationWhere(user),
         ],
       }
     });
@@ -219,7 +267,7 @@ exports.markAsRead = async (req, res) => {
 exports.markAllAsRead = async (req, res) => {
   try {
     const user = req.user;
-    const where = getVisibleNotificationWhere(user);
+    const where = await getVisibleNotificationWhere(user);
 
     // Get all notifications for this role
     const notifications = await Notification.findAll({ where });
@@ -286,314 +334,3 @@ exports.createNotification = async (type, title, message, referenceOrOptions = n
     return null;
   }
 };
-
-
-
-// const { Notification, NotificationRead } = require('../models');
-// const { Op } = require('sequelize');
-
-// // Role-based notification type filter
-// const getRoleBasedFilter = (role) => {
-//   if (role === 'admin') return null;
-//   if (role === 'manager') return { type: ['stock', 'order'] };
-//   if (role === 'sales_rep') return { type: ['order', 'customer'] };
-//   if (role === 'online_store_keeper') return { type: ['order', 'stock'] };
-//   return { type: ['order'] };
-// };
-
-// // GET /api/notifications
-// exports.getNotifications = async (req, res) => {
-//   try {
-//     const user = req.user;
-//     const filter = getRoleBasedFilter(user.role);
-
-//     let where = {};
-//     if (filter && filter.type) {
-//       where.type = { [Op.in]: filter.type };
-//     }
-
-//     const notifications = await Notification.findAll({
-//       where,
-//       order: [['created_at', 'DESC']],
-//       limit: 50,
-//     });
-
-//     // Count unread by type for filter tab badges
-//     const unreadByType = await Notification.findAll({
-//       where: { ...where, is_read: false },
-//       attributes: [
-//         'type',
-//         [require('sequelize').fn('COUNT', require('sequelize').col('notification_id')), 'count']
-//       ],
-//       group: ['type'],
-//       raw: true,
-//     });
-
-//     res.json({ notifications, unreadByType: unreadByType || [] });
-//   } catch (err) {
-//     console.error('Get notifications error:', err);
-//     res.status(500).json({ error: 'Failed to fetch notifications' });
-//   }
-// };
-
-// // GET /api/notifications/unread-count
-// exports.getUnreadCount = async (req, res) => {
-//   try {
-//     const user = req.user;
-//     const filter = getRoleBasedFilter(user.role);
-
-//     let where = { is_read: false };
-//     if (filter && filter.type) {
-//       where.type = { [Op.in]: filter.type };
-//     }
-
-//     const count = await Notification.count({ where });
-//     res.json({ unread_count: count });
-//   } catch (err) {
-//     console.error('Get unread count error:', err);
-//     res.status(500).json({ error: 'Failed to fetch unread count' });
-//   }
-// };
-
-// // POST /api/notifications — called from frontend (AddStock, EditStock, etc.)
-// exports.createNotificationRoute = async (req, res) => {
-//   try {
-//     const { type, title, message, severity = 'info', reference_id = null } = req.body;
-
-//     if (!type || !title || !message) {
-//       return res.status(400).json({ error: 'type, title, and message are required' });
-//     }
-
-//     const notification = await Notification.create({
-//       type,
-//       title,
-//       message,
-//       severity,
-//       reference_id,
-//     });
-
-//     res.status(201).json({ success: true, notification });
-//   } catch (err) {
-//     console.error('Create notification route error:', err);
-//     res.status(500).json({ error: 'Failed to create notification' });
-//   }
-// };
-
-// // PATCH /api/notifications/:id/read
-// exports.markAsRead = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const notification = await Notification.findByPk(id);
-//     if (!notification) return res.status(404).json({ error: 'Notification not found' });
-
-//     await notification.update({ is_read: true, read_at: new Date() });
-//     res.json({ success: true, notification });
-//   } catch (err) {
-//     console.error('Mark as read error:', err);
-//     res.status(500).json({ error: 'Failed to mark notification as read' });
-//   }
-// };
-
-// // PATCH /api/notifications/read-all
-// exports.markAllAsRead = async (req, res) => {
-//   try {
-//     const user = req.user;
-//     const filter = getRoleBasedFilter(user.role);
-
-//     let where = { is_read: false };
-//     if (filter && filter.type) {
-//       where.type = { [Op.in]: filter.type };
-//     }
-
-//     const result = await Notification.update(
-//       { is_read: true, read_at: new Date() },
-//       { where }
-//     );
-
-//     res.json({ success: true, updated: result[0] });
-//   } catch (err) {
-//     console.error('Mark all as read error:', err);
-//     res.status(500).json({ error: 'Failed to mark all as read' });
-//   }
-// };
-
-// // DELETE /api/notifications/:id (soft delete)
-// exports.deleteNotification = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const notification = await Notification.findByPk(id);
-//     if (!notification) return res.status(404).json({ error: 'Notification not found' });
-
-//     await notification.destroy();
-//     res.json({ success: true, message: 'Notification deleted' });
-//   } catch (err) {
-//     console.error('Delete notification error:', err);
-//     res.status(500).json({ error: 'Failed to delete notification' });
-//   }
-// };
-
-// // Helper used internally by other controllers
-// exports.createNotification = async (type, title, message, reference_id = null, severity = 'info') => {
-//   try {
-//     await Notification.create({ type, title, message, reference_id, severity });
-//   } catch (err) {
-//     console.error('Create notification error:', err);
-//   }
-// };
-
-
-
-
-
-
-
-// const { Notification } = require('../models');
-
-// //Role-based notification filtering
-// const getRoleBasedFilter = (role) => {
-//   if (role === 'admin') {
-//     return null; // Admin sees all
-//   }
-//   if (role === 'manager') {
-//     return { type: ['stock', 'order'] }; // Manager sees stock + orders
-//   }
-//   if (role === 'sales_rep') {
-//     return { type: ['order', 'customer'] }; // Sales rep sees orders +customers
-//   }
-//   if (role === 'online_store_keeper') {
-//     return { type: ['order', 'stock'] }; // Store keeper sees orders + stock
-//   }
-//   return { type: ['order'] }; // Default: orders only
-// };
-
-// exports.getNotifications = async (req, res) => {
-//   try {
-//     const user = req.user;
-//     const filter = getRoleBasedFilter(user.role);
-
-//     let where = {};
-//     if (filter && filter.type) {
-//       where.type = { [require('sequelize').Op.in]: filter.type };
-//     }
-
-//     const notifications = await Notification.findAll({
-//       where,
-//       order: [['created_at', 'DESC']],
-//       limit: 50,
-//     });
-
-//     //Count unread by type
-//     const unreadByType = await Notification.findAll({
-//       where: { ...where, is_read: false },
-//       attributes: [
-//         'type',
-//         [require('sequelize').fn('COUNT', require('sequelize').col('notification_id')), 'count']
-//       ],
-//       group: ['type'],
-//       raw: true,
-//     });
-
-//     res.json({
-//       notifications,
-//       unreadByType: unreadByType || [],
-//     });
-//   } catch (err) {
-//     console.error('Get notifications error:', err);
-//     res.status(500).json({ error: 'Failed to fetch notifications' });
-//   }
-// };
-
-// exports.getUnreadCount = async (req, res) => {
-//   try {
-//     const user = req.user;
-//     const filter = getRoleBasedFilter(user.role);
-
-//     let where = { is_read: false };
-//     if (filter && filter.type) {
-//       where.type = { [require('sequelize').Op.in]: filter.type };
-//     }
-
-//     const count = await Notification.count({ where });
-
-//     res.json({ unread_count: count });
-//   } catch (err) {
-//     console.error('Get unread count error:', err);
-//     res.status(500).json({ error: 'Failed to fetch unread count' });
-//   }
-// };
-
-// exports.markAsRead = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     const notification = await Notification.findByPk(id);
-//     if (!notification) {
-//       return res.status(404).json({ error: 'Notification not found' });
-//     }
-
-//     await notification.update({
-//       is_read: true,
-//       read_at: new Date(),
-//     });
-
-//     res.json({ success: true, notification });
-//   } catch (err) {
-//     console.error('Mark as read error:', err);
-//     res.status(500).json({ error: 'Failed to mark notification as read' });
-//   }
-// };
-
-// exports.markAllAsRead = async (req, res) => {
-//   try {
-//     const user = req.user;
-//     const filter = getRoleBasedFilter(user.role);
-
-//     let where = { is_read: false };
-//     if (filter && filter.type) {
-//       where.type = { [require('sequelize').Op.in]: filter.type };
-//     }
-
-//     const result = await Notification.update(
-//       { is_read: true, read_at: new Date() },
-//       { where }
-//     );
-
-//     res.json({ success: true, updated: result[0] });
-//   } catch (err) {
-//     console.error('Mark all as read error:', err);
-//     res.status(500).json({ error: 'Failed to mark all as read' });
-//   }
-// };
-
-// exports.deleteNotification = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     const notification = await Notification.findByPk(id);
-//     if (!notification) {
-//       return res.status(404).json({ error: 'Notification not found' });
-//     }
-
-//     await notification.destroy(); // Soft delete
-
-//     res.json({ success: true, message: 'Notification deleted' });
-//   } catch (err) {
-//     console.error('Delete notification error:', err);
-//     res.status(500).json({ error: 'Failed to delete notification' });
-//   }
-// };
-
-// //Helper function to create notifications (use in other controllers)
-// exports.createNotification = async (type, title, message, reference_id = null, severity = 'info') => {
-//   try {
-//     await Notification.create({
-//       type,
-//       title,
-//       message,
-//       reference_id,
-//       severity,
-//     });
-//   } catch (err) {
-//     console.error('Create notification error:', err);
-//   }
-// };

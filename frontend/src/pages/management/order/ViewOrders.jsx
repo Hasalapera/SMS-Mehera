@@ -64,7 +64,7 @@ const statusBadge = {
     border: "border-amber-200",
   },
   shipped: {
-    label: "Shipped",
+    label: "Dispatched to Delivery",
     bg: "bg-purple-50",
     text: "text-purple-600",
     border: "border-purple-200",
@@ -74,6 +74,24 @@ const statusBadge = {
     bg: "bg-gray-900",
     text: "text-white",
     border: "border-border transition-colors duration-300",
+  },
+  handed_over: {
+    label: "Courier Handover",
+    bg: "bg-purple-500/10",
+    text: "text-purple-500",
+    border: "border-purple-500/20",
+  },
+  handed_over_delivery: {
+    label: "Delivery Handover",
+    bg: "bg-orange-500/10",
+    text: "text-orange-500",
+    border: "border-orange-500/20",
+  },
+  returned: {
+    label: "Returned",
+    bg: "bg-red-500/10",
+    text: "text-red-500",
+    border: "border-red-500/20",
   },
   cancelled: {
     label: "Cancelled",
@@ -96,6 +114,16 @@ const ViewOrders = ({ showHeader = true }) => {
   const isAdmin = loggedUser?.role === "admin";
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
+
+  const filterTabs = [
+    { value: "All", label: "All" },
+    { value: "Requested", label: "Requested" },
+    { value: "Rejected", label: "Rejected" },
+    { value: "Approved", label: "Approved" },
+    { value: "Shipped", label: "Dispatched to Delivery" },
+    { value: "Delivered", label: "Delivered" },
+    { value: "Cancelled", label: "Returned/Cancelled" },
+  ];
 
   const fetchOrders = async (showLoader = true) => {
     if (!token) return;
@@ -120,6 +148,7 @@ const ViewOrders = ({ showHeader = true }) => {
 
   // Edit Order states
   const [editingOrder, setEditingOrder] = useState(null);
+  const [editMobileTab, setEditMobileTab] = useState('catalog');
   const [editProducts, setEditProducts] = useState([]);
   const [editSearchTerm, setEditSearchTerm] = useState("");
   const [editSelectedProductForVariant, setEditSelectedProductForVariant] = useState(null);
@@ -153,6 +182,7 @@ const ViewOrders = ({ showHeader = true }) => {
     try {
       if (!order) throw new Error("Order data is null or undefined");
       setEditingOrder(order);
+      setEditMobileTab('catalog'); // Reset to catalog view on open
       setEditDiscount(Number(order.discount_percentage) || 0);
       setEditPaymentMethod(order.payment_method || "cash");
       
@@ -305,13 +335,22 @@ const ViewOrders = ({ showHeader = true }) => {
     }
   };
 
-  const filtered = orders.filter((o) => {
-    const matchSearch =
-      (o.customer_name || "").toLowerCase().includes(search.toLowerCase()) ||
+  const filtered = orders.filter(o => {
+    const matchSearch = 
+      (o.customer_name || "").toLowerCase().includes(search.toLowerCase()) || 
       (o.order_id || "").toLowerCase().includes(search.toLowerCase());
-    const matchStatus =
-      statusFilter === "All" || o.order_status === statusFilter.toLowerCase();
-    return matchSearch && matchStatus;
+
+    if (statusFilter === 'All') return matchSearch;
+
+    // 🎯 [FIX]: "Cancelled" tab eka "returned" status eka pennanna haduwa.
+    if (statusFilter === 'Cancelled') return matchSearch && (o.order_status === 'returned' || o.order_status === 'cancelled');
+
+    // 🎯 [NEW]: "Shipped" tab eka "handed_over" saha "handed_over_delivery" pennanna haduwa.
+    if (statusFilter === 'Shipped') {
+      return matchSearch && (o.order_status === 'handed_over' || o.order_status === 'handed_over_delivery');
+    }
+
+    return matchSearch && o.order_status === statusFilter.toLowerCase();
   });
 
   const indexOfLastRow = currentPage * rowsPerPage;
@@ -484,20 +523,13 @@ const ViewOrders = ({ showHeader = true }) => {
           </div>
           {/* Desktop Filters */}
           <div className="hidden lg:flex items-center gap-2">
-            {[
-              "All",
-              "Requested",
-              "Approved",
-              "Shipped",
-              "Delivered",
-              "Cancelled",
-            ].map((s) => (
+            {filterTabs.map((tab) => (
               <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-4 py-2 rounded-lg text-[11px] font-black border uppercase whitespace-nowrap ${statusFilter === s ? "bg-primary transition-all duration-300 text-textMain transition-colors duration-300" : "bg-card transition-colors duration-300 text-textMain/50 transition-colors duration-300"}`}
+                key={tab.value}
+                onClick={() => setStatusFilter(tab.value)}
+                className={`px-4 py-2 rounded-lg text-[11px] font-black border uppercase whitespace-nowrap ${statusFilter === tab.value ? "bg-primary transition-all duration-300 text-textMain transition-colors duration-300" : "bg-card transition-colors duration-300 text-textMain/50 transition-colors duration-300"}`}
               >
-                {s}
+                {tab.label}
               </button>
             ))}
           </div>
@@ -508,16 +540,9 @@ const ViewOrders = ({ showHeader = true }) => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full appearance-none bg-background border border-border rounded-xl py-3.5 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none"
             >
-              {[
-                "All",
-                "Requested",
-                "Approved",
-                "Shipped",
-                "Delivered",
-                "Cancelled",
-              ].map((s) => (
-                <option key={s} value={s}>
-                  {s === "All" ? "All Order Statuses" : s}
+              {filterTabs.map((tab) => (
+                <option key={tab.value} value={tab.value}>
+                  {tab.value === "All" ? "All Order Statuses" : tab.label}
                 </option>
               ))}
             </select>
@@ -644,16 +669,20 @@ const ViewOrders = ({ showHeader = true }) => {
 
                         <td className="px-6 py-8 text-right relative">
                           <div className="flex items-center justify-end gap-3">
-                            <button 
-                              onClick={() => handleStartEdit(order)}
-                              className="p-2 text-textMain/50 transition-colors duration-300 hover:text-primary"
-                              title="Edit Order"
-                            >
-                              <Edit size={16} />
-                            </button>
-                            <button onClick={() => handleDeleteOrder(order.order_id)} className="p-2 text-textMain/50 transition-colors duration-300 hover:text-red-500" title="Delete Order">
-                              <Trash2 size={16} />
-                            </button>
+                            {(order.order_status === 'requested' || order.order_status === 'approved') && (
+                              <button 
+                                onClick={() => handleStartEdit(order)}
+                                className="p-2 text-textMain/50 transition-colors duration-300 hover:text-primary"
+                                title="Edit Order"
+                              >
+                                <Edit size={16} />
+                              </button>
+                            )}
+                            {order.order_status === 'requested' && (
+                              <button onClick={() => handleDeleteOrder(order.order_id)} className="p-2 text-textMain/50 transition-colors duration-300 hover:text-red-500" title="Delete Order">
+                                <Trash2 size={16} />
+                              </button>
+                            )}
                           </div>
                           <div className="absolute inset-x-0 bottom-1 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
                             <button
@@ -727,8 +756,12 @@ const ViewOrders = ({ showHeader = true }) => {
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => setSelectedOrder(order)} className="p-3 bg-card border border-border text-textMain/70 rounded-xl hover:text-primary hover:border-primary transition-all"><Search size={16} /></button>
-                    <button onClick={() => handleStartEdit(order)} className="p-3 bg-card border border-border text-textMain/70 rounded-xl hover:text-primary hover:border-primary transition-all"><Edit size={16} /></button>
-                    <button onClick={() => handleDeleteOrder(order.order_id)} className="p-3 bg-card border border-border text-textMain/70 rounded-xl hover:text-red-500 hover:border-red-500/50 transition-all"><Trash2 size={16} /></button>
+                    {(order.order_status === 'requested' || order.order_status === 'approved') && (
+                      <button onClick={() => handleStartEdit(order)} className="p-3 bg-card border border-border text-textMain/70 rounded-xl hover:text-primary hover:border-primary transition-all"><Edit size={16} /></button>
+                    )}
+                    {order.order_status === 'requested' && (
+                      <button onClick={() => handleDeleteOrder(order.order_id)} className="p-3 bg-card border border-border text-textMain/70 rounded-xl hover:text-red-500 hover:border-red-500/50 transition-all"><Trash2 size={16} /></button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1117,11 +1150,33 @@ const ViewOrders = ({ showHeader = true }) => {
               </button>
             </div>
 
+            {/* Mobile Tabs */}
+            <div className="lg:hidden flex border-b border-border shrink-0">
+                <button
+                    type="button"
+                    onClick={() => setEditMobileTab('catalog')}
+                    className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors ${editMobileTab === 'catalog' ? 'bg-background text-primary' : 'bg-card/50 text-textMain/50'}`}
+                >
+                    <Package size={16} /> Catalog
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setEditMobileTab('queue')}
+                    className={`flex-1 py-4 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 relative transition-colors ${editMobileTab === 'queue' ? 'bg-background text-primary' : 'bg-card/50 text-textMain/50'}`}
+                >
+                    <ShoppingCart size={16} /> Edit Queue
+                    {editCart.length > 0 && (
+                        <span className="absolute top-2 right-2 w-5 h-5 bg-primary text-black text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in">
+                            {editCart.length}
+                        </span>
+                    )}
+                </button>
+            </div>
+
             {/* Split Layout Content */}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
-              
               {/* LEFT SIDE: LIVE INVENTORY */}
-              <div className="w-full lg:w-[50%] h-[40vh] lg:h-full flex flex-col border-b lg:border-b-0 lg:border-r border-border bg-background min-h-0">
+              <div className={`w-full lg:w-[50%] flex-col border-b lg:border-b-0 lg:border-r border-border bg-background min-h-0 ${editMobileTab === 'catalog' ? 'flex flex-1' : 'hidden lg:flex'}`}>
                 
                 {/* Search Header */}
                 <div className="p-4 border-b border-border bg-card shrink-0">
@@ -1233,7 +1288,7 @@ const ViewOrders = ({ showHeader = true }) => {
               </div>
 
               {/* RIGHT SIDE: EDIT CART & GENERAL SUMMARY */}
-              <div className="w-full lg:w-[50%] h-[50vh] lg:h-full flex flex-col bg-card min-h-0 overflow-y-auto custom-scrollbar p-4 lg:p-6 space-y-4 lg:space-y-5">
+              <div className={`w-full lg:w-[50%] h-full flex-col bg-card min-h-0 overflow-y-auto custom-scrollbar p-4 lg:p-6 space-y-4 lg:space-y-5 ${editMobileTab === 'queue' ? 'flex flex-1' : 'hidden lg:flex'}`}>
                 
                 {/* Client Reference Card */}
                 <div className="p-4 bg-background border border-border rounded-2xl flex items-center justify-between shadow-sm shrink-0 text-left">

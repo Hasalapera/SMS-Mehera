@@ -8,7 +8,8 @@ const FloatingPopup = () => {
   const [showChat, setShowChat] = useState(false);
   const [showLanguage, setShowLanguage] = useState(false);
   
-  // --- අලුතින් එක් කළ Disclaimer State ---
+  // This state variable 'hasAgreed' is used to track whether the user has accepted the disclaimer before accessing the AI chat functionality. 
+  // It is initialized to false, meaning the disclaimer has not been accepted yet. Once the user agrees to the terms, this state will be set to true, allowing them to proceed with using the AI chat feature.
   const [hasAgreed, setHasAgreed] = useState(false); 
 
   const [selectedLang, setSelectedLang] = useState('English');
@@ -18,7 +19,7 @@ const FloatingPopup = () => {
   const [tempImage, setTempImage] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Suggestions logic (පවතින පරිදි)
+  // Suggestions logic 
   const suggestions = {
     English: [
       { label: 'Product Prices', text: 'What are the prices of your latest products?', icon: <Tag size={14} /> },

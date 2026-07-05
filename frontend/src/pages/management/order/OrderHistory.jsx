@@ -54,7 +54,7 @@ const statusBadge = {
     border: "border-amber-200",
   },
   shipped: {
-    label: "Shipped",
+    label: "Dispatched to Delivery",
     bg: "bg-purple-50",
     text: "text-purple-600",
     border: "border-purple-200",
@@ -330,7 +330,16 @@ const OrderHistory = () => {
   // Group orders by Saloon (Customer Name)
   const groupedOrders = useMemo(() => {
     const groups = {};
-    orders.forEach((order) => {
+
+    // 🎯 [FIX]: Filter orders based on user role.
+    // Sales Rep සහ Online Store Keeper ට පේන්නේ තමන්ගේ orders විතරයි.
+    // අනිත් අයට (Admin, Manager) ඔක්කොම පේනවා.
+    const ordersToDisplay =
+      user.role === "online_store_keeper" || user.role === "sales_rep"
+        ? orders.filter((order) => order.created_by === user.user_id)
+        : orders;
+
+    ordersToDisplay.forEach((order) => {
       const key = order.customer_name || "Unknown Salon";
       if (!groups[key]) {
         const addressParts = [
@@ -354,7 +363,7 @@ const OrderHistory = () => {
       groups[key].transactions.push(order);
     });
     return Object.values(groups);
-  }, [orders]);
+  }, [orders, user]);
 
   const toggleSalon = (salonName) => {
     setExpandedSalons((prev) => ({
@@ -579,20 +588,24 @@ const OrderHistory = () => {
                               >
                                 View <ArrowRight size={12} />
                               </button>
-                              <button
-                                onClick={() => handleStartEdit(order)}
-                                className="text-blue-500 hover:text-blue-700 transition-colors p-1.5 rounded hover:bg-blue-50 transition-all duration-300"
-                                title="Edit Order"
-                              >
-                                <Pencil size={14} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteOrder(order.order_id, salon.salonName)}
-                                className="text-red-500 hover:text-red-700 transition-colors p-1.5 rounded hover:bg-red-50 transition-all duration-300"
-                                title="Delete Order"
-                              >
-                                <Trash2 size={14} />
-                              </button>
+                              {(order.order_status === 'requested' || order.order_status === 'approved') && (
+                                <button
+                                  onClick={() => handleStartEdit(order)}
+                                  className="text-blue-500 hover:text-blue-700 transition-colors p-1.5 rounded hover:bg-blue-50 transition-all duration-300"
+                                  title="Edit Order"
+                                >
+                                  <Pencil size={14} />
+                                </button>
+                              )}
+                              {order.order_status === 'requested' && (
+                                <button
+                                  onClick={() => handleDeleteOrder(order.order_id, salon.salonName)}
+                                  className="text-red-500 hover:text-red-700 transition-colors p-1.5 rounded hover:bg-red-50 transition-all duration-300"
+                                  title="Delete Order"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -672,20 +685,24 @@ const OrderHistory = () => {
                     <button onClick={() => { setViewingTransactionsFor(null); setSelectedTransaction(order); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-background border border-border text-[10px] font-black uppercase text-textMain/70 hover:text-primary hover:border-primary transition-all">
                       Details <ArrowRight size={14} />
                     </button>
-                    <button
-                      onClick={() => { setViewingTransactionsFor(null); handleStartEdit(order); }}
-                      className="p-2 rounded-xl bg-blue-50 text-blue-500 hover:bg-blue-100 transition-all border border-blue-200 flex items-center justify-center shrink-0"
-                      title="Edit Order"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteOrder(order.order_id, viewingTransactionsFor.salonName)}
-                      className="p-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all border border-red-200 flex items-center justify-center shrink-0"
-                      title="Delete Order"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    {(order.order_status === 'requested' || order.order_status === 'approved') && (
+                      <button
+                        onClick={() => { setViewingTransactionsFor(null); handleStartEdit(order); }}
+                        className="p-2 rounded-xl bg-blue-50 text-blue-500 hover:bg-blue-100 transition-all border border-blue-200 flex items-center justify-center shrink-0"
+                        title="Edit Order"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    )}
+                    {order.order_status === 'requested' && (
+                      <button
+                        onClick={() => handleDeleteOrder(order.order_id, viewingTransactionsFor.salonName)}
+                        className="p-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-all border border-red-200 flex items-center justify-center shrink-0"
+                        title="Delete Order"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -921,7 +938,18 @@ const OrderHistory = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in duration-300">
                       {editProducts
                         .filter(p => p.product_name.toLowerCase().includes(editSearchTerm.toLowerCase()))
-                        .map(product => (
+                        .map(product => {
+                          const allVariantsInCart = product.variants && product.variants.length > 0 && product.variants.every(v => 
+                            editCart.some(cartItem => cartItem.cartItemId === `${product.product_id}-${v.variant_id}`)
+                          );
+                          const singleProductInCart = (!product.variants || product.variants.length === 0) && editCart.some(cartItem => cartItem.product_id === product.product_id);
+
+                          // If all variants are in the cart, hide the product card.
+                          if (allVariantsInCart || singleProductInCart) {
+                            return null; 
+                          }
+
+                          return (
                           <div 
                             key={product.product_id}
                             className="bg-card p-4 rounded-2xl border border-border flex flex-col justify-between shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300 text-left"
@@ -956,7 +984,7 @@ const OrderHistory = () => {
                               </button>
                             </div>
                           </div>
-                        ))}
+                        )})}
                     </div>
                   )}
                 </div>

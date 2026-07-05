@@ -3,6 +3,7 @@ const sequelize = require('../db/db');
 const Notification = require('./Notification');
 const User = require('./User');
 
+// Define the NotificationRead model
 const NotificationRead = sequelize.define('NotificationRead', {
     id: {
         type: DataTypes.UUID,

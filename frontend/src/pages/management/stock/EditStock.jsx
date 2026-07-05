@@ -18,7 +18,7 @@ const EditStock = () => {
 
   const navigate = useNavigate();
 
-  // States
+  // State variables for managing products, loading state, search term, selected products, applying/undoing state, and last applied summary
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,6 +53,7 @@ const EditStock = () => {
     }
   };
 
+  // Function to add a product to the edit queue, ensuring no duplicates
   const addProductToQueue = (product) => {
     const alreadyAdded = selectedProducts.some((p) => p.product_id === product.product_id);
     if (alreadyAdded) {
@@ -60,6 +61,7 @@ const EditStock = () => {
       return;
     }
 
+    // Prepare the product object for the queue, including variants and their stock quantities
     const queueProduct = {
       product_id: product.product_id,
       product_name: product.product_name,
@@ -204,22 +206,58 @@ const EditStock = () => {
       return;
     }
 
-    //Confirm before filling all variants
-    const confirmed = window.confirm(
-      `Are you sure you want to set all variants of "${product.product_name}" to ${parsedQty} units?`
-    );
-    if (!confirmed) return;
-
-    setSelectedProducts((prev) =>
-      prev.map((p) =>
-        p.product_id !== productId
-          ? p
-          : {
-              ...p,
-              variants: p.variants.map((v) => ({ ...v, newStockQty: String(parsedQty) }))
-            }
-      )
-    );
+    const toastId = toast.custom(() => (
+      <div className="w-[320px] max-w-[calc(100vw-2rem)] rounded-3xl border border-border bg-card p-4 shadow-2xl">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 rounded-full bg-primary/10 p-2 text-primary">
+            <Package size={16} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-black text-textMain">Apply bulk quantity?</p>
+            <p className="mt-1 text-[11px] font-medium text-textMain/60">
+              Set every variant of “{product.product_name}” to {parsedQty} units? You can review the values before saving the stock updates.
+            </p>
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProducts((prev) =>
+                    prev.map((p) =>
+                      p.product_id !== productId
+                        ? p
+                        : {
+                            ...p,
+                            variants: p.variants.map((v) => ({ ...v, newStockQty: String(parsedQty) }))
+                          }
+                    )
+                  );
+                  toast.dismiss(toastId);
+                  toast.success(`All variants set to ${parsedQty} units`);
+                }}
+                className="rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-primary/90"
+              >
+                Apply
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.dismiss(toastId)}
+                className="rounded-xl border border-border bg-background px-3 py-2 text-[10px] font-black uppercase tracking-widest text-textMain/60 hover:bg-card"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => toast.dismiss(toastId)}
+            className="text-textMain/40 hover:text-textMain"
+            aria-label="Close confirmation"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   const handleApplyAllStock = async () => {
@@ -463,6 +501,7 @@ const EditStock = () => {
               <h3 className="font-black text-[11px] uppercase tracking-widest text-textMain/50 flex items-center gap-2">
                 <ClipboardList size={16} /> Edit Queue
               </h3>
+              {/* Clear All Button */}
               <div className="flex items-center gap-3">
                 <span className="text-[10px] font-black text-primary uppercase tracking-widest">{selectedProducts.length} Product(s)</span>
                 <button
@@ -498,6 +537,7 @@ const EditStock = () => {
                       </button>
                     </div>
 
+                    {/* Variant List with Current and New Stock Inputs */}
                     <div className="p-4 space-y-3">
                       {product.variants.map((variant) => (
                         <div key={variant.variant_id} className="space-y-2">
@@ -523,6 +563,7 @@ const EditStock = () => {
                         </div>
                       ))}
 
+                      {/* Bulk Quantity Input */}
                       <div className="pt-3 border-t border-border flex flex-col sm:flex-row items-center gap-2">
                         <input
                           type="number"

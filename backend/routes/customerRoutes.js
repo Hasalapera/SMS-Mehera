@@ -38,6 +38,7 @@ router.put('/update/:id', verifyToken, updateCustomer);
 
 // Note management
 router.post('/:id/notes', verifyToken, addNote);
+// Delete a note
 router.delete('/:id/notes/:noteId', verifyToken, deleteNote);
 
 module.exports = router;

@@ -1,6 +1,10 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
+// This utility module provides functions to send various types of emails using the Nodemailer library. 
+// It includes functions to send welcome emails, delivery OTPs, and thank-you emails. 
+// Each function creates a transporter using Gmail's SMTP service and sends an email with the specified content and formatting.
+// The sendWelcomeEmail function sends a welcome email to new users with their temporary credentials and role information.
 const sendWelcomeEmail = async (userEmail, fullName, tempPassword, role) => { // added role parameter
     const transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -12,8 +16,8 @@ const sendWelcomeEmail = async (userEmail, fullName, tempPassword, role) => { //
 
     let officialRoleName = "";
 
-    if (role === 'admin') {
-        officialRoleName = "Administrator";
+    if (role === 'admin') { 
+        officialRoleName = "Administrator"; 
     } else if (role === 'manager') {
         officialRoleName = "Regional Manager";
     } else if (role === 'sales_rep') {
@@ -53,12 +57,18 @@ const sendWelcomeEmail = async (userEmail, fullName, tempPassword, role) => { //
     await transporter.sendMail(mailOptions);
 };
 
+// This function sends a delivery OTP email to the customer. It includes the customer's name, order ID, and the OTP required for delivery verification. The email is formatted with HTML for better presentation.
+// The sendThankYouEmail function sends a thank-you email to the customer after the successful delivery of their order. It includes the customer's name and order ID, expressing gratitude for their purchase and encouraging feedback or further assistance if needed.
 const sendDeliveryOTP = async (userEmail, customerName, orderId, otp) => {
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
     });
 
+    // Construct the email content with HTML formatting
+    // The email includes the customer's name, order ID, and the OTP for delivery verification. It also provides instructions and a note for security purposes.
+    // The email is designed to be visually appealing and easy to read, with clear sections for the OTP and important information.
+    // The email content is structured with headings, paragraphs, and styled divs to enhance readability and user experience.
     const mailOptions = {
         from: '"Mehera International" <' + process.env.EMAIL_USER + '>',
         to: userEmail,
@@ -78,6 +88,7 @@ const sendDeliveryOTP = async (userEmail, customerName, orderId, otp) => {
     await transporter.sendMail(mailOptions);
 };
 
+// This function sends a thank-you email to the customer after the successful delivery of their order. It includes the customer's name and order ID, expressing gratitude for their purchase and encouraging feedback or further assistance if needed.
 const sendThankYouEmail = async (userEmail, customerName, orderId) => {
     const transporter = nodemailer.createTransport({
         service: 'gmail',

@@ -95,7 +95,7 @@ export default function CustomerDetail() {
 
   const [customer, setCustomer] = useState(null);
   const [notes, setNotes] = useState([]);
-  const [stats, setStats] = useState({ totalOrders: 0, totalSpent: 0, lastOrderDate: null });
+  const [stats, setStats] = useState({ totalOrders: 0, totalSpent: 0, lastOrderDate: null }); // Initialize stats with default values
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [noteText, setNoteText] = useState('');
@@ -318,7 +318,7 @@ export default function CustomerDetail() {
       toast.error(err.response?.data?.error || 'Failed to delete note. Please try again.', { duration: 2000 });
     }
   };
-
+  {/* Render loading, error, or customer details based on the current state */}
   if (loading) {
     return (
       <div className="min-h-screen bg-background transition-all duration-500 ease-in-out flex items-center justify-center">
@@ -329,6 +329,7 @@ export default function CustomerDetail() {
     );
   }
 
+  {/* Render error message if there's an error or if the customer data is not found */}
   if (error || !customer) {
     return (
       <div className="w-full min-h-screen bg-background transition-all duration-500 ease-in-out p-8">
@@ -416,6 +417,7 @@ export default function CustomerDetail() {
               </div>
             </div>
 
+            {/* Customer Info Fields */}
             <div className="p-6 md:p-8 grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6">
               <InfoField icon={Building2} label="Business Name" value={customerName} />
               <InfoField icon={UserCircle} label="Owner Name" value={customer.owner_name || 'N/A'} />
@@ -533,6 +535,7 @@ export default function CustomerDetail() {
                                     </div>
                                     <span className={`text-[9px] font-black px-3 py-1.5 rounded-lg border uppercase tracking-widest ${statusBadge[order.order_status?.toLowerCase()]?.bg || "bg-card"} ${statusBadge[order.order_status?.toLowerCase()]?.text || "text-textMain/50"} ${statusBadge[order.order_status?.toLowerCase()]?.border || "border-border"}`}>{order.order_status}</span>
                                 </div>
+                                {/* Order Amount and View Button */}
                                 <div className="flex justify-between items-center pt-3 border-t border-border">
                                     <div>
                                         <p className="text-[9px] font-bold text-textMain/50 uppercase">Net Value</p>
@@ -726,6 +729,7 @@ const InfoField = ({ icon: Icon, label, value }) => (
   </div>
 );
 
+{/* StatCard Component for displaying statistics with an icon, label, value, and optional children */}
 const StatCard = ({ icon: Icon, label, value, sub, children }) => (
   <div className="bg-card rounded-[1.5rem] border border-border shadow-sm p-4 md:p-6 flex items-center gap-4">
     <div className="p-2.5 md:p-3 bg-black rounded-xl shrink-0">

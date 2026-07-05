@@ -127,7 +127,7 @@ const addNote = async (req, res) => {
             return res.status(404).json({ error: 'Customer not found' });
         }
 
-        const note = await CustomerNote.create({
+        const note = await CustomerNote.create({ 
             customer_id: id,
             note_text: note_text.trim(),
             tag: tag || 'general',
@@ -298,6 +298,19 @@ const assignSalesRep = async (req, res) => {
             }
         );
 
+        const assignerName = req.user?.name || 'An administrator'; // Get the name of the user who initiated the assignment
+        await createNotification(
+            'customer',
+            `Customers Assigned to ${salesRep.name}`,
+            `${assignedNames} ${customerIds.length > 1 ? 'were' : 'was'} assigned to ${salesRep.name} by ${assignerName}.`,
+            {
+                reference_id: customerIds.length === 1 ? customerIds[0] : null,
+                target_role: 'manager',
+                severity: 'info',
+                initiator_id: req.user.user_id
+            }
+        );
+
         res.status(200).json({ 
             message: `Successfully assigned ${customerIds.length} customers to ${salesRep.name}!` 
         });
@@ -346,6 +359,18 @@ const reassignCustomers = async (req, res) => {
                 `${updatedCount} customers have been reassigned to your customer list.`,
                 {
                     target_user_id: toRepId,
+                    severity: 'info',
+                    initiator_id: req.user.user_id
+                }
+            );
+
+            const assignerName = req.user?.name || 'An administrator';
+            await createNotification(
+                'customer',
+                `Customers Reassigned to ${toRep.name}`,
+                `${updatedCount} customers were reassigned to ${toRep.name} by ${assignerName}.`,
+                {
+                    target_role: 'manager',
                     severity: 'info',
                     initiator_id: req.user.user_id
                 }

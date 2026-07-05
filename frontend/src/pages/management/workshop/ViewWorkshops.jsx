@@ -164,12 +164,12 @@ const ViewWorkshops = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto text-left">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-serif text-textMain">Workshop Console</h1>
-          <p className="text-textMain/50 text-xs">Manage public masterclasses and dynamic event lists.</p>
+          <h1 className="text-2xl sm:text-3xl font-serif text-textMain">Workshop Console</h1>
+          <p className="text-textMain/50 text-xs mt-1">Manage public masterclasses and dynamic event lists.</p>
         </div>
-        <button onClick={handleOpenAdd} className="flex items-center gap-2 bg-primary text-white font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider hover:bg-opacity-90 transition-all shadow-md">
+        <button onClick={handleOpenAdd} className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary text-white font-bold px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider hover:bg-opacity-90 transition-all shadow-md">
           <Plus size={16} /> Add Workshop
         </button>
       </div>
@@ -177,7 +177,7 @@ const ViewWorkshops = () => {
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" size={32} /></div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {workshops.map((w) => (
             <div key={w.workshop_id} className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm flex flex-col group hover:shadow-md transition-all">
               <div className="aspect-video w-full bg-gray-100 relative overflow-hidden">
@@ -205,7 +205,7 @@ const ViewWorkshops = () => {
 
       {/* --- ADD / EDIT MODAL --- */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-black/60 z-[9999] flex items-start sm:items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
           <div className="bg-sidebar w-full max-w-xl rounded-3xl p-6 border border-border shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar">
             <button onClick={() => setIsModalOpen(false)} className="absolute top-5 right-5 text-textMain/50 hover:text-textMain"><X size={20} /></button>
             <h2 className="text-2xl font-serif mb-6 text-textMain">{editingWorkshop ? 'Edit Workshop' : 'Create New Workshop'}</h2>

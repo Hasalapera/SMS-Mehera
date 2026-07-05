@@ -11,7 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const AddProduct = () => {
   const { user } = useAuth();   
-  const { setNotificationsFromAPI } = useNotifications();
+  const { refreshNotifications } = useNotifications();
 
   const [loading, setLoading] = useState(false);
   const [brands, setBrands] = useState([]);
@@ -90,18 +90,6 @@ const AddProduct = () => {
       setFormData({ ...formData, variants: updatedVariants });
     } else {
       toast.error("At least one variant is required!");
-    }
-  };
-
-  const refreshNotifications = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const res = await api.get('/notifications', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setNotificationsFromAPI(res.data.notifications || []);
-    } catch (err) {
-      console.error('Failed to refresh notifications:', err);
     }
   };
 
@@ -188,12 +176,12 @@ const AddProduct = () => {
           <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
                 <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">Product Name</label>
-                <input type="text" name="product_name" required value={formData.product_name} onChange={handleChange} className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460]" />
+                <input type="text" name="product_name" required value={formData.product_name} onChange={handleChange} className="w-full bg-background border border-border text-textMain rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" />
             </div>
 
             <div className="space-y-2">
                 <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">Brand</label>
-                <select name="brand_id" required value={formData.brand_id} onChange={handleChange} className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460]">
+                <select name="brand_id" required value={formData.brand_id} onChange={handleChange} className="w-full bg-background border border-border text-textMain rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all">
                   <option value="">Select Brand</option>
                   {Array.isArray(brands) && brands.length > 0 ? brands.map(b => (
                     <option key={b.brand_id} value={b.brand_id}>{b.brand_name}</option>
@@ -203,7 +191,7 @@ const AddProduct = () => {
 
             <div className="space-y-2">
                 <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">Category</label>
-                <select name="category_id" required value={formData.category_id} onChange={handleChange} className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460]">
+                <select name="category_id" required value={formData.category_id} onChange={handleChange} className="w-full bg-background border border-border text-textMain rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all">
                 <option value="">Select Category</option>
                 {Array.isArray(categories) && categories.length > 0 ? categories.map(c => (
                   <option key={c.category_id} value={c.category_id}>{c.category_name}</option>
@@ -213,7 +201,7 @@ const AddProduct = () => {
 
             <div className="md:col-span-2 space-y-2">
                 <label className="text-xs font-bold text-textMain/50 transition-colors duration-300 uppercase ml-1">Description</label>
-                <textarea name="description" rows="3" value={formData.description} onChange={handleChange} className="w-full bg-card transition-colors duration-300 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-[#b4a460] resize-none" />
+                <textarea name="description" rows="3" value={formData.description} onChange={handleChange} className="w-full bg-background border border-border text-textMain rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none" />
             </div>
           </div>
         </div>

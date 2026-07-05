@@ -115,7 +115,7 @@ const Navbar = () => {
         
         return true;
     }).map(link => {
-        // 🛡️ Logistics officer ට 'Home' වෙනුවට 'Dashboard' කියලා පෙන්වන්න
+        // For logistics officers, display 'Dashboard' instead of 'Home'
         if (currentUser?.role === 'logistics_officer' && link.name === 'Home') {
             return { ...link, name: 'Dashboard' };
         }

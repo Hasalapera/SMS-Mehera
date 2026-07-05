@@ -2,6 +2,11 @@ const fs = require('fs');
 const path = require('path');
 const { sequelize } = require('../models');
 
+// The 'runMigrations' function is responsible for executing all migration files in the 'migrations' directory. 
+// It reads the directory, filters for valid migration files, and runs each migration's 'up' method to apply changes to the database. 
+// If a migration has already been applied, it logs a message and continues with the next migration. 
+// This function ensures that the database schema is up-to-date with the latest changes defined in the migration files.
+// The 'rollbackMigrations' function is responsible for rolling back all applied migrations in reverse order.
 const runMigrations = async () => {
     try {
         console.log('\n🔄 Starting migrations...\n');
@@ -44,6 +49,7 @@ const runMigrations = async () => {
     }
 };
 
+// The 'rollbackMigrations' function is responsible for rolling back all applied migrations in reverse order.
 const rollbackMigrations = async () => {
     try {
         console.log('\nRolling back migrations...\n');

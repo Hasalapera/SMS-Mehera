@@ -86,6 +86,11 @@ import AddOnlineOrder from "./pages/management/order/AddOnlineOrder";
 import OurBrands from './pages/OurBrands';
 import Workshops from './pages/Workshops';
 import AboutUs from './pages/AboutUs';
+
+import ReturnPolicy from './pages/ReturnPolicy';
+import ShippingInfo from './pages/ShippingInfo';
+import Faqs from './pages/Faqs';
+
 import Contact from './pages/Contact';
 import Products from './pages/Products';
 import ConfirmDelivery from './pages/shared/ConfirmDelivery';
@@ -175,6 +180,11 @@ function App() {
         <Route path="/about" element={<AboutUs />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/products" element={<Products />} />
+
+        {/* 🎯 [FIXED] Customer Care පිටු සඳහා Routes එකතු කරන ලදී */}
+        <Route path="/return-policy" element={<ReturnPolicy />} />
+        <Route path="/shipping-info" element={<ShippingInfo />} />
+        <Route path="/faqs" element={<Faqs />} />
         
         {/* 🎯 [THE EXACT FIXED ROUTE]: DashboardLayout එකෙන් එළියට දමා සාර්ථකව Public Route එකක් කළා මචං! */}
         <Route path="/verify-order" element={<OrderVerificationHub />} />
