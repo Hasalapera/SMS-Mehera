@@ -1,43 +1,43 @@
 const nodemailer = require('nodemailer');
 const pool = require('../db/db'); 
-const crypto = require('crypto');
+const { decrypt } = require('../utils/cryptoUtils');
 const {User, sequelize} = require('../models');
 
-// Support Controller - Handles support email sending and admin contact retrieval (AES-256-CBC)
-const decryptContact = (text) => {
-    // If text is empty or doesn't contain ':', return it as is (not encrypted)
-    if (!text) return "";
-    // If text doesn't contain ':', it's not in the expected encrypted format, return as is
-    if (!text.includes(':')) return text; 
+// // Support Controller - Handles support email sending and admin contact retrieval (AES-256-CBC)
+// const decryptContact = (text) => {
+//     // If text is empty or doesn't contain ':', return it as is (not encrypted)
+//     if (!text) return "";
+//     // If text doesn't contain ':', it's not in the expected encrypted format, return as is
+//     if (!text.includes(':')) return text; 
 
-    // Try to decrypt, if fails, return original text
-    try {
-        // Split the text into IV and encrypted data
-        const [ivText, encryptedText] = text.split(':');
-        // Convert IV and encrypted data from hex to buffers
-        const iv = Buffer.from(ivText, 'hex');
-        // Convert the encrypted text from hex to buffer
-        const encrypted = Buffer.from(encryptedText, 'hex');
+//     // Try to decrypt, if fails, return original text
+//     try {
+//         // Split the text into IV and encrypted data
+//         const [ivText, encryptedText] = text.split(':');
+//         // Convert IV and encrypted data from hex to buffers
+//         const iv = Buffer.from(ivText, 'hex');
+//         // Convert the encrypted text from hex to buffer
+//         const encrypted = Buffer.from(encryptedText, 'hex');
         
-        // Enter the Algorithm and Secret Key you are using here.
-        // Make sure the secret key is 32 bytes for AES-256
-        const decipher = crypto.createDecipheriv(
-            'aes-256-cbc', 
-            Buffer.from(process.env.CRYPTO_SECRET_KEY, 'hex'), 
-            iv
-        );
+//         // Enter the Algorithm and Secret Key you are using here.
+//         // Make sure the secret key is 32 bytes for AES-256
+//         const decipher = crypto.createDecipheriv(
+//             'aes-256-cbc', 
+//             Buffer.from(process.env.CRYPTO_SECRET_KEY, 'hex'), 
+//             iv
+//         );
         
-        // Decrypt the data
-        let decrypted = decipher.update(encrypted);
-        // Finalize decryption
-        decrypted = Buffer.concat([decrypted, decipher.final()]);
-        // Return the decrypted text as a string
-        return decrypted.toString();
-    } catch (err) {
-        // If decryption is not possible (perhaps due to old data), the text is sent directly.
-        return text;
-    }
-};
+//         // Decrypt the data
+//         let decrypted = decipher.update(encrypted);
+//         // Finalize decryption
+//         decrypted = Buffer.concat([decrypted, decipher.final()]);
+//         // Return the decrypted text as a string
+//         return decrypted.toString();
+//     } catch (err) {
+//         // If decryption is not possible (perhaps due to old data), the text is sent directly.
+//         return text;
+//     }
+// };
 
 // Send support email with optional attachment
 const sendSupportEmail = async (req, res) => {
@@ -62,12 +62,11 @@ const sendSupportEmail = async (req, res) => {
             // If Admin, send to Developer Team
             const devEmail = process.env.DEV_TEAM_EMAIL;
             // If DEV_TEAM_EMAIL is not set, we can log a warning and use a default email or skip sending
-            const devWA = process.env.DEV_TEAM_WHATSAPP;
 
             // If dev email is set, use it; otherwise, log a warning and use a default email
             recipientEmails = devEmail ? [devEmail] : [];
             // If dev WhatsApp is set, use it; otherwise, log a warning and use a default WhatsApp number
-            whatsappNumbers = devWA ? [devWA] : [];
+            whatsappNumbers = process.env.DEV_TEAM_WHATSAPP ? [normalizeSriLankanWhatsApp(process.env.DEV_TEAM_WHATSAPP)] : [];
         } else {
             // For non-admin users, send the support request to all active admins
             const adminEmailsResult = await pool.query(
@@ -80,15 +79,17 @@ const sendSupportEmail = async (req, res) => {
             recipientEmails = adminEmailsResult.map(row => row.email);
             
             // Decrypt contact numbers for WhatsApp and filter out any empty or null values
-            whatsappNumbers = adminEmailsResult
-                .filter(row => row.contact_no)
-                .map(row => decryptContact(row.contact_no)); // use the decryptContact function to handle decryption and fallback
+            whatsappNumbers = adminEmailsResult.map(row => {
+                    if (!row.contact_no) return null;
+                    const decrypted = decryptSupportContact(row.contact_no);
+                    return normalizeSriLankanWhatsApp(decrypted);
+                })
+                .filter(Boolean); // Filter out null/empty strings
 
             // If no active admins found, use default support contact from environment variables
-
             if (recipientEmails.length === 0) {
-                recipientEmails = [process.env.DEFAULT_SUPPORT_EMAIL];
-                whatsappNumbers = [process.env.DEFAULT_SUPPORT_WHATSAPP];
+                recipientEmails = [process.env.DEFAULT_SUPPORT_EMAIL].filter(Boolean);
+                whatsappNumbers = [normalizeSriLankanWhatsApp(process.env.DEFAULT_SUPPORT_WHATSAPP)].filter(Boolean);
             }
         }
 
@@ -146,27 +147,97 @@ const sendSupportEmail = async (req, res) => {
     }
 };
 
-// Get admin contacts for support (with decryption)
-const getAdminContacts = async (req, res) => {
-    try {
-        // Fetch active admins' contact numbers from the database
-        const admins = await User.findAll({
-            // Only select active admins to ensure we don't return contacts for deactivated accounts
-            where: { role: 'admin', is_active: true },
-            // Only select the contact_no field since that's what we need for support contact purposes
-            attributes: ['contact_no']
-        });
+const decryptSupportContact = (encryptedContact) => {
+  if (!encryptedContact) return "";
 
-        // Decrypted here before sending to the frontend
-        const decryptedAdmins = admins.map(admin => ({
-            contact_no: decryptContact(admin.contact_no)
-        }));
+  try {
+    let dec = decrypt(encryptedContact);
 
-        res.status(200).json({ admins: decryptedAdmins });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    // getAllUsers eke thiyena same double-encryption handling eka
+    if (dec && dec.length > 20) {
+      try {
+        dec = decrypt(dec);
+      } catch (e) {
+        // ignore second decrypt failure
+      }
     }
+
+    return dec || "";
+  } catch (err) {
+    console.warn("Support contact decryption failed");
+    return "";
+  }
 };
 
+const normalizeSriLankanWhatsApp = (number) => {
+  if (!number) return "";
 
-module.exports = { sendSupportEmail, getAdminContacts, decryptContact };
+  let clean = number.toString().replace(/\D/g, "");
+
+  // 0755728290 -> 94755728290
+  if (clean.startsWith("0")) {
+    clean = "94" + clean.substring(1);
+  }
+
+  // 755728290 -> 94755728290
+  else if (clean.length === 9 && clean.startsWith("7")) {
+    clean = "94" + clean;
+  }
+
+  // Valid Sri Lankan mobile WhatsApp format: 947XXXXXXXX
+  if (!/^947\d{8}$/.test(clean)) {
+    return "";
+  }
+
+  return clean;
+};
+
+// Get admin contacts for support (with decryption)
+// Get admin contacts for support (with decryption)
+const getAdminContacts = async (req, res) => {
+  try {
+    const admins = await User.findAll({
+      where: { role: 'admin', is_active: true },
+      attributes: ['email', 'contact_no'],
+      raw: true
+    });
+
+    console.log("\n========== ADMIN WHATSAPP DEBUG START ==========");
+    console.log("Active admin count:", admins.length);
+
+    const decryptedAdmins = admins
+      .map((admin, index) => {
+        const encryptedNumber = admin.contact_no;
+        const decryptedNumber = decryptSupportContact(encryptedNumber);
+        const whatsappNumber = normalizeSriLankanWhatsApp(decryptedNumber);
+
+        console.log(`\n--- ADMIN ${index + 1} ---`);
+        console.log("Admin email:", admin.email);
+        console.log("Encrypted DB contact_no:", encryptedNumber);
+        console.log("Decrypted phone number:", decryptedNumber);
+        console.log("WhatsApp formatted number:", whatsappNumber);
+
+        if (!whatsappNumber) {
+          console.log("❌ Invalid WhatsApp number after formatting.");
+        } else {
+          console.log("✅ Valid WhatsApp number ready for frontend.");
+        }
+
+        return {
+          contact_no: whatsappNumber
+        };
+      })
+      .filter((admin) => admin.contact_no);
+
+    console.log("Final contacts sent to frontend:", decryptedAdmins);
+    console.log("========== ADMIN WHATSAPP DEBUG END ==========\n");
+
+    res.status(200).json({ admins: decryptedAdmins });
+
+  } catch (err) {
+    console.error("Get admin contacts error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { sendSupportEmail, getAdminContacts, decryptSupportContact, normalizeSriLankanWhatsApp };

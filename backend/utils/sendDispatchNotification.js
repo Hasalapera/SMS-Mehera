@@ -64,6 +64,10 @@ const sendDispatchNotification = async (order) => {
     </div>`;
 
     // 1. 📧 SEND EMAIL (Using existing Nodemailer setup)
+    // The function checks if the order has an associated email address. If it does, it creates a Nodemailer transporter using Gmail's SMTP service and sends an email to the customer with the dispatch notification. The email includes the order details, delivery address, items, and a unique OTP for confirming receipt of the package. The email is formatted in HTML for better presentation and user experience.
+    // If the email sending fails, it logs an error message to the console for debugging purposes.
+    // The function is designed to be asynchronous, allowing it to handle the email sending process without blocking other operations in the application.
+    // The email content is structured to provide clear instructions to the customer on how to confirm receipt of their order, enhancing the overall customer experience and ensuring successful delivery verification.
     if (order.email) {
         try {
             const transporter = nodemailer.createTransport({

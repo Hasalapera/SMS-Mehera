@@ -3,6 +3,12 @@ const bcrypt = require('bcryptjs');
 const { User } = require('../models'); 
 require('dotenv').config();
 
+// This seeder creates an initial admin user if it doesn't already exist in the database.
+// The admin's email and password are taken from environment variables for security reasons.
+// The password is hashed before being stored in the database.
+// The seeder checks if the admin user already exists by email. If it does, it skips creation.
+// If the admin user does not exist, it creates a new user with the role of 'admin' and sets the is_active flag to true.
+// The seeder also provides a down function to remove the admin user if needed, based on the email provided in the environment variables.
 module.exports = {
   async up(queryInterface, Sequelize) {
     const adminEmail = process.env.INITIAL_ADMIN_EMAIL;

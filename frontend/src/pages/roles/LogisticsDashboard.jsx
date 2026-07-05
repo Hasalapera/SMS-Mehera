@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import api from '../../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { MySwal } from '../utils/swalConfig';
+import { MySwal, swalClasses } from '../utils/swalConfig';
 import { useReactToPrint } from 'react-to-print';
 import { 
     Truck, MapPin, Package, Phone, User,
@@ -147,15 +147,23 @@ const LogisticsDashboard = () => {
 
     const handleStatusUpdate = async (orderId, newStatus) => {
         const result = await MySwal.fire({
-            title: `Confirm Status Shift?`,
-            text: `Are you sure you want to transition this package to "${newStatus.replace('_', ' ').toUpperCase()}"?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, Confirm Shift',
-            cancelButtonText: 'Cancel',
-            confirmButtonColor: '#000000',
-            reverseButtons: true,
-        });
+        title: `Confirm Status Shift?`,
+        text: `Are you sure you want to transition this package to "${newStatus.replace('_', ' ').toUpperCase()}"?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Confirm Shift',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#000000',
+        reverseButtons: true,
+
+        // ✅ Keep global swal design classes + add Logistics-only alignment classes
+        customClass: {
+            ...swalClasses,
+            actions: `${swalClasses.actions} logistics-swal-actions`,
+            confirmButton: `${swalClasses.confirmButton} logistics-swal-confirm`,
+            cancelButton: `${swalClasses.cancelButton} logistics-swal-cancel`,
+        },
+    });
 
         if (result.isDismissed) return;
 
@@ -743,6 +751,46 @@ const LogisticsDashboard = () => {
                       '.print-label-container, .print-label-container * { visibility: visible !important; } .print-label-container { position: absolute !important; left: 0 !important; top: 0 !important; width: 10cm !important; height: 12cm !important; }'
                     }
                 }
+                    #mehera-qr-reader span, #mehera-qr-reader a { color: #ffffff !important; opacity: 0.6; }
+                    #mehera-qr-reader #qr-reader__status_message { color: #ffffff !important; opacity: 1; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; }
+                    #mehera-qr-reader a[href='https://scanapp.org'] { display: none !important; }
+
+                    /* ✅ LogisticsDashboard SweetAlert button alignment only */
+                    .logistics-swal-actions {
+                        width: 100% !important;
+                        display: flex !important;
+                        flex-direction: row !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        gap: 12px !important;
+                        flex-wrap: nowrap !important;
+                    }
+
+                    .logistics-swal-confirm,
+                    .logistics-swal-cancel {
+                        flex: 1 1 0 !important;
+                        min-width: 0 !important;
+                        max-width: 190px !important;
+                        margin: 0 !important;
+                        white-space: nowrap !important;
+                        display: inline-flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                    }
+
+                    @media (max-width: 480px) {
+                        .logistics-swal-actions {
+                            gap: 8px !important;
+                        }
+
+                        .logistics-swal-confirm,
+                        .logistics-swal-cancel {
+                            max-width: none !important;
+                            font-size: 10px !important;
+                            padding-left: 8px !important;
+                            padding-right: 8px !important;
+                        }
+                    }
             `}} />
         </div>
     );

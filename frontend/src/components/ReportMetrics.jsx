@@ -6,7 +6,7 @@ const ReportMetrics = ({ orders = [], selectedMonth, selectedRepId, token }) => 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState('best'); // 'best' | 'slow'
   
-  // 🎯 Dynamic target සඳහා රාජ්‍ය තන්ත්‍රය (States)
+  // These states are used to manage the target amount for sales representatives and the loading state while fetching this data from the backend. The target amount is dynamically fetched based on the selected sales representative and month, allowing for real-time insights into sales performance.
   const [targetAmount, setTargetAmount] = useState(0);
   const [loadingTarget, setLoadingTarget] = useState(false);
 
@@ -26,7 +26,7 @@ const ReportMetrics = ({ orders = [], selectedMonth, selectedRepId, token }) => 
   // 📡 3. FETCH LIVE TARGET FROM BACKEND MIGRATED TABLE
   useEffect(() => {
     const fetchTarget = async () => {
-      // රෙප් කෙනෙක් සහ මාසයක් සිලෙක්ට් කරලා තියෙනවා නම් විතරක් API එකට කෝල් කරනවා
+      // This ensures that we only fetch the target amount when both a sales representative and a month are selected, preventing unnecessary API calls and potential errors from incomplete data.
       if (!selectedRepId || !selectedMonth) {
         setTargetAmount(0);
         return;
@@ -35,7 +35,7 @@ const ReportMetrics = ({ orders = [], selectedMonth, selectedRepId, token }) => 
         setLoadingTarget(true);
         const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
         
-        // අපි කලින් බැක්ඇන්ඩ් එකේ හදපු endpoint එකට ගහනවා
+        // The API endpoint `/salesTarget/rep-summary` is called with query parameters for the selected sales representative ID and month. This allows the backend to return the adjusted target amount for that specific representative and time period, enabling accurate performance tracking and reporting.
         const response = await api.get(`/salesTarget/rep-summary?sales_rep_id=${selectedRepId}&month=${selectedMonth}`, config);
         
         if (response.data?.success && response.data?.data) {
@@ -45,7 +45,7 @@ const ReportMetrics = ({ orders = [], selectedMonth, selectedRepId, token }) => 
         }
       } catch (err) {
         console.error("Error fetching sales target:", err);
-        setTargetAmount(0); // එරර් එකක් ආවොත් සේප් එකේ 0 දානවා (No crash)
+        setTargetAmount(0); // In case of an error during the API call, we reset the target amount to 0 to avoid displaying incorrect or misleading information to the user. This ensures that the UI remains consistent and accurate even in the event of a backend failure or network issue.
       } finally {
         setLoadingTarget(false);
       }
@@ -101,7 +101,7 @@ const ReportMetrics = ({ orders = [], selectedMonth, selectedRepId, token }) => 
 
   return (
     <>
-    {/* 📐 Grid Layout: උඹේ පිරිසිදු rem සහ responsive classes ආරක්ෂා කර ඇත */}
+    {/* Grid Layout */}
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[0.75rem] md:gap-[1rem] print:grid-cols-4 print:gap-[0.75rem] items-end">
       
       {/* 1. Net Sales Volume */}
@@ -131,7 +131,7 @@ const ReportMetrics = ({ orders = [], selectedMonth, selectedRepId, token }) => 
       />
     </div>
 
-    {/* 📊 Modal for Product Insights (උඹ ලියපු ලස්සන Modal එක 100% ඒ විදිහටමයි) */}
+    {/* 📊 Modal for Product Insights */}
     {isModalOpen && (
       <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 print:hidden animate-in fade-in duration-300" onClick={() => setIsModalOpen(false)}>
         <div className="bg-card w-full max-w-4xl rounded-[1.5rem] md:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300 border border-border" onClick={(e) => e.stopPropagation()}>

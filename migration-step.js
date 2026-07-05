@@ -1,8 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 
+// This script recursively processes all .jsx files in the specified directory and its subdirectories. It fixes broken opacity modifiers, deduplicates transition classes, and corrects layout background classes. The cleaned content is then written back to the original file if any changes were made.
+// Usage: node migration-step.js
+// Note: Make sure to run this script from the root of your project where the 'frontend/src' directory is located.
+
+// Function to recursively process directories and clean up .jsx files
+
 const excludeFiles = ['Quotation.jsx'];
 
+// The floorHexes array contains regex patterns for various light background colors that should be replaced with the standardized 'bg-background' class. Each entry is a regex string that matches specific hex color codes used in the codebase.
+// The surfaceHexes array contains regex patterns for various dark or surface background colors that should be replaced with the standardized 'bg-card' class. Each entry is a regex string that matches specific hex color codes used in the codebase.
+// The processDirectory function reads each file in the specified directory, checks if it's a .jsx file, and applies the necessary replacements for background colors, text colors, and border colors. It also ensures that transition classes are not duplicated and that the correct classes are applied to root divs for consistent theming across the application.
+// The function uses regular expressions to find and replace specific patterns in the file content, ensuring that the UI adheres to the desired design system. If any changes are made, the updated content is written back to the original file, and a message is logged to indicate which files were updated.
+// The script is designed to be run from the command line and will process all .jsx files in the 'frontend/src' directory and its subdirectories, excluding any files listed in the excludeFiles array.
 const floorHexes = [
   'bg-\\[#f8f9fa\\]', 'bg-\\[#f8f8f8\\]', 'bg-\\[#fafafa\\]', 'bg-\\[#fdfdfb\\]', 
   'bg-\\[#f3f4f6\\]', 'bg-\\[#fafaf9\\]', 'bg-\\[#f5f5f0\\]', 'bg-\\[#0a0a0a\\]', 
@@ -13,6 +24,9 @@ const surfaceHexes = [
   'bg-\\[#1a1a1a\\]', 'bg-\\[#1A1A1A\\]', 'bg-\\[#F9F4DA\\]', 'bg-\\[#ebebeb\\]', 'bg-gray-50'
 ];
 
+// The processDirectory function reads each file in the specified directory, checks if it's a .jsx file, and applies the necessary replacements for background colors, text colors, and border colors. It also ensures that transition classes are not duplicated and that the correct classes are applied to root divs for consistent theming across the application.
+// The function uses regular expressions to find and replace specific patterns in the file content, ensuring that the UI adheres to the desired design system. If any changes are made, the updated content is written back to the original file, and a message is logged to indicate which files were updated.
+// The script is designed to be run from the command line and will process all .jsx files in the 'frontend/src' directory and its subdirectories, excluding any files listed in the excludeFiles array.
 function processDirectory(directory) {
   const files = fs.readdirSync(directory);
 
