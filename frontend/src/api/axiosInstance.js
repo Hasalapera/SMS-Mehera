@@ -28,6 +28,10 @@ const processQueue = (error, token = null) => {
     failedQueue = [];
 };
 
+const isAuthEndpoint = (url = '') => (
+    url.includes('/users/refresh-token') || url.includes('/users/login')
+);
+
 // REQUEST interceptor
 api.interceptors.request.use(
     (config) => {
@@ -51,9 +55,9 @@ api.interceptors.response.use(
         // Make sure it's not the refresh-token or login route to avoid infinite loops
         if (
             status === 401 && 
+            originalRequest &&
             !originalRequest._retry && 
-            !originalRequest.url.includes('/users/refresh-token') &&
-            !originalRequest.url.includes('/users/login')
+            !isAuthEndpoint(originalRequest.url)
         ) {
             
             if (isRefreshing) {
@@ -74,45 +78,30 @@ api.interceptors.response.use(
             isRefreshing = true;
 
             try {
-                const storedRefreshToken = localStorage.getItem('refreshToken');
-                if (!storedRefreshToken) {
-                    throw new Error('No refresh token available');
-                }
-
-                // IMPORTANT: Use standard axios here to bypass our interceptors
-                // If we use 'api', a failed refresh would trigger this interceptor again!
-                const response = await api.post('/users/refresh-token', {
-                    refreshToken: storedRefreshToken
+                const response = await axios.post(`${BASE_URL}/users/refresh-token`, null, {
+                    withCredentials: true
                 });
 
                 const { accessToken, expiresAt } = response.data;
 
-                // 1. Update localStorage
                 localStorage.setItem('accessToken', accessToken);
                 if (expiresAt) localStorage.setItem('expiresAt', expiresAt);
 
-                // 2. Set authorization header for the original failed request
                 originalRequest.headers.Authorization = `Bearer ${accessToken}`;
 
-                // 3. Process all queued requests with the new token
                 processQueue(null, accessToken);
-                
-                // 4. Notify AuthContext to update its React state
+
                 window.dispatchEvent(new Event('token-refreshed'));
 
-                // 5. Retry the original request
                 return api(originalRequest);
 
             } catch (err) {
-                // If the refresh call itself fails (e.g. 403 or 401)
                 processQueue(err, null);
-                
-                // Trigger logout in AuthContext via an event
+
                 window.dispatchEvent(new Event('force-logout'));
-                
+
                 return Promise.reject(err);
             } finally {
-                // Reset the flag regardless of success or failure
                 isRefreshing = false;
             }
         }
