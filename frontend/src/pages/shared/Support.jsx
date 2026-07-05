@@ -157,10 +157,7 @@ const Support = () => {
     <div className="w-full max-w-4xl mx-auto animate-in fade-in duration-500 pb-10">
       
       {/* Header - Matches AddUser structure */}
-      {/* --- Temporary UI Debug Badge --- */}
-      <div className="absolute top-24 left-4 bg-red-500 text-white text-xs p-1 rounded z-50">
-        SUPPORT_COMPONENT_LOADED
-      </div>
+    
 
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-textMain transition-colors duration-300 flex items-center gap-3">

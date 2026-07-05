@@ -318,7 +318,6 @@ const UserProfile = () => {
           login(
             response.data.user,
             token,
-            localStorage.getItem("refreshToken"),
             localStorage.getItem("expiresAt"),
           );
         }

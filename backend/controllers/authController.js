@@ -4,6 +4,13 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const { decrypt } = require('../utils/cryptoUtils');
 
+const getRefreshCookieOptions = () => ({
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/'
+});
+
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -70,11 +77,8 @@ const loginUser = async (req, res) => {
         const refreshTokenMaxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
 
         res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // ✅ Use 'none' for cross-site production, 'lax' for dev
+            ...getRefreshCookieOptions(),
             maxAge: refreshTokenMaxAge,
-            path: '/'
         });
 
         // Safe user
@@ -122,38 +126,52 @@ const refreshAccessToken = async (req, res) => {
         const { refreshToken } = req.cookies;
 
         if (!refreshToken) {
+            res.clearCookie('refreshToken', getRefreshCookieOptions());
             return res.status(401).json({ 
                 success: false,
                 message: "Refresh token required" 
             });
         }
 
+        let decoded;
         try {
-            // Verify refresh token (expire wela nadda, is it valid one)
-            const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-
-            // Generate new access token for relavent time limit
-            const newAccessToken = jwt.sign(
-                { user_id: decoded.user_id, role: decoded.role, name: decoded.name },
-                process.env.JWT_SECRET,
-                { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
-            );
-
-            const decoded2 = jwt.decode(newAccessToken);
-
-            res.status(200).json({
-                success: true,
-                message: "Access token refreshed",
-                accessToken: newAccessToken,
-                expiresAt: decoded2.exp
-            });
-
+            decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
         } catch (jwtErr) {
+            res.clearCookie('refreshToken', getRefreshCookieOptions());
             return res.status(401).json({ 
                 success: false,
                 message: "Refresh token expired or invalid" 
             });
         }
+
+        const user = await User.findOne({
+            where: { user_id: decoded.user_id },
+            paranoid: false
+        });
+
+        if (!user || user.deleted_at || user.deletedAt || !user.is_active) {
+            res.clearCookie('refreshToken', getRefreshCookieOptions());
+            return res.status(403).json({
+                success: false,
+                message: "User account is inactive or no longer exists"
+            });
+        }
+
+        // Generate new access token for relavent time limit
+        const newAccessToken = jwt.sign(
+            { user_id: user.user_id, role: user.role, name: user.name },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
+        );
+
+        const decoded2 = jwt.decode(newAccessToken);
+
+        res.status(200).json({
+            success: true,
+            message: "Access token refreshed",
+            accessToken: newAccessToken,
+            expiresAt: decoded2.exp
+        });
 
     } catch (err) {
         console.error("Refresh error:", err.message);
@@ -166,12 +184,7 @@ const refreshAccessToken = async (req, res) => {
 
 const logoutUser = (req, res) => {
     // clear the refresh token
-    res.clearCookie('refreshToken', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'Lax',
-        path: '/'
-    });
+    res.clearCookie('refreshToken', getRefreshCookieOptions());
     
     res.status(200).json({ 
         success: true,

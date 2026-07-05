@@ -35,6 +35,7 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // 1. CORS මුලින්ම තියෙන්න ඕනේ හැම රූට් එකකටම කලින් 🛠️
 const allowedOrigins = [
   'https://www.mehera.lk',
+  'https://mehera.lk',
   'https://sms-mehera-frontend.onrender.com',
   'http://localhost:5173' // Development සඳහා
 ];
