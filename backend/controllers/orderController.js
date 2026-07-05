@@ -310,7 +310,8 @@ const updateOrderStatus = async (req, res) => {
 
     const previousStatus = (await Order.findByPk(orderId, { attributes: ['order_status'], transaction }))?.order_status;
 
-    // Order එකයි ඒකෙ Items ටිකයි database එකෙන් ගන්නවා
+    
+    //get the order and its iteam from the database
     const order = await Order.findByPk(orderId, {
       include: [{ model: OrderItem }],
       transaction
@@ -321,11 +322,12 @@ const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
 
-    // 🛡️ Admin order එක 'approved' කරනවා නම් විතරක් Stock Check එක කරනවා
+    
+    //if the admin is approved order then check the stock and update the stock count
     if (status === 'approved' && previousStatus !== 'approved') {
       const variantsToUpdate = [];
 
-      // 1. Stock Validation Phase (හැම item එකක්ම check කරනවා)
+      // 1. Stock Validation Phase (Check all iteam)
       for (const item of order.OrderItems) {
         const variant = await ProductVariant.findByPk(item.variant_id, { 
           include: [{ model: Product, as: 'product', attributes: ['product_name'] }],
@@ -334,7 +336,8 @@ const updateOrderStatus = async (req, res) => {
 
         if (!variant) continue;
 
-        // ⚠️ Stock මදි නම් මෙතනින්ම නවත්තලා Error එකක් යවනවා (Rollback කරනවා)
+        
+        //if stock is insufficient then rollback the transaction and send error message to the frontend
         if (variant.stock_count < item.qty) {
           await transaction.rollback();
           const productName = variant.product?.product_name || 'Unknown Product';
@@ -345,18 +348,20 @@ const updateOrderStatus = async (req, res) => {
           });
         }
 
-        // ඔක්කොම හරි නම් update කරන්න ලිස්ට් එකට දාගන්නවා
+        
+        //if all are okey then put into the list to update the stock count
         variantsToUpdate.push({ variant, qtyToDeduct: item.qty });
       }
 
-      // 2. Stock Deduction Phase (ඔක්කොම items වල stock තියෙනවා නම් විතරක් අඩු කරනවා)
+      // 2. Stock Deduction Phase (if there is sufficient stock, then update the stock count)
       for (const update of variantsToUpdate) {
         update.variant.stock_count -= update.qtyToDeduct;
         await update.variant.save({ transaction });
       }
     }
 
-    // 🛡️ Online Order එක Shipped කරද්දි One-time Link එකට Token එකයි OTP එකයි හදනවා
+    
+    // when the online order is shipped, generate a one-time link with a token and OTP for the customer to confirm delivery
     if (status === 'shipped' && order.order_type === 'online') {
       order.delivery_token = crypto.randomBytes(16).toString('hex');
       order.delivery_otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
@@ -402,7 +407,7 @@ const updateOrderStatus = async (req, res) => {
       }
     }
 
-    await transaction.commit(); // ✅ සේරම සාර්ථක නම් Database එකට save කරනවා
+    await transaction.commit(); // ✅  if all ara correct then save to the database
 
     const notificationTargetUserId = await getOrderNotificationTarget(order, order.created_by);
 
@@ -495,20 +500,20 @@ const confirmDeliveryWithOTP = async (req, res) => {
 
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
-    // 1. දැනටමත් Delivered ද බලන්න
+    // 1. check if the order is already delivered
     if (order.order_status === 'delivered') {
       return res.status(400).json({ success: false, message: 'Order is already delivered.' });
     }
 
-    // 2. Token සහ OTP පරීක්ෂා කරන්න
+    // 2. check if the token and OTP match
     if (!order.delivery_token || order.delivery_token !== token || order.delivery_otp !== otp) {
       return res.status(400).json({ success: false, message: 'Invalid Link or Incorrect OTP!' });
     }
 
-    // 3. Status Update කරලා Token/OTP අයින් කරන්න
+    // 3. update the order status to delivered and clear the token and OTP
     order.order_status = 'delivered';
-    order.delivery_token = null; // Token එක අයින් කරනවා
-    order.delivery_otp = null;   // OTP එක අයින් කරනවා
+    order.delivery_token = null; // clear the token after successful delivery confirmation
+    order.delivery_otp = null;   // clear the OTP after successful delivery confirmation
     await order.save();
 
     // 4. Thank you email එක යවන්න
