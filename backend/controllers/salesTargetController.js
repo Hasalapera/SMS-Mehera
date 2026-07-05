@@ -5,9 +5,9 @@ const { Op } = require('sequelize');
 
 
 /**
- * assignTarget: හැම මාසෙම Rep කෙනෙක්ට dynamic target එකක් ඇසයින් කිරීම හෝ අප්ඩේට් කිරීම
- * 1. Active customer count එක මත පදනම්ව density factor එක ගණනය කරයි.
- * 2. දැනටමත් රෙකෝඩ් එකක් පවතී නම් එය අප්ඩේට් කරයි, නැතහොත් අලුතින් සාදයි.
+ * assignTarget: Assigns or updates a dynamic sales target for a sales rep for a specific month.
+ * 1. Calculates the density factor based on the active customer count.
+ * 2. If a record already exists for that month, it updates it; otherwise, it creates a new one.
  */
 const assignTarget = async (req, res) => {
   try {
@@ -53,7 +53,7 @@ const assignTarget = async (req, res) => {
 };
 
 /**
- * getMonthlyRepTarget: සේල්ස් රිපෝට් එක ඇතුළේ පෙන්වන්න රෙප්ගේ ලොක් කරපු Target එක සහ දත්ත ලබා ගැනීම
+ * getMonthlyRepTarget: Fetches the monthly target for a sales rep along with the achieved sales data
  */
 const getMonthlyRepTarget = async (req, res) => {
   try {
@@ -67,12 +67,12 @@ const getMonthlyRepTarget = async (req, res) => {
     const endDate = new Date(startDate);
     endDate.setMonth(startDate.getMonth() + 1);
 
-    // 1. බැක්ඇන්ඩ් එකෙන් ලොක් කරපු Target එක අදිනවා
+    // 1. Fetch the target data for the sales rep for the given month
     const targetData = await SalesTarget.findOne({
       where: { sales_rep_id, month }
     });
 
-    // 2. 🎯 FIX: PostgreSQL වලට නූලටම මැච් වෙන පිරිසිදු ලයිව් SUM Calculation එක
+    // 2. Calculate the total achieved sales for the sales rep in the given month
     const orderSum = await Order.findOne({
       attributes: [
         [
@@ -88,7 +88,7 @@ const getMonthlyRepTarget = async (req, res) => {
           [Op.lt]: endDate
         }
       },
-      raw: true // Raw object එකක් විදිහට කෙළින්ම දත්ත ටික ගන්නවා
+      raw: true // Ensures we get a plain object instead of a Sequelize instance
     });
 
     const totalAchieved = orderSum ? parseFloat(orderSum.totalSales || 0) : 0;
@@ -111,20 +111,20 @@ const getMonthlyRepTarget = async (req, res) => {
 };
 
 /**
- * getRepLiveDetails: රෙප් කෙනෙක්ව පෝම් එකෙන් සිලෙක්ට් කරපු ගමන් එයාගේ 
- * ඩේටාබේස් එකේ ඉන්න ඇත්තම සලූන් ගණන ලයිව් Count කරලා, ඒරියාස් ටික ඇදලා දීම
+ * getRepLiveDetails: Fetches the live details of a sales rep, including the areas (districts) they are assigned to and the count of active customers they manage. 
+ * This is useful for displaying real-time information in the sales target assignment form.
  */
 const getRepLiveDetails = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 1. ਰෙਪට අදාළ දිස්ත්‍රික්ක (Areas) ලබා ගැනීම
+    // english: Fetch the areas (districts) assigned to this sales rep from the UserArea table
     const areas = await UserArea.findAll({
       where: { user_id: id },
       attributes: ['district_name']
     });
 
-    // 2. ඩේටාබේස් එකෙන් මේ රෙප්ට ඇසයින් කරලා ඉන්න ඇත්තම සලූන් ගණන සජීවීව ගණන් කිරීම
+    // english: Count the number of active customers assigned to this sales rep in the database
     const customerCount = await Customer.count({
       where: { sales_rep_id: id }
     });
@@ -167,7 +167,6 @@ const getExistingTarget = async (req, res) => {
   }
 };
 
-// 🎯 🔌 ALL EXPORTS AT THE BOTTOM (උඹේ userController එකේ ආකෘතියටම)
 module.exports = {
   assignTarget,
   getMonthlyRepTarget,

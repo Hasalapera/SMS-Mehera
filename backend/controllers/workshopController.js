@@ -1,6 +1,6 @@
 // backend/controllers/workshopController.js
 const { Workshop } = require('../models');
-const { cloudinary } = require('../config/cloudinary'); // 👈 අලුතින් හදන්නේ නැතුව Config එකෙන් කෙලින්ම ගන්නවා
+const { cloudinary } = require('../config/cloudinary'); // Import the cloudinary configuration
 
 // ➕ CREATE WORKSHOP - Super Safe Version
 exports.createWorkshop = async (req, res) => {

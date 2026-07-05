@@ -3,42 +3,6 @@ const pool = require('../db/db');
 const crypto = require('crypto');
 const {User, sequelize} = require('../models');
 
-// Support Controller - Handles support email sending and admin contact retrieval (AES-256-CBC)
-const decryptContact = (text) => {
-    // If text is empty or doesn't contain ':', return it as is (not encrypted)
-    if (!text) return "";
-    // If text doesn't contain ':', it's not in the expected encrypted format, return as is
-    if (!text.includes(':')) return text; 
-
-    // Try to decrypt, if fails, return original text
-    try {
-        // Split the text into IV and encrypted data
-        const [ivText, encryptedText] = text.split(':');
-        // Convert IV and encrypted data from hex to buffers
-        const iv = Buffer.from(ivText, 'hex');
-        // Convert the encrypted text from hex to buffer
-        const encrypted = Buffer.from(encryptedText, 'hex');
-        
-        // Enter the Algorithm and Secret Key you are using here.
-        // Make sure the secret key is 32 bytes for AES-256
-        const decipher = crypto.createDecipheriv(
-            'aes-256-cbc', 
-            Buffer.from(process.env.CRYPTO_SECRET_KEY, 'hex'), 
-            iv
-        );
-        
-        // Decrypt the data
-        let decrypted = decipher.update(encrypted);
-        // Finalize decryption
-        decrypted = Buffer.concat([decrypted, decipher.final()]);
-        // Return the decrypted text as a string
-        return decrypted.toString();
-    } catch (err) {
-        // If decryption is not possible (perhaps due to old data), the text is sent directly.
-        return text;
-    }
-};
-
 // Send support email with optional attachment
 const sendSupportEmail = async (req, res) => {
     // Extract necessary fields from the request body and file from multer

@@ -17,6 +17,18 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [isTokenExpiring, setIsTokenExpiring] = useState(false);
 
+    const clearSession = useCallback(() => {
+        localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('expiresAt');
+
+        setUser(null);
+        setToken(null);
+        setIsTokenExpiring(false);
+
+        window.dispatchEvent(new Event('auth-changed'));
+    }, []);
+
     // LOGIN
     const login = (userData, userToken, expiresAt) => {
         localStorage.setItem('user', JSON.stringify(userData));
@@ -32,14 +44,14 @@ export const AuthProvider = ({ children }) => {
 
     /*
     * eka access token expire wenna kalin refresh token eka use karala automatically aluth access token ekak ganna.
-    * 1. Local storage eken refresh token eka gannawa.
-    * 2. Refresh token ekak nadda kiyala check karanawa.
-    * 3. Token eka thiyenawa nam backend eke refresh-token endpoint ekata request ekak yawanawa.
+    * 1. Browser eka HttpOnly cookie eka automatically yawanna refresh-token endpoint ekata request karanawa.
+    * 2. Refresh token ekak nadda kiyala backend eka check karanawa.
+    * 3. Token eka thiyenawa nam backend eke refresh-token endpoint eka validate karanawa.
     * 4. Backend eka refresh token validate karala aluth access token ekak generate karanawa.
     * 5. e aluth access token eka local storage eke save karanawa.
     * 6. React state update karala app eka refresh nokara continue karanna allow karanawa.
     * 7. Refresh process eka success nam token expiring state eka reset karanawa.
-    * 8. Mokak hari error ekak unoth (invalid refresh token, expired token, network issue), user wa logout karala login page ekata redirect karanawa.
+    * 8. Mokak hari error ekak unoth local session clear karanawa; route logic eka redirect handle karanawa.
     * 
     * Me function eka use karanne user wa logout nokara secure widihata
     * session eka maintain karanna. (Example: Facebook, Gmail, Instagram wage apps)
@@ -82,41 +94,52 @@ export const AuthProvider = ({ children }) => {
     * 4. Local storage eke thiyena user session data okkoma clear karanawa:
     *      - user details
     *      - access token
-    *      - refresh token
     *      - token expire time
     * 5. React state reset karanawa:
     *      - user null karanawa
     *      - token remove karanawa
-    *      - refresh token state clear karanawa
     *      - token expiring state false karanawa
-    * 6. Last ekedi target path ekata redirect karanawa
-    *    (default widihata '/' home page ekata yai).
+    * 6. App eke auth-changed event eka dispatch karanawa.
     * 
     * Me function eka use karanne secure widihata session eka close karanna.
     * Logout unama old token use karala protected routes access karanna bari wenawa.
     */
-    const logout = async (target) => { 
+    const logout = useCallback(async () => {
         try {
             await api.post('/users/logout');
         } catch (err) {
             console.warn('Logout request failed or already logged out');
         } finally {
-            // Clear all session data
-            localStorage.removeItem('user');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('expiresAt');
-            
-            setUser(null);
-            setToken(null);
-            setIsTokenExpiring(false);
-            
-            // If a target path is provided, perform a hard redirect.
-            // This is used for forced logouts (e.g., token expiry).
-            if (target) {
-                window.location.href = target;
-            }
+            clearSession();
         }
-    };
+    }, [clearSession]);
+
+    const refreshAccessTokenFn = useCallback(async () => {
+        try {
+            setIsTokenExpiring(true);
+
+            // The httpOnly refresh token is sent automatically by the browser
+            const response = await api.post('/users/refresh-token', null, {
+                withCredentials: true
+            });
+
+            const { accessToken, expiresAt } = response.data;
+
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('expiresAt', expiresAt);
+
+            setToken(accessToken);
+            setIsTokenExpiring(false);
+
+            console.log('✅ Access token refreshed proactively');
+            return accessToken;
+
+        } catch (err) {
+            console.error('❌ Proactive refresh failed:', err.message);
+            clearSession();
+            return null;
+        }
+    }, [clearSession]);
 
     // Token Expiry Check (Proactive checks)
 
@@ -133,8 +156,8 @@ export const AuthProvider = ({ children }) => {
     *      - refreshAccessTokenFn() call karanawa
     *      - user logout nokara session eka continue wenawa
     * 6. Token eka already expire wela nam:
-    *      - user logout karanawa
-    *      - login page ekata redirect karanawa
+    *      - refreshAccessTokenFn() first try karanawa
+    *      - refresh fail unoth local session eka clear karanawa
     * 
     * BUFFER_TIME use karanne token eka actual expire wenna kalin
     * safe side ekata refresh karanna.
@@ -167,11 +190,15 @@ export const AuthProvider = ({ children }) => {
             console.log('⏳ Token expiring soon, refreshing proactively...');
             await refreshAccessTokenFn();
         } else if (secondsLeft <= 0) {
-            console.warn('🔴 Token completely expired! Logging out...');
+            console.warn('🔴 Token completely expired! Trying refresh before clearing session...');
             // In case the browser tab was asleep and the interceptor didn't catch it
-            logout('/login'); 
+            const refreshedToken = await refreshAccessTokenFn();
+            if (!refreshedToken) {
+                clearSession();
+            }
         }
-    };
+    }, [refreshAccessTokenFn, clearSession]);
+
 
     // INIT & MONITOR
 
@@ -201,7 +228,10 @@ export const AuthProvider = ({ children }) => {
             setToken(localStorage.getItem('accessToken'));
         };
         const handleForceLogout = () => {
-            logout('/login');
+            // This event is fired by the Axios interceptor when a 401 is received.
+            // We just clear the session. The App's routing logic will handle
+            // redirecting from protected routes to public ones.
+            clearSession();
         };
 
         window.addEventListener('token-refreshed', handleTokenRefreshed);
@@ -214,7 +244,7 @@ export const AuthProvider = ({ children }) => {
             window.removeEventListener('token-refreshed', handleTokenRefreshed);
             window.removeEventListener('force-logout', handleForceLogout);
         };
-    }, []);
+    }, [checkTokenExpiry, clearSession]);
 
     return (
         <AuthContext.Provider 
