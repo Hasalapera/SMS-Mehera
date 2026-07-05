@@ -10,7 +10,7 @@ import {
   ArrowLeft, Building2, UserCircle, Phone,
   MapPin, Tag, MessageSquarePlus, Trash2,
   ShoppingBag, CreditCard, Clock, StickyNote, Loader2, Mail,
-  Edit2, Save, X, UserCheck, ClipboardList, ArrowRight
+  Edit2, Save, X, UserCheck, ClipboardList
 } from 'lucide-react';
 
 const tagConfig = {
@@ -488,8 +488,8 @@ export default function CustomerDetail() {
                         <table className="min-w-full text-left">
                             <thead className="border-b border-border">
                                 <tr>
-                                    {["Reference", "Date", "Amount", "Status", "Placed By", ""].map((h) => (
-                                        <th key={h} className={`px-6 py-3 text-[10px] font-black text-textMain/50 uppercase tracking-widest ${h === '' ? 'text-right' : ''}`}>{h}</th>
+                                    {["Reference", "Date", "Amount", "Status", "Placed By"].map((h) => (
+                                        <th key={h} className="px-6 py-3 text-[10px] font-black text-textMain/50 uppercase tracking-widest">{h}</th>
                                     ))}
                                 </tr>
                             </thead>
@@ -513,11 +513,6 @@ export default function CustomerDetail() {
                                         <td className="px-6 py-4 text-xs font-medium text-textMain/80">
                                             {order.creator?.name || 'Online Store'}
                                         </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button onClick={() => navigate(`/order/${order.order_id}`)} className="text-xs font-bold text-primary hover:underline opacity-50 group-hover:opacity-100 transition-opacity flex items-center gap-1 justify-end">
-                                                View <ArrowRight size={12} />
-                                            </button>
-                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -535,13 +530,11 @@ export default function CustomerDetail() {
                                     </div>
                                     <span className={`text-[9px] font-black px-3 py-1.5 rounded-lg border uppercase tracking-widest ${statusBadge[order.order_status?.toLowerCase()]?.bg || "bg-card"} ${statusBadge[order.order_status?.toLowerCase()]?.text || "text-textMain/50"} ${statusBadge[order.order_status?.toLowerCase()]?.border || "border-border"}`}>{order.order_status}</span>
                                 </div>
-                                {/* Order Amount and View Button */}
-                                <div className="flex justify-between items-center pt-3 border-t border-border">
+                                <div className="pt-3 border-t border-border">
                                     <div>
                                         <p className="text-[9px] font-bold text-textMain/50 uppercase">Net Value</p>
                                         <p className="text-lg font-black text-primary">LKR {Number(order.total_amount).toLocaleString()}</p>
                                     </div>
-                                    <button onClick={() => navigate(`/order/${order.order_id}`)} className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-bold flex items-center gap-1.5">View <ArrowRight size={12} /></button>
                                 </div>
                             </div>
                         ))}
